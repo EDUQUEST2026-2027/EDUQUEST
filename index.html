@@ -112,8 +112,8 @@
 
     <footer>
         <div class="footer">Version 1.21.0</div>
-        <!-- v1.20 : liens légaux (bandeau cookies + mentions) -->
-        <div class="legal-links"><a href="legal.html">Mentions légales</a> · <a href="legal.html#cookies" onclick="window.dispatchEvent(new Event('eduquest:cookie-reopen'))">Cookies</a></div>
+        <!-- v1.20 : liens légaux -->
+        <div class="legal-links"><a href="legal.html">Mentions légales</a></div>
     </footer>
 
     <!-- Accès discret au panneau d'administration (v1.19) -->
@@ -401,8 +401,8 @@
     function hardResetDev() {
         if(!confirm("Purger toutes les données (LocalStorage, Cookies, Service Worker) pour simuler une première visite ?")) return;
         localStorage.clear();
+        localStorage.clear();
         sessionStorage.clear();
-        document.cookie.split(";").forEach(c => document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"));
         if ('caches' in window) {
             caches.keys().then(names => names.forEach(n => caches.delete(n)));
         }
