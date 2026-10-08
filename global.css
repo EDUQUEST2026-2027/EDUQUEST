@@ -319,7 +319,7 @@ body {
 */
 .notification {
     position: fixed;
-    top: 20px;
+    bottom: 20px;
     right: 20px;
     background: rgba(45, 80, 22, 0.92);          /* Fond vert sombre translucide */
     backdrop-filter: blur(24px);

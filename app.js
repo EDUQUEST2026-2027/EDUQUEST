@@ -866,8 +866,7 @@ function initOptions() {
      * on sauvegarde les valeurs "précédentes" (avant désactivation) pour les
      * restaurer correctement à la prochaine ouverture.
      */
-    saveOptionsBtn.addEventListener('click', () => {
-        // Sauvegarde des valeurs simples
+    function saveCurrentOptionsLocally() {
         saveOption('volumeMusique', volumeMusique.value);
         saveOption('volumeEffets', volumeEffets.value);
         saveOption('pleinEcran', String(pleinEcran.checked));
@@ -885,7 +884,10 @@ function initOptions() {
             saveOption('musiqueActive', String(musiqueActive.dataset.prevChecked !== 'false'));
             saveOption('effetsActifs', String(effetsActifs.dataset.prevChecked !== 'false'));
         }
+    }
 
+    saveOptionsBtn.addEventListener('click', () => {
+        saveCurrentOptionsLocally();
         showNotification('⚙ Options sauvegardées !');
         // Retour à l'accueil après 1 seconde pour laisser le temps de voir la notification
         setTimeout(() => { 
@@ -893,10 +895,24 @@ function initOptions() {
         }, 1000);
     });
 
-    // Bouton Retour : navigation sans sauvegarder
-    backButton.addEventListener('click', () => {
-        if(document.getElementById('modalOptions')) document.getElementById('modalOptions').hidden = true;
-    });
+    // Bouton Retour : sauvegarde automatique et navigation
+    if (backButton) {
+        backButton.addEventListener('click', () => {
+            saveCurrentOptionsLocally(); // Sauvegarde automatique pour éviter la perte de configs
+            if(document.getElementById('modalOptions')) document.getElementById('modalOptions').hidden = true;
+        });
+    }
+
+    // Auto-save en temps réel à chaque modification pour éviter toute perte
+    const autoSave = () => saveCurrentOptionsLocally();
+    sonsActifs.addEventListener('change', autoSave);
+    musiqueActive.addEventListener('change', autoSave);
+    effetsActifs.addEventListener('change', autoSave);
+    volumeMusique.addEventListener('change', autoSave);
+    volumeEffets.addEventListener('change', autoSave);
+    pleinEcran.addEventListener('change', autoSave);
+    particulesCheckbox.addEventListener('change', autoSave);
+    ecoModeCheckbox.addEventListener('change', autoSave);
 
     // Sync de la checkbox plein écran quand l'utilisateur appuie sur Échap
     document.addEventListener('fullscreenchange', () => {
