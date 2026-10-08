@@ -894,9 +894,11 @@ function initOptions() {
     });
 
     // Bouton Retour : navigation sans sauvegarder
-    backButton.addEventListener('click', () => {
-        if(document.getElementById('modalOptions')) document.getElementById('modalOptions').hidden = true;
-    });
+    if (backButton) {
+        backButton.addEventListener('click', () => {
+            if(document.getElementById('modalOptions')) document.getElementById('modalOptions').hidden = true;
+        });
+    }
 
     // Sync de la checkbox plein écran quand l'utilisateur appuie sur Échap
     document.addEventListener('fullscreenchange', () => {
@@ -1809,7 +1811,7 @@ function initDashboard() {
                 {id:'3eme', name:'3ème'}, {id:'2nde', name:'2nde'}, {id:'1ere', name:'1ère'}, {id:'terminale', name:'Terminale'}
             ];
         const currentNiveau = DB.getNiveau() || '6eme';
-        const optionsHtml = niveaux.map(n => `<option value="${n.id}" ${n.id === currentNiveau ? 'selected' : ''}>${escapeHtml(n.name)}</option>`).join('');
+        const optionsHtml = niveaux.map(n => `<option value="${n.id}" ${n.id === currentNiveau ? 'selected' : ''}>${escapeHtml(n.label || n.name)}</option>`).join('');
 
         return `<header class="dash-header">
             <div class="dash-brand"><b>EDU</b><span>QUEST</span></div>
@@ -2218,7 +2220,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 3ter. Consentement cookies (v1.20) — filet de sécurité si cookies.js
     // n'a pas pu s'initialiser (le bandeau lui-même est auto-suffisant)
-    setupCookieConsentFallback();
+    // setupCookieConsentFallback();
 
     // 4. Plein écran automatique si activé dans les options
     // Première tentative au chargement (souvent bloquée par les navigateurs)
@@ -2234,7 +2236,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 5. Initialisation des fonctionnalités spécifiques à chaque page
     // Chaque fonction détecte si elle est sur la bonne page avant d'agir
     initAccueil();    // index.html   → bouton Quitter
-    initConnexion();  // login.html   → formulaires connexion + inscription
+    // initConnexion();  // login.html   → formulaires connexion + inscription
     initOptions();    // options.html → contrôles de préférences
 
     initMap();        // map.html     → carte de progression par niveau

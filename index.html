@@ -116,9 +116,6 @@
         <div class="legal-links"><a href="legal.html">Mentions légales</a></div>
     </footer>
 
-    <!-- Accès discret au panneau d'administration (v1.19) -->
-    <a class="admin-panel-link" href="admin.html" title="Panneau d'administration : gérer les membres, les niveaux et les contenus">🔐 Administration</a>
-
     <!-- ================================================================
          SCRIPTS
          IMPORTANT : db.js doit toujours être chargé AVANT app.js.
@@ -128,7 +125,7 @@
     <script src="admin-store.js"></script> <!-- v1.19 : config du panneau d'administration (chargée avant app.js) -->
     <script src="question-bank.js"></script> <!-- Génère DASH_SUBJECTS (100 niveaux/matière) — requis par app.js dès son chargement -->
     <script src="app.js"></script> <!-- Moteur principal du jeu -->
-    <script src="cookies.js"></script> <!-- v1.20 : bandeau de consentement RGPD -->
+
     
 <!-- MODALS -->
 <div id="modalOptions" class="modal-overlay" hidden>
@@ -282,137 +279,13 @@
             <!-- #backButton  → retour sans sauvegarder (window.location.href = 'index.html') -->
             <div class="options-buttons">
                 <button class="option-button" id="saveOptions">💾 SAUVEGARDER</button>
-                <button class="option-button danger" onclick="document.getElementById('modalOptions').hidden = true;">← RETOUR</button>
+                <button class="option-button danger" id="backButton" onclick="document.getElementById('modalOptions').hidden = true;">← RETOUR</button>
             </div>
 
         </section>
 </div>
 
-<div id="modalLogin" class="modal-overlay" hidden>
-<section class="login-container">
 
-            <!-- Titre de la page -->
-            <h1 class="options-header">🔐 COMPTE</h1>
-
-            <!-- ============================================================
-                 PANNEAU UTILISATEUR CONNECTÉ (#userInfo)
-                 Affiché si DB.getCurrentUser() retourne un utilisateur.
-                 Caché par défaut (style="display:none"), JS le révèle si connecté.
-                 Styles dans style.css → .user-info-panel, .user-info-text
-            ============================================================ -->
-            <div class="user-info-panel" id="userInfo" style="display:none;">
-                <!-- Le pseudo est injecté dynamiquement par JS (updateUserDisplay) -->
-                <p class="user-info-text" id="userNameDisplay">👤 Joueur</p>
-                <!-- Clic → DB.logout() puis redirection vers index.html -->
-                <button class="option-button danger" id="logoutBtn">↩ SE DÉCONNECTER</button>
-            </div>
-
-            <!-- ============================================================
-                 ONGLETS DE NAVIGATION
-                 Basculent entre le formulaire de connexion et d'inscription.
-                 La classe CSS 'active' sur l'onglet cliqué change son style (doré).
-                 Géré dans app.js → initConnexion() → bloc "Onglets"
-                 Styles : .login-tabs, .login-tab, .login-tab.active dans style.css
-            ============================================================ -->
-            <div class="login-tabs" id="loginTabs">
-                <!-- Onglet actif par défaut (classe 'active' = surlignage doré) -->
-
-                <button class="login-tab" id="tabRegister">Créer un compte</button>
-            </div>
-
-            <!-- ============================================================
-                 PANNEAU DE CONNEXION (#panelLogin)
-                 Visible par défaut (pas d'attribut 'hidden').
-                 Caché quand l'onglet "Créer un compte" est cliqué.
-            ============================================================ -->
-            <div id="panelLogin">
-
-                <!-- Message descriptif -->
-                <div class="login-description">
-                    <p class="login-description-text">Connectez-vous pour sauvegarder votre progression</p>
-                </div>
-
-                <!-- Bouton connexion via Google (OAuth — à implémenter, voir commentaire <head>) -->
-                <button class="menu-button primary google-login-button" id="googleLogin">
-
-                </button>
-
-                <!-- Séparateur visuel entre Google et la connexion classique -->
-                <div class="login-separator">
-                    <span class="login-separator-text">- OU -</span>
-                </div>
-
-                <!-- Champ email de connexion -->
-                <!-- autocomplete="email" : aide le navigateur à proposer des emails mémorisés -->
-                <input type="email"    id="loginEmail"    placeholder="📧 votre@email.com" class="login-input" autocomplete="email">
-
-                <!-- Champ mot de passe de connexion -->
-                <!-- autocomplete="current-password" : aide le gestionnaire de mots de passe -->
-                <input type="password" id="loginPassword" placeholder="🔑 ••••••••"        class="login-input" autocomplete="current-password">
-
-                <!-- Boutons d'action -->
-                <!-- Le bouton est désactivé par JS pendant la requête DB.login() -->
-                <div class="options-buttons">
-                    <button class="option-button" id="classicLogin">✓ CONNEXION</button>
-                    <button class="option-button danger" onclick="document.getElementById('modalLogin').hidden = true;">← RETOUR</button>
-                </div>
-
-            </div><!-- fin #panelLogin -->
-
-            <!-- ============================================================
-                 PANNEAU D'INSCRIPTION (#panelRegister)
-                 Caché par défaut (attribut HTML5 'hidden').
-                 Révélé quand l'onglet "Créer un compte" est cliqué.
-            ============================================================ -->
-            <div id="panelRegister" hidden>
-
-                <!-- Message descriptif -->
-                <div class="login-description">
-                    <p class="login-description-text">Créez votre compte pour rejoindre l'aventure !</p>
-                </div>
-
-                <!-- Pseudo du joueur (affiché dans le jeu) -->
-                <!-- autocomplete="username" : aide le gestionnaire de mots de passe -->
-                <input type="text"     id="regUsername" placeholder="🧙 Pseudo affiché"   class="login-input" autocomplete="username">
-
-                <!-- Email (identifiant de connexion) -->
-                <input type="email"    id="regEmail"    placeholder="📧 votre@email.com"   class="login-input" autocomplete="email">
-
-                <!-- Mot de passe (minimum 6 caractères — validé par JS avant envoi) -->
-                <input type="password" id="regPassword" placeholder="🔑 Mot de passe"      class="login-input" autocomplete="new-password">
-
-                <!-- Confirmation du mot de passe (doit être identique à regPassword) -->
-                <input type="password" id="regConfirm"  placeholder="🔑 Confirmer"         class="login-input" autocomplete="new-password">
-
-                <!-- Boutons d'action -->
-                <!-- Le bouton est désactivé par JS pendant la requête DB.register() -->
-                <div class="options-buttons">
-                    <button class="option-button" id="registerBtn">✦ CRÉER UN COMPTE</button>
-                    <button class="option-button danger" onclick="document.getElementById('modalLogin').hidden = true;">← RETOUR</button>
-                </div>
-
-            </div><!-- fin #panelRegister -->
-
-        </section>
-</div>
-<!-- Bouton temporaire de purge (à supprimer plus tard) -->
-    <button onclick="hardResetDev()" style="position:fixed; top:20px; right:20px; z-index:9999; background:#d32f2f; color:white; padding:8px 12px; font-family:sans-serif; border-radius:5px; border:none; cursor:pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.5); opacity: 0.8;">🧹 VIDER LE CACHE</button>
-    <script>
-    function hardResetDev() {
-        if(!confirm("Purger toutes les données (LocalStorage, Cookies, Service Worker) pour simuler une première visite ?")) return;
-        localStorage.clear();
-        localStorage.clear();
-        sessionStorage.clear();
-        if ('caches' in window) {
-            caches.keys().then(names => names.forEach(n => caches.delete(n)));
-        }
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
-        }
-        alert("Données effacées. L'application va se recharger.");
-        setTimeout(() => window.location.reload(true), 500);
-    }
-    </script>
 </body>
 
 </html>

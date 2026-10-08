@@ -108,7 +108,7 @@
         <nav class="legal-toc" aria-label="Sommaire">
             <a href="#mentions">🏢 Mentions légales</a>
             <a href="#confidentialite">🔒 Politique de confidentialité</a>
-            <a href="#cookies">🍪 Cookies &amp; traceurs</a>
+
             <a href="#droits">📜 Vos droits</a>
             <a href="#credits">✨ Crédits</a>
         </nav>
@@ -203,34 +203,6 @@
             lui est transmise.</p>
         </section>
 
-        <!-- ================================================================
-             3. COOKIES & TRACEURS
-        ================================================================ -->
-        <section class="legal-card" id="cookies">
-            <h2>🍪 Cookies &amp; traceurs</h2>
-
-            <p>Le site utilise <code>localStorage</code> — une zone de stockage du navigateur — pour
-            fonctionner. Il ne dépose <b>aucun cookie publicitaire</b> et n'effectue
-            <b>aucun suivi</b>. Les catégories sont les suivantes :</p>
-
-            <ul>
-                <li><b>Strictement nécessaires</b> (toujours actives, exemptées de consentement) :
-                session de connexion, préférences d'affichage, progression du jeu, configuration
-                d'administration, mémorisation de votre choix de consentement. Sans elles, le site
-                ne peut pas fonctionner ; elles ne quittent jamais votre appareil.</li>
-                <li><b>Mesure d'audience</b> (optionnelle, désactivée par défaut) : aucune aujourd'hui.</li>
-                <li><b>Marketing / publicité</b> (optionnelle, désactivée par défaut) : aucune aujourd'hui.</li>
-            </ul>
-
-            <p>À votre première visite, un bandeau vous propose d'<b>accepter</b>, de
-            <b>refuser</b> (d'un clic, aussi simple que l'acceptation, conformément aux
-            recommandations de la CNIL) ou de <b>personnaliser</b> catégorie par catégorie.
-            Votre choix est enregistré pour 12 mois. Vous pouvez le modifier à tout moment :</p>
-
-            <p style="margin-top:14px;">
-                <button class="adm-btn" onclick="manageCookies()">🍪 Gérer mes cookies</button>
-            </p>
-        </section>
 
         <!-- ================================================================
              4. VOS DROITS
@@ -276,7 +248,7 @@
          SCRIPTS (lecture seule ici : aucun moteur de jeu nécessaire)
     ================================================================ -->
     <script src="admin-store.js"></script>
-    <script src="cookies.js"></script>
+
     <script>
         /**
          * Alimente la page avec les crédits personnalisés (AdminStore) et
@@ -333,11 +305,6 @@
                     + ' — les personnalisations affichées proviennent du panneau d\'administration.';
             }
         })();
-
-        /** Rouvre le bandeau de consentement (cookies.js écoute cet événement). */
-        function manageCookies() {
-            window.dispatchEvent(new Event('eduquest:cookie-reopen'));
-        }
     </script>
 </body>
 </html>
