@@ -1,5 +1,7 @@
 # EDUQUEST — Révision gamifiée (6e → Terminale)
 
+EDUQUEST, un site éducatif accessible et open-source.
+
 Application web française de révision sous forme de jeu : l'élève choisit une
 matière, un niveau, répond à des questions de 5 types différents, gagne XP,
 pièces et badges, et progresse sur une carte d'îles.
