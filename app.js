@@ -1318,6 +1318,8 @@ function initMap() {
 
     /** Débloque le niveau suivant et sauvegarde, commun aux deux modes. */
     function unlockNextAndSave(starsEarned) {
+        const wasCompleted = progress.levels[currentModalLevel].stars > 0;
+
         if (starsEarned > progress.levels[currentModalLevel].stars) {
             progress.levels[currentModalLevel].stars = starsEarned;
         }
@@ -1326,6 +1328,31 @@ function initMap() {
         }
         saveProgress(progress);
         renderLevels(progress);
+
+        // --- Synchronisation pour le Dashboard ---
+        let completedCount = 0;
+        for (let i = 1; i <= TOTAL_LEVELS; i++) {
+            if (progress.levels[i] && progress.levels[i].stars > 0) {
+                completedCount++;
+            }
+        }
+        
+        if (carteSubject) {
+            let dashProg = {};
+            try { dashProg = JSON.parse(DB.getOption('dash_progress') || '{}'); } catch(e) {}
+            dashProg[carteSubject.id] = completedCount;
+            DB.saveOption('dash_progress', JSON.stringify(dashProg));
+        }
+
+        // Ajout XP/Coins seulement si c'est la première fois qu'on termine ce niveau
+        if (!wasCompleted) {
+            let currentXp = parseInt(DB.getOption('dash_xp') || '0');
+            let currentCoins = parseInt(DB.getOption('dash_coins') || '30');
+            currentXp += 15;
+            currentCoins += 10;
+            DB.saveOption('dash_xp', String(currentXp));
+            DB.saveOption('dash_coins', String(currentCoins));
+        }
     }
 
     /** Rendu de la question courante dans #modal-quiz-zone (mode quiz réel). */

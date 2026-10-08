@@ -1,28 +1,60 @@
 const DB = (() => {
-    let memory = {
-        options: {},
-        progress: {},
-        niveau: '6eme',
-        musicTrack: 0,
-        musicTime: 0,
-        badges: []
+    // Si la page est rechargée (F5), on efface le sessionStorage pour repartir de 0
+    let isReload = false;
+    if (window.performance) {
+        const navEntries = window.performance.getEntriesByType("navigation");
+        if (navEntries.length > 0 && navEntries[0].type === "reload") {
+            isReload = true;
+        } else if (window.performance.navigation && window.performance.navigation.type === 1) {
+            isReload = true;
+        }
+    }
+    if (isReload) {
+        sessionStorage.removeItem('eduquest_memory');
+    }
+
+    const loadMemory = () => {
+        try {
+            const stored = sessionStorage.getItem('eduquest_memory');
+            if (stored) return JSON.parse(stored);
+        } catch (e) {
+            console.error("Erreur de chargement de la session", e);
+        }
+        return {
+            options: {},
+            progress: {},
+            niveau: '6eme',
+            musicTrack: 0,
+            musicTime: 0,
+            badges: []
+        };
+    };
+
+    let memory = loadMemory();
+
+    const saveMemory = () => {
+        try {
+            sessionStorage.setItem('eduquest_memory', JSON.stringify(memory));
+        } catch (e) {
+            console.error("Erreur de sauvegarde de la session", e);
+        }
     };
 
     return {
         // --- Options du jeu ---
         getOption: (k, def) => memory.options.hasOwnProperty(k) ? memory.options[k] : def,
-        saveOption: (k, v) => { memory.options[k] = v; },
+        saveOption: (k, v) => { memory.options[k] = v; saveMemory(); },
         getOptionAsync: async (k, def) => memory.options.hasOwnProperty(k) ? memory.options[k] : def,
-        saveOptionAsync: async (k, v) => { memory.options[k] = v; return {ok: true}; },
+        saveOptionAsync: async (k, v) => { memory.options[k] = v; saveMemory(); return {ok: true}; },
         syncOptionsFromServer: async () => {},
 
         // --- Progression par matière ---
         loadProgress: async (mat, niv) => memory.progress[`${mat}_${niv}`] || null,
-        saveProgress: async (mat, niv, data) => { memory.progress[`${mat}_${niv}`] = data; },
+        saveProgress: async (mat, niv, data) => { memory.progress[`${mat}_${niv}`] = data; saveMemory(); },
 
         // --- Niveau scolaire ---
         getNiveau: () => memory.niveau,
-        setNiveau: (val) => { memory.niveau = val; },
+        setNiveau: (val) => { memory.niveau = val; saveMemory(); },
 
         // --- Authentification ---
         login: async () => ({ok: false, error: 'Comptes désactivés.'}),
@@ -33,11 +65,11 @@ const DB = (() => {
 
         // --- Musique ---
         getMusicState: () => ({ track: memory.musicTrack, time: memory.musicTime }),
-        setMusicState: (track, time) => { memory.musicTrack = track; memory.musicTime = time; },
+        setMusicState: (track, time) => { memory.musicTrack = track; memory.musicTime = time; saveMemory(); },
 
         // --- Badges (succès) ---
         getBadges: () => memory.badges,
-        unlockBadge: (id) => { if (!memory.badges.includes(id)) memory.badges.push(id); },
+        unlockBadge: (id) => { if (!memory.badges.includes(id)) { memory.badges.push(id); saveMemory(); } },
 
         // --- Membres / comptes locaux (panneau d'administration) ---
         listLocalMembers: async () => [],
