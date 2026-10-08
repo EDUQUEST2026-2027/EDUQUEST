@@ -15,7 +15,7 @@ hors-ligne en mode local.
 
 **Option 1 — double-clic :** ouvrez `index.html` dans un navigateur moderne.
 Tout fonctionne immédiatement (comptes, progression et options sont stockés
-dans le `localStorage` du navigateur).
+dans le `sessionStorage` du navigateur).
 
 **Option 2 — petit serveur local (recommandé pour tester le mode API) :**
 

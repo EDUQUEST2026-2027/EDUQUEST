@@ -309,7 +309,7 @@ body {
 }
 
 /* ===== NOTIFICATIONS TOAST (.notification) =====
-   Message temporaire qui apparaît en haut à droite.
+   Message temporaire qui apparaît en bas à droite.
    Créé dynamiquement par JS (showNotification dans app.js).
    Disparaît automatiquement après 3s via l'animation CSS fadeOut.
 
@@ -319,7 +319,7 @@ body {
 */
 .notification {
     position: fixed;
-    top: 20px;
+    bottom: 20px;
     right: 20px;
     background: rgba(45, 80, 22, 0.92);          /* Fond vert sombre translucide */
     backdrop-filter: blur(24px);

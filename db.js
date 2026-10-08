@@ -1,17 +1,7 @@
 const DB = (() => {
-    // Si la page est rechargée (F5), on efface le sessionStorage pour repartir de 0
-    let isReload = false;
-    if (window.performance) {
-        const navEntries = window.performance.getEntriesByType("navigation");
-        if (navEntries.length > 0 && navEntries[0].type === "reload") {
-            isReload = true;
-        } else if (window.performance.navigation && window.performance.navigation.type === 1) {
-            isReload = true;
-        }
-    }
-    if (isReload) {
-        sessionStorage.removeItem('eduquest_memory');
-    }
+    // La persistance utilise sessionStorage. 
+    // Ainsi, quand on ferme l'onglet/la page, les données sont perdues,
+    // garantissant une page vierge à la prochaine ouverture, comme demandé.
 
     const loadMemory = () => {
         try {

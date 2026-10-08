@@ -866,8 +866,8 @@ function initOptions() {
      * on sauvegarde les valeurs "précédentes" (avant désactivation) pour les
      * restaurer correctement à la prochaine ouverture.
      */
-    saveOptionsBtn.addEventListener('click', () => {
-        // Sauvegarde des valeurs simples
+    // Extraction de la logique de sauvegarde pour pouvoir l'appeler facilement
+    function performSaveOptions() {
         saveOption('volumeMusique', volumeMusique.value);
         saveOption('volumeEffets', volumeEffets.value);
         saveOption('pleinEcran', String(pleinEcran.checked));
@@ -876,15 +876,21 @@ function initOptions() {
         saveOption('sonsActifs', String(sonsActifs.checked));
 
         if (sonsActifs.checked) {
-            // Son global activé → on sauvegarde les états actuels des sous-options
             saveOption('musiqueActive', String(musiqueActive.checked));
             saveOption('effetsActifs', String(effetsActifs.checked));
         } else {
-            // Son global désactivé → on sauvegarde les états "d'avant" pour les restaurer
-            // dataset.prevChecked contient 'true' ou 'false' sous forme de string
             saveOption('musiqueActive', String(musiqueActive.dataset.prevChecked !== 'false'));
             saveOption('effetsActifs', String(effetsActifs.dataset.prevChecked !== 'false'));
         }
+    }
+
+    // Sauvegarde automatique à chaque changement pour que ce soit toujours "sincro"
+    [volumeMusique, volumeEffets, pleinEcran, particulesCheckbox, ecoModeCheckbox, sonsActifs, musiqueActive, effetsActifs].forEach(el => {
+        el.addEventListener('change', performSaveOptions);
+    });
+
+    saveOptionsBtn.addEventListener('click', () => {
+        performSaveOptions();
 
         showNotification('⚙ Options sauvegardées !');
         // Retour à l'accueil après 1 seconde pour laisser le temps de voir la notification
