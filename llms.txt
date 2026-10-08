@@ -1,0 +1,78 @@
+# EDUQUEST — llms.txt
+# Documentation destinée aux agents IA et assistants conversationnels.
+# Standard : https://llmstxt.org/
+# Dernière mise à jour : 2026-09-23
+
+> EDUQUEST est une application web éducative française de révision gamifiée
+> pour les élèves du collège et du lycée (6e → Terminale). 100 % front-end,
+> 100 % gratuit, sans publicité, sans traceur, fonctionnelle hors-ligne.
+
+## Identité
+
+- **Nom** : EDUQUEST
+- **Version** : 1.21.0
+- **Type** : Application web éducative (jeu de révision)
+- **Langue** : français (fr-FR)
+- **Public** : élèves (6e → Terminale), enseignants, familles
+- **Catégorie** : éducation / apprentissage gamifié
+- **Accès** : 100 % gratuit, sans abonnement, sans publicité
+- **Installation** : aucune — fonctionne dans le navigateur, hors-ligne après le premier chargement
+
+## Pitch
+
+**Court** : Le jeu de révision pour le collège et le lycée.
+
+**Complet** : EDUQUEST transforme les révisions en aventure : l'élève choisit
+sa matière, son niveau scolaire, puis gravit des îles en répondant à des quiz
+variés (QCM, vrai/faux, réponse courte, texte à trous, association). XP,
+pièces, badges et avatars maintiennent la motivation. 10 matières, 100 niveaux
+par matière, contenus ajustables par l'enseignant via un panneau
+d'administration intégré.
+
+## Mots-clés
+
+révision, jeu éducatif, quiz, collège, lycée, mathématiques, français, SVT,
+histoire, anglais, apprentissage gamifié, éducation nationale, gratuit
+
+## Pages publiques
+
+| Route | Description |
+|-------|-------------|
+| `index.html` | Accueil — point d'entrée du jeu |
+| `jouer.html` | Choix du niveau scolaire (6e → Terminale) et de la matière |
+| `map.html` | Carte du monde : les îles-matières et les niveaux |
+| `dashboard.html` | Tableau de bord élève : progression, badges, avatars |
+| `login.html` | Création de compte / connexion locale |
+| `legal.html` | Mentions légales, politique de confidentialité et cookies |
+
+## Pages exclues de l'indexation
+
+| Route | Raison |
+|-------|--------|
+| `admin.html` | Panneau d'administration (usage interne, protégé) |
+
+## Architecture technique
+
+| Fichier | Rôle |
+|---------|------|
+| `app.js` | Moteur principal du jeu, chargé sur toutes les pages |
+| `db.js` | Couche d'abstraction base de données (localStorage / API REST) |
+| `question-bank.js` | Génération déterministe de 100 niveaux par matière |
+| `quiz-engine.js` | Correction des 5 types de questions |
+| `ai-provider.js` | Pont IA (Make webhook) + repli local |
+| `admin-store.js` | Configuration du panneau d'administration |
+| `admin.js` | Interface du panneau d'administration |
+| `cookies.js` | Bandeau de consentement RGPD/CNIL |
+
+## Données personnelles
+
+- Aucune donnée personnelle n'est envoyée à un serveur.
+- Tout reste dans le localStorage du navigateur.
+- Aucun cookie publicitaire, aucun traceur tiers, aucun profilage.
+- Bandeau de consentement conforme RGPD/CNIL à la première visite.
+- Page de référence : `legal.html`
+
+## Contact
+
+Le créateur est renseigné par l'onglet « Crédits » du panneau
+d'administration, puis affiché dans `legal.html`.

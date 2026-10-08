@@ -1,0 +1,192 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
+  <!-- ============================================================
+       ÎLOT « GÉOGRAPHIE » — EDUQUEST (redesign v3, densité proche des PNG)
+       Globe terrestre détaillé, montagne enneigée, cascade océanique,
+       pins, rose des vents, déroulé de carte, épingle, nuages et
+       étoiles. Nom sur bannière en bois comme les îlots PNG.
+       ============================================================ -->
+  <defs>
+    <linearGradient id="geoRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8a5632"/>
+      <stop offset="0.5" stop-color="#5b3520"/>
+      <stop offset="1" stop-color="#3a2113"/>
+    </linearGradient>
+    <linearGradient id="geoRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a2c19"/>
+      <stop offset="1" stop-color="#241407"/>
+    </linearGradient>
+    <linearGradient id="geoGrass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a4d96a"/>
+      <stop offset="1" stop-color="#4f8f34"/>
+    </linearGradient>
+    <radialGradient id="geoGlobe" cx="0.35" cy="0.3" r="1">
+      <stop offset="0" stop-color="#8fd4f2"/>
+      <stop offset="0.55" stop-color="#4ea3e0"/>
+      <stop offset="1" stop-color="#2b6ea8"/>
+    </radialGradient>
+    <linearGradient id="geoWater" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9fdcf5"/>
+      <stop offset="1" stop-color="#4ea3e0" stop-opacity="0.15"/>
+    </linearGradient>
+    <linearGradient id="geoBanner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6b4526"/>
+      <stop offset="1" stop-color="#43281a"/>
+    </linearGradient>
+    <radialGradient id="geoHalo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#c8a84b" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#c8a84b" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="geoShadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="10" stdDeviation="9" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+    <filter id="geoSoft" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+  </defs>
+
+  <!-- Halo doré + étoiles -->
+  <circle cx="210" cy="200" r="185" fill="url(#geoHalo)"/>
+  <g fill="#e8d9a0">
+    <path d="M52 92 l2.6 6 6 2.6 -6 2.6 -2.6 6 -2.6 -6 -6 -2.6 6 -2.6 Z" opacity="0.85"/>
+    <path d="M366 66 l2.2 5 5 2.2 -5 2.2 -2.2 5 -2.2 -5 -5 -2.2 5 -2.2 Z" opacity="0.65"/>
+    <path d="M386 158 l1.8 4 4 1.8 -4 1.8 -1.8 4 -1.8 -4 -4 -1.8 4 -1.8 Z" opacity="0.5"/>
+    <circle cx="60" cy="222" r="2.2" opacity="0.5"/>
+    <circle cx="360" cy="264" r="2.6" opacity="0.45"/>
+    <circle cx="326" cy="42" r="2" opacity="0.5"/>
+  </g>
+
+  <!-- Nuages -->
+  <g fill="#ffffff" opacity="0.16">
+    <ellipse cx="78" cy="120" rx="32" ry="9"/>
+    <ellipse cx="99" cy="112" rx="21" ry="7"/>
+    <ellipse cx="336" cy="306" rx="36" ry="10"/>
+    <ellipse cx="316" cy="297" rx="21" ry="7"/>
+  </g>
+
+  <g filter="url(#geoShadow)">
+    <!-- ================= ROCHE ================= -->
+    <path d="M24 218 L210 248 L396 218 L362 266 L322 312 L280 350 L210 378 L140 350 L98 310 L58 262 Z" fill="url(#geoRockTop)"/>
+    <path d="M58 262 L128 280 L210 288 L294 276 L362 260 L322 312 L280 350 L210 378 L140 350 L98 310 Z" fill="url(#geoRockDeep)" opacity="0.8"/>
+    <path d="M24 218 L210 248 L396 218" stroke="#a97447" stroke-width="3.5" fill="none" opacity="0.75"/>
+    <path d="M98 310 L140 350 L210 378" stroke="#6b4526" stroke-width="3" fill="none" opacity="0.85"/>
+    <!-- racines flottantes -->
+    <path d="M174 360 q8 20 -6 34" stroke="#3a2113" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <path d="M246 356 q12 16 4 32" stroke="#3a2113" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+    <circle cx="200" cy="398" r="4" fill="#4a2c19" opacity="0.85"/>
+    <circle cx="264" cy="402" r="3" fill="#4a2c19" opacity="0.6"/>
+    <circle cx="158" cy="392" r="2.6" fill="#4a2c19" opacity="0.55"/>
+
+    <!-- ================= HERBE ================= -->
+    <ellipse cx="210" cy="224" rx="184" ry="59" fill="url(#geoGrass)"/>
+    <ellipse cx="210" cy="218" rx="172" ry="50" fill="#b2e078"/>
+    <g stroke="#5d9c3c" stroke-width="3.6" fill="none" stroke-linecap="round">
+      <path d="M62 232 q7 -13 0 -20 M72 234 q5 -11 11 -16"/>
+      <path d="M354 234 q-7 -13 0 -20 M344 236 q-5 -11 -11 -16"/>
+      <path d="M120 254 q6 -11 1 -17 M130 256 q4 -9 9 -13"/>
+      <path d="M300 256 q-6 -11 -1 -17 M290 258 q-4 -9 -9 -13"/>
+    </g>
+
+    <!-- ================= MONTAGNE enneigée (gauche, derrière le globe) ================= -->
+    <g transform="translate(96 172)">
+      <ellipse cx="4" cy="34" rx="34" ry="7" fill="#3a2113" opacity="0.5"/>
+      <path d="M-32 30 L0 -34 L32 30 Z" fill="#6b4526" stroke="#43281a" stroke-width="3"/>
+      <path d="M-32 30 L-8 -18 L6 12 L32 30 Z" fill="#5b3520" opacity="0.85"/>
+      <path d="M-14 -18 L0 -34 L14 -18 L8 -12 L0 -18 L-8 -12 Z" fill="#e8f4fb"/>
+      <circle cx="0" cy="-38" r="2.6" fill="#c8a84b"/>
+    </g>
+
+    <!-- ================= GLOBE TERRESTRE (sujet central) ================= -->
+    <g transform="translate(232 128)">
+      <ellipse cx="16" cy="80" rx="46" ry="9" fill="#c8a84b" opacity="0.35" filter="url(#geoSoft)"/>
+      <circle cx="0" cy="0" r="66" fill="url(#geoGlobe)" stroke="#1d5e93" stroke-width="5.5"/>
+      <!-- continents -->
+      <g fill="#7cc35e" stroke="#549a3a" stroke-width="2.2">
+        <path d="M-40 -30 q17 -13 36 -4 q13 6 8 21 q-4 15 -23 13 q-21 -2 -25 -15 q-2 -10 4 -15 Z"/>
+        <path d="M22 8 q17 0 25 10 q9 11 0 23 q-9 13 -23 9 q-13 -4 -11 -19 q2 -15 9 -23 Z"/>
+        <path d="M-42 28 q13 -4 21 4 q7 9 -2 17 q-11 9 -21 2 q-9 -7 2 -23 Z"/>
+        <path d="M-6 -54 q11 -4 17 2 q7 6 -2 13 q-11 7 -17 0 q-4 -9 2 -15 Z"/>
+        <path d="M44 -34 q9 -3 13 2 q5 6 -2 11 q-9 5 -13 -1 q-3 -7 2 -12 Z"/>
+      </g>
+      <!-- graticule -->
+      <g fill="none" stroke="#ffffff" stroke-opacity="0.4" stroke-width="2.4">
+        <ellipse rx="66" ry="23"/>
+        <ellipse rx="66" ry="48"/>
+        <ellipse rx="23" ry="66"/>
+        <ellipse rx="48" ry="66"/>
+      </g>
+      <!-- reflets -->
+      <ellipse cx="-24" cy="-31" rx="21" ry="11" fill="#ffffff" opacity="0.4" transform="rotate(-24 -24 -31)"/>
+      <ellipse cx="-15" cy="-25" rx="9" ry="5" fill="#ffffff" opacity="0.5" transform="rotate(-24 -15 -25)"/>
+      <!-- axe doré -->
+      <path d="M0 -72 L0 -64 M0 64 L0 72" stroke="#c8a84b" stroke-width="3" stroke-linecap="round"/>
+    </g>
+
+    <!-- ================= CASCADE océanique (droite) ================= -->
+    <path d="M352 240 q11 32 2 62 q-6 24 -15 36" stroke="url(#geoWater)" stroke-width="13" fill="none" stroke-linecap="round"/>
+    <path d="M358 246 q8 28 1 54" stroke="#c9ecfa" stroke-width="3.6" fill="none" stroke-linecap="round" opacity="0.8"/>
+    <g fill="#8fd4f2">
+      <circle cx="336" cy="306" r="5" opacity="0.9"/>
+      <circle cx="342" cy="324" r="3.8" opacity="0.7"/>
+      <circle cx="330" cy="340" r="2.8" opacity="0.55"/>
+    </g>
+    <ellipse cx="338" cy="240" rx="15" ry="6.5" fill="#c9ecfa" opacity="0.85"/>
+
+    <!-- ================= PINS ================= -->
+    <g transform="translate(150 158) scale(1.15)">
+      <rect x="-3" y="20" width="6" height="14" fill="#5b3520"/>
+      <path d="M0 -24 L13 2 L-13 2 Z" fill="#3f7d2c"/>
+      <path d="M0 -13 L15 13 L-15 13 Z" fill="#54a038"/>
+      <path d="M0 0 L16 18 L-16 18 Z" fill="#3f7d2c" opacity="0.9"/>
+    </g>
+    <g transform="translate(300 168) scale(0.9)">
+      <rect x="-3" y="20" width="6" height="14" fill="#5b3520"/>
+      <path d="M0 -24 L13 2 L-13 2 Z" fill="#3f7d2c"/>
+      <path d="M0 -13 L15 13 L-15 13 Z" fill="#54a038"/>
+    </g>
+
+    <!-- ================= ROSE DES VENTS dorée ================= -->
+    <g transform="translate(330 96)">
+      <circle r="26" fill="#2b1d12" stroke="#c8a84b" stroke-width="3.6"/>
+      <circle r="19" fill="none" stroke="#c8a84b" stroke-width="1.3" opacity="0.6"/>
+      <path d="M0 -17 L5 -5 L17 0 L5 5 L0 17 L-5 5 L-17 0 L-5 -5 Z" fill="#c8a84b"/>
+      <path d="M0 -17 L5 -5 L17 0 L0 -4 Z" fill="#e8d9a0"/>
+      <circle r="3.8" fill="#8a6d24" stroke="#e8d9a0" stroke-width="1.5"/>
+      <text y="-31" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="15" font-weight="700" fill="#c8a84b">N</text>
+    </g>
+
+    <!-- ================= ÉPINGLE DE CARTE ================= -->
+    <g transform="translate(128 208)">
+      <path d="M0 24 Q0 11 0 6" stroke="#8a6d24" stroke-width="3.2" fill="none"/>
+      <circle cy="-4" r="11" fill="#c8443c" stroke="#8e2f2a" stroke-width="2.8"/>
+      <circle cx="-3.4" cy="-7.6" r="3.4" fill="#ffffff" opacity="0.55"/>
+      <ellipse cx="0" cy="26" rx="7.5" ry="2.6" fill="#3a2113" opacity="0.6"/>
+    </g>
+
+    <!-- ================= DÉROULÉ DE CARTE ================= -->
+    <g transform="translate(244 196) rotate(-6)">
+      <ellipse cx="0" cy="20" rx="34" ry="5.5" fill="#3a2113" opacity="0.5"/>
+      <rect x="-30" y="-16" width="60" height="34" rx="3" fill="#e8d9a0" stroke="#8a6d24" stroke-width="2.6"/>
+      <!-- roulis -->
+      <path d="M-30 -16 q5 8 0 17 q-5 8 0 17" fill="#d9c27a" stroke="#8a6d24" stroke-width="1.6"/>
+      <path d="M30 -16 q-5 8 0 17 q5 8 0 17" fill="#d9c27a" stroke="#8a6d24" stroke-width="1.6"/>
+      <!-- tracés -->
+      <path d="M-20 -4 q8 -8 16 -2 q7 5 14 -3" stroke="#4ea3e0" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      <path d="M-16 8 q10 5 22 -2" stroke="#5d9c3c" stroke-width="2.4" fill="none" stroke-linecap="round" opacity="0.8"/>
+      <path d="M-4 -10 l0 20 M14 -8 l0 18" stroke="#c8a84b" stroke-width="1.6" stroke-dasharray="3 4" opacity="0.8"/>
+    </g>
+
+    <!-- ================= BANNIÈRE « GÉOGRAPHIE » ================= -->
+    <g transform="translate(210 318)">
+      <path d="M-116 -17 L116 -17 L104 17 L-104 17 Z" fill="url(#geoBanner)" stroke="#2e1a10" stroke-width="3"/>
+      <g fill="#e0c876">
+        <circle cx="-99" cy="-10" r="2.4"/>
+        <circle cx="99" cy="-10" r="2.4"/>
+        <circle cx="-90" cy="11" r="2.4"/>
+        <circle cx="90" cy="11" r="2.4"/>
+      </g>
+      <path d="M-107 -16 L-95 -31 M107 -16 L95 -31" stroke="#2e1a10" stroke-width="2.6" stroke-linecap="round"/>
+      <text x="0" y="8" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="27" font-weight="700"
+            fill="#c8a84b" letter-spacing="2">GÉOGRAPHIE</text>
+    </g>
+  </g>
+</svg>

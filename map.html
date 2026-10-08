@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fr">
+<!--
+  MAP.HTML — EDUQUEST v2.2
+  Carte de progression d'une matière (les "niveaux").
+
+  RÔLE :
+  Affiche un chemin visuel (carte du jeu) avec un niveau par leçon réelle
+  de la matière (voir DASH_SUBJECTS dans app.js — 5 leçons actuellement,
+  donc 5 niveaux ; les boutons au-delà sont masqués dynamiquement).
+  Un personnage animé se positionne sur le niveau courant du joueur.
+
+  COMMENT CETTE PAGE EST ACCÉDÉE :
+  Toujours via un lien de jouer.html avec 2 paramètres d'URL :
+    map.html?matiere=Mathématiques&icon=maths.png
+    map.html?matiere=Anglais&icon=anglais.png
+    map.html?matiere=Géographie&icon=🌍   (emoji si pas de fichier PNG)
+
+  INITIALISATION (dans app.js → initMap()) :
+  1. Lecture des paramètres d'URL (matiere, icon)
+  2. Résolution de la matière vers un id DASH_SUBJECTS (MATIERE_TO_SUBJECT_ID)
+  3. Mise à jour du titre (<h1>), de l'icône et de l'illustration de fond
+  4. Chargement asynchrone de la progression via DB.loadProgress()
+  5. Rendu visuel des boutons de niveau selon leur état (locked/active/completed)
+  6. Positionnement du personnage sur le niveau courant
+
+  STRUCTURE DES NIVEAUX (boutons .level-dot) :
+  - Chaque bouton a data-level="N"
+  - JS ajoute l'une de ces classes selon la progression :
+      'locked'    → verrouillé (disabled, cadenas)
+      'active'    → niveau en cours (surligné)
+      'completed' → terminé avec étoiles (étoiles affichées dans .level-stars-display)
+  - Un clic sur un niveau non-verrouillé ouvre la modale
+
+  MODALE DE RÉSULTAT (#level-modal) :
+  Deux modes possibles (voir initMap dans app.js) :
+    - Mode quiz réel (#modal-quiz-zone) : une vraie question de DASH_SUBJECTS,
+      rendue par QuizEngine. Les étoiles sont calculées selon le nombre de
+      tentatives (3 du premier coup, 2 à la 2e, 1 au-delà).
+    - Mode étoiles (#modal-stars-zone) : repli pour les matières pas encore
+      reliées à un quiz réel (ex. EMC, sans îlot graphique dans jouer.html).
+  Le résultat est sauvegardé via DB.saveProgress().
+
+  PERSONNAGE (#character) :
+  Entité CSS pure (pas d'image) animée via transitions CSS.
+  Position définie via style.left et style.top (en %) par JS.
+  Les positions sont hardcodées dans levelPositions dans app.js.
+
+  FONCTIONS JS ACTIVES SUR CETTE PAGE :
+    initMap() → toute la logique de cette page
+    Aucune autre initX() n'est active (elles détectent qu'elles ne sont pas sur leur page)
+-->
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--
+      Le titre sera mis à jour dynamiquement par JS (initMap) :
+      document.title = 'EDUQUEST - ' + subject;
+      La valeur ci-dessous est un fallback visible avant l'exécution de JS.
+    -->
+    <title>Explore les îles du savoir — EDUQUEST</title>
+    <meta name="description" content="Gravisse les îles-matières niveau par niveau : chaque victoire rapporte XP, pièces et badges.">
+    <!-- v1.21 : référencement & partage (voir bot.txt) -->
+    <meta name="theme-color" content="#0d1330">
+    <meta name="robots" content="index, follow">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="EDUQUEST">
+    <meta property="og:title" content="Explore les îles du savoir — EDUQUEST">
+    <meta property="og:description" content="100 niveaux par matière sur une carte d'aventure. Apprends en progressant !">
+    <meta property="og:image" content="Image/logo.webp">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" type="image/webp" href="Image/logo.webp">
+    <link rel="stylesheet" href="global.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.webmanifest">
+</head>
+<body>
+    <!-- Fond animé (même que toutes les autres pages) -->
+    <div class="background"></div>
+    <!-- ID différent de 'stars' : map.html utilise 'stars-bg' -->
+    <!-- createEnvironment() cherche getElementById('stars') OU getElementById('stars-bg') -->
+    <div id="stars-bg" class="stars"></div>
+    <div id="clouds" class="clouds"></div>
+
+    <!-- Zone principale : s'étend sur toute la hauteur de l'écran -->
+    <main class="subject-page">
+
+        <!-- ================================================================
+             EN-TÊTE DE LA CARTE (.map-header)
+             Positionnée en overlay sur la carte (position: fixed/absolute dans CSS).
+             Contient le nom et l'icône de la matière + boutons de navigation.
+             Les valeurs de .subject-icon et <h1> sont injectées par JS (initMap).
+        ================================================================ -->
+        <section class="map-header" aria-label="Carte des niveaux">
+            <!-- Côté gauche : icône et titre de la matière -->
+            <div>
+                <!-- Icône de la matière : remplacée par JS selon le paramètre 'icon' de l'URL -->
+                <!-- Si icon=maths.png → <img src="Image/ile/maths.png"> -->
+                <!-- Si icon=🌍 (emoji) → textContent = '🌍' -->
+                <span class="subject-icon">📚</span>
+                <!-- Titre remplacé par JS : titleEl.textContent = subject; -->
+                <h1>Matière</h1>
+            </div>
+            <!-- Côté droit : boutons d'action -->
+            <div style="display: flex; gap: 10px; pointer-events: auto;">
+                <a class="options-wheel" href="index.html#options" title="Options">⚙️</a>
+                <a class="back-button" href="dashboard.html">← RETOUR</a>
+            </div>
+        </section>
+
+        <!-- ================================================================
+             CARTE DES NIVEAUX (.level-map)
+             Zone principale contenant le chemin SVG et les boutons de niveau.
+             Le fond de la carte est défini par le style CSS .level-map
+             (image de fond ou dégradé dans style.css).
+        ================================================================ -->
+        <section class="level-map" id="level-map-viewport" aria-label="Chemin des niveaux">
+
+            <!-- Illustration de l'îlot de la matière en arrière-plan, discrète.
+                 src injecté par JS (initMap) à partir du même paramètre 'icon'
+                 que jouer.html — renforce l'identité visuelle entre les deux
+                 pages. aria-hidden : purement décoratif. -->
+            <img id="subject-bg-island" class="subject-bg-island" alt="" aria-hidden="true">
+
+            <!-- ============================================================
+                 PISTE DE NIVEAUX (v2.3 — jusqu'à 100 niveaux par matière)
+                 Conteneur haut et défilant (voir #level-map-viewport, qui
+                 porte overflow-y:auto). Tout son contenu — chemin SVG,
+                 personnage, boutons de niveau — est généré par JS
+                 (buildLevelTrack dans app.js → initMap), car coder 100
+                 boutons en dur ici serait ingérable.
+
+                 Le niveau 1 est en bas de la piste, le niveau 100 en haut
+                 (on "gravit" la matière) ; la page se scrolle automatiquement
+                 jusqu'au niveau courant à l'ouverture.
+
+                 États gérés par JS (renderLevels dans app.js), inchangés :
+                   .locked / .active / .completed / (aucune classe = débloqué)
+            ============================================================ -->
+            <div id="level-track" class="level-track"></div>
+
+        </section><!-- fin .level-map -->
+    </main>
+
+    <!-- ================================================================
+         MODALE DE RÉSULTAT DE NIVEAU (#level-modal)
+         Affichée quand le joueur clique sur un niveau non verrouillé.
+         Cachée par défaut (attribut HTML5 'hidden').
+         Permet de simuler la complétion d'un niveau en choisissant les étoiles.
+
+         v2.1 : quand la matière est reconnue (voir MATIERE_TO_SUBJECT_ID dans
+         app.js → initMap), cette modale affiche une vraie question via
+         QuizEngine au lieu du choix d'étoiles. Le choix d'étoiles reste le
+         repli pour les matières pas encore reliées à un quiz (Technologie, EMC).
+
+         COMPOSANTS :
+           #modal-title       → "Niveau N" (mis à jour par JS au clic)
+           #modal-quiz-zone   → mode quiz réel (question + réponses + actions)
+           #modal-stars-zone  → mode étoiles (repli, ancien comportement)
+           #modal-close       → annule sans sauvegarder (mode étoiles)
+           #reset-progress    → remet la progression de la matière à zéro
+    ================================================================ -->
+    <div id="level-modal" class="modal-overlay" hidden>
+        <div class="modal">
+            <!-- Titre mis à jour par JS : modal-title.textContent = 'Niveau ' + currentModalLevel -->
+            <h2 id="modal-title">Niveau 1</h2>
+
+            <!-- ============================================================
+                 MODE QUIZ RÉEL (v2.1)
+                 Utilisé quand la matière est reconnue par MATIERE_TO_SUBJECT_ID
+                 (voir initMap dans app.js). Rempli dynamiquement par
+                 QuizEngine — mêmes classes .dash-* que le quiz du dashboard,
+                 pour un rendu identique.
+            ============================================================ -->
+            <div id="modal-quiz-zone" hidden>
+                <p id="modal-quiz-question" class="modal-subtitle"></p>
+                <div id="modal-quiz-body" class="dash-quiz-body"></div>
+                <div id="modal-quiz-feedback"></div>
+                <div id="modal-quiz-actions" class="dash-modal-actions"></div>
+            </div>
+
+            <!-- ============================================================
+                 MODE ÉTOILES (ancien comportement, v2.0)
+                 Conservé comme repli pour les matières pas encore reliées à
+                 un quiz réel (Technologie, EMC — absentes de jouer.html).
+            ============================================================ -->
+            <div id="modal-stars-zone">
+                <p class="modal-subtitle">Choisissez votre résultat :</p>
+                <div class="modal-stars-choice">
+                    <button class="star-choice" data-stars="1" type="button">
+                        <span>⭐</span>
+                        <span class="star-label">1 étoile</span>
+                    </button>
+                    <button class="star-choice" data-stars="2" type="button">
+                        <span>⭐⭐</span>
+                        <span class="star-label">2 étoiles</span>
+                    </button>
+                    <button class="star-choice" data-stars="3" type="button">
+                        <span>⭐⭐⭐</span>
+                        <span class="star-label">3 étoiles</span>
+                    </button>
+                </div>
+                <!-- Bouton Annuler : ferme la modale sans modifier la progression -->
+                <button id="modal-close" class="modal-close-btn" type="button">Annuler</button>
+            </div>
+
+            <!-- Bouton Réinitialiser : remet toute la progression de la matière à zéro -->
+            <!-- Utile pour les tests ou si le joueur veut recommencer depuis le début -->
+            <button id="reset-progress" class="modal-reset-btn" type="button">🔄 Réinitialiser la progression</button>
+        </div>
+    </div>
+
+    <footer>
+        <!-- v1.20 : liens légaux (bandeau cookies + mentions) -->
+        <div class="legal-links"><a href="legal.html">Mentions légales</a> · <a href="legal.html#cookies" onclick="window.dispatchEvent(new Event('eduquest:cookie-reopen'))">Cookies</a></div>
+    </footer>
+
+    <!-- IMPORTANT : db.js avant app.js. quiz-engine.js, question-bank.js et
+         ai-provider.js avant app.js (utilisés par initMap — depuis v1.18, la
+         carte génère et corrige ses questions via AiProvider, comme le
+         dashboard). -->
+    <script src="db.js"></script>  <!-- Couche base de données -->
+    <script src="admin-store.js"></script> <!-- v1.19 : config du panneau d'administration (chargée avant app.js) -->
+    <script src="quiz-engine.js"></script> <!-- Moteur de questions multi-types -->
+    <script src="question-bank.js"></script> <!-- Étend DASH_SUBJECTS à 100 niveaux/matière -->
+    <script src="ai-provider.js"></script> <!-- Pont IA (Make) + repli local -->
+    <script src="app.js"></script> <!-- Moteur → initMap() -->
+    <script src="cookies.js"></script> <!-- v1.20 : bandeau de consentement RGPD -->
+</body>
+</html>

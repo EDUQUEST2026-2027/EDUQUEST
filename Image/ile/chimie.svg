@@ -1,0 +1,215 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
+  <!-- ============================================================
+       ÎLOT « CHIMIE » — EDUQUEST (redesign v3, densité proche des PNG)
+       Grand erlenmeyer bouillonnant central, tubes à essai, molécule,
+       atome en orbite, cristaux, grimoire de formules, fumées et
+       étincelles. Nom sur bannière en bois comme les îlots PNG.
+       ============================================================ -->
+  <defs>
+    <linearGradient id="cheRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8a5632"/>
+      <stop offset="0.5" stop-color="#5b3520"/>
+      <stop offset="1" stop-color="#3a2113"/>
+    </linearGradient>
+    <linearGradient id="cheRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a2c19"/>
+      <stop offset="1" stop-color="#241407"/>
+    </linearGradient>
+    <linearGradient id="cheGrass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a4d96a"/>
+      <stop offset="1" stop-color="#4f8f34"/>
+    </linearGradient>
+    <linearGradient id="cheLiquid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b8ef7d"/>
+      <stop offset="0.6" stop-color="#7cc35e"/>
+      <stop offset="1" stop-color="#4f9a34"/>
+    </linearGradient>
+    <linearGradient id="cheGlass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#eaf6fd" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#b9d8ec" stop-opacity="0.32"/>
+    </linearGradient>
+    <linearGradient id="cheBanner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6b4526"/>
+      <stop offset="1" stop-color="#43281a"/>
+    </linearGradient>
+    <radialGradient id="cheHalo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#c8a84b" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#c8a84b" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="cheShadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="10" stdDeviation="9" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+    <filter id="cheSoft" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+    <filter id="cheGlow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="10" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Halo doré + particules -->
+  <circle cx="210" cy="200" r="185" fill="url(#cheHalo)"/>
+  <g fill="#e8d9a0">
+    <path d="M52 96 l2.6 6 6 2.6 -6 2.6 -2.6 6 -2.6 -6 -6 -2.6 6 -2.6 Z" opacity="0.85"/>
+    <path d="M368 72 l2.2 5 5 2.2 -5 2.2 -2.2 5 -2.2 -5 -5 -2.2 5 -2.2 Z" opacity="0.65"/>
+    <path d="M384 170 l1.8 4 4 1.8 -4 1.8 -1.8 4 -1.8 -4 -4 -1.8 4 -1.8 Z" opacity="0.5"/>
+    <circle cx="58" cy="230" r="2.2" opacity="0.5"/>
+    <circle cx="362" cy="270" r="2.6" opacity="0.45"/>
+    <circle cx="330" cy="46" r="2" opacity="0.5"/>
+  </g>
+
+  <g filter="url(#cheShadow)">
+    <!-- ================= ROCHE : grande île flottante ================= -->
+    <path d="M26 216 L210 246 L394 216 L362 264 L324 310 L282 348 L210 376 L138 348 L96 308 L58 260 Z" fill="url(#cheRockTop)"/>
+    <path d="M58 260 L126 278 L210 286 L296 274 L362 258 L324 310 L282 348 L210 376 L138 348 L96 308 Z" fill="url(#cheRockDeep)" opacity="0.8"/>
+    <!-- arêtes éclairées -->
+    <path d="M26 216 L210 246 L394 216" stroke="#a97447" stroke-width="3.5" fill="none" opacity="0.75"/>
+    <path d="M96 308 L138 348 L210 376" stroke="#6b4526" stroke-width="3" fill="none" opacity="0.85"/>
+    <!-- veines de cristal dans la roche -->
+    <path d="M150 300 L166 322 M252 296 L244 318" stroke="#7cc35e" stroke-width="2.4" stroke-linecap="round" opacity="0.55"/>
+    <!-- racines flottantes -->
+    <path d="M176 358 q8 20 -6 34" stroke="#3a2113" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <path d="M244 354 q12 16 4 32" stroke="#3a2113" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+    <circle cx="200" cy="396" r="4" fill="#4a2c19" opacity="0.85"/>
+    <circle cx="262" cy="400" r="3" fill="#4a2c19" opacity="0.6"/>
+    <circle cx="160" cy="390" r="2.6" fill="#4a2c19" opacity="0.55"/>
+
+    <!-- ================= HERBE ================= -->
+    <ellipse cx="210" cy="222" rx="182" ry="58" fill="url(#cheGrass)"/>
+    <ellipse cx="210" cy="216" rx="170" ry="49" fill="#b2e078"/>
+    <!-- touffes + touffe de mousse à gauche -->
+    <g stroke="#5d9c3c" stroke-width="3.6" fill="none" stroke-linecap="round">
+      <path d="M64 230 q7 -13 0 -20 M74 232 q5 -11 11 -16"/>
+      <path d="M352 232 q-7 -13 0 -20 M342 234 q-5 -11 -11 -16"/>
+      <path d="M116 252 q6 -11 1 -17 M126 254 q4 -9 9 -13"/>
+      <path d="M304 254 q-6 -11 -1 -17 M294 256 q-4 -9 -9 -13"/>
+    </g>
+
+    <!-- ================= FUMÉES ================= -->
+    <g fill="#c9f5a5">
+      <circle cx="150" cy="84" r="10" opacity="0.2"/>
+      <circle cx="168" cy="68" r="7" opacity="0.16"/>
+      <circle cx="286" cy="66" r="9" opacity="0.18"/>
+      <circle cx="300" cy="52" r="6" opacity="0.14"/>
+      <circle cx="126" cy="100" r="6" opacity="0.16"/>
+    </g>
+
+    <!-- ================= ERLENMEYER géant central ================= -->
+    <g transform="translate(210 120)">
+      <!-- ombre au sol -->
+      <ellipse cx="6" cy="100" rx="58" ry="10" fill="#3a2113" opacity="0.55"/>
+      <!-- halo du liquide -->
+      <ellipse cx="0" cy="34" rx="62" ry="30" fill="#7cc35e" opacity="0.25" filter="url(#cheSoft)"/>
+      <!-- corps -->
+      <path d="M-18 -74 L-18 -32 L-60 34 Q-70 58 -46 58 L46 58 Q70 58 60 34 L18 -32 L18 -74 Z"
+            fill="url(#cheGlass)" stroke="#b9d8ec" stroke-width="7" stroke-linejoin="round"/>
+      <!-- col + bouchon -->
+      <rect x="-20" y="-84" width="40" height="12" rx="5" fill="#c8a84b" stroke="#8a6d24" stroke-width="2.8"/>
+      <circle cx="0" cy="-88" r="4" fill="#e8d9a0" opacity="0.8"/>
+      <!-- liquide -->
+      <path d="M-40 8 L-60 34 Q-70 58 -46 58 L46 58 Q70 58 60 34 L40 8 Z" fill="url(#cheLiquid)"/>
+      <!-- surface du liquide -->
+      <path d="M-40 8 Q0 20 40 8" stroke="#d6ffb0" stroke-width="4.5" fill="none" stroke-linecap="round" opacity="0.9"/>
+      <!-- bulles -->
+      <g fill="#e8ffd0">
+        <circle cx="-16" cy="36" r="6" opacity="0.95"/>
+        <circle cx="12" cy="46" r="5" opacity="0.85"/>
+        <circle cx="28" cy="32" r="3.8" opacity="0.75"/>
+        <circle cx="-2" cy="26" r="3.2" opacity="0.8"/>
+        <circle cx="34" cy="48" r="2.6" opacity="0.6"/>
+      </g>
+      <!-- bulles qui débordent -->
+      <g fill="#c9f5a5">
+        <circle cx="-10" cy="-80" r="6" opacity="0.95"/>
+        <circle cx="12" cy="-96" r="4.6" opacity="0.8"/>
+        <circle cx="-26" cy="-108" r="3.4" opacity="0.62"/>
+        <circle cx="4" cy="-120" r="2.8" opacity="0.5"/>
+        <circle cx="-40" cy="-118" r="2.2" opacity="0.4"/>
+      </g>
+      <!-- reflets -->
+      <path d="M-32 -40 L-32 30" stroke="#ffffff" stroke-opacity="0.55" stroke-width="5" stroke-linecap="round"/>
+      <path d="M26 -36 L18 -14" stroke="#ffffff" stroke-opacity="0.3" stroke-width="3.4" stroke-linecap="round"/>
+      <!-- graduations -->
+      <g stroke="#8fb8d4" stroke-width="2.2" stroke-linecap="round" opacity="0.85">
+        <path d="M-27 2 L-18 2"/>
+        <path d="M-32 15 L-23 15"/>
+        <path d="M-37 28 L-28 28"/>
+      </g>
+    </g>
+
+    <!-- ================= MOLÉCULE (gauche, grande) ================= -->
+    <g transform="translate(88 120)">
+      <line x1="0" y1="4" x2="38" y2="-18" stroke="#d9c27a" stroke-width="6" stroke-linecap="round"/>
+      <line x1="38" y1="-18" x2="68" y2="4" stroke="#d9c27a" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="0" cy="4" r="12.5" fill="#e5534b" stroke="#8e2f2a" stroke-width="3.2"/>
+      <circle cx="38" cy="-18" r="9.5" fill="#f2c14e" stroke="#9a7a24" stroke-width="3.2"/>
+      <circle cx="68" cy="4" r="12.5" fill="#4ea3e0" stroke="#2b6ea8" stroke-width="3.2"/>
+      <circle cx="-3.4" cy="0" r="3.6" fill="#ffffff" opacity="0.6"/>
+      <circle cx="64" cy="0" r="3.6" fill="#ffffff" opacity="0.6"/>
+    </g>
+
+    <!-- ================= ATOME en orbite (droite) ================= -->
+    <g transform="translate(322 112)">
+      <ellipse rx="27" ry="10" fill="none" stroke="#c8a84b" stroke-width="2.8" transform="rotate(-24)"/>
+      <ellipse rx="27" ry="10" fill="none" stroke="#c8a84b" stroke-width="2.8" transform="rotate(48)"/>
+      <circle r="7.5" fill="#f2c14e" stroke="#9a7a24" stroke-width="2.8"/>
+      <circle cx="-21" cy="-12" r="3.6" fill="#e8d9a0"/>
+      <circle cx="19" cy="15" r="3.6" fill="#e8d9a0"/>
+    </g>
+
+    <!-- ================= TUBES À ESSAI en support (droite bas) ================= -->
+    <g transform="translate(304 190)">
+      <ellipse cx="0" cy="30" rx="30" ry="6.5" fill="#3a2113" opacity="0.55"/>
+      <path d="M-26 30 L26 30 L21 37 L-21 37 Z" fill="#c8a84b" stroke="#8a6d24" stroke-width="2.2"/>
+      <g transform="rotate(-14)">
+        <path d="M-14 -40 L-14 20 Q-14 34 -4 34 Q7 34 7 20 L7 -40 Z" fill="url(#cheGlass)" stroke="#b9d8ec" stroke-width="4.4" stroke-linejoin="round"/>
+        <path d="M-10.4 4 L-10.4 20 Q-10.4 30 -3.5 30 Q3.4 30 3.4 20 L3.4 4 Z" fill="#e07a5f"/>
+      </g>
+      <g transform="rotate(11) translate(16 0)">
+        <path d="M-13 -33 L-13 18 Q-13 31 -4 31 Q6 31 6 18 L6 -33 Z" fill="url(#cheGlass)" stroke="#b9d8ec" stroke-width="4.4" stroke-linejoin="round"/>
+        <path d="M-9.6 -4 L-9.6 18 Q-9.6 27 -3.5 27 Q2.6 27 2.6 18 L2.6 -4 Z" fill="#4ea3e0"/>
+      </g>
+    </g>
+
+    <!-- ================= GRIMOIRE de formules (gauche bas) ================= -->
+    <g transform="translate(112 198) rotate(-7)">
+      <ellipse cx="0" cy="16" rx="26" ry="5" fill="#3a2113" opacity="0.5"/>
+      <rect x="-24" y="-18" width="48" height="32" rx="4" fill="#8a5632" stroke="#5b3520" stroke-width="2.6"/>
+      <rect x="-20" y="-14" width="40" height="24" rx="2.5" fill="#e8d9a0"/>
+      <g stroke="#8a6d24" stroke-width="2" stroke-linecap="round">
+        <path d="M-13 -6 L-6 -6 M-2 -6 L10 -6"/>
+        <path d="M-13 2 L-2 2 M4 2 L10 2"/>
+      </g>
+      <!-- petite formule H2O -->
+      <text x="0" y="-22" text-anchor="middle" font-family="Georgia, serif" font-size="11" font-weight="700" fill="#c8a84b" stroke="#1a1208" stroke-width="2.6" paint-order="stroke">H₂O</text>
+    </g>
+
+    <!-- ================= CRISTAUX verts (devant, à droite du flacon) ================= -->
+    <g transform="translate(248 212)">
+      <ellipse cx="0" cy="14" rx="22" ry="4.5" fill="#3a2113" opacity="0.5"/>
+      <path d="M-8 10 L-4 -8 L0 10 Z" fill="#7cc35e" stroke="#4f9a34" stroke-width="1.8"/>
+      <path d="M2 10 L8 -14 L13 10 Z" fill="#9fe06f" stroke="#4f9a34" stroke-width="1.8"/>
+      <circle cx="6" cy="-9" r="1.8" fill="#ffffff" opacity="0.75"/>
+    </g>
+
+    <!-- ================= BANNIÈRE « CHIMIE » ================= -->
+    <g transform="translate(210 316)">
+      <path d="M-104 -17 L104 -17 L94 17 L-94 17 Z" fill="url(#cheBanner)" stroke="#2e1a10" stroke-width="3"/>
+      <!-- clous dorés -->
+      <g fill="#e0c876">
+        <circle cx="-88" cy="-10" r="2.4"/>
+        <circle cx="88" cy="-10" r="2.4"/>
+        <circle cx="-79" cy="11" r="2.4"/>
+        <circle cx="79" cy="11" r="2.4"/>
+      </g>
+      <!-- cordes vers l'île -->
+      <path d="M-96 -17 L-84 -32 M96 -17 L84 -32" stroke="#2e1a10" stroke-width="2.6" stroke-linecap="round"/>
+      <text x="0" y="8" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="32" font-weight="700"
+            fill="#c8a84b" letter-spacing="3">CHIMIE</text>
+    </g>
+  </g>
+</svg>

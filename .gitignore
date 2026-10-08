@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+# Windows
+Thumbs.db
+desktop.ini
+# Éditeurs
+*.swp
+*~
+.vscode/
+# Dépendances
+node_modules/
+# Livrables
+*.zip
+# Environnements Freebuff
+.freebuff/
