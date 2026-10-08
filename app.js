@@ -1332,14 +1332,24 @@ function initMap() {
 
     /** Débloque le niveau suivant et sauvegarde, commun aux deux modes. */
     function unlockNextAndSave(starsEarned) {
+        const isFirstSuccess = progress.levels[currentModalLevel].stars === 0 && starsEarned > 0;
         if (starsEarned > progress.levels[currentModalLevel].stars) {
             progress.levels[currentModalLevel].stars = starsEarned;
         }
         if (currentModalLevel + 1 <= TOTAL_LEVELS) {
             progress.levels[currentModalLevel + 1].unlocked = true;
         }
+        
+        if (isFirstSuccess) {
+            const currentXp = parseInt(getOption('dash_xp') || '0');
+            const currentCoins = parseInt(getOption('dash_coins') || '30');
+            saveOption('dash_xp', String(currentXp + 15));
+            saveOption('dash_coins', String(currentCoins + 10));
+        }
+
         saveProgress(progress);
         renderLevels(progress);
+        return isFirstSuccess;
     }
 
     /** Rendu de la question courante dans #modal-quiz-zone (mode quiz réel). */
@@ -1388,9 +1398,9 @@ function initMap() {
                 actionsEl.innerHTML = `<button class="dash-btn-primary" id="modal-quiz-continue">Continuer</button>`;
                 document.getElementById('modal-quiz-continue').addEventListener('click', () => {
                     const stars = starsFromAttempts(currentAttempt.attempts);
-                    unlockNextAndSave(stars);
+                    const isFirstSuccess = unlockNextAndSave(stars);
                     modal.hidden = true;
-                    showNotification(`✓ Niveau réussi — ${'⭐'.repeat(stars)}`);
+                    showNotification(`✓ Niveau réussi — ${'⭐'.repeat(stars)}${isFirstSuccess ? ' (+15 XP, +10 pièces)' : ''}`);
                 });
             } else {
                 actionsEl.innerHTML = `
@@ -1507,8 +1517,12 @@ function initMap() {
     document.querySelectorAll('.star-choice').forEach(btn => {
         btn.addEventListener('click', () => {
             if (!currentModalLevel) return;
-            unlockNextAndSave(parseInt(btn.dataset.stars));
+            const stars = parseInt(btn.dataset.stars);
+            const isFirstSuccess = unlockNextAndSave(stars);
             modal.hidden = true;
+            if (isFirstSuccess) {
+                showNotification(`✓ Progression sauvegardée (+15 XP, +10 pièces)`);
+            }
         });
     });
 
