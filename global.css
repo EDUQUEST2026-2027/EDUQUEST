@@ -1,0 +1,552 @@
+/* ==========================================================================
+   GLOBAL.CSS — EDUQUEST v2.0
+   Feuille de style partagée entre TOUTES les pages HTML.
+
+   CONTENU :
+   1. Polices Google Fonts (Cinzel + Rajdhani)
+   2. Réinitialisation CSS et variables de couleur (:root)
+   3. Style de base du body
+   4. Arrière-plan spatial multi-couches (.background, .stars, .clouds)
+   5. Composants réutilisables (boutons, roue options, notifications, footer)
+   6. Animations globales (@keyframes)
+
+   POLICES UTILISÉES :
+   - Cinzel      → titres et boutons (style médiéval / fantasy)
+   - Rajdhani    → textes courants (lisible, légèrement technique)
+
+   DESIGN SYSTEM :
+   Le projet utilise un thème "spatial médiéval" avec :
+     - Fond sombre nuit (proche du noir) avec dégradés de bleu et vert
+     - Étoiles scintillantes générées dynamiquement par JS
+     - Nuages flottants générés dynamiquement par JS
+     - Glassmorphisme sur les panneaux et boutons (backdrop-filter: blur)
+     - Couleurs dorées (#c8a84b) pour les accents et surbrillances
+   ========================================================================== */
+
+
+/* --------------------------------------------------------------------------
+   POLICES LOCALES — Cinzel & Rajdhani (v1.21.0)
+   Hébergées dans fonts/ — aucune requête externe → RGPD/CNIL conforme + hors-ligne.
+   Cinzel       : police serif avec empattements classiques, style médiéval
+   Rajdhani     : police sans-serif condensée, lisible à petite taille
+   font-display:swap → polices système en attendant (évite le FOUT)
+   -------------------------------------------------------------------------- */
+@font-face { font-family: 'Cinzel'; font-style: normal; font-weight: 700; font-display: swap; src: url('fonts/cinzel-700-subset0.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Cinzel'; font-style: normal; font-weight: 700; font-display: swap; src: url('fonts/cinzel-700-subset1.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Cinzel'; font-style: normal; font-weight: 900; font-display: swap; src: url('fonts/cinzel-900-subset2.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Cinzel'; font-style: normal; font-weight: 900; font-display: swap; src: url('fonts/cinzel-900-subset3.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 400; font-display: swap; src: url('fonts/rajdhani-400-subset0.woff2') format('woff2'); unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09; }
+@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 400; font-display: swap; src: url('fonts/rajdhani-400-subset1.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 400; font-display: swap; src: url('fonts/rajdhani-400-subset2.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 600; font-display: swap; src: url('fonts/rajdhani-600-subset3.woff2') format('woff2'); unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09; }
+@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 600; font-display: swap; src: url('fonts/rajdhani-600-subset4.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 600; font-display: swap; src: url('fonts/rajdhani-600-subset5.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 700; font-display: swap; src: url('fonts/rajdhani-700-subset6.woff2') format('woff2'); unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09; }
+@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 700; font-display: swap; src: url('fonts/rajdhani-700-subset7.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 700; font-display: swap; src: url('fonts/rajdhani-700-subset8.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+/* --------------------------------------------------------------------------
+   1. RÉINITIALISATION CSS
+   Supprime les marges et paddings par défaut du navigateur.
+   box-sizing: border-box → la largeur d'un élément inclut padding et border.
+   -------------------------------------------------------------------------- */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* --------------------------------------------------------------------------
+   2. VARIABLES DE COULEUR (Custom Properties CSS)
+   Palette du projet — utiliser ces variables pour la cohérence visuelle.
+   Modifier une valeur ici = modifier partout dans le projet.
+
+   Hiérarchie de fond (du plus sombre au plus clair) :
+     --c-night → --c-deep → --c-ocean
+
+   Couleurs thématiques :
+     Vert/forêt  : --c-forest, --c-green, --c-green-light
+     Marron/terre : --c-brown, --c-brown-dark
+     Rouge/danger : --c-red
+     Bleu/acier  : --c-blue
+     Or/accent   : --c-gold (utilisé pour les surbrillances dorées)
+   -------------------------------------------------------------------------- */
+:root {
+    --c-night:       #060d1a;  /* Fond le plus sombre (fond principal du body) */
+    --c-deep:        #0a1628;  /* Fond intermédiaire */
+    --c-ocean:       #1a3a52;  /* Bleu océan (accentuation gauche du fond) */
+    --c-forest:      #2d5016;  /* Vert forêt profond */
+    --c-green:       #4a7c59;  /* Vert moyen (boutons succès) */
+    --c-green-light: #6bca82;  /* Vert vif (bordures de notification succès) */
+    --c-brown:       #6b4423;  /* Marron chaud */
+    --c-brown-dark:  #140e08;  /* Marron très sombre */
+    --c-red:         #8b3a3a;  /* Rouge danger (boutons, notifications d'erreur) */
+    --c-blue:        #4a5c7c;  /* Bleu acier (fond glassmorphe) */
+    --c-gold:        #c8a84b;  /* Or doré (accents, footer, surbrillances) */
+    --c-white:       #ffffff;  /* Blanc pur (textes principaux) */
+}
+
+/* --------------------------------------------------------------------------
+   3. STYLE DE BASE DU BODY
+   -------------------------------------------------------------------------- */
+body {
+    font-family: 'Rajdhani', 'Courier New', monospace;
+    /* Rajdhani comme police principale, avec fallbacks système */
+
+    overflow-x: hidden; /* Empêche le scroll horizontal (les nuages sortent à droite) */
+    overflow-y: auto;   /* Scroll vertical autorisé si le contenu dépasse */
+    background: var(--c-night); /* Couleur de fond de secours si le CSS .background rate */
+    min-height: 100vh;  /* Assure que le body occupe au moins tout l'écran */
+    color: var(--c-white); /* Couleur de texte par défaut */
+}
+
+/* --------------------------------------------------------------------------
+   4. ARRIÈRE-PLAN SPATIAL MULTI-COUCHES
+   Le fond est composé de 3 éléments superposés (z-index négatifs) :
+     .background → dégradé statique (couche la plus basse)
+     .stars       → étoiles scintillantes (JS génère des <div class="star">)
+     .clouds      → nuages flottants (JS génère des <div class="cloud">)
+   -------------------------------------------------------------------------- */
+
+/* .background : dégradé principal fixe
+   position: fixed → reste en place même au scroll
+   inset: 0 → raccourci pour top:0, right:0, bottom:0, left:0
+   z-index: -3 → derrière tout le reste
+*/
+.background {
+    position: fixed;
+    inset: 0;
+    background:
+        /* Lueur bleue en haut à gauche (effet ciel nocturne) */
+        radial-gradient(ellipse at 30% 10%, rgba(26, 58, 82, 0.7) 0%, transparent 55%),
+        /* Lueur verte en bas à droite (effet forêt/terrain) */
+        radial-gradient(ellipse at 80% 80%, rgba(45, 80, 22, 0.5) 0%, transparent 50%),
+        /* Chaleur centrale très légère (profondeur) */
+        radial-gradient(ellipse at 50% 50%, rgba(107, 68, 35, 0.12) 0%, transparent 70%),
+        /* Dégradé de fond principal : nuit → bleu → vert sombre → nuit */
+        linear-gradient(175deg, #060d1a 0%, #0d1f3a 35%, #122d1a 65%, #0a1a08 100%);
+    z-index: -3;
+}
+
+/* Vignette : assombrit les bords pour concentrer le regard au centre */
+.background::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.7) 100%);
+}
+
+/* Texture scanlines : lignes horizontales très subtiles pour effet "écran" */
+.background::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        0deg,              /* Lignes horizontales */
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.04) 2px,  /* Ligne sombre de 2px */
+        rgba(0, 0, 0, 0.04) 4px   /* Répétition toutes les 4px */
+    );
+    z-index: 1;
+    pointer-events: none; /* Ne bloque pas les clics */
+}
+
+/* Conteneur des étoiles et nuages
+   pointer-events: none → l'arrière-plan ne capture pas les clics */
+.stars, .clouds {
+    position: fixed;
+    inset: 0;
+    z-index: -2; /* Au-dessus du fond, en dessous du contenu */
+    overflow: hidden;
+    pointer-events: none;
+}
+
+/* Les étoiles occupent seulement le haut de l'écran (ciel) */
+.stars { height: 65%; }
+
+/* Style d'une étoile individuelle (créée par JS dans createEnvironment)
+   La taille et la position sont définies en JS via style.width, style.left, style.top */
+.star {
+    position: absolute;
+    background: #fff;              /* Couleur par défaut : blanc */
+    border-radius: 50%;            /* Cercle parfait */
+    animation: twinkle var(--dur, 3s) var(--delay, 0s) infinite;
+    /* La durée (--dur) et le délai (--delay) peuvent être personnalisés par CSS */
+}
+
+/* Variation de couleur des étoiles selon leur position dans le DOM (nth-child) */
+.star:nth-child(3n)   { background: #c8e4ff; }             /* Bleu clair (1 étoile/3) */
+.star:nth-child(5n)   { background: #ffe4c8; }             /* Orange pâle (1 étoile/5) */
+.star:nth-child(7n)   { background: var(--c-green-light); opacity: 0.6; } /* Vert (1/7) */
+
+/* Style d'un nuage (créé par JS dans createEnvironment)
+   La taille, position et durée d'animation sont définies en JS */
+.cloud {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.07); /* Très transparent → effet brume */
+    border-radius: 100px;                  /* Forme arrondie (ellipse) */
+    animation: float 30s infinite linear;  /* Dérive de gauche à droite */
+    filter: blur(2px);                     /* Flou pour l'aspect nuageux */
+}
+
+/* Classe utilitaire pour cacher un élément (utilisé sur #exitPage par ex.) */
+.hidden { display: none !important; }
+
+/* --------------------------------------------------------------------------
+   5. COMPOSANTS COMMUNS
+   -------------------------------------------------------------------------- */
+
+/* ===== BOUTONS (.menu-button, .option-button) =====
+   Style glassmorphe premium avec :
+   - Effet de lumière coulissante au survol (::before)
+   - Ligne de reflet en bas au survol (::after)
+   - Animation légère au clic (légère montée)
+
+   Les tailles et couleurs spécifiques (primary, secondary, danger)
+   sont définies dans style.css pour chaque page.
+*/
+.menu-button,
+.option-button {
+    font-family: var(--font-pixel-ui, 'Cinzel', serif); /* Police pixel — direction Codédex (v2.6) */
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;     /* Supprime le soulignement des liens <a> */
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Animation douce */
+    user-select: none;         /* Empêche la sélection du texte au clic */
+    position: relative;        /* Nécessaire pour ::before et ::after */
+    overflow: hidden;          /* Cache l'effet de lumière quand il est hors du bouton */
+    display: block;
+}
+
+/* Effet de lumière coulissante qui traverse le bouton au survol */
+.menu-button::before,
+.option-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    /* Gradient diagonal : transparent → reflet blanc → transparent */
+    background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+    transform: translateX(-100%) skewX(-15deg); /* Commence à gauche du bouton */
+    transition: transform 0.6s ease;
+}
+
+/* Au survol : la lumière traverse le bouton de gauche à droite */
+.menu-button:hover::before,
+.option-button:hover::before {
+    transform: translateX(200%) skewX(-15deg);
+}
+
+/* Ligne de reflet lumineux en bas du bouton (apparaît au survol) */
+.menu-button::after,
+.option-button::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    opacity: 0; /* Invisible par défaut */
+    transition: opacity 0.3s;
+}
+
+.menu-button:hover::after,
+.option-button:hover::after { opacity: 1; } /* Apparaît au survol */
+
+/* Léger enfoncement au clic (feedback visuel façon bouton pixel pressé) */
+.menu-button:active,
+.option-button:active {
+    transform: translate(3px, 3px);
+    transition-duration: 0.1s; /* Plus rapide pour le clic que pour le survol */
+}
+
+/* ===== ROUE D'OPTIONS (.options-wheel) =====
+   Bouton circulaire avec icône engrenage ⚙️.
+   Utilisé pour accéder rapidement aux options depuis n'importe quelle page.
+   Tourne de 90° au survol (effet engrenage).
+*/
+.options-wheel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    color: #fff;
+    background: rgba(8, 14, 24, 0.6);        /* Fond semi-transparent sombre */
+    backdrop-filter: blur(20px);              /* Flou glassmorphe */
+    -webkit-backdrop-filter: blur(20px);      /* Safari */
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-top-color: rgba(255, 255, 255, 0.25); /* Bord du dessus plus lumineux */
+    border-radius: 50%;                       /* Cercle */
+    box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.06) inset, /* Reflet intérieur haut */
+        0 6px 20px rgba(0, 0, 0, 0.45);          /* Ombre portée */
+    text-decoration: none;
+    font-size: 1.45rem;
+    cursor: pointer;
+    transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    user-select: none;
+    pointer-events: auto; /* Overrides le pointer-events:none du parent sur map.html */
+}
+
+/* Survol : rotation de 90° + bordure dorée + ombre lumineuse */
+.options-wheel:hover {
+    transform: rotate(90deg) scale(1.12);
+    background: rgba(20, 32, 50, 0.75);
+    border-color: rgba(200, 168, 75, 0.5);   /* Bordure or au survol */
+    box-shadow: 0 0 20px rgba(200, 168, 75, 0.25), 0 8px 24px rgba(0, 0, 0, 0.55);
+}
+
+/* Variante flottante : positionnée en fixed en haut à droite de la page */
+.options-wheel.floating {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000; /* Au-dessus de tout le contenu */
+}
+
+/* ===== NOTIFICATIONS TOAST (.notification) =====
+   Message temporaire qui apparaît en haut à droite.
+   Créé dynamiquement par JS (showNotification dans app.js).
+   Disparaît automatiquement après 3s via l'animation CSS fadeOut.
+
+   Deux styles :
+     .notification        → succès (fond vert)
+     .notification.error  → erreur (fond rouge)
+*/
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(45, 80, 22, 0.92);          /* Fond vert sombre translucide */
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(107, 202, 130, 0.4);
+    border-top-color: rgba(107, 202, 130, 0.6);  /* Bord supérieur plus vif */
+    border-radius: 14px;
+    padding: 16px 26px;
+    color: #fff;
+    font-family: 'Rajdhani', monospace;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.8);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 20px rgba(74,124,89,0.3);
+    z-index: 10000; /* Au-dessus de absolument tout, même les modales */
+    /* slideInRight : entre depuis la droite / fadeOut : sort vers la droite après 2.5s */
+    animation: slideInRight 0.4s cubic-bezier(0.22,1,0.36,1), fadeOut 0.5s ease 2.5s;
+    pointer-events: none; /* Ne capture pas les clics (derrière si besoin) */
+}
+
+/* Variante erreur : fond rouge */
+.notification.error {
+    background: rgba(100, 30, 30, 0.92);
+    border-color: rgba(220, 100, 100, 0.45);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 18px rgba(139,58,58,0.25);
+}
+
+/* ===== FOOTER GLOBAL (.footer) =====
+   Affiche la version + les crédits du créateur (v1.20, personnalisables
+   depuis le panneau d'administration → onglet « Crédits »).
+   Contenu mis à jour par JS (updateFooterVersion + refreshFooterCredits).
+   Lorsque les crédits contiennent un lien (site / e-mail), le footer devient
+   une petite barre centrée lisible au lieu d'un texte filigrane (v1.20).
+*/
+.footer {
+    position: fixed;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%); /* Centrage horizontal */
+    font-family: 'Rajdhani', monospace;
+    font-size: 0.8rem;
+    color: rgba(200, 168, 75, 0.3); /* Or très transparent */
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    transition: color 0.3s;
+    max-width: min(92vw, 760px);
+    text-align: center;
+}
+
+/* Variante « crédits » (v1.20) : liens cliquables lisibles, chip discrète */
+.footer.footer-with-links {
+    bottom: 10px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(7, 11, 26, 0.55);
+    border: 1px solid rgba(200, 168, 75, 0.25);
+    backdrop-filter: blur(6px);
+    color: rgba(230, 207, 138, 0.85);
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: none;
+    line-height: 1.45;
+    white-space: normal;
+    z-index: 500;
+}
+.footer.footer-with-links a {
+    color: #5fd4e6;
+    text-decoration: none;
+    border-bottom: 1px dotted rgba(95, 212, 230, 0.5);
+}
+.footer.footer-with-links a:hover { color: #9ae4f0; border-bottom-color: #9ae4f0; }
+.footer.footer-with-links em { opacity: 0.75; font-style: italic; }
+
+/* Légèrement plus visible au survol */
+.footer:hover { color: rgba(200, 168, 75, 0.7); }
+
+/* --- Focus clavier global (complément au polish v1.17 de style.css) ---
+   Les navigateurs retirent le contour par défaut sur :focus-visible avec
+   certains styles custom ; on garantit un contour de secours pour tout
+   élément interactif non listé dans style.css (options, formulaires…). */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid var(--c-gold);
+    outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   6. ANIMATIONS (@keyframes)
+   Toutes les animations partagées entre les pages sont définies ici.
+   Les animations spécifiques à une page sont dans style.css.
+   -------------------------------------------------------------------------- */
+
+/* Étoile : clignotement lent (scintillement) */
+@keyframes twinkle {
+    0%, 100% { opacity: 0.2; transform: scale(1); }
+    50%       { opacity: 1;   transform: scale(1.3); }
+}
+
+/* --------------------------------------------------------------------------
+   v1.19 — Accès discret au panneau d'administration (index.html)
+   -------------------------------------------------------------------------- */
+.admin-panel-link {
+    position: fixed;
+    bottom: 10px;
+    left: 12px;
+    z-index: 9999;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.65);
+    text-decoration: none;
+    opacity: 1;
+    padding: 4px 8px;
+    border-radius: 8px;
+    background: rgba(7, 11, 26, 0.35);
+    transition: color 0.15s ease, background 0.15s ease;
+}
+.admin-panel-link:hover {
+    color: #1c1607;
+    background: rgba(200, 168, 75, 0.85);
+}
+
+/* --------------------------------------------------------------------------
+   v1.20 — Liens légaux (bandeau cookies + footer des pages)
+   -------------------------------------------------------------------------- */
+.legal-links {
+    position: fixed;
+    bottom: 10px;
+    right: 12px;
+    z-index: 500;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12.5px;
+    letter-spacing: 0.3px;
+    color: rgba(255, 255, 255, 0.6);
+}
+.legal-links a {
+    color: inherit;
+    text-decoration: none;
+    padding: 3px 8px;
+    border-radius: 8px;
+    background: rgba(7, 11, 26, 0.35);
+}
+.legal-links a:hover { color: #e6cf8a; background: rgba(200, 168, 75, 0.25); }
+
+/* --------------------------------------------------------------------------
+   v1.21 — RESPONSIVE MOBILE (téléphones, ≤ 600px)
+   Regroupe les adaptations communes à toutes les pages : éléments flottants
+   (roue ⚙, pied de page, liens légaux, boutons retour) qui se chevauchent
+   sur petit écran. Les adaptations par page restent dans style.css/admin.css.
+   -------------------------------------------------------------------------- */
+@media (max-width: 600px) {
+    /* Roue ⚙ flottante : réduite et décollée du bord pour laisser la place
+       au titre « Choisis ton niveau » qui passe en dessous (voir style.css) */
+    .options-wheel.floating {
+        top: 10px;
+        right: 10px;
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+    }
+
+    /* Pied de page « crédits » : pleine largeur en bas de l'écran, au-dessus
+       des liens légaux — ne recouvre plus les boutons et les cartes. */
+    .footer.footer-with-links {
+        left: 8px;
+        right: 8px;
+        transform: none;
+        bottom: 34px; /* au-dessus de la rangée .legal-links */
+        font-size: 11px;
+        padding: 5px 10px;
+        text-align: center;
+    }
+
+    /* Rangée du bas : liens légaux alignés à droite, pastille de crédits
+       (.footer.footer-with-links) au-dessus à bottom:34px */
+    .legal-links {
+        left: auto;
+        right: 8px;
+        bottom: 8px;
+        text-align: right;
+        font-size: 11.5px;
+    }
+
+    /* Lien « 🔐 Administration » de l'accueil : en bas à gauche, sur la
+       même ligne que les liens légaux (le menu ne descend pas plus bas) */
+    .admin-panel-link {
+        left: 8px;
+        bottom: 8px;
+        font-size: 11px;
+        padding: 5px 10px;
+    }
+
+    /* Bouton flottant « ← Retour au … » de jouer.html : plus compact et
+       remonté au-dessus du pied de page (le conteneur de la page gagne un
+       padding-bottom via style.css pour ne plus recouvrir les cartes). */
+    .retour-button-matieres {
+        bottom: 84px;
+        width: min(260px, calc(100% - 32px));
+        padding: 12px 16px;
+    }
+}
+
+/* Nuage : déplacement horizontal continu de gauche à droite */
+@keyframes float {
+    from { transform: translateX(-300px); }  /* Commence hors écran à gauche */
+    to   { transform: translateX(calc(100vw + 300px)); } /* Finit hors écran à droite */
+}
+
+/* Apparition simple : fondu + montée légère (utilisé sur plusieurs éléments) */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Apparition de panneau : fondu + montée + légère remise à l'échelle + déflou
+   Plus élaboré que fadeIn, utilisé pour les panneaux principaux */
+@keyframes panelSlideIn {
+    from { opacity: 0; transform: translateY(24px) scale(0.97); filter: blur(4px); }
+    to   { opacity: 1; transform: translateY(0)     scale(1);    filter: blur(0); }
+}
+
+/* Entrée depuis la droite : pour les notifications toast */
+@keyframes slideInRight {
+    from { transform: translateX(400px); opacity: 0; }
+    to   { transform: translateX(0);     opacity: 1; }
+}
+
+/* Sortie vers la droite : pour la disparition des notifications après 2.5s */
+@keyframes fadeOut {
+    to { opacity: 0; transform: translateX(400px); }
+}

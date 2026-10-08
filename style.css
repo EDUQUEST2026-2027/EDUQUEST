@@ -1,0 +1,2579 @@
+/* ==========================================================================
+   STYLE.CSS — EDUQUEST v2.0
+   Feuille de style spécifique définissant le design de chaque page.
+
+   STRUCTURE DU FICHIER :
+   Ce fichier regroupe les styles spécifiques de toutes les pages du jeu.
+   Pour faciliter la maintenance, il est divisé en sections par page :
+     1. ACCUEIL   (index.html)   → Logo, menu principal, animations
+     2. OPTIONS   (options.html) → Panneaux de réglage, sliders, cases à cocher
+     3. LOGIN     (login.html)   → Formulaires de connexion/inscription, onglets
+     4. JOUER     (jouer.html)   → Sélecteur de niveau (pills), grille des matières
+     5. MAP       (map.html)     → Carte du monde, chemin, personnage, niveaux, modale
+
+   DÉPENDANCE :
+   Ce fichier utilise les variables CSS définies dans global.css (ex: var(--c-night)).
+   global.css doit toujours être chargé AVANT style.css dans le HTML.
+   ========================================================================== */
+
+/* ==========================================================================
+   POLICES PIXEL — v2.5, inspiré de la direction artistique de Codédex
+   (codedex.io) : une police "display" très blocky pour les gros titres,
+   une police pixel plus lisible pour les libellés/HUD/boutons, le tout
+   hébergé localement (fichiers .ttf dans /fonts) pour rester 100% hors-ligne.
+   Polices sous licence SIL Open Font License — voir fonts/OFL-*.txt.
+   ========================================================================== */
+@font-face {
+    font-family: 'Press Start 2P';
+    src: url('fonts/PressStart2P-Regular.woff2') format('woff2'),
+         url('fonts/PressStart2P-Regular.ttf')   format('truetype');
+    font-weight: 400;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Silkscreen';
+    src: url('fonts/Silkscreen-Regular.woff2') format('woff2'),
+         url('fonts/Silkscreen-Regular.ttf')   format('truetype');
+    font-weight: 400;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Silkscreen';
+    src: url('fonts/Silkscreen-Bold.woff2') format('woff2'),
+         url('fonts/Silkscreen-Bold.ttf')   format('truetype');
+    font-weight: 700;
+    font-display: swap;
+}
+:root {
+    /* Réservée aux très gros titres ponctuels (très large, à utiliser avec
+       parcimonie — jamais sur une phrase entière, seulement 2-3 mots). */
+    --font-pixel-display: 'Press Start 2P', var(--font-display, 'Cinzel', serif);
+    /* Pour les boutons, onglets, libellés de HUD, nombres (XP/pièces/niveaux)
+       — plus compacte et lisible que Press Start 2P à petite taille. */
+    --font-pixel-ui: 'Silkscreen', var(--font-mono, monospace);
+}
+
+/* Coins "en escalier" façon boîte de dialogue de jeu 8-bit — technique CSS
+   pure (clip-path), sans image. Réutilisée sur les boutons, cartes et
+   modales du dashboard pour une cohérence visuelle façon RPG rétro. */
+.pixel-corners {
+    clip-path: polygon(
+        0 8px, 8px 8px, 8px 0,
+        calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px,
+        100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%,
+        8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px)
+    );
+}
+
+/* ==========================================================================
+   1. ACCUEIL (index.html)
+   ========================================================================== */
+
+/* --- Conteneur principal de la page d'accueil --- */
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;       /* Centre horizontalement */
+    justify-content: center;   /* Centre verticalement */
+    min-height: 100vh;         /* Occupe toute la hauteur de l'écran */
+    padding: 20px;
+    padding-bottom: 120px;     /* Laisse la place pour le footer + bouton */
+    position: relative;
+}
+
+/* --- Logo Principal — Effet Néon Doré + Scan --- */
+.logo {
+    margin-bottom: clamp(32px, 7vh, 64px); /* S'adapte à la hauteur de l'écran */
+    position: relative;
+    /* Apparition depuis le haut avec léger dé-zoom et flou */
+    animation: logoEntrance 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.logo-text {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(2.6rem, 8vw, 5rem); /* Police adaptative (responsive) */
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: clamp(6px, 1.5vw, 16px);
+    position: relative;
+    text-transform: uppercase;
+    /* Multiples ombres pour un effet d'éclat lumineux (Glow) intense */
+    text-shadow:
+        0 0 8px rgba(200, 168, 75, 0.9),
+        0 0 30px rgba(200, 168, 75, 0.5),
+        0 0 80px rgba(200, 168, 75, 0.2),
+        0 4px 0 rgba(0, 0, 0, 0.5),
+        4px 4px 20px rgba(0, 0, 0, 0.8);
+    /* Pulsation lumineuse continue */
+    animation: logoPulse 4s ease-in-out infinite;
+}
+
+/* Logo officiel (Image/Logo V2 finale.png) — remplace .logo-text sur index.html.
+   Le halo doré est simulé avec drop-shadow (contrairement à text-shadow, ça
+   respecte la transparence du PNG au lieu de dessiner un rectangle). */
+.logo-image {
+    display: block;
+    width: clamp(200px, 34vw, 320px);
+    height: auto;
+    margin: 0 auto;
+    animation: logoImagePulse 4s ease-in-out infinite;
+}
+
+/* Ligne de scan animée qui descend sur le logo (effet sci-fi/magique) */
+.logo-text::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+    /* Dégradé brillant au centre, transparent sur les bords */
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(200, 168, 75, 0.8) 40%,
+        rgba(255, 255, 255, 1) 50%,
+        rgba(200, 168, 75, 0.8) 60%,
+        transparent 100%);
+    border-radius: 2px;
+    animation: logoScan 3s ease-in-out infinite;
+    box-shadow: 0 0 12px rgba(200, 168, 75, 0.8);
+}
+
+/* Sous-titre discret sous le logo */
+.logo::after {
+    content: '— EDUQUEZ-VOUS EN JOUANT —';
+    display: block;
+    text-align: center;
+    font-family: 'Rajdhani', monospace;
+    font-size: clamp(0.6rem, 1.5vw, 0.85rem);
+    letter-spacing: clamp(4px, 1vw, 8px);
+    color: rgba(200, 168, 75, 0.55);
+    margin-top: 10px;
+    text-shadow: 0 0 10px rgba(200, 168, 75, 0.3);
+}
+
+/* --- Menu de Navigation (Accueil) --- */
+.menu {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(18px, 3.5vh, 36px);
+    width: 100%;
+    max-width: 440px; /* Limite la largeur sur grand écran */
+    /* Le menu apparaît après le logo (délai de 0.3s) */
+    animation: menuEntrance 1s 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Dimensions spécifiques des boutons sur l'accueil (plus gros) */
+.menu-button {
+    padding: clamp(16px, 2.8vh, 26px) clamp(24px, 5vw, 52px);
+    font-size: clamp(0.85rem, 1.8vw, 1.05rem);
+    border-radius: 0;
+    letter-spacing: 1.5px;
+    border-width: 2px !important; /* Contour net façon pixel-art, plus épais que le 1px des variantes */
+    clip-path: polygon(0 8px, 8px 8px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px));
+    /* Ombre pixel dure (décalée, sans flou), en plus des lueurs propres à
+       chaque variante ci-dessous — remplace la sensation "verre" par un
+       rendu "cartouche de jeu" plus proche de Codédex. Retirée au clic
+       pour simuler un bouton qui s'enfonce. */
+    box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.45);
+}
+.menu-button:active {
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0.45) !important; /* !important : doit primer sur le glow de :hover pendant le clic */
+}
+
+/* Bouton JOUER (Primaire) — Vert forêt dominant */
+.menu-button.primary {
+    background: rgba(45, 80, 22, 0.45);
+    border: 1px solid rgba(74, 124, 89, 0.4);
+    border-top-color: rgba(107, 202, 130, 0.4); /* Reflet lumineux haut */
+    box-shadow:
+         5px 5px 0 rgba(0, 0, 0, 0.45),
+        0 2px 0 rgba(107, 202, 130, 0.12) inset,
+        0 -1px 0 rgba(0, 0, 0, 0.3) inset,
+        0 10px 40px rgba(0, 0, 0, 0.55),
+        0 0 20px rgba(74, 124, 89, 0.15);
+}
+
+.menu-button.primary:hover {
+    background: rgba(60, 105, 30, 0.6);
+    border-color: rgba(107, 202, 130, 0.55);
+    border-top-color: rgba(107, 202, 130, 0.6);
+    box-shadow:
+         5px 5px 0 rgba(0, 0, 0, 0.45),
+        0 2px 0 rgba(107, 202, 130, 0.15) inset,
+        0 -1px 0 rgba(0, 0, 0, 0.3) inset,
+        0 20px 60px rgba(0, 0, 0, 0.6),
+        0 0 35px rgba(74, 124, 89, 0.3),
+        0 0 80px rgba(74, 124, 89, 0.1);
+    text-shadow: 0 0 20px rgba(107, 202, 130, 0.6), 0 2px 8px rgba(0,0,0,0.9);
+}
+
+/* Bouton OPTIONS (Défaut) — Brun/Or */
+.menu-button:not(.primary):not(.secondary):not(.danger) {
+    background: rgba(107, 68, 35, 0.38);
+    border: 1px solid rgba(200, 168, 75, 0.25);
+    border-top-color: rgba(200, 168, 75, 0.4);
+    box-shadow:
+         5px 5px 0 rgba(0, 0, 0, 0.45),
+        0 2px 0 rgba(255, 255, 255, 0.08) inset,
+        0 -1px 0 rgba(0, 0, 0, 0.3) inset,
+        0 10px 40px rgba(0, 0, 0, 0.55),
+        0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.menu-button:not(.primary):not(.secondary):not(.danger):hover {
+    background: rgba(140, 90, 45, 0.55);
+    border-color: rgba(200, 168, 75, 0.5);
+    border-top-color: rgba(200, 168, 75, 0.65);
+    box-shadow:
+         5px 5px 0 rgba(0, 0, 0, 0.45),
+        0 2px 0 rgba(200, 168, 75, 0.12) inset,
+        0 -1px 0 rgba(0, 0, 0, 0.3) inset,
+        0 20px 60px rgba(0, 0, 0, 0.6),
+        0 0 30px rgba(200, 168, 75, 0.2);
+    text-shadow: 0 0 18px rgba(200, 168, 75, 0.5), 0 2px 8px rgba(0,0,0,0.9);
+}
+
+/* Bouton SE CONNECTER (Secondaire) — Bleu acier */
+.menu-button.secondary {
+    background: rgba(74, 92, 124, 0.38);
+    border: 1px solid rgba(120, 150, 200, 0.3);
+    border-top-color: rgba(150, 185, 230, 0.4);
+    box-shadow:
+         5px 5px 0 rgba(0, 0, 0, 0.45),
+        0 2px 0 rgba(255, 255, 255, 0.08) inset,
+        0 -1px 0 rgba(0, 0, 0, 0.3) inset,
+        0 10px 40px rgba(0, 0, 0, 0.55),
+        0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.menu-button.secondary:hover {
+    background: rgba(90, 110, 150, 0.55);
+    border-color: rgba(150, 185, 230, 0.55);
+    border-top-color: rgba(180, 210, 255, 0.6);
+    box-shadow:
+         5px 5px 0 rgba(0, 0, 0, 0.45),
+        0 2px 0 rgba(180, 210, 255, 0.1) inset,
+        0 -1px 0 rgba(0, 0, 0, 0.3) inset,
+        0 20px 60px rgba(0, 0, 0, 0.6),
+        0 0 30px rgba(74, 92, 124, 0.3);
+    text-shadow: 0 0 18px rgba(150, 185, 230, 0.6), 0 2px 8px rgba(0,0,0,0.9);
+}
+
+/* Bouton QUITTER (Danger) — Rouge intense */
+.menu-button.danger {
+    background: rgba(100, 30, 30, 0.38);
+    border: 1px solid rgba(200, 80, 80, 0.3);
+    border-top-color: rgba(220, 110, 110, 0.4);
+    box-shadow:
+         5px 5px 0 rgba(0, 0, 0, 0.45),
+        0 2px 0 rgba(255, 255, 255, 0.08) inset,
+        0 -1px 0 rgba(0, 0, 0, 0.3) inset,
+        0 10px 40px rgba(0, 0, 0, 0.55),
+        0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.menu-button.danger:hover {
+    background: rgba(130, 45, 45, 0.55);
+    border-color: rgba(220, 100, 100, 0.55);
+    border-top-color: rgba(240, 130, 130, 0.6);
+    box-shadow:
+         5px 5px 0 rgba(0, 0, 0, 0.45),
+        0 2px 0 rgba(240, 130, 130, 0.1) inset,
+        0 -1px 0 rgba(0, 0, 0, 0.3) inset,
+        0 20px 60px rgba(0, 0, 0, 0.6),
+        0 0 30px rgba(139, 58, 58, 0.3);
+    text-shadow: 0 0 18px rgba(240, 130, 130, 0.6), 0 2px 8px rgba(0,0,0,0.9);
+}
+
+/* --- Écran de Sortie (clic sur Quitter) --- */
+.exit-message {
+    text-align: center;
+    animation: fadeIn 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.exit-title {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.8rem, 5vw, 3.2rem);
+    color: #fff;
+    text-shadow: 0 0 20px rgba(200, 168, 75, 0.6), 3px 3px 8px rgba(0,0,0,0.8);
+    margin-bottom: 28px;
+    letter-spacing: 3px;
+}
+
+.exit-subtitle {
+    font-family: 'Rajdhani', monospace;
+    font-size: clamp(1rem, 2.5vw, 1.5rem);
+    color: rgba(255, 255, 255, 0.75);
+    letter-spacing: 2px;
+}
+
+/* --- Animations Locales (Accueil) --- */
+@keyframes logoPulse {
+    0%, 100% {
+        text-shadow:
+            0 0 8px rgba(200, 168, 75, 0.9),
+            0 0 30px rgba(200, 168, 75, 0.5),
+            0 0 80px rgba(200, 168, 75, 0.2),
+            0 4px 0 rgba(0, 0, 0, 0.5),
+            4px 4px 20px rgba(0, 0, 0, 0.8);
+    }
+    50% { /* Pic de luminosité (Glow max) */
+        text-shadow:
+            0 0 12px rgba(200, 168, 75, 1),
+            0 0 50px rgba(200, 168, 75, 0.7),
+            0 0 120px rgba(200, 168, 75, 0.3),
+            0 4px 0 rgba(0, 0, 0, 0.5),
+            4px 4px 20px rgba(0, 0, 0, 0.8);
+    }
+}
+
+/* Équivalent de logoPulse pour l'image du logo (drop-shadow au lieu de
+   text-shadow, pour respecter la transparence du PNG). */
+@keyframes logoImagePulse {
+    0%, 100% {
+        filter: drop-shadow(0 0 10px rgba(200, 168, 75, 0.6)) drop-shadow(0 4px 14px rgba(0, 0, 0, 0.6));
+    }
+    50% {
+        filter: drop-shadow(0 0 26px rgba(200, 168, 75, 0.9)) drop-shadow(0 4px 14px rgba(0, 0, 0, 0.6));
+    }
+}
+
+@keyframes logoScan {
+    0%   { top: -4px; opacity: 0; }
+    5%   { opacity: 1; }
+    95%  { opacity: 1; }
+    100% { top: 105%; opacity: 0; }
+}
+
+@keyframes logoEntrance {
+    from { opacity: 0; transform: translateY(-30px) scale(0.9); filter: blur(8px); }
+    to   { opacity: 1; transform: translateY(0)      scale(1);   filter: blur(0); }
+}
+
+@keyframes menuEntrance {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Responsive (Accueil) --- */
+@media (max-width: 768px) {
+    .menu-button {
+        font-size: 1.05rem;
+        padding: 15px 20px;
+        letter-spacing: 1.5px;
+    }
+    .logo-text { letter-spacing: 4px; }
+}
+
+@media (max-height: 600px) {
+    .logo { margin-bottom: 12px; }
+    .menu { gap: 10px; }
+    .menu-button { padding: 11px 18px; font-size: 0.95rem; }
+    .logo::after { display: none; } /* Cache le sous-titre si manque de place */
+}
+
+
+/* ==========================================================================
+   2. OPTIONS (options.html)
+   ========================================================================== */
+
+/* --- Panneau Principal (Glassmorphisme) --- */
+.options-container {
+    width: 100%;
+    max-width: 620px;
+    background: rgba(8, 14, 24, 0.72);
+    /* backdrop-filter: floute l'arrière plan derrière le panneau */
+    backdrop-filter: blur(32px) saturate(1.5);
+    -webkit-backdrop-filter: blur(32px) saturate(1.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-top: 1px solid rgba(255,255,255,0.22);
+    border-radius: 28px;
+    padding: clamp(28px, 4.5vw, 50px);
+    box-shadow:
+        0 2px 0 rgba(255,255,255,0.08) inset,
+        0 32px 80px rgba(0,0,0,0.7),
+        0 0 60px rgba(200,168,75,0.06);
+    animation: panelSlideIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+    position: relative;
+    /* Pour les petits écrans : ajoute un scroll interne au lieu de déborder sous le footer */
+    max-height: 85vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Coins décoratifs dorés (en haut à gauche et en bas à droite) */
+.options-container::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 60px; height: 60px;
+    background: linear-gradient(135deg, rgba(200,168,75,0.3) 0%, transparent 60%);
+    border-top-left-radius: 28px;
+}
+.options-container::after {
+    content: '';
+    position: absolute;
+    bottom: 0; right: 0;
+    width: 60px; height: 60px;
+    background: linear-gradient(315deg, rgba(200,168,75,0.2) 0%, transparent 60%);
+    border-bottom-right-radius: 28px;
+}
+
+/* En-tête "⚙ OPTIONS" */
+.options-header {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.6rem, 4vw, 2.5rem);
+    font-weight: 900;
+    color: #fff;
+    text-shadow:
+        0 0 12px rgba(200,168,75,0.6),
+        0 0 35px rgba(200,168,75,0.25),
+        3px 3px 8px rgba(0,0,0,0.9);
+    margin-bottom: clamp(24px, 4vh, 44px);
+    text-align: center;
+    padding-bottom: clamp(14px, 2.5vh, 24px);
+    border-bottom: 1px solid rgba(200,168,75,0.2);
+    letter-spacing: 4px;
+}
+
+/* --- Groupes et Libellés --- */
+.option-group {
+    margin-bottom: clamp(14px, 2.2vh, 24px);
+}
+
+.option-label {
+    display: block;
+    font-family: 'Rajdhani', monospace;
+    color: rgba(255,255,255,0.85);
+    font-size: clamp(1rem, 2.5vw, 1.15rem);
+    font-weight: 600;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.8);
+}
+
+/* --- Sliders de Volume (Range Input) --- */
+.slider-container {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 16px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-top-color: rgba(255,255,255,0.14);
+    border-radius: 14px;
+    box-shadow: 0 2px 0 rgba(255,255,255,0.05) inset;
+}
+
+.slider {
+    flex: 1;
+    height: 6px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 6px;
+    outline: none;
+    -webkit-appearance: none; /* Nécessaire pour styliser les sliders sur Webkit (Chrome/Safari) */
+    appearance: none;
+    transition: background 0.25s;
+    cursor: pointer;
+}
+
+.slider:hover { background: rgba(255,255,255,0.14); }
+
+/* Le "pouce" (thumb) du slider = le bouton qu'on fait glisser (Webkit) */
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    background: linear-gradient(135deg, #8fd4a0 0%, #4a7c59 100%);
+    border: 2px solid rgba(255,255,255,0.5);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(74,124,89,0.5), 0 2px 6px rgba(0,0,0,0.5);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 20px rgba(107,202,130,0.7), 0 3px 10px rgba(0,0,0,0.5);
+}
+
+/* Pouce du slider pour Firefox */
+.slider::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    background: linear-gradient(135deg, #8fd4a0 0%, #4a7c59 100%);
+    border: 2px solid rgba(255,255,255,0.5);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(74,124,89,0.5);
+}
+
+/* Texte de la valeur du volume (ex: 75%) */
+.volume-value {
+    font-family: 'Cinzel', serif;
+    color: rgba(200,168,75,0.9);
+    font-weight: 700;
+    min-width: 48px;
+    text-align: right;
+    font-size: 1rem;
+    letter-spacing: 1px;
+    text-shadow: 0 0 8px rgba(200,168,75,0.4);
+}
+
+/* --- Checkboxes Personnalisées --- */
+/* La stratégie est de cacher l'input radio natif (display:none) et de
+   styliser un faux checkbox (.checkbox) avec un symbole (✓) dynamique */
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    padding: clamp(12px, 1.8vh, 18px) 16px;
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-top-color: rgba(255,255,255,0.13);
+    border-radius: 14px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Effet de brillance au survol */
+.checkbox-container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.04) 50%, transparent 60%);
+    transform: translateX(-100%) skewX(-15deg);
+    transition: transform 0.5s;
+}
+.checkbox-container:hover::before { transform: translateX(200%) skewX(-15deg); }
+
+.checkbox-container:hover {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.14);
+    transform: translateX(4px);
+    box-shadow: -3px 0 0 rgba(200,168,75,0.3);
+}
+
+/* Changement de style quand la case est cochée (:has() est supporté par les navs modernes) */
+.checkbox-container:has(input:checked) {
+    border-color: rgba(74,124,89,0.35);
+    border-top-color: rgba(107,202,130,0.4);
+    box-shadow: 0 0 14px rgba(74,124,89,0.1);
+}
+
+/* État désactivé (grisé) par JS si le son global est off */
+.checkbox-container.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.checkbox-container .option-label { margin: 0; }
+
+/* La "fausse" case carrée */
+.checkbox {
+    width: 32px;
+    height: 32px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-top-color: rgba(255,255,255,0.32);
+    border-radius: 10px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s;
+    flex: 0 0 auto;
+    box-shadow: 0 2px 0 rgba(255,255,255,0.06) inset;
+}
+
+.checkbox input { display: none; } /* Cache la case native */
+
+/* La coche "✓" */
+.checkbox-mark {
+    display: none; /* Cachée par défaut */
+    position: absolute;
+    inset: 0;
+    align-items: center;
+    justify-content: center;
+    color: #6bca82; /* Vert vif */
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-shadow: 0 0 12px rgba(107,202,130,0.8);
+}
+
+/* Si input:checked, la coche devient flex et lance l'animation (pop) */
+.checkbox input:checked + .checkbox-mark {
+    display: flex;
+    animation: checkPop 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Le fond de la fausse case devient vert si cochée */
+.checkbox-container:has(input:checked) .checkbox {
+    background: rgba(74,124,89,0.3);
+    border-color: rgba(107,202,130,0.5);
+    box-shadow: 0 0 14px rgba(74,124,89,0.35), 0 2px 0 rgba(107,202,130,0.1) inset;
+}
+
+/* --- Boutons d'Action (Options) --- */
+.options-buttons {
+    display: flex;
+    gap: 14px;
+    margin-top: clamp(22px, 3.5vh, 40px);
+}
+/* Les boutons normaux prennent la classe .option-button ou .menu-button de global.css,
+   plus des ajustements mineurs ci-dessous si nécessaire. */
+
+/* --- Animation Locale --- */
+@keyframes checkPop {
+    0%   { transform: scale(0) rotate(-15deg); opacity: 0; }
+    60%  { transform: scale(1.3) rotate(5deg);  opacity: 1; }
+    100% { transform: scale(1)   rotate(0);      opacity: 1; }
+}
+
+/* --- Responsive (Options) --- */
+@media (max-width: 768px) {
+    .options-container { padding: 22px; border-radius: 20px; }
+    .options-buttons { flex-direction: column; } /* Boutons l'un sous l'autre */
+}
+
+@media (max-height: 700px) {
+    .options-container { padding: 16px; }
+    .options-header { margin-bottom: 14px; padding-bottom: 10px; font-size: 1.4rem; }
+    .option-group { margin-bottom: 10px; }
+    .checkbox-container { padding: 9px 12px; }
+}
+
+
+/* ==========================================================================
+   3. LOGIN (login.html)
+   ========================================================================== */
+
+/* --- Panneau de Connexion/Inscription --- */
+.login-container {
+    width: 100%;
+    max-width: 490px;
+    background: rgba(8,14,24,0.72);
+    backdrop-filter: blur(32px) saturate(1.5);
+    -webkit-backdrop-filter: blur(32px) saturate(1.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-top: 1px solid rgba(255,255,255,0.22);
+    border-radius: 28px;
+    padding: clamp(28px, 5vw, 48px);
+    box-shadow:
+        0 2px 0 rgba(255,255,255,0.07) inset,
+        0 32px 80px rgba(0,0,0,0.7),
+        0 0 60px rgba(74,92,124,0.07);
+    animation: panelSlideIn 0.6s cubic-bezier(0.22,1,0.36,1) both;
+    position: relative;
+    /* Évite le débordement sur les petits écrans */
+    max-height: 85vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Coins décoratifs bleu acier */
+.login-container::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 55px; height: 55px;
+    background: linear-gradient(135deg, rgba(74,92,124,0.35) 0%, transparent 60%);
+    border-top-left-radius: 28px;
+}
+.login-container::after {
+    content: '';
+    position: absolute;
+    bottom: 0; right: 0;
+    width: 55px; height: 55px;
+    background: linear-gradient(315deg, rgba(74,92,124,0.2) 0%, transparent 60%);
+    border-bottom-right-radius: 28px;
+}
+
+/* Boîte descriptive au-dessus des inputs */
+.login-description {
+    text-align: center;
+    margin-bottom: 24px;
+    padding: 13px 18px;
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-top-color: rgba(255,255,255,0.13);
+    border-radius: 12px;
+}
+
+.login-description-text {
+    color: rgba(255,255,255,0.65);
+    font-size: 1.02rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* --- Inputs (Champs de saisie) --- */
+.login-input {
+    width: 100%;
+    padding: 15px 18px;
+    font-size: 1rem;
+    font-family: 'Rajdhani', monospace;
+    font-weight: 600;
+    letter-spacing: 1px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-top-color: rgba(255,255,255,0.18);
+    border-radius: 14px;
+    color: #fff;
+    margin-bottom: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 0 rgba(255,255,255,0.04) inset;
+}
+
+.login-input::placeholder {
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 0.5px;
+}
+
+/* Effet néon bleu acier au focus sur un champ */
+.login-input:focus {
+    outline: none;
+    border-color: rgba(150,185,230,0.55);
+    border-top-color: rgba(180,210,255,0.6);
+    background: rgba(255,255,255,0.07);
+    box-shadow:
+        0 2px 0 rgba(255,255,255,0.06) inset,
+        0 0 0 3px rgba(74,92,124,0.18),
+        0 0 20px rgba(74,92,124,0.2);
+}
+
+/* --- Ligne de séparation (- OU -) --- */
+.login-separator {
+    text-align: center;
+    margin: 20px 0;
+    position: relative;
+}
+/* Barres latérales */
+.login-separator::before,
+.login-separator::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 35%;
+    height: 1px;
+    background: rgba(255,255,255,0.1);
+}
+.login-separator::before { left: 0; }
+.login-separator::after  { right: 0; }
+
+.login-separator-text {
+    color: rgba(200,168,75,0.45);
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    letter-spacing: 3px;
+}
+
+/* --- Bouton Spécifique : Se connecter avec Google --- */
+.google-login-button {
+    width: 100%;
+    margin-bottom: 4px;
+    padding: 15px;
+    background: rgba(40,65,110,0.42); /* Bleu dominant Google */
+    border: 1px solid rgba(120,150,200,0.3);
+    border-top-color: rgba(150,185,230,0.42);
+    box-shadow: 0 2px 0 rgba(150,185,230,0.08) inset, 0 8px 24px rgba(0,0,0,0.5);
+}
+.google-login-button:hover {
+    background: rgba(60,90,150,0.58);
+    border-color: rgba(150,185,230,0.52);
+    border-top-color: rgba(180,210,255,0.65);
+    box-shadow: 0 14px 36px rgba(0,0,0,0.55), 0 0 24px rgba(74,92,124,0.25);
+    text-shadow: 0 0 14px rgba(150,185,230,0.5), 0 2px 6px rgba(0,0,0,0.9);
+}
+
+/* --- Onglets (Se connecter / Créer un compte) --- */
+.login-tabs {
+    display: flex;
+    gap: 4px;
+    margin: 12px 0 18px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 4px;
+    width: 100%;
+}
+
+.login-tab {
+    flex: 1;
+    padding: 10px 0;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.55);
+    font-family: inherit;
+    font-size: 0.92rem;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: background 0.25s, color 0.25s, box-shadow 0.25s;
+}
+
+/* Onglet actif (cliqué) → surlignage or */
+.login-tab.active {
+    background: rgba(255, 215, 0, 0.18);
+    color: #ffd700;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.18);
+}
+
+.login-tab:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* --- Panneau d'Information (quand l'utilisateur est connecté) --- */
+.user-info-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding: 14px 20px;
+    background: rgba(255, 215, 0, 0.08);
+    border: 1px solid rgba(255, 215, 0, 0.25);
+    border-radius: 14px;
+    width: 100%;
+    box-sizing: border-box;
+    animation: fadeIn 0.4s ease-in; /* Apparition douce par JS */
+}
+
+.user-info-text {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #ffd700;
+    margin: 0;
+    letter-spacing: 0.04em;
+}
+
+/* --- Responsive (Login) --- */
+@media (max-width: 768px) {
+    .login-container { padding: 22px; border-radius: 20px; }
+    .login-input { padding: 13px 16px; margin-bottom: 12px; }
+}
+@media (max-height: 600px) {
+    .login-container { padding: 16px; }
+    .login-input { padding: 10px 14px; margin-bottom: 10px; }
+}
+
+
+/* ==========================================================================
+   5. MAP (map.html)
+   ========================================================================== */
+
+/* --- Conteneur global, fixe la page à 100vh sans défilement --- */
+.subject-page {
+    position: relative;
+    z-index: 2;
+    width: 100vw;
+    height: 100vh;
+    min-height: 100vh;
+}
+
+/* --- En-tête (Nom de la matière + Boutons) --- */
+.map-header {
+    position: fixed;
+    top: 18px;
+    left: 18px;
+    right: 18px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    pointer-events: none; /* Pour pouvoir cliquer sur la map derrière */
+}
+
+.map-header > div {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    pointer-events: auto; /* Rétablit le clic sur l'en-tête */
+}
+
+.subject-icon {
+    font-size: clamp(2.3rem, 6vw, 4.4rem);
+    filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.35));
+}
+
+.map-header h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.5rem, 5vw, 3rem);
+    color: #fff;
+    text-shadow:
+        0 0 12px rgba(200,168,75,0.7),
+        0 0 30px rgba(200,168,75,0.3),
+        3px 3px 0 rgba(85,40,0,0.6),
+        0 6px 16px rgba(0,0,0,0.7);
+    letter-spacing: 2px;
+}
+
+/* Bouton Retour (plus petit que celui de l'accueil) */
+.back-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 10px 18px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #fff;
+    background: rgba(100,30,30,0.55);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(200,80,80,0.35);
+    border-top-color: rgba(220,110,110,0.5);
+    border-radius: 12px;
+    box-shadow:
+        0 2px 0 rgba(220,110,110,0.1) inset,
+        0 6px 20px rgba(0,0,0,0.5),
+        0 0 14px rgba(139,58,58,0.15);
+    text-decoration: none;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+    pointer-events: auto;
+    transition: all 0.28s cubic-bezier(0.25,0.46,0.45,0.94);
+    position: relative;
+    overflow: hidden;
+}
+
+.back-button:hover {
+    background: rgba(130,45,45,0.7);
+    border-color: rgba(220,100,100,0.55);
+    border-top-color: rgba(240,130,130,0.65);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px rgba(0,0,0,0.55), 0 0 20px rgba(139,58,58,0.25);
+    text-shadow: 0 0 12px rgba(240,130,130,0.5), 0 2px 6px rgba(0,0,0,0.9);
+}
+
+/* --- Conteneur du Chemin et des Niveaux --- */
+.level-map {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    border: 0;
+    border-radius: 0;
+    overflow-y: auto;   /* v2.3 : la piste peut dépasser 100vh (jusqu'à 100 niveaux) */
+    overflow-x: hidden;
+    background: transparent;
+    /* Assombrit légèrement le bas de l'écran pour ancrer la route */
+    box-shadow: inset 0 -90px 90px rgba(11, 42, 18, 0.24);
+}
+
+/* Piste défilante contenant le chemin SVG, le personnage et les boutons de
+   niveau (générés par JS — voir buildLevelTrack dans app.js). La hauteur
+   est fixée dynamiquement selon TOTAL_LEVELS (inline style, voir JS). */
+.level-track {
+    position: relative;
+    width: 100%;
+}
+
+/* Illustration de l'îlot de la matière, très discrète, derrière le chemin
+   et les niveaux (z-index négatif) — purement décorative. */
+.subject-bg-island {
+    position: fixed; /* v2.3 : reste centré dans la fenêtre même quand .level-map défile */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -55%);
+    width: min(70vw, 640px);
+    height: auto;
+    opacity: 0.1;
+    filter: blur(1px) saturate(0.7);
+    pointer-events: none;
+    z-index: 0;
+    user-select: none;
+}
+
+/* --- Chemin SVG --- */
+.path {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+}
+.path path {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke; /* L'épaisseur ne varie pas si on redimensionne l'écran */
+}
+
+/* Couches du chemin (Superposition 3D) */
+.path-shadow {
+    stroke: rgba(84, 53, 21, 0.25);
+    stroke-width: 46px;
+    transform: translateY(8px); /* Décalé vers le bas pour l'ombre */
+}
+.path-ground {
+    stroke: #c8944f; /* Terre/Sable */
+    stroke-width: 38px;
+}
+.path-light {
+    stroke: rgba(238, 190, 103, 0.52); /* Reflet sur le dessus */
+    stroke-width: 22px;
+}
+
+/* --- Personnage CSS (Magicien) --- */
+.character {
+    position: absolute;
+    z-index: 20;
+    width: 50px;
+    height: 70px;
+    /* Origine au centre en bas pour s'aligner sur les coordonnées */
+    transform: translate(-50%, -100%);
+    /* Animation fluide lors du déplacement de niveau en niveau (géré par JS style.left/top) */
+    transition: left 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+                top 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+}
+
+/* Le corps sautille sur place en permanence */
+.character-body {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    animation: character-bounce 1.8s ease-in-out infinite;
+}
+
+.character-head {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 34px;
+    height: 34px;
+    background: radial-gradient(circle at 40% 35%, #ffe0b2, #ffb74d); /* Peau */
+    border-radius: 50%;
+    border: 3px solid #e09540;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+
+.character-eyes {
+    position: absolute;
+    top: 35%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+}
+
+.eye {
+    display: block;
+    width: 5px;
+    height: 6px;
+    background: #2d1600;
+    border-radius: 50%;
+    animation: blink 4s infinite; /* Clignement périodique */
+}
+
+.character-mouth {
+    position: absolute;
+    bottom: 7px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 8px;
+    height: 4px;
+    background: #c75030;
+    border-radius: 0 0 50% 50%; /* Sourit */
+}
+
+.character-hat {
+    position: absolute;
+    bottom: 36px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 18px solid transparent;
+    border-right: 18px solid transparent;
+    border-bottom: 30px solid #3949ab; /* Triangle bleu */
+    border-radius: 4px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.character-hat::before { /* Étoile sur le chapeau */
+    content: "⭐";
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    filter: drop-shadow(0 0 3px rgba(255, 235, 59, 0.8));
+}
+
+.character-hat::after { /* Rebord du chapeau */
+    content: "";
+    position: absolute;
+    top: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 42px;
+    height: 8px;
+    background: linear-gradient(to bottom, #5c6bc0, #3949ab);
+    border-radius: 50%;
+    border: 2px solid #283593;
+}
+
+.character-cape {
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 18px;
+    background: linear-gradient(to bottom, #5c6bc0, #3949ab);
+    border-radius: 0 0 12px 12px;
+    border: 2px solid #283593;
+    border-top: none;
+    animation: cape-wave 2s ease-in-out infinite; /* Ondule au vent */
+}
+
+.character-shadow {
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 8px;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 50%;
+    animation: shadow-pulse 1.8s ease-in-out infinite; /* Suit le sautillement */
+}
+
+/* --- Boutons de Niveaux (Level Dots) --- */
+
+/* État de base : Débloqué mais pas commencé (Doré/Sable) */
+.level-dot {
+    position: absolute;
+    z-index: 8;
+    display: grid;
+    place-items: center;
+    width: clamp(42px, 5vw, 58px);
+    height: clamp(42px, 5vw, 58px);
+    cursor: pointer;
+    color: #5f310e;
+    border: 4px solid #f8e190;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 32% 25%, rgba(255, 255, 255, 0.9) 0 9%, transparent 10%),
+        radial-gradient(circle at 50% 52%, #ffdf55 0 40%, #d59122 68%, #86531a 100%);
+    box-shadow:
+        inset 0 5px 0 rgba(255, 255, 255, 0.5),
+        inset 0 -8px 0 rgba(103, 57, 17, 0.22),
+        0 6px 0 #7c4f1e,
+        0 14px 16px rgba(44, 80, 27, 0.24);
+    transform: translate(-50%, -50%); /* Centré sur les coordonnées */
+    transition: transform 0.18s ease, filter 0.18s ease;
+}
+
+.level-number {
+    font-size: 1.1rem;
+    font-weight: bold;
+    line-height: 1;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Étiquettes des étoiles (injectées par JS, ex: ⭐⭐☆) */
+.level-stars-display {
+    position: absolute;
+    bottom: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.6rem;
+    white-space: nowrap;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+    letter-spacing: 1px;
+    min-height: 14px;
+}
+
+/* Survol d'un niveau jouable (s'élève) */
+.level-dot:hover:not(.locked),
+.level-dot.selected:not(.locked) {
+    transform: translate(-50%, calc(-50% - 8px)) scale(1.07);
+    filter: drop-shadow(0 0 12px rgba(255, 246, 124, 0.9));
+}
+
+/* État Verrouillé : Grisé (Classe ajoutée par JS) */
+.level-dot.locked {
+    cursor: not-allowed;
+    color: #8a8278;
+    border-color: #5a5550;
+    background:
+        radial-gradient(circle at 32% 25%, rgba(255, 255, 255, 0.12) 0 9%, transparent 10%),
+        radial-gradient(circle at 50% 52%, #4a4a4a 0 40%, #333333 68%, #1a1a1a 100%);
+    box-shadow:
+        inset 0 5px 0 rgba(255, 255, 255, 0.08),
+        inset 0 -8px 0 rgba(0, 0, 0, 0.35),
+        0 6px 0 #2a2a2a,
+        0 14px 16px rgba(0, 0, 0, 0.22);
+    filter: grayscale(80%) brightness(0.6);
+    opacity: 0.7;
+}
+
+.level-dot.locked .level-number { color: #777; text-shadow: none; }
+
+/* Tremble si on essaie de cliquer sur un verrouillé */
+.level-dot.locked:hover {
+    transform: translate(-50%, -50%);
+    filter: grayscale(80%) brightness(0.6);
+    animation: locked-shake 0.4s ease;
+}
+
+/* État Actif : Niveau courant en cours à faire (Bleu/Magique) */
+.level-dot.active {
+    color: #fff;
+    border-color: #b9ddff;
+    background:
+        radial-gradient(circle at 32% 25%, rgba(255, 255, 255, 0.9) 0 9%, transparent 10%),
+        radial-gradient(circle at 50% 52%, #4ea5ff 0 40%, #2868d8 68%, #17367e 100%);
+    box-shadow:
+        inset 0 5px 0 rgba(255, 255, 255, 0.55),
+        inset 0 -8px 0 rgba(16, 47, 107, 0.3),
+        0 6px 0 #174785,
+        0 14px 16px rgba(44, 80, 27, 0.24);
+    animation: active-glow 2s ease-in-out infinite; /* Pulse lumineuse */
+}
+
+/* État Complété : Réussi avec des étoiles (Vert) */
+.level-dot.completed {
+    color: #2d5a00;
+    border-color: #a8e66e;
+    background:
+        radial-gradient(circle at 32% 25%, rgba(255, 255, 255, 0.9) 0 9%, transparent 10%),
+        radial-gradient(circle at 50% 52%, #7ed321 0 40%, #5ba518 68%, #3d7a0a 100%);
+    box-shadow:
+        inset 0 5px 0 rgba(255, 255, 255, 0.55),
+        inset 0 -8px 0 rgba(30, 80, 10, 0.3),
+        0 6px 0 #2d5a05,
+        0 14px 16px rgba(44, 80, 27, 0.24);
+}
+.level-dot.completed .level-number { color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); }
+
+/* Positions calculées dynamiquement par JS (levelCoords, v2.3) — voir
+   buildLevelTrack dans app.js. Les anciennes règles .level-1..level-6 codées
+   en dur ont été retirées (jusqu'à 100 niveaux : plus question de les lister
+   une par une). */
+
+/* --- Modale de Complétion de Niveau --- */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(6px);
+    animation: fade-in 0.3s ease;
+}
+
+/* Utilisé par JS pour afficher/cacher : modal.hidden = true */
+.modal-overlay[hidden] { display: none; }
+
+.modal {
+    background: rgba(8,14,28,0.92);
+    backdrop-filter: blur(32px) saturate(1.5);
+    border: 1px solid rgba(200,168,75,0.3);
+    border-top: 1px solid rgba(200,168,75,0.55);
+    border-radius: 22px;
+    padding: 32px 36px;
+    text-align: center;
+    box-shadow:
+        0 2px 0 rgba(200,168,75,0.1) inset,
+        0 24px 70px rgba(0,0,0,0.75),
+        0 0 40px rgba(200,168,75,0.1);
+    max-width: 420px;
+    width: 90%;
+    animation: modal-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.modal h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.7rem;
+    font-weight: 900;
+    color: #fff;
+    text-shadow:
+        0 0 12px rgba(200,168,75,0.7),
+        0 0 30px rgba(200,168,75,0.3),
+        2px 2px 0 rgba(85,40,0,0.5);
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+}
+
+.modal-subtitle {
+    color: #b0c4de;
+    font-size: 0.95rem;
+    margin-bottom: 24px;
+}
+
+/* Les 3 boutons d'étoiles (simulation) */
+.modal-stars-choice {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+
+.star-choice {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 14px 18px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    cursor: pointer;
+    color: #fff;
+    transition: all 0.2s ease;
+}
+
+.star-choice:hover {
+    background: rgba(255, 217, 133, 0.2);
+    border-color: #ffd985; /* Or/Jaune vif */
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 8px 20px rgba(255, 217, 133, 0.2);
+}
+
+.star-choice span:first-child { font-size: 1.4rem; }
+.star-label { font-size: 0.75rem; color: #8aa; }
+
+/* Boutons d'action dans la modale */
+.modal-close-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    color: #aaa;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    margin-bottom: 10px;
+}
+.modal-close-btn:hover {
+    background: rgba(178, 67, 50, 0.4);
+    border-color: #b24332;
+    color: #fff;
+}
+
+.modal-reset-btn {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    border: 1px solid rgba(255, 80, 80, 0.3);
+    border-radius: 8px;
+    color: #ff6b6b;
+    cursor: pointer;
+    font-size: 0.78rem;
+    transition: all 0.2s ease;
+}
+.modal-reset-btn:hover {
+    background: rgba(255, 80, 80, 0.15);
+    border-color: #ff6b6b;
+}
+
+/* --- Animations Locales (Map) --- */
+@keyframes character-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+@keyframes shadow-pulse {
+    0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.25; }
+    50% { transform: translateX(-50%) scale(0.7); opacity: 0.15; }
+}
+
+@keyframes cape-wave {
+    0%, 100% { transform: translateX(-50%) skewX(0deg); }
+    25% { transform: translateX(-50%) skewX(5deg); }
+    75% { transform: translateX(-50%) skewX(-5deg); }
+}
+
+@keyframes blink {
+    0%, 45%, 55%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(0.1); }
+}
+
+@keyframes active-glow {
+    0%, 100% {
+        box-shadow:
+            inset 0 5px 0 rgba(255, 255, 255, 0.55),
+            inset 0 -8px 0 rgba(16, 47, 107, 0.3),
+            0 6px 0 #174785,
+            0 14px 16px rgba(44, 80, 27, 0.24),
+            0 0 15px rgba(78, 165, 255, 0.3);
+    }
+    50% {
+        box-shadow:
+            inset 0 5px 0 rgba(255, 255, 255, 0.55),
+            inset 0 -8px 0 rgba(16, 47, 107, 0.3),
+            0 6px 0 #174785,
+            0 14px 16px rgba(44, 80, 27, 0.24),
+            0 0 25px rgba(78, 165, 255, 0.6);
+    }
+}
+
+@keyframes locked-shake {
+    0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+    20% { transform: translate(-50%, -50%) rotate(-3deg); }
+    40% { transform: translate(-50%, -50%) rotate(3deg); }
+    60% { transform: translate(-50%, -50%) rotate(-2deg); }
+    80% { transform: translate(-50%, -50%) rotate(2deg); }
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes modal-pop {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* --- Responsive (Map) --- */
+@media (max-width: 720px) {
+    .map-header {
+        top: 12px; left: 12px; right: 12px;
+        align-items: flex-start;
+        flex-direction: column;
+    }
+    .level-map { min-height: 100vh; }
+
+    /* Réduction du personnage */
+    .character { width: 40px; height: 56px; }
+    .character-head { width: 28px; height: 28px; }
+    .character-hat {
+        border-left: 14px solid transparent;
+        border-right: 14px solid transparent;
+        border-bottom: 24px solid #3949ab;
+        bottom: 30px;
+    }
+    .character-hat::after { width: 34px; height: 6px; top: 22px; }
+    .character-hat::before { font-size: 8px; top: 10px; }
+    .character-cape { width: 24px; height: 14px; }
+
+    .modal { padding: 24px 20px; }
+    .modal-stars-choice { flex-direction: column; }
+}
+
+
+/* ==========================================================================
+   6. DASHBOARD (dashboard.html)
+   Tableau de bord avec matières, carte de progression, quiz et boutique.
+   Adapté d'edu_maj.html vers la charte graphique du projet.
+   ========================================================================== */
+
+/* --- HUD (Barre de statut du joueur) --- */
+.dash-hud {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(8, 14, 24, 0.7);
+    border: 1px solid rgba(200, 168, 75, 0.18);
+    border-top-color: rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+    padding: 10px 18px 10px 10px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.06) inset,
+        0 8px 28px rgba(0, 0, 0, 0.5);
+    margin-top: 16px;
+    animation: panelSlideIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.dash-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    box-shadow:
+        0 0 0 2px rgba(255, 255, 255, 0.08),
+        0 0 18px 2px var(--dash-skin, #4fd8c4);
+    background: radial-gradient(circle at 35% 30%, var(--dash-skin, #4fd8c4), #0a1628 75%);
+    color: var(--c-night);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.dash-hud-mid {
+    flex: 1;
+    min-width: 0;
+}
+
+.dash-hud-level {
+    font-family: var(--font-pixel-ui);
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.dash-hud-level .mono {
+    font-family: var(--font-pixel-ui);
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.dash-xp-track {
+    height: 7px;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.08);
+    margin-top: 4px;
+    overflow: hidden;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+}
+
+.dash-xp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--c-green-light), var(--c-gold));
+    border-radius: 99px;
+    transition: width 0.5s ease;
+    box-shadow: 0 0 8px rgba(107, 202, 130, 0.4);
+}
+
+.dash-coins {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid #000;
+    padding: 8px 14px;
+    border-radius: 0;
+    font-family: var(--font-pixel-ui);
+    font-weight: 700;
+    font-size: 13px;
+    white-space: nowrap;
+    color: var(--c-gold);
+    text-shadow: 0 0 6px rgba(200, 168, 75, 0.3);
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+    clip-path: polygon(0 5px, 5px 5px, 5px 0, calc(100% - 5px) 0, calc(100% - 5px) 5px, 100% 5px, 100% calc(100% - 5px), calc(100% - 5px) calc(100% - 5px), calc(100% - 5px) 100%, 5px 100%, 5px calc(100% - 5px), 0 calc(100% - 5px));
+}
+
+.dash-coin-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fff3c9, var(--c-gold) 70%);
+    box-shadow: 0 0 6px rgba(200, 168, 75, 0.5);
+}
+
+/* --- Onglets de navigation (Matières | Boutique) --- */
+.dash-tabs {
+    display: flex;
+    gap: 8px;
+    margin: 22px 0 24px;
+}
+
+.dash-tab {
+    font-family: var(--font-pixel-ui);
+    font-weight: 700;
+    font-size: 13px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 2px solid #000;
+    color: rgba(255, 255, 255, 0.6);
+    padding: 10px 18px;
+    border-radius: 0; /* Les coins pixel remplacent l'arrondi */
+    cursor: pointer;
+    transition: transform 0.1s ease, background 0.25s ease, color 0.25s ease;
+    letter-spacing: 0.5px;
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.6);
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5); /* Ombre "3D" façon bouton pixel */
+    clip-path: polygon(0 6px, 6px 6px, 6px 0, calc(100% - 6px) 0, calc(100% - 6px) 6px, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 6px calc(100% - 6px), 0 calc(100% - 6px));
+}
+.dash-tab:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5); }
+
+.dash-tab.active {
+    background: rgba(200, 168, 75, 0.2);
+    color: var(--c-gold);
+    border-color: rgba(200, 168, 75, 0.5);
+    box-shadow: 0 0 14px rgba(200, 168, 75, 0.15);
+    text-shadow: 0 0 10px rgba(200, 168, 75, 0.4);
+}
+
+.dash-tab:hover:not(.active) {
+    border-color: rgba(200, 168, 75, 0.4);
+    color: rgba(255, 255, 255, 0.8);
+    transform: translateY(-1px);
+}
+
+.dash-tab:focus-visible {
+    outline: 2px solid var(--c-green-light);
+    outline-offset: 2px;
+}
+
+/* --- En-tête du dashboard --- */
+.dash-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.dash-brand {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    animation: logoEntrance 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.dash-brand b {
+    font-family: 'Cinzel', serif;
+    font-size: 20px;
+    letter-spacing: 0.02em;
+    color: #fff;
+    text-shadow: 0 0 8px rgba(200, 168, 75, 0.5);
+}
+
+.dash-brand span {
+    font-family: 'Cinzel', serif;
+    color: var(--c-gold);
+    font-size: 20px;
+    text-shadow: 0 0 12px rgba(200, 168, 75, 0.5);
+}
+
+/* --- Section eyebrow (petit titre au-dessus) --- */
+.dash-eyebrow {
+    font-family: 'Rajdhani', monospace;
+    color: var(--c-green-light);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    text-shadow: 0 0 8px rgba(107, 202, 130, 0.3);
+}
+
+/* --- Grille des matières (Dashboard) --- */
+.dash-subjects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.dash-subject-card {
+    background: rgba(8, 14, 24, 0.58);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 2px solid rgba(0, 0, 0, 0.5);
+    border-top: 2px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px; /* Coins plus francs, façon boîtier de jeu — inspiré de Codédex */
+    padding: 18px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.05) inset,
+        3px 3px 0 rgba(0, 0, 0, 0.35),
+        0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.dash-subject-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 30%, rgba(255, 255, 255, 0.06) 50%, transparent 70%);
+    transform: translateX(-120%) translateY(-120%);
+    transition: transform 0.5s ease;
+}
+
+.dash-subject-card:hover::before {
+    transform: translateX(120%) translateY(120%);
+}
+
+.dash-subject-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(200, 168, 75, 0.4);
+    box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.08) inset,
+        0 16px 40px rgba(0, 0, 0, 0.55),
+        0 0 20px rgba(200, 168, 75, 0.1);
+}
+
+.dash-subject-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(200, 168, 75, 0.1);
+    border: 1px solid rgba(200, 168, 75, 0.15);
+    font-size: 20px;
+    margin-bottom: 12px;
+}
+
+.dash-subject-card h3 {
+    font-family: 'Cinzel', serif;
+    font-size: 15px;
+    margin-bottom: 10px;
+    color: #fff;
+    text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.7);
+    letter-spacing: 0.5px;
+}
+
+/* Barre de progression compacte (v2.3) — remplace les pastilles unitaires
+   .dash-dots, impraticables au-delà de quelques niveaux (100 désormais). */
+.dash-progress-track {
+    height: 6px;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.12);
+    overflow: hidden;
+}
+
+.dash-progress-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: var(--c-green-light);
+    box-shadow: 0 0 6px rgba(107, 202, 130, 0.5);
+    transition: width 0.4s ease;
+}
+
+.dash-subject-card .dash-pct {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    font-family: var(--font-pixel-ui);
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+/* --- Vue Carte (Map) --- */
+.dash-back-map {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    font-family: 'Rajdhani', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+    padding: 4px 0;
+    transition: color 0.2s;
+    letter-spacing: 0.5px;
+}
+
+.dash-back-map:hover {
+    color: var(--c-gold);
+    text-shadow: 0 0 8px rgba(200, 168, 75, 0.3);
+}
+
+.dash-map-wrap {
+    background: rgba(8, 14, 24, 0.58);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(200, 168, 75, 0.12);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 18px;
+    padding: 10px 6px 26px;
+    margin-top: 6px;
+    box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.05) inset,
+        0 12px 40px rgba(0, 0, 0, 0.5);
+    animation: panelSlideIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.dash-map-title {
+    padding: 16px 20px 0;
+}
+
+.dash-map-title .dash-eyebrow {
+    margin-bottom: 2px;
+}
+
+.dash-map-title h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 20px;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(200, 168, 75, 0.5), 2px 2px 6px rgba(0, 0, 0, 0.7);
+    letter-spacing: 1px;
+}
+
+/* SVG nodes */
+.dash-node-group {
+    cursor: pointer;
+}
+
+.dash-node-label {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    fill: #fff;
+    font-weight: 700;
+}
+
+.dash-node-sub {
+    font-family: 'Rajdhani', monospace;
+    font-size: 10px;
+    fill: rgba(255, 255, 255, 0.5);
+}
+
+/* --- Modal Quiz --- */
+.dash-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(6, 13, 26, 0.8);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    padding: 16px;
+    animation: fade-in 0.3s ease;
+}
+
+.dash-modal {
+    background: rgba(8, 14, 24, 0.92);
+    backdrop-filter: blur(32px) saturate(1.5);
+    -webkit-backdrop-filter: blur(32px) saturate(1.5);
+    border: 2px solid rgba(0, 0, 0, 0.7);
+    border-top: 2px solid rgba(200, 168, 75, 0.45);
+    border-radius: 8px; /* Coins plus francs, façon fenêtre de dialogue de RPG rétro */
+    padding: 28px;
+    max-width: 480px;
+    width: 100%;
+    box-shadow:
+        0 2px 0 rgba(200, 168, 75, 0.08) inset,
+        5px 5px 0 rgba(0, 0, 0, 0.4),
+        0 24px 70px rgba(0, 0, 0, 0.7),
+        0 0 40px rgba(200, 168, 75, 0.08);
+    animation: modal-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Coins décoratifs dorés */
+.dash-modal::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, rgba(200, 168, 75, 0.2) 0%, transparent 60%);
+    border-top-left-radius: 8px;
+}
+
+.dash-modal::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(315deg, rgba(200, 168, 75, 0.15) 0%, transparent 60%);
+    border-bottom-right-radius: 8px;
+}
+
+.dash-modal .dash-eyebrow {
+    margin-bottom: 8px;
+}
+
+.dash-modal h3 {
+    font-family: 'Cinzel', serif;
+    font-size: 18px;
+    line-height: 1.5;
+    margin-bottom: 18px;
+    color: #fff;
+    text-shadow: 0 0 8px rgba(200, 168, 75, 0.3), 1px 1px 4px rgba(0, 0, 0, 0.7);
+}
+
+.dash-option-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top-color: rgba(255, 255, 255, 0.16);
+    color: #fff;
+    border-radius: 14px;
+    padding: 13px 16px;
+    margin-bottom: 9px;
+    cursor: pointer;
+    font-family: 'Rajdhani', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    letter-spacing: 0.5px;
+    position: relative;
+    overflow: hidden;
+}
+
+.dash-option-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.05) 50%, transparent 70%);
+    transform: translateX(-100%) skewX(-15deg);
+    transition: transform 0.45s;
+}
+
+.dash-option-btn:hover:not(:disabled)::before {
+    transform: translateX(200%) skewX(-15deg);
+}
+
+.dash-option-btn:hover:not(:disabled) {
+    border-color: rgba(200, 168, 75, 0.45);
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateX(3px);
+}
+
+.dash-option-btn.correct {
+    background: rgba(45, 80, 22, 0.3);
+    border-color: var(--c-green-light);
+    box-shadow: 0 0 12px rgba(107, 202, 130, 0.15);
+}
+
+.dash-option-btn.wrong {
+    background: rgba(139, 58, 58, 0.3);
+    border-color: var(--c-red);
+    box-shadow: 0 0 12px rgba(139, 58, 58, 0.15);
+}
+
+.dash-option-btn:disabled {
+    cursor: default;
+}
+
+/* Feedback (bonne/mauvaise réponse) */
+.dash-feedback {
+    margin-top: 14px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    font-family: 'Rajdhani', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.5;
+    letter-spacing: 0.3px;
+}
+
+.dash-feedback.ok {
+    background: rgba(45, 80, 22, 0.2);
+    border: 1px solid rgba(107, 202, 130, 0.35);
+    color: #fff;
+}
+
+.dash-feedback.ko {
+    background: rgba(139, 58, 58, 0.2);
+    border: 1px solid rgba(139, 58, 58, 0.35);
+    color: #fff;
+}
+
+/* Récompenses */
+.dash-reward-line {
+    display: flex;
+    gap: 14px;
+    margin-top: 12px;
+    font-family: 'Rajdhani', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--c-gold);
+    text-shadow: 0 0 6px rgba(200, 168, 75, 0.3);
+}
+
+/* Boutons d'action du modal */
+.dash-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.dash-btn-primary {
+    background: #4a7c2e;
+    border: 2px solid #000;
+    color: #fff;
+    font-family: var(--font-pixel-ui);
+    font-weight: 700;
+    padding: 11px 22px;
+    border-radius: 0;
+    cursor: pointer;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    transition: transform 0.1s ease, background 0.2s ease;
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.55);
+    clip-path: polygon(0 6px, 6px 6px, 6px 0, calc(100% - 6px) 0, calc(100% - 6px) 6px, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 6px calc(100% - 6px), 0 calc(100% - 6px));
+}
+
+.dash-btn-primary:hover {
+    background: #5c9938;
+}
+.dash-btn-primary:active {
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0.55);
+}
+
+.dash-btn-ghost {
+    background: rgba(0, 0, 0, 0.25);
+    border: 2px solid #000;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 11px 18px;
+    border-radius: 0;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: var(--font-pixel-ui);
+    font-weight: 700;
+    transition: transform 0.1s ease, color 0.2s ease;
+    letter-spacing: 0.5px;
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.4);
+    clip-path: polygon(0 6px, 6px 6px, 6px 0, calc(100% - 6px) 0, calc(100% - 6px) 6px, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 6px calc(100% - 6px), 0 calc(100% - 6px));
+}
+
+.dash-btn-ghost:hover {
+    color: #fff;
+}
+.dash-btn-ghost:active {
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0.4);
+}
+
+/* --- Boutique de Skins --- */
+.dash-skins-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.dash-skin-card {
+    background: rgba(8, 14, 24, 0.58);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 2px solid rgba(0, 0, 0, 0.5);
+    border-top: 2px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    padding: 20px;
+    text-align: center;
+    box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.05) inset,
+        3px 3px 0 rgba(0, 0, 0, 0.35),
+        0 8px 24px rgba(0, 0, 0, 0.4);
+    transition: all 0.3s ease;
+}
+
+.dash-skin-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(200, 168, 75, 0.3);
+    box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.06) inset,
+        0 14px 36px rgba(0, 0, 0, 0.5);
+}
+
+.dash-skin-orb {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    margin: 0 auto 12px;
+    box-shadow:
+        0 0 0 2px rgba(255, 255, 255, 0.08),
+        0 0 22px 4px var(--sc);
+    background: radial-gradient(circle at 35% 30%, var(--sc), #0a1628 75%);
+}
+
+.dash-skin-name {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 4px;
+    color: #fff;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.dash-skin-cost {
+    font-family: 'Rajdhani', monospace;
+    font-size: 12px;
+    color: var(--c-gold);
+    margin-bottom: 12px;
+    text-shadow: 0 0 6px rgba(200, 168, 75, 0.3);
+}
+
+.dash-skin-btn {
+    width: 100%;
+    padding: 10px 0;
+    border-radius: 0;
+    font-family: var(--font-pixel-ui);
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    border: 2px solid #000;
+    letter-spacing: 0.5px;
+    transition: transform 0.1s ease, background 0.2s ease;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.4);
+}
+.dash-skin-btn:active:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0.4);
+}
+
+.dash-skin-btn.buy {
+    background: rgba(200, 168, 75, 0.3);
+    border: 1px solid rgba(200, 168, 75, 0.4);
+    color: var(--c-gold);
+}
+
+.dash-skin-btn.buy:hover:not(:disabled) {
+    background: rgba(200, 168, 75, 0.45);
+    box-shadow: 0 0 12px rgba(200, 168, 75, 0.2);
+    transform: translateY(-1px);
+}
+
+.dash-skin-btn.buy:disabled {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.3);
+    cursor: not-allowed;
+}
+
+.dash-skin-btn.equip {
+    background: transparent;
+    border: 1px solid rgba(107, 202, 130, 0.4);
+    color: var(--c-green-light);
+}
+
+.dash-skin-btn.equip:hover {
+    background: rgba(45, 80, 22, 0.2);
+    box-shadow: 0 0 12px rgba(107, 202, 130, 0.15);
+    transform: translateY(-1px);
+}
+
+.dash-skin-btn.equipped {
+    background: rgba(45, 80, 22, 0.2);
+    border: 1px solid rgba(107, 202, 130, 0.35);
+    color: var(--c-green-light);
+    cursor: default;
+}
+
+/* --- Bouton Retour au Menu (Dashboard) --- */
+.dash-back-btn {
+    display: block;
+    width: min(320px, calc(100% - 40px));
+    margin: 32px auto 0;
+    padding: 14px 24px;
+    background: rgba(100, 30, 30, 0.38);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(200, 80, 80, 0.3);
+    border-top-color: rgba(220, 110, 110, 0.4);
+    border-radius: 16px;
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #fff;
+    text-align: center;
+    text-decoration: none;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+    cursor: pointer;
+    transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    box-shadow:
+        0 2px 0 rgba(220, 110, 110, 0.08) inset,
+        0 8px 28px rgba(0, 0, 0, 0.55);
+    position: relative;
+    overflow: hidden;
+}
+
+.dash-back-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.08) 50%, transparent 70%);
+    transform: translateX(-100%) skewX(-15deg);
+    transition: transform 0.5s;
+}
+
+.dash-back-btn:hover::before {
+    transform: translateX(200%) skewX(-15deg);
+}
+
+.dash-back-btn:hover {
+    background: rgba(130, 45, 45, 0.55);
+    border-color: rgba(220, 100, 100, 0.55);
+    border-top-color: rgba(240, 130, 130, 0.6);
+    transform: translateY(-3px);
+    box-shadow:
+        0 14px 36px rgba(0, 0, 0, 0.6),
+        0 0 20px rgba(139, 58, 58, 0.25);
+    text-shadow: 0 0 12px rgba(240, 130, 130, 0.5), 0 2px 6px rgba(0, 0, 0, 0.9);
+}
+
+/* --- Note de pied de page du dashboard --- */
+.dash-footer-note {
+    margin-top: 36px;
+    color: rgba(255, 255, 255, 0.3);
+    font-family: 'Rajdhani', monospace;
+    font-size: 12px;
+    text-align: center;
+    line-height: 1.6;
+    letter-spacing: 0.5px;
+}
+
+/* --- Responsive (Dashboard) --- */
+@media (max-width: 768px) {
+    .dash-hud {
+        padding: 8px 12px 8px 8px;
+    }
+    .dash-avatar {
+        width: 38px;
+        height: 38px;
+        font-size: 12px;
+    }
+    .dash-tabs {
+        overflow-x: auto;
+    }
+    .dash-subjects-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    .dash-skins-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    .dash-modal {
+        padding: 20px 16px;
+    }
+    .dash-back-btn {
+        width: calc(100% - 20px);
+    }
+}
+
+@media (max-width: 480px) {
+    .dash-subjects-grid {
+        grid-template-columns: 1fr;
+    }
+    .dash-skins-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dash-subject-card,
+    .dash-xp-fill,
+    .dash-skin-card {
+        transition: none;
+    }
+}
+
+/* =============================================================================
+   AJOUTS v2.1 — Multi-types de question (quiz-engine.js) + badges
+   ============================================================================= */
+
+/* Pseudo affiché dans le header du dashboard quand un compte est connecté */
+.dash-user-greeting {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--c-gold);
+    font-weight: 600;
+}
+
+/* --- Vrai / Faux : mêmes boutons que le QCM, disposés en 2 colonnes --- */
+.dash-vf-btn {
+    display: inline-block;
+    width: calc(50% - 6px);
+    text-align: center;
+    font-weight: 700;
+}
+.dash-vf-btn:first-child { margin-right: 6px; }
+
+/* --- Réponse courte --- */
+.dash-short-input {
+    width: 100%;
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(200, 168, 75, 0.3);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--c-white);
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+.dash-short-input:focus { outline: none; border-color: var(--c-gold); }
+.dash-short-submit { width: 100%; }
+
+/* --- Texte à trous --- */
+.dash-blanks-sentence {
+    line-height: 2.2;
+    font-size: 15px;
+    color: var(--c-white);
+}
+.dash-blank-input {
+    width: 110px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(200, 168, 75, 0.35);
+    border-radius: 6px;
+    padding: 4px 8px;
+    color: var(--c-white);
+    font-size: 14px;
+    text-align: center;
+    margin: 0 3px;
+}
+.dash-blank-input:focus { outline: none; border-color: var(--c-gold); }
+.dash-blank-input.correct { border-color: var(--c-green-light); background: rgba(107, 202, 130, 0.15); }
+.dash-blank-input.wrong { border-color: var(--c-red); background: rgba(139, 58, 58, 0.2); }
+.dash-blanks-submit { width: 100%; margin-top: 12px; }
+
+/* --- Association ("drag & drop" en cliquer-associer) --- */
+.dash-dd-hint {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.55);
+    margin-bottom: 10px;
+}
+.dash-dd-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.dash-dd-chip {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(200, 168, 75, 0.3);
+    border-radius: 999px;
+    padding: 8px 14px;
+    color: var(--c-white);
+    font-size: 13px;
+    cursor: pointer;
+}
+.dash-dd-chip.selected { border-color: var(--c-gold); background: rgba(200, 168, 75, 0.2); }
+.dash-dd-chip.placed { opacity: 0.4; cursor: default; }
+.dash-dd-target {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px dashed rgba(200, 168, 75, 0.35);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: var(--c-white);
+    font-size: 13px;
+    margin-bottom: 6px;
+    cursor: pointer;
+}
+.dash-dd-drop {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--c-gold);
+    min-height: 14px;
+}
+.dash-dd-submit { width: 100%; margin-top: 6px; }
+.dash-dd-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* --- Badges (onglet Succès) --- */
+.dash-badge-card { position: relative; }
+.dash-badge-card.locked { opacity: 0.45; filter: grayscale(0.6); }
+.dash-badge-icon { font-size: 34px; margin-bottom: 10px; }
+.dash-badge-desc {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.4;
+    margin-top: 4px;
+}
+
+/* =============================================================================
+   AJOUTS v2.2 — Skins "personnage" (portraits au lieu d'un halo de couleur)
+   ============================================================================= */
+.dash-avatar img,
+.dash-skin-orb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
+}
+
+/* =============================================================================
+   9. POLISH v1.17 — RAFFINEMENTS VISUELS (couche appliquée en dernier)
+   -----------------------------------------------------------------------------
+   Objectifs de cette couche (sans changer l'identité du jeu, ni le logo) :
+   - Accessibilité : anneau de focus clavier visible sur TOUT élément interactif
+   - Confort de lecture : sélection de texte, scrollbar et footer plus lisibles
+   - Cohérence : les icônes emoji (Géographie, Chimie) reçoivent un socle lumineux
+     qui les intègre au même langage visuel que les îlots PNG
+   - Fidélité pixel-art : rendu net des illustrations (image-rendering)
+   - Corriger la collision footer / bouton "Retour au menu" sur jouer.html
+   ============================================================================= */
+
+/* --- Focus clavier (navigation au tabulateur) ---
+   Tous les éléments interactifs reçoivent un anneau doré net, cohérent avec
+   l'esthétique pixel-art (contraste garanti pour l'accessibilité WCAG). */
+.menu-button:focus-visible,
+.option-button:focus-visible,
+.niveau-pill:focus-visible,
+.matiere-card:focus-visible,
+.level-dot:focus-visible,
+.dash-tab:focus-visible,
+.dash-subject-card:focus-visible,
+.dash-skin-btn:focus-visible,
+.dash-option-btn:focus-visible,
+.dash-btn-primary:focus-visible,
+.dash-btn-ghost:focus-visible,
+.dash-dd-chip:focus-visible,
+.dash-dd-target:focus-visible,
+.dash-short-input:focus-visible,
+.dash-blank-input:focus-visible,
+.login-input:focus-visible,
+.return-button:focus-visible {
+    outline: 2px solid var(--c-gold);
+    outline-offset: 3px;
+}
+
+/* Les champs déjà stylés via :focus gardent leur bordure dorée, l'outline
+   s'ajoute en doublon sans gêner. */
+
+/* --- Sélection de texte --- */
+::selection {
+    background: rgba(200, 168, 75, 0.35);
+    color: #fff;
+}
+
+/* --- Scrollbar intégrée au thème --- */
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: rgba(6, 13, 26, 0.6); }
+::-webkit-scrollbar-thumb {
+    background: rgba(200, 168, 75, 0.25);
+    border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(200, 168, 75, 0.45); }
+
+/* --- Illustrations pixel-art : rendu net (pas d'interpolation floue) --- */
+img.matiere-icon,
+.logo-image,
+.dash-skin-orb img,
+.dash-avatar img {
+    image-rendering: pixelated;
+}
+
+/* --- Socle lumineux des matières en emoji (Géographie, Chimie) ---
+   Les îlots PNG ont une illustration riche ; les emojis seuls paraissaient
+   plats. Un disque dégradé + halo doré derrière l'emoji leur donne la même
+   présence visuelle dans la grille. */
+span.matiere-icon {
+    width: clamp(120px, 16vw, 150px);
+    aspect-ratio: 1 / 1;
+    display: grid;
+    place-items: center;
+    font-size: clamp(2.6rem, 5vw, 3.4rem);
+    line-height: 1;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 32% 25%, rgba(255,255,255,0.14) 0 18%, transparent 20%),
+        radial-gradient(circle at 50% 60%, rgba(74,124,89,0.5) 0 45%, rgba(10,22,40,0.9) 78%);
+    border: 3px solid rgba(200,168,75,0.4);
+    box-shadow:
+        inset 0 4px 0 rgba(255,255,255,0.18),
+        inset 0 -6px 0 rgba(0,0,0,0.35),
+        0 6px 0 rgba(0,0,0,0.45),
+        0 0 26px rgba(200,168,75,0.18);
+}
+span.matiere-icon::before { content: none; }
+
+/* --- Ornement du titre de sélection de niveau --- */
+.niveau-title::after {
+    content: '';
+    display: block;
+    width: min(220px, 60%);
+    height: 2px;
+    margin: 12px auto 0;
+    background: linear-gradient(90deg, transparent, rgba(200,168,75,0.55), transparent);
+}
+
+/* --- Footer : lisible et sans collision avec le bouton Retour --- */
+.footer {
+    bottom: 10px;
+    color: rgba(200, 168, 75, 0.45);
+    z-index: 101; /* Au-dessus du bouton Retour (z-index 100) en cas de contact */
+}
+
+/* Le bouton Retour au menu gagne de l'air : moins large, plus haut au-dessus
+   du footer, et la grille réserve l'espace qu'il occupe pour que la dernière
+   rangée de cartes ne passe jamais derrière lui. */
+.retour-button-matieres {
+    bottom: 44px;
+    width: auto;
+    min-width: 230px;
+    padding: 12px 30px;
+}
+.matieres-grid { padding-bottom: 0; }
+main.container:has(.retour-button-matieres) { padding-bottom: 130px; }
+
+/* --- focus-visible des cartes matières du dashboard (clavier) --- */
+.dash-subject-card:focus-visible {
+    border-color: var(--c-gold);
+    transform: translateY(-4px);
+}
+
+/* --- Niveaux verrouillés : curseur cohérent même au clavier --- */
+.level-dot.locked:focus-visible { cursor: not-allowed; }
+
+/* --- Tab actif : renforcement discret de l'indicateur --- */
+.dash-tab.active {
+    box-shadow:
+        0 0 14px rgba(200, 168, 75, 0.15),
+        0 -2px 0 rgba(200, 168, 75, 0.55) inset;
+}
+
+/* --- Respect des préférences système : réduire les animations ---
+   (vertige, épilepsie photosensible, batterie). Les éléments restent
+   entièrement utilisables, sans mouvements permanents. */
+@media (prefers-reduced-motion: reduce) {
+    .star, .cloud, .matiere-icon, .logo-image, .level-dot.active,
+    .dash-map-wrap circle, .dash-node-group circle {
+        animation: none !important;
+    }
+    *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}
+
+/* --- Impression : inutile d'imprimer le fond spatial --- */
+@media print {
+    .background, .stars, .clouds { display: none; }
+}
+
+/* =========================================================================
+   v1.21 — DERNIER MOT RESPONSIVE (petits téléphones ≤ 600px)
+   Placé TOUT À LA FIN du fichier pour surmonter la couche « polish »
+   (ex : .matieres-grid { padding-bottom: 0 } ligne ~2842). Ce bloc doit
+   toujours rester dernier : tout correctif mobile ultérieur s'ajoute ici.
+   ========================================================================= */
+@media (max-width: 600px) {
+    /* Espace sous la grille des matières pour le bouton « Retour » flottant
+       et le pied de page — sinon les dernières cartes sont recouvertes. */
+    .matieres-grid.visible {
+        padding-bottom: 150px;
+    }
+}
+
+/* --- Mode �conomie d'�nergie --- */
+body.eco-mode-active * { animation: none !important; }
+body.eco-mode-active .stars, body.eco-mode-active .clouds { display: none !important; }
+
+/* S�lecteur de classe dans le dashboard */
+.dash-grade-select { background: rgba(8,14,24,0.6); color: var(--text); border: 1px solid rgba(255,255,255,0.18); border-radius: 8px; padding: 4px 10px; font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 600; outline: none; cursor: pointer; transition: border-color 0.2s; margin-left: 15px; }
+.dash-grade-select:hover { border-color: var(--gold); }
+.dash-grade-select option { background: #070b1a; color: white; }
+

@@ -1,0 +1,17 @@
+{
+  "name": "EDUQUEST",
+  "short_name": "EDUQUEST",
+  "description": "Le jeu de révision pour le collège et le lycée. 10 matières, des centaines de niveaux.",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#070b1a",
+  "theme_color": "#070b1a",
+  "icons": [
+    {
+      "src": "Image/logo.webp",
+      "sizes": "512x512",
+      "type": "image/webp",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,389 @@
+/* admin.css — EDUQUEST v1.21.0 (feuille autonome, n'importe pas global.css) */
+/* Polices locales : identiques à global.css — hébergées dans fonts/ */
+@font-face { font-family: 'Cinzel'; font-style: normal; font-weight: 700; font-display: swap; src: url('fonts/cinzel-700-subset0.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Cinzel'; font-style: normal; font-weight: 700; font-display: swap; src: url('fonts/cinzel-700-subset1.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Cinzel'; font-style: normal; font-weight: 900; font-display: swap; src: url('fonts/cinzel-900-subset2.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Cinzel'; font-style: normal; font-weight: 900; font-display: swap; src: url('fonts/cinzel-900-subset3.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 400; font-display: swap; src: url('fonts/rajdhani-400-subset0.woff2') format('woff2'); unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09; }
+@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 400; font-display: swap; src: url('fonts/rajdhani-400-subset1.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 400; font-display: swap; src: url('fonts/rajdhani-400-subset2.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 600; font-display: swap; src: url('fonts/rajdhani-600-subset3.woff2') format('woff2'); unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09; }
+@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 600; font-display: swap; src: url('fonts/rajdhani-600-subset4.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 600; font-display: swap; src: url('fonts/rajdhani-600-subset5.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 700; font-display: swap; src: url('fonts/rajdhani-700-subset6.woff2') format('woff2'); unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09; }
+@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 700; font-display: swap; src: url('fonts/rajdhani-700-subset7.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 700; font-display: swap; src: url('fonts/rajdhani-700-subset8.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+    --night: #070b1a;
+    --deep: #0d1330;
+    --ocean: #1a2552;
+    --ocean-2: #22306a;
+    --ink: #e9edff;
+    --muted: #9aa7d8;
+    --gold: #c8a84b;
+    --gold-soft: #e6cf8a;
+    --cyan: #5fd4e6;
+    --red: #ef5350;
+    --red-deep: #b3312f;
+    --green: #66bb6a;
+    --radius: 14px;
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+html { font-size: 16px; }
+
+body {
+    min-height: 100vh;
+    font-family: 'Rajdhani', 'Segoe UI', system-ui, sans-serif;
+    color: var(--ink);
+    background:
+        radial-gradient(1200px 600px at 80% -10%, rgba(95, 212, 230, 0.10), transparent 60%),
+        radial-gradient(900px 500px at -10% 110%, rgba(200, 168, 75, 0.10), transparent 55%),
+        linear-gradient(160deg, #0b1026 0%, var(--night) 60%, #0a0e22 100%);
+    background-attachment: fixed;
+}
+
+/* Petites « étoiles » fixes en fond */
+body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+        radial-gradient(1px 1px at 12% 22%, #fff 50%, transparent 50%),
+        radial-gradient(1px 1px at 68% 12%, #fff 45%, transparent 45%),
+        radial-gradient(1.5px 1.5px at 40% 78%, #cfe9ff 40%, transparent 40%),
+        radial-gradient(1px 1px at 88% 60%, #fff 50%, transparent 50%),
+        radial-gradient(1px 1px at 24% 88%, #d9ecff 50%, transparent 50%),
+        radial-gradient(1px 1px at 55% 34%, #fff 40%, transparent 40%);
+    pointer-events: none;
+    opacity: 0.6;
+    z-index: 0;
+}
+
+body > * { position: relative; z-index: 1; }
+
+/* --------------------------------------------------------------------------
+   BARRE SUPÉRIEURE
+   -------------------------------------------------------------------------- */
+.adm-top {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+    padding: 16px 26px;
+    background: rgba(13, 19, 48, 0.72);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(200, 168, 75, 0.25);
+    position: sticky; top: 0; z-index: 20;
+}
+.adm-brand { display: flex; align-items: center; gap: 14px; }
+.adm-logo {
+    font-size: 30px; width: 54px; height: 54px; display: grid; place-items: center;
+    background: linear-gradient(145deg, var(--ocean-2), var(--deep));
+    border: 1px solid rgba(200, 168, 75, 0.5);
+    border-radius: 14px; box-shadow: var(--shadow);
+}
+.adm-brand h1 {
+    font-family: 'Cinzel', serif; font-size: 20px; letter-spacing: 2px;
+    color: var(--gold-soft); text-shadow: 0 0 12px rgba(200, 168, 75, 0.4);
+}
+.adm-brand p { color: var(--muted); font-size: 13px; letter-spacing: 1px; text-transform: uppercase; }
+.adm-top-right { display: flex; align-items: center; gap: 12px; }
+.adm-mode {
+    font-size: 12px; padding: 4px 10px; border-radius: 999px;
+    border: 1px solid var(--cyan); color: var(--cyan); letter-spacing: 0.5px;
+}
+.adm-mode.api { border-color: var(--gold); color: var(--gold-soft); }
+
+/* --------------------------------------------------------------------------
+   BOUTONS
+   -------------------------------------------------------------------------- */
+.adm-btn {
+    font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 0.5px;
+    border: 1px solid var(--gold); color: #1c1607;
+    background: linear-gradient(160deg, var(--gold-soft), var(--gold));
+    padding: 8px 16px; border-radius: 10px; cursor: pointer;
+    text-decoration: none; display: flex; justify-content: center; align-items: center; gap: 6px; width: 100%;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+}
+.adm-btn:hover { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(200, 168, 75, 0.35); }
+.adm-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+.adm-btn-ghost {
+    background: transparent; color: var(--ink);
+    border-color: rgba(154, 167, 216, 0.4);
+}
+.adm-btn-ghost:hover { border-color: var(--gold); color: var(--gold-soft); }
+.adm-btn-danger { background: linear-gradient(160deg, #ff8a80, var(--red-deep)); border-color: var(--red); color: #fff; }
+.adm-btn-danger:hover { box-shadow: 0 6px 16px rgba(239, 83, 80, 0.35); }
+.adm-btn-sm { padding: 4px 10px; font-size: 11px; border-radius: 8px; }
+.adm-btn-ok { background: linear-gradient(160deg, #8ce99a, #2f9e44); border-color: var(--green); color: #062b0c; }
+
+/* --------------------------------------------------------------------------
+   CONTENEURS
+   -------------------------------------------------------------------------- */
+.adm-main { max-width: 1080px; margin: 0 auto; padding: 26px 22px 80px; }
+
+.adm-card {
+    background: rgba(13, 19, 48, 0.72);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(154, 167, 216, 0.18);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 22px;
+    animation: admFade 0.25s ease;
+}
+.adm-card + .adm-card { margin-top: 18px; }
+.adm-card h2 {
+    font-family: 'Cinzel', serif; font-size: 17px; letter-spacing: 1px;
+    color: var(--gold-soft); margin-bottom: 14px;
+}
+.adm-card h2 small { font-family: 'Rajdhani', sans-serif; color: var(--muted); font-weight: 400; letter-spacing: 0; margin-left: 8px; }
+
+.adm-note {
+    border: 1px solid rgba(95, 212, 230, 0.35); background: rgba(95, 212, 230, 0.08);
+    border-radius: 10px; padding: 10px 14px; font-size: 14px; color: #cfeef6;
+    margin-bottom: 14px; line-height: 1.45;
+}
+.adm-note.warn { border-color: rgba(200, 168, 75, 0.45); background: rgba(200, 168, 75, 0.08); color: var(--gold-soft); }
+.adm-note.danger { border-color: rgba(239, 83, 80, 0.5); background: rgba(239, 83, 80, 0.08); color: #ffcdd2; }
+
+/* Statistiques en haut du tableau de bord */
+.adm-stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px;
+}
+.adm-stat {
+    background: rgba(13, 19, 48, 0.72); border: 1px solid rgba(154, 167, 216, 0.18);
+    border-radius: var(--radius); padding: 14px 16px; text-align: center;
+}
+.adm-stat b { display: block; font-family: 'Cinzel', serif; font-size: 26px; color: var(--gold-soft); }
+.adm-stat span { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+/* --------------------------------------------------------------------------
+   CONNEXION / CRÉATION DU PREMIER ADMIN
+   -------------------------------------------------------------------------- */
+.adm-gate { max-width: 460px; margin: 8vh auto 0; }
+.adm-gate .adm-card { padding: 30px; }
+.adm-gate h2 { text-align: center; font-size: 20px; margin-bottom: 4px; }
+.adm-gate .adm-gate-sub { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+.adm-gate-switch { text-align: center; margin-top: 16px; font-size: 14px; color: var(--muted); }
+.adm-gate-switch a { color: var(--cyan); cursor: pointer; text-decoration: underline; }
+
+/* --------------------------------------------------------------------------
+   FORMULAIRES
+   -------------------------------------------------------------------------- */
+.adm-form { display: flex; flex-direction: column; gap: 12px; }
+.adm-form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.adm-form-row > * { flex: 1 1 140px; }
+.adm-field { display: flex; flex-direction: column; gap: 4px; }
+.adm-field > label { font-size: 12px; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; }
+.adm-input, .adm-select, .adm-textarea {
+    background: rgba(7, 11, 26, 0.6);
+    border: 1px solid rgba(154, 167, 216, 0.35);
+    color: var(--ink); border-radius: 8px;
+    padding: 8px 12px; font-size: 15px; font-family: inherit;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease;
+    width: 100%;
+}
+.adm-input:focus, .adm-select:focus, .adm-textarea:focus {
+    outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(200, 168, 75, 0.15);
+}
+.adm-textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
+.adm-hint { font-size: 12px; color: var(--muted); line-height: 1.4; }
+.adm-error { color: #ffcdd2; font-size: 14px; min-height: 18px; }
+
+/* --------------------------------------------------------------------------
+   ONGLETS
+   -------------------------------------------------------------------------- */
+.adm-tabs {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;
+    border-bottom: 1px solid rgba(154, 167, 216, 0.15); padding-bottom: 0;
+}
+.adm-tab {
+    font-family: 'Cinzel', serif; font-size: 13.5px; letter-spacing: 0.5px;
+    background: transparent; border: 1px solid transparent; border-bottom: none;
+    color: var(--muted); padding: 10px 18px; cursor: pointer;
+    border-radius: 10px 10px 0 0; transition: color 0.12s ease, background 0.12s ease;
+}
+.adm-tab:hover { color: var(--ink); }
+.adm-tab.active {
+    color: var(--gold-soft); background: rgba(13, 19, 48, 0.85);
+    border-color: rgba(154, 167, 216, 0.18);
+    box-shadow: inset 0 2px 0 var(--gold);
+}
+
+/* --------------------------------------------------------------------------
+   TABLEAUX
+   -------------------------------------------------------------------------- */
+.adm-table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+.adm-table th {
+    text-align: left; font-size: 12px; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--muted); padding: 8px 10px; border-bottom: 1px solid rgba(154, 167, 216, 0.2);
+}
+.adm-table td { padding: 9px 10px; border-bottom: 1px solid rgba(154, 167, 216, 0.1); vertical-align: middle; }
+.adm-table tr:last-child td { border-bottom: none; }
+.adm-table .num { text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.adm-badge {
+    display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+    padding: 2px 9px; border-radius: 999px; text-transform: uppercase;
+}
+.adm-badge-system { background: rgba(95, 212, 230, 0.15); color: var(--cyan); border: 1px solid rgba(95, 212, 230, 0.4); }
+.adm-badge-custom { background: rgba(200, 168, 75, 0.15); color: var(--gold-soft); border: 1px solid rgba(200, 168, 75, 0.4); }
+.adm-badge-admin { background: rgba(239, 83, 80, 0.15); color: #ffab91; border: 1px solid rgba(239, 83, 80, 0.4); }
+.adm-badge-eleve { background: rgba(102, 187, 106, 0.12); color: #a5d6a7; border: 1px solid rgba(102, 187, 106, 0.35); }
+.adm-badge-you { background: rgba(255, 255, 255, 0.08); color: var(--ink); border: 1px dashed rgba(255, 255, 255, 0.35); }
+.adm-badge-type { background: rgba(34, 48, 106, 0.8); color: #cdd6f4; border: 1px solid rgba(154, 167, 216, 0.3); }
+
+.adm-row-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.adm-ico-btn {
+    border: 1px solid rgba(154, 167, 216, 0.3); background: transparent; color: var(--ink);
+    border-radius: 8px; padding: 4px 8px; cursor: pointer; font-size: 13px;
+    transition: border-color 0.12s ease, background 0.12s ease;
+}
+.adm-ico-btn:hover { border-color: var(--gold); background: rgba(200, 168, 75, 0.12); }
+.adm-ico-btn.danger:hover { border-color: var(--red); background: rgba(239, 83, 80, 0.12); }
+.adm-ico-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* --------------------------------------------------------------------------
+   MATIÈRES : liste + détail
+   -------------------------------------------------------------------------- */
+.adm-split { display: grid; grid-template-columns: 300px 1fr; gap: 18px; align-items: start; }
+@media (max-width: 860px) { .adm-split { grid-template-columns: 1fr; } }
+
+.adm-subject-list { display: flex; flex-direction: column; gap: 6px; }
+.adm-subject-item {
+    display: flex; align-items: center; gap: 10px; text-align: left; cursor: pointer;
+    background: rgba(7, 11, 26, 0.35); border: 1px solid rgba(154, 167, 216, 0.14);
+    border-radius: 10px; padding: 9px 12px; color: var(--ink); font-size: 15px; font-family: inherit;
+    transition: border-color 0.12s ease, background 0.12s ease;
+}
+.adm-subject-item:hover { border-color: rgba(200, 168, 75, 0.5); }
+.adm-subject-item.active { border-color: var(--gold); background: rgba(200, 168, 75, 0.1); }
+.adm-subject-item .icon { font-size: 20px; width: 26px; text-align: center; }
+.adm-subject-item .name { flex: 1; font-weight: 600; }
+.adm-subject-item .count { color: var(--muted); font-size: 12px; }
+
+.adm-lesson-row { border: 1px solid rgba(154, 167, 216, 0.12); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; background: rgba(7, 11, 26, 0.25); }
+.adm-lesson-row .head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.adm-lesson-row .head .t { font-weight: 700; }
+.adm-lesson-row .head .q { color: var(--muted); font-size: 13px; flex: 1; min-width: 140px; }
+.adm-lesson-preview { margin-top: 8px; border-top: 1px dashed rgba(154, 167, 216, 0.15); padding-top: 8px; font-size: 13px; color: var(--muted); }
+.adm-lesson-preview b { color: var(--green); }
+.adm-lesson-preview .wrong { color: var(--muted); }
+
+/* Éditeur de leçon */
+.adm-editor { border: 1px solid rgba(200, 168, 75, 0.35); background: rgba(200, 168, 75, 0.05); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+.adm-editor h3 { font-family: 'Cinzel', serif; font-size: 15px; color: var(--gold-soft); margin-bottom: 12px; }
+.adm-opt-row { display: flex; gap: 8px; align-items: center; }
+.adm-opt-row .adm-input { flex: 1; }
+.adm-correct-tag { font-size: 11px; color: var(--green); white-space: nowrap; }
+
+/* --------------------------------------------------------------------------
+   MISE EN PAGE DIVERSE
+   -------------------------------------------------------------------------- */
+.adm-toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.adm-right { margin-left: auto; }
+.adm-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 760px) { .adm-grid-2 { grid-template-columns: 1fr; } }
+.adm-empty { text-align: center; color: var(--muted); padding: 26px 0; font-size: 15px; }
+.adm-back { display: inline-flex; align-items: center; gap: 6px; color: var(--cyan); cursor: pointer; font-size: 14px; margin-bottom: 12px; text-decoration: none; }
+.adm-back:hover { text-decoration: underline; }
+
+/* Petit bloc « aperçu » des questions */
+.adm-preview { font-size: 13.5px; line-height: 1.6; color: #dbe2ff; }
+
+/* Toast */
+.adm-toast {
+    position: fixed; bottom: 22px; right: 22px; z-index: 100;
+    background: rgba(13, 19, 48, 0.95); border: 1px solid var(--gold);
+    color: var(--ink); padding: 12px 18px; border-radius: 12px; font-size: 15px;
+    box-shadow: var(--shadow); max-width: 340px;
+    opacity: 0; transform: translateY(12px); pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.adm-toast.show { opacity: 1; transform: translateY(0); }
+.adm-toast.ok { border-color: var(--green); }
+.adm-toast.err { border-color: var(--red); }
+
+@keyframes admFade {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   v1.21 — RESPONSIVE MOBILE DU PANNEAU (téléphones ≤ 700px)
+   Objectifs : onglets en barre défilable, tableaux scrollables, formulaires
+   pleine largeur, zones tactiles confortables. Vérifié à 360px de large.
+   ========================================================================== */
+
+/* En-tête : le bloc brand et les boutons s'empilent proprement */
+@media (max-width: 700px) {
+    .adm-top {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 14px 14px 12px;
+    }
+    .adm-top-right { margin-left: 0; }
+
+    /* Corps : marges réduites mais respirantes */
+    .adm-main { padding: 18px 12px 90px; }
+
+    /* Statistiques : 2 colonnes fixes au lieu de cartes trop étroites */
+    .adm-stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .adm-stat b { font-size: 21px; }
+
+    /* Onglets : barre horizontale DÉFILABLE (scroller au doigt) — les 5 onglets
+       tiennent sur une ligne et l'onglet actif reste bien visible. */
+    .adm-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 6px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* esthétique : pas de scrollbar sous les onglets */
+        margin-bottom: 16px;
+    }
+    .adm-tabs::-webkit-scrollbar { display: none; }
+    .adm-tab {
+        flex: 0 0 auto;
+        padding: 10px 14px;
+        font-size: 12.5px;
+    }
+
+    /* Cartes et notes plus compactes */
+    .adm-card { padding: 16px 14px; }
+    .adm-note { padding: 10px 12px; font-size: 13.5px; }
+
+    /* Tableaux (niveaux, membres) : défilement horizontal au doigt + zones
+       tactiles plus grandes. Les inputs restent lisibles sans zoom. */
+    .adm-table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -14px; /* le scroll occupe toute la largeur de la carte */
+        padding: 0 14px;
+    }
+    .adm-table { min-width: 540px; } /* largeur naturelle : on scrolle plutôt que d'écraser */
+    .adm-table td { padding: 10px 8px; }
+    .adm-ico-btn { padding: 8px 11px; font-size: 14px; } /* cible tactile ≥ 40px */
+
+    /* Formulaires : champs pleine largeur (déjà empilés en colonne) */
+    .adm-input, .adm-select, .adm-textarea { width: 100%; font-size: 16px; } /* 16px = pas de zoom iOS */
+    .adm-toolbar { gap: 8px; }
+    .adm-toolbar .adm-btn { flex: 1 1 auto; text-align: center; padding: 12px 14px; }
+    .adm-btn { min-height: 44px; } /* cible tactile confortable */
+
+    /* Toast : bandeau en bas, pleine largeur, au-dessus des liens légaux */
+    .adm-toast {
+        left: 10px;
+        right: 10px;
+        bottom: 40px;
+        max-width: none;
+        text-align: center;
+    }
+
+    /* Rangées d'options (réponses QCM, aperçu, export…) : on garde la ligne
+       radio + réponse côte à côte, mais on autorise le repli du tag
+       « ✔ bonne réponse » et des boutons quand la place manque. */
+    .adm-opt-row { flex-wrap: wrap; }
+    .adm-opt-row .adm-btn { width: 100%; }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "eduquest-advanced",
+  "version": "1.21.0",
+  "description": "EDUQUEST — application française de révision gamifiée (6e → Terminale)",
+  "private": true,
+  "scripts": {
+    "test": "node tests/run-tests.js"
+  }
+}

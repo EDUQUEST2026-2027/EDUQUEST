@@ -1,0 +1,32 @@
+# robots.txt — EDUQUEST (v1.21.0)
+# Règles normatives d'exploration. Manifeste complet : voir llms.txt.
+
+User-agent: *
+Allow: /
+# Panneau d'administration : usage interne, pas d'indexation
+Disallow: /admin.html
+Disallow: /admin.js
+Disallow: /admin-store.js
+# Ressources binaires (aucune page à indexer)
+Disallow: /Musique/
+Disallow: /fonts/
+
+# Assistants IA et moteurs à réponses : bienvenue sur les pages publiques
+# (aucune donnée personnelle n'est exposée ; le site est 100 % statique).
+User-agent: GPTBot
+Allow: /
+Disallow: /admin.html
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /admin.html
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /admin.html
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /admin.html
+
+Sitemap: /sitemap.xml

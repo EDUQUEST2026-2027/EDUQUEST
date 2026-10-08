@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="fr">
+<!--
+  INDEX.HTML — EDUQUEST v2.0
+  Page d'accueil principale du jeu.
+
+  RÔLE :
+  C'est la première page que voit le joueur. Elle affiche le logo animé
+  du jeu et le menu de navigation avec 4 boutons :
+    - JOUER       → jouer.html (sélection du niveau scolaire)
+    - OPTIONS     → options.html (préférences)
+    - SE CONNECTER → login.html (connexion / inscription)
+    - QUITTER     → ferme l'onglet (géré dans app.js : initAccueil)
+
+  STRUCTURE :
+    .background  → fond dégradé spatial (CSS dans global.css)
+    .stars       → étoiles scintillantes générées par JS (createEnvironment)
+    .clouds      → nuages flottants générés par JS (createEnvironment)
+    #mainPage    → page principale avec logo + menu
+    #exitPage    → page affichée temporairement lors du clic sur Quitter
+
+  SCRIPTS :
+    db.js  → doit être chargé en premier (couche base de données)
+    app.js → moteur principal (chargé après db.js)
+
+  FONCTIONS JS ACTIVES SUR CETTE PAGE :
+    initGlobalMusic()    → prépare la musique de fond
+    createEnvironment()  → génère étoiles et nuages
+    updateFooterVersion() → affiche la version dans le footer
+    applyFullscreenSetting() → active le plein écran si option activée
+    initAccueil()        → gère le bouton #quitButton
+-->
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDUQUEST — Le jeu de révision pour le collège et le lycée</title>
+    <meta name="description" content="Apprends en t'amusant : 10 matières, 100 niveaux, quiz variés, XP, badges et avatars. 100 % gratuit, sans publicité, du 6ème à la Terminale.">
+    <!-- v1.21 : référencement & partage (moteurs, réseaux sociaux, assistants IA — voir bot.txt) -->
+    <meta name="theme-color" content="#0d1330">
+    <meta name="robots" content="index, follow">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="EDUQUEST">
+    <meta property="og:title" content="EDUQUEST — Le jeu de révision pour le collège et le lycée">
+    <meta property="og:description" content="Gravisse les îles du savoir : maths, français, SVT, histoire… 100 niveaux par matière, XP et badges. Gratuit et sans publicité.">
+    <meta property="og:image" content="Image/logo.webp">
+    <meta name="twitter:card" content="summary_large_image">
+    <!-- Icône de l'application dans l'onglet du navigateur -->
+    <link rel="icon" type="image/webp" href="Image/logo.webp">
+    <!-- Feuilles de style : global.css (partagé) + style.css (spécifique à cette page) -->
+    <link rel="stylesheet" href="global.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.webmanifest">
+</head>
+
+<body>
+    <!-- ================================================================
+         COUCHES D'ARRIÈRE-PLAN
+         Ces divs sont vides au chargement. JavaScript (createEnvironment)
+         y injecte dynamiquement les étoiles et les nuages animés.
+    ================================================================ -->
+    <div class="background"></div>       <!-- Fond dégradé statique (CSS pure) -->
+    <div class="stars" id="stars"></div> <!-- Conteneur des étoiles (rempli par JS) -->
+    <div class="clouds" id="clouds"></div> <!-- Conteneur des nuages (rempli par JS) -->
+
+    <!-- ================================================================
+         PAGE PRINCIPALE (#mainPage)
+         Affiche le logo et le menu de navigation.
+         Cache avec la classe CSS 'hidden' lors du clic sur Quitter.
+    ================================================================ -->
+    <main class="container" id="mainPage">
+
+        <!-- Logo animé du jeu -->
+        <!-- Image officielle du logo (Image/logo.webp), avec halo animé en CSS (.logo-image, keyframe logoImagePulse) -->
+        <div class="logo">
+            <img src="Image/logo.webp" alt="EDUQUEST" class="logo-image">
+        </div>
+
+        <!-- Menu de navigation principal -->
+        <!-- Les classes 'primary', 'secondary', 'danger' définissent la couleur du bouton -->
+        <!-- Voir global.css → .menu-button et ses variantes -->
+        <nav class="menu">
+            <!-- Lien vers le tableau de bord (matières, quiz, boutique) -->
+            <a class="menu-button primary" href="dashboard.html">⚔ JOUER</a>
+
+            <!-- Lien vers les préférences du jeu -->
+            <button class="menu-button" onclick="document.getElementById('modalOptions').hidden = false;">⚙ OPTIONS</button>
+
+            <!-- Lien vers la page de connexion/inscription -->
+            <button class="menu-button secondary" onclick="document.getElementById('modalLogin').hidden = false;">👤 SE CONNECTER</button>
+
+            <!-- Bouton Quitter : géré par JS (initAccueil → #quitButton) -->
+            <!-- Note : c'est un <button> et non un <a> car il n'a pas d'URL destination -->
+            <button class="menu-button danger" id="quitButton">✕ QUITTER</button>
+        </nav>
+
+    </main>
+
+    <!-- ================================================================
+         PAGE DE SORTIE (#exitPage)
+         Affichée temporairement lors du clic sur Quitter.
+         Initialement cachée (classe CSS 'hidden' = display:none).
+         Révélée par JS (initAccueil) après confirmation de sortie.
+    ================================================================ -->
+    <section class="container hidden" id="exitPage">
+        <div class="exit-message">
+            <div class="exit-title">✨ Merci d'avoir joué à notre jeu ! ✨</div>
+            <!-- Ce texte peut être remplacé par JS si l'onglet ne peut pas être fermé -->
+            <div class="exit-subtitle">À bientôt pour de nouvelles aventures !</div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer">Version 1.21.0</div>
+        <!-- v1.20 : liens légaux (bandeau cookies + mentions) -->
+        <div class="legal-links"><a href="legal.html">Mentions légales</a> · <a href="legal.html#cookies" onclick="window.dispatchEvent(new Event('eduquest:cookie-reopen'))">Cookies</a></div>
+    </footer>
+
+    <!-- Accès discret au panneau d'administration (v1.19) -->
+    <a class="admin-panel-link" href="admin.html" title="Panneau d'administration : gérer les membres, les niveaux et les contenus">🔐 Administration</a>
+
+    <!-- ================================================================
+         SCRIPTS
+         IMPORTANT : db.js doit toujours être chargé AVANT app.js.
+         db.js expose l'objet global DB que app.js utilise.
+    ================================================================ -->
+    <script src="db.js"></script> <!-- Couche base de données (localStorage ↔ API SQL) -->
+    <script src="admin-store.js"></script> <!-- v1.19 : config du panneau d'administration (chargée avant app.js) -->
+    <script src="question-bank.js"></script> <!-- Génère DASH_SUBJECTS (100 niveaux/matière) — requis par app.js dès son chargement -->
+    <script src="app.js"></script> <!-- Moteur principal du jeu -->
+    <script src="cookies.js"></script> <!-- v1.20 : bandeau de consentement RGPD -->
+    
+<!-- MODALS -->
+<div id="modalOptions" class="modal-overlay" hidden>
+<section class="options-container">
+            <h1 class="options-header">⚙ OPTIONS</h1>
+
+            <!-- ============================================================
+                 STRUCTURE D'UNE OPTION CHECKBOX :
+                 Chaque option cochable suit ce modèle :
+                   <div class="option-group">
+                     <label class="checkbox-container">
+                       <span class="checkbox">
+                         <input type="checkbox" id="nomOption" checked>
+                         <span class="checkbox-mark">✓</span>
+                       </span>
+                       <span class="option-label">Libellé de l'option</span>
+                     </label>
+                   </div>
+
+                 Le <label> englobe tout pour que le clic sur le texte active la case.
+                 La classe .disabled peut être ajoutée par JS sur .checkbox-container
+                 pour griser visuellement une option désactivée.
+                 Le .checkbox-mark (✓) est le visuel personnalisé de la case à cocher.
+            ============================================================ -->
+
+            <!-- Option 1 : Son global (maître)
+                 Contrôle si TOUS les sons sont actifs.
+                 Si décoché : musiqueActive et effetsActifs sont grisées et désactivées.
+                 Géré dans app.js → updateSoundControlsState()
+            -->
+            <div class="option-group">
+                <label class="checkbox-container">
+                    <span class="checkbox">
+                        <input type="checkbox" id="sonsActifs" checked>
+                        <span class="checkbox-mark">✓</span>
+                    </span>
+                    <span class="option-label">🔊 Sons globaux (musique et bruitages)</span>
+                </label>
+            </div>
+
+            <!-- Option 2 : Musique de fond
+                 Désactivée et grisée si sonsActifs est décoché.
+                 Géré dans app.js → toggleMusique() / updateSoundControlsState()
+            -->
+            <div class="option-group">
+                <label class="checkbox-container">
+                    <span class="checkbox">
+                        <input type="checkbox" id="musiqueActive" checked>
+                        <span class="checkbox-mark">✓</span>
+                    </span>
+                    <span class="option-label">🎵 Musique de fond</span>
+                </label>
+            </div>
+
+            <!-- Option 3 : Effets sonores (SFX)
+                 TODO : les effets sonores ne sont pas encore implémentés.
+                 Ce contrôle est prévu pour une version future du jeu.
+                 La valeur est sauvegardée mais n'a aucun effet actuel sur le son.
+            -->
+            <div class="option-group">
+                <label class="checkbox-container">
+                    <span class="checkbox">
+                        <input type="checkbox" id="effetsActifs" checked>
+                        <span class="checkbox-mark">✓</span>
+                    </span>
+                    <span class="option-label">🔔 Bruitages et effets sonores</span>
+                </label>
+            </div>
+
+            <!-- Option 4 : Volume de la musique
+                 Slider de 0 à 100 (valeur par défaut : 75).
+                 Modifie music.volume en temps réel (0.0 à 1.0).
+                 L'affichage du pourcentage (#valueMusiqueDisplay) est mis à jour
+                 en temps réel par updateVolumeMusique() dans app.js.
+            -->
+            <div class="option-group">
+                <label class="option-label" for="volumeMusique">🔊 Volume Musique</label>
+                <div class="slider-container">
+                    <!-- min/max/value : valeurs HTML par défaut (écrasées par JS au chargement) -->
+                    <input type="range" min="0" max="100" value="75" class="slider" id="volumeMusique">
+                    <!-- Ce span affiche le pourcentage en temps réel (ex: "75%") -->
+                    <span class="volume-value" id="valueMusiqueDisplay">75%</span>
+                </div>
+            </div>
+
+            <!-- Option 5 : Volume des effets sonores
+                 Slider de 0 à 100 (valeur par défaut : 80).
+                 TODO : brancher ce volume aux sons SFX quand ils seront implémentés.
+                 Pour l'instant, seul l'affichage est fonctionnel.
+            -->
+            <div class="option-group">
+                <label class="option-label" for="volumeEffets">🔉 Volume Effets Sonores</label>
+                <div class="slider-container">
+                    <input type="range" min="0" max="100" value="80" class="slider" id="volumeEffets">
+                    <span class="volume-value" id="valueEffetsDisplay">80%</span>
+                </div>
+            </div>
+
+            <!-- Option 6 : Plein écran
+                 Appelle l'API Fullscreen du navigateur via requestFullscreen().
+                 Compatible avec Chrome, Firefox, Edge, Safari (via préfixes webkit/ms).
+                 La case est mise à jour automatiquement si l'utilisateur quitte
+                 le plein écran en appuyant sur Échap (écouteur fullscreenchange dans app.js).
+                 Note : par défaut non coché (le jeu ne démarre pas en plein écran).
+            -->
+            <div class="option-group">
+                <label class="checkbox-container">
+                    <span class="checkbox">
+                        <!-- Pas de 'checked' → décoché par défaut -->
+                        <input type="checkbox" id="pleinEcran">
+                        <span class="checkbox-mark">✓</span>
+                    </span>
+                    <span class="option-label">🖥 Plein écran</span>
+                </label>
+            </div>
+
+            <!-- Option 7 : Particules (nuages flottants)
+                 Contrôle l'affichage des <div class="cloud"> générés par createEnvironment().
+                 La modification est appliquée en temps réel (applyParticulesSetting dans app.js).
+                 Peut être désactivé pour améliorer les performances sur les appareils lents.
+            -->
+            <div class="option-group">
+                <label class="checkbox-container">
+                    <span class="checkbox">
+                        <input type="checkbox" id="particules" checked>
+                        <span class="checkbox-mark">✓</span>
+                    </span>
+                    <span class="option-label">✨ Effets de particules</span>
+                </label>
+            </div>
+
+            <!-- Option 8 : Mode Économie d'énergie (Remplace l'ancienne V-Sync)
+                 Désactive les animations CSS gourmandes (particules, dégradés animés)
+                 pour préserver la batterie des appareils mobiles.
+            -->
+            <div class="option-group">
+                <label class="checkbox-container">
+                    <span class="checkbox">
+                        <input type="checkbox" id="ecoMode">
+                        <span class="checkbox-mark">✓</span>
+                    </span>
+                    <span class="option-label">🔋 Économie d'énergie</span>
+                </label>
+                <p class="adm-hint" style="margin-top: 4px; padding-left: 36px;">
+                    Désactive les animations d'arrière-plan pour économiser la batterie.
+                </p>
+            </div>
+
+            <!-- Boutons d'action -->
+            <!-- #saveOptions → déclenche la sauvegarde de toutes les options via DB -->
+            <!-- #backButton  → retour sans sauvegarder (window.location.href = 'index.html') -->
+            <div class="options-buttons">
+                <button class="option-button" id="saveOptions">💾 SAUVEGARDER</button>
+                <button class="option-button danger" onclick="document.getElementById('modalOptions').hidden = true;">← RETOUR</button>
+            </div>
+
+        </section>
+</div>
+
+<div id="modalLogin" class="modal-overlay" hidden>
+<section class="login-container">
+
+            <!-- Titre de la page -->
+            <h1 class="options-header">🔐 COMPTE</h1>
+
+            <!-- ============================================================
+                 PANNEAU UTILISATEUR CONNECTÉ (#userInfo)
+                 Affiché si DB.getCurrentUser() retourne un utilisateur.
+                 Caché par défaut (style="display:none"), JS le révèle si connecté.
+                 Styles dans style.css → .user-info-panel, .user-info-text
+            ============================================================ -->
+            <div class="user-info-panel" id="userInfo" style="display:none;">
+                <!-- Le pseudo est injecté dynamiquement par JS (updateUserDisplay) -->
+                <p class="user-info-text" id="userNameDisplay">👤 Joueur</p>
+                <!-- Clic → DB.logout() puis redirection vers index.html -->
+                <button class="option-button danger" id="logoutBtn">↩ SE DÉCONNECTER</button>
+            </div>
+
+            <!-- ============================================================
+                 ONGLETS DE NAVIGATION
+                 Basculent entre le formulaire de connexion et d'inscription.
+                 La classe CSS 'active' sur l'onglet cliqué change son style (doré).
+                 Géré dans app.js → initConnexion() → bloc "Onglets"
+                 Styles : .login-tabs, .login-tab, .login-tab.active dans style.css
+            ============================================================ -->
+            <div class="login-tabs" id="loginTabs">
+                <!-- Onglet actif par défaut (classe 'active' = surlignage doré) -->
+                <button class="login-tab active" id="tabLogin">Se connecter</button>
+                <button class="login-tab" id="tabRegister">Créer un compte</button>
+            </div>
+
+            <!-- ============================================================
+                 PANNEAU DE CONNEXION (#panelLogin)
+                 Visible par défaut (pas d'attribut 'hidden').
+                 Caché quand l'onglet "Créer un compte" est cliqué.
+            ============================================================ -->
+            <div id="panelLogin">
+
+                <!-- Message descriptif -->
+                <div class="login-description">
+                    <p class="login-description-text">Connectez-vous pour sauvegarder votre progression</p>
+                </div>
+
+                <!-- Bouton connexion via Google (OAuth — à implémenter, voir commentaire <head>) -->
+                <button class="menu-button primary google-login-button" id="googleLogin">
+                    🔵 SE CONNECTER AVEC GOOGLE
+                </button>
+
+                <!-- Séparateur visuel entre Google et la connexion classique -->
+                <div class="login-separator">
+                    <span class="login-separator-text">- OU -</span>
+                </div>
+
+                <!-- Champ email de connexion -->
+                <!-- autocomplete="email" : aide le navigateur à proposer des emails mémorisés -->
+                <input type="email"    id="loginEmail"    placeholder="📧 votre@email.com" class="login-input" autocomplete="email">
+
+                <!-- Champ mot de passe de connexion -->
+                <!-- autocomplete="current-password" : aide le gestionnaire de mots de passe -->
+                <input type="password" id="loginPassword" placeholder="🔑 ••••••••"        class="login-input" autocomplete="current-password">
+
+                <!-- Boutons d'action -->
+                <!-- Le bouton est désactivé par JS pendant la requête DB.login() -->
+                <div class="options-buttons">
+                    <button class="option-button" id="classicLogin">✓ CONNEXION</button>
+                    <button class="option-button danger" onclick="document.getElementById('modalLogin').hidden = true;">← RETOUR</button>
+                </div>
+
+            </div><!-- fin #panelLogin -->
+
+            <!-- ============================================================
+                 PANNEAU D'INSCRIPTION (#panelRegister)
+                 Caché par défaut (attribut HTML5 'hidden').
+                 Révélé quand l'onglet "Créer un compte" est cliqué.
+            ============================================================ -->
+            <div id="panelRegister" hidden>
+
+                <!-- Message descriptif -->
+                <div class="login-description">
+                    <p class="login-description-text">Créez votre compte pour rejoindre l'aventure !</p>
+                </div>
+
+                <!-- Pseudo du joueur (affiché dans le jeu) -->
+                <!-- autocomplete="username" : aide le gestionnaire de mots de passe -->
+                <input type="text"     id="regUsername" placeholder="🧙 Pseudo affiché"   class="login-input" autocomplete="username">
+
+                <!-- Email (identifiant de connexion) -->
+                <input type="email"    id="regEmail"    placeholder="📧 votre@email.com"   class="login-input" autocomplete="email">
+
+                <!-- Mot de passe (minimum 6 caractères — validé par JS avant envoi) -->
+                <input type="password" id="regPassword" placeholder="🔑 Mot de passe"      class="login-input" autocomplete="new-password">
+
+                <!-- Confirmation du mot de passe (doit être identique à regPassword) -->
+                <input type="password" id="regConfirm"  placeholder="🔑 Confirmer"         class="login-input" autocomplete="new-password">
+
+                <!-- Boutons d'action -->
+                <!-- Le bouton est désactivé par JS pendant la requête DB.register() -->
+                <div class="options-buttons">
+                    <button class="option-button" id="registerBtn">✦ CRÉER UN COMPTE</button>
+                    <button class="option-button danger" onclick="document.getElementById('modalLogin').hidden = true;">← RETOUR</button>
+                </div>
+
+            </div><!-- fin #panelRegister -->
+
+        </section>
+</div>
+<!-- Bouton temporaire de purge (à supprimer plus tard) -->
+    <button onclick="hardResetDev()" style="position:fixed; top:20px; right:20px; z-index:9999; background:#d32f2f; color:white; padding:8px 12px; font-family:sans-serif; border-radius:5px; border:none; cursor:pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.5); opacity: 0.8;">🧹 VIDER LE CACHE</button>
+    <script>
+    function hardResetDev() {
+        if(!confirm("Purger toutes les données (LocalStorage, Cookies, Service Worker) pour simuler une première visite ?")) return;
+        localStorage.clear();
+        sessionStorage.clear();
+        document.cookie.split(";").forEach(c => document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"));
+        if ('caches' in window) {
+            caches.keys().then(names => names.forEach(n => caches.delete(n)));
+        }
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+        }
+        alert("Données effacées. L'application va se recharger.");
+        setTimeout(() => window.location.reload(true), 500);
+    }
+    </script>
+</body>
+
+</html>

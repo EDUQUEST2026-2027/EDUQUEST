@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="fr">
+<!--
+  LEGAL.HTML — EDUQUEST v1.20
+  Page légale : mentions légales, politique de confidentialité et cookies.
+
+  POURQUOI CETTE PAGE :
+    Le RGPD et la loi Informatique et Libertés exigent qu'un site accessible
+    au public informe clairement ses visiteurs : qui édite le site, quelles
+    données sont collectées, pour quoi faire, où elles sont stockées, et
+    comment les refuser. Cette page remplit ces obligations pour le mode
+    « local » de l'application (données uniquement dans le navigateur).
+
+  CONTENU :
+    - Mentions légales (éditeur, hébergement, contact)
+    - Politique de confidentialité (données traitées, finalités, durées, droits)
+    - Cookies & traceurs (catégories, consentement, bouton « Gérer mes cookies »)
+    - Crédits : alimentés par AdminStore.getCredits() (modifiables depuis le
+      panneau d'administration, onglet « Crédits »).
+
+  SCRIPTS :
+    admin-store.js → crédits + config (lecture seule ici)
+    cookies.js     → bouton « Gérer mes cookies » (rouvre le bandeau)
+-->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDUQUEST — Mentions légales &amp; confidentialité</title>
+    <meta name="description" content="EDUQUEST — Mentions légales, politique de confidentialité et gestion des cookies.">
+    <!-- v1.21 : référencement & partage (voir bot.txt) -->
+    <meta name="theme-color" content="#0d1330">
+    <meta name="robots" content="index, follow">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="EDUQUEST">
+    <meta property="og:title" content="Mentions légales & confidentialité — EDUQUEST">
+    <meta property="og:image" content="Image/logo.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" type="image/png" href="Image/logo.png">
+    <link rel="stylesheet" href="admin.css">
+    <style>
+        /* Ajustements propres à la page légale (admin.css fournit la base) */
+        .legal-main { max-width: 900px; margin: 0 auto; padding: 30px 20px 120px; }
+        .legal-card {
+            background: rgba(13, 19, 48, 0.72); border: 1px solid rgba(200, 168, 75, 0.3);
+            border-radius: var(--radius); padding: 22px 26px; margin-bottom: 22px;
+        }
+        .legal-card h2 {
+            font-family: 'Cinzel', serif; font-size: 17px; color: var(--gold-soft);
+            letter-spacing: 1px; margin-bottom: 14px; text-shadow: 0 0 12px rgba(200,168,75,.3);
+        }
+        .legal-card h3 { font-size: 15px; color: var(--cyan); margin: 16px 0 6px; }
+        .legal-card p, .legal-card li { color: var(--ink); line-height: 1.65; font-size: 15px; margin-bottom: 8px; }
+        .legal-card ul { padding-left: 22px; margin: 6px 0 12px; }
+        .legal-card code {
+            font-family: 'Consolas', monospace; font-size: 13px; color: var(--cyan);
+            background: rgba(95, 212, 230, 0.08); padding: 1px 6px; border-radius: 6px;
+        }
+        .legal-table { width: 100%; border-collapse: collapse; margin: 10px 0 14px; font-size: 14px; }
+        .legal-table th, .legal-table td {
+            border: 1px solid rgba(154, 167, 216, 0.25); padding: 8px 10px;
+            text-align: left; vertical-align: top; color: var(--ink);
+        }
+        .legal-table th { color: var(--gold-soft); font-weight: 700; background: rgba(26, 37, 82, 0.55); }
+        /* v1.21 — mobile : les tableaux défilent au doigt au lieu de faire
+           déborder la page (testé à 360px, page sans scroll horizontal). */
+        @media (max-width: 700px) {
+            .legal-card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .legal-table { min-width: 520px; }
+            .legal-toc { gap: 6px; }
+            .legal-toc a { font-size: 12px; padding: 6px 10px; }
+        }
+        .legal-toc { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
+        .legal-toc a {
+            font-size: 13px; padding: 6px 14px; border-radius: 999px; text-decoration: none;
+            border: 1px solid rgba(154, 167, 216, 0.4); color: var(--ink);
+        }
+        .legal-toc a:hover { border-color: var(--gold); color: var(--gold-soft); }
+        .legal-updated { color: var(--muted); font-size: 13px; margin-top: -8px; margin-bottom: 18px; }
+        .legal-note { border-left: 3px solid var(--gold); padding: 8px 14px; background: rgba(200, 168, 75, 0.07); border-radius: 0 10px 10px 0; }
+        .legal-credits { color: var(--gold-soft); font-size: 15px; }
+        .legal-credits a { color: var(--cyan); }
+        .legal-credits em { color: var(--muted); font-style: italic; }
+        .adm-hint { color: var(--muted); font-size: 13px; line-height: 1.6; }
+    </style>
+    <link rel="manifest" href="manifest.webmanifest">
+</head>
+<body>
+
+    <!-- ================================================================
+         BARRE SUPÉRIEURE (cohérente avec admin.html)
+    ================================================================ -->
+    <header class="adm-top">
+        <div class="adm-brand">
+            <span class="adm-logo">⚖️</span>
+            <div>
+                <h1>EDUQUEST</h1>
+                <p>Mentions légales &amp; confidentialité</p>
+            </div>
+        </div>
+        <div class="adm-top-right">
+            <a class="adm-btn adm-btn-ghost" href="index.html" title="Revenir au jeu">← Retour au jeu</a>
+        </div>
+    </header>
+
+    <main class="legal-main">
+
+        <!-- Sommaire -->
+        <nav class="legal-toc" aria-label="Sommaire">
+            <a href="#mentions">🏢 Mentions légales</a>
+            <a href="#confidentialite">🔒 Politique de confidentialité</a>
+            <a href="#cookies">🍪 Cookies &amp; traceurs</a>
+            <a href="#droits">📜 Vos droits</a>
+            <a href="#credits">✨ Crédits</a>
+        </nav>
+        <p class="legal-updated" id="legalUpdated"></p>
+
+        <!-- ================================================================
+             1. MENTIONS LÉGALES
+        ================================================================ -->
+        <section class="legal-card" id="mentions">
+            <h2>🏢 Mentions légales</h2>
+            <p>Conformément à l'article 6 de la loi n° 2004-575 du 21 juin 2004 pour la
+            confiance dans l'économie numérique (LCEN), voici l'identité des
+            intervenants de ce site :</p>
+
+            <table class="legal-table">
+                <tr><th style="width:190px;">Éditeur du site</th>
+                    <td id="legalEditeur">L'équipe EDUQUEST</td></tr>
+                <tr><th>Contact</th>
+                    <td id="legalContact">À compléter par l'éditeur (panneau d'administration → onglet « Crédits »)</td></tr>
+                <tr><th>Site web de l'éditeur</th>
+                    <td id="legalSite">—</td></tr>
+                <tr><th>Hébergement</th>
+                    <td>Application front-end : selon le mode d'utilisation, les fichiers sont servis
+                    depuis votre machine locale ou un hébergement web de votre choix (à indiquer ici
+                    avant toute mise en ligne publique).</td></tr>
+                <tr><th>Directeur de la publication</th>
+                    <td id="legalDirecteur">L'équipe EDUQUEST</td></tr>
+            </table>
+
+            <p class="adm-hint">✏️ L'éditeur, son site et son e-mail se remplissent une fois pour toutes
+            depuis le <b>panneau d'administration → onglet « Crédits »</b> : cette page se met à jour
+            automatiquement. Avant une mise en ligne publique, complétez aussi la ligne
+            « Hébergement » (cette partie dépend de l'endroit où le site sera déployé).</p>
+        </section>
+
+        <!-- ================================================================
+             2. POLITIQUE DE CONFIDENTIALITÉ
+        ================================================================ -->
+        <section class="legal-card" id="confidentialite">
+            <h2>🔒 Politique de confidentialité</h2>
+
+            <h3>Principe fondamental : vos données restent sur votre appareil</h3>
+            <p>EDUQUEST fonctionne <b>intégralement dans votre navigateur</b> (mode local) :
+            <b>aucune donnée personnelle n'est envoyée à un serveur</b>, ni revendue, ni partagée.
+            Tout ce que vous saisissez (pseudo, mot de passe, progression, réglages) est enregistré
+            uniquement dans le stockage local (<code>localStorage</code>) de votre navigateur, sur
+            cet appareil.</p>
+
+            <h3>Données traitées et finalités</h3>
+            <table class="legal-table">
+                <tr><th>Donnée</th><th>Finalité</th><th>Stockage</th><th>Conservation</th></tr>
+                <tr><td>Pseudo, e-mail, mot de passe <i>(haché)</i>, rôle du compte</td>
+                    <td>Création et connexion à un compte de jeu local</td>
+                    <td>localStorage (clé <code>eduquest_local_users</code>)</td>
+                    <td>Jusqu'à suppression du compte ou des données du navigateur</td></tr>
+                <tr><td>Progression, XP, pièces, badges, niveau choisi</td>
+                    <td>Sauvegarde de la partie et de l'avancement pédagogique</td>
+                    <td>localStorage (clés <code>eduquest_*_progress</code>, <code>eduquest_niveau</code>)</td>
+                    <td>Jusqu'à réinitialisation depuis le jeu ou le panneau</td></tr>
+                <tr><td>Préférences (musique, sons, plein écran…)</td>
+                    <td>Confort d'utilisation</td>
+                    <td>localStorage (clé <code>eduquest_options</code>)</td>
+                    <td>Jusqu'à modification ou effacement</td></tr>
+                <tr><td>Configuration d'administration (niveaux, matières, crédits)</td>
+                    <td>Personnalisation des contenus par l'administrateur</td>
+                    <td>localStorage (clé <code>eduquest_admin_data</code>)</td>
+                    <td>Jusqu'à réinitialisation</td></tr>
+                <tr><td>Choix de consentement cookies</td>
+                    <td>Mémoriser votre décision (12 mois, recommandation CNIL)</td>
+                    <td>localStorage (clé <code>eduquest_cookie_consent</code>)</td>
+                    <td>12 mois</td></tr>
+            </table>
+
+            <h3>Mot de passe</h3>
+            <p>Le mot de passe des comptes locaux est <b>haché</b> avant d'être stocké : il n'apparaît
+            jamais en clair dans le navigateur. Ce mécanisme reste léger (protection locale) : pour
+            un usage en établissement avec de vrais comptes, activez le mode API SQL où la
+            gestion des comptes et des mots de passe est assurée par un serveur sécurisé.</p>
+
+            <div class="legal-note">
+                <b>⚠️ Mode API :</b> si l'éditeur active le mode API SQL (<code>API_URL</code> dans
+                <code>db.js</code>), les données de comptes et de progression transitent alors vers le
+                serveur correspondant. Dans ce cas, cette politique doit être complétée avec
+                l'identité de l'hébergeur, la base légale et la durée de conservation côté serveur,
+                avant toute mise en ligne.
+            </div>
+
+            <h3>Absence de partage</h3>
+            <p>Aucun service tiers n'est sollicité : pas de réseau publicitaire, pas de réseau social,
+            pas d'outil de statistiques. La seule requête externe éventuelle est le chargement des
+            polices de caractères (Google Fonts) par les feuilles de style ; aucune donnée de jeu ne
+            lui est transmise.</p>
+        </section>
+
+        <!-- ================================================================
+             3. COOKIES & TRACEURS
+        ================================================================ -->
+        <section class="legal-card" id="cookies">
+            <h2>🍪 Cookies &amp; traceurs</h2>
+
+            <p>Le site utilise <code>localStorage</code> — une zone de stockage du navigateur — pour
+            fonctionner. Il ne dépose <b>aucun cookie publicitaire</b> et n'effectue
+            <b>aucun suivi</b>. Les catégories sont les suivantes :</p>
+
+            <ul>
+                <li><b>Strictement nécessaires</b> (toujours actives, exemptées de consentement) :
+                session de connexion, préférences d'affichage, progression du jeu, configuration
+                d'administration, mémorisation de votre choix de consentement. Sans elles, le site
+                ne peut pas fonctionner ; elles ne quittent jamais votre appareil.</li>
+                <li><b>Mesure d'audience</b> (optionnelle, désactivée par défaut) : aucune aujourd'hui.</li>
+                <li><b>Marketing / publicité</b> (optionnelle, désactivée par défaut) : aucune aujourd'hui.</li>
+            </ul>
+
+            <p>À votre première visite, un bandeau vous propose d'<b>accepter</b>, de
+            <b>refuser</b> (d'un clic, aussi simple que l'acceptation, conformément aux
+            recommandations de la CNIL) ou de <b>personnaliser</b> catégorie par catégorie.
+            Votre choix est enregistré pour 12 mois. Vous pouvez le modifier à tout moment :</p>
+
+            <p style="margin-top:14px;">
+                <button class="adm-btn" onclick="manageCookies()">🍪 Gérer mes cookies</button>
+            </p>
+        </section>
+
+        <!-- ================================================================
+             4. VOS DROITS
+        ================================================================ -->
+        <section class="legal-card" id="droits">
+            <h2>📜 Vos droits</h2>
+            <p>Le RGPD vous accorde des droits d'accès, de rectification, d'effacement, de portabilité
+            et d'opposition sur vos données personnelles. Dans EDUQUEST, vous les exercez
+            directement depuis l'application :</p>
+            <ul>
+                <li><b>Accès &amp; rectification</b> : connectez-vous et ouvrez la page « Options »,
+                ou demandez à l'administrateur (panneau → onglet « Membres »).</li>
+                <li><b>Effacement</b> : l'administrateur peut supprimer un compte depuis le panneau
+                (onglet « Membres »). Pour effacer <i>toutes</i> les données de cet appareil, effacez
+                les données de site du navigateur ou utilisez la réinitialisation dans le panneau
+                (onglet « Réglages »).</li>
+                <li><b>Portabilité</b> : la configuration d'administration est exportable en JSON
+                (panneau → onglet « Réglages »).</li>
+                <li><b>Réclamation</b> : vous pouvez saisir la CNIL (cnil.fr) si vous estimez que vos
+                droits ne sont pas respectés.</li>
+            </ul>
+            <p id="legalDroitContact" class="adm-hint"></p>
+        </section>
+
+        <!-- ================================================================
+             5. CRÉDITS (alimentés par le panneau d'administration)
+        ================================================================ -->
+        <section class="legal-card" id="credits">
+            <h2>✨ Crédits</h2>
+            <p class="legal-credits" id="legalCredits">EDUQUEST — Apprendre en s'amusant.</p>
+            <p class="adm-hint" style="margin-top:10px;">Ces crédits se modifient depuis le panneau
+            d'administration, onglet « Crédits » : ils apparaissent aussi dans le pied de page de
+            toutes les pages du jeu.</p>
+        </section>
+
+        <p class="adm-hint" style="text-align:center; margin-top:6px;">
+            EDUQUEST v1.20 — Application éducative front-end (mode local).<br>
+            Contenus pédagogiques fournis à titre d'exemple ; vérifiez-les avant un usage en classe.
+        </p>
+    </main>
+
+    <!-- ================================================================
+         SCRIPTS (lecture seule ici : aucun moteur de jeu nécessaire)
+    ================================================================ -->
+    <script src="admin-store.js"></script>
+    <script src="cookies.js"></script>
+    <script>
+        /**
+         * Alimente la page avec les crédits personnalisés (AdminStore) et
+         * branche le bouton « Gérer mes cookies » sur le bandeau (cookies.js).
+         */
+        (function initLegalPage() {
+            'use strict';
+
+            function esc(s) {
+                return String(s == null ? '' : s)
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            }
+            function text(id, val) {
+                const el = document.getElementById(id);
+                if (el) el.textContent = val || el.textContent;
+            }
+
+            // Crédits effectifs (avec repli si admin-store.js est indisponible)
+            let c = null;
+            try { c = window.AdminStore ? AdminStore.getCredits() : null; } catch { /* stockage bloqué */ }
+            if (c) {
+                text('legalEditeur', c.creatorName);
+                text('legalDirecteur', c.creatorName);
+                text('legalContact', c.contactEmail
+                    ? c.contactEmail + (c.website ? ' — ' + c.website : '')
+                    : '');
+                text('legalSite', c.website || '—');
+                text('legalDroitContact', c.contactEmail
+                    ? 'Contact pour vos données personnelles : ' + c.contactEmail + '.'
+                    : '');
+
+                const parts = [];
+                if (c.studioName) parts.push('<b>' + esc(c.studioName) + '</b>');
+                if (c.creatorName) parts.push('Créé par ' + esc(c.creatorName));
+                if (c.website) {
+                    const url = /^https?:\/\//i.test(c.website) ? c.website : 'https://' + c.website;
+                    parts.push('<a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(c.website) + '</a>');
+                }
+                if (c.contactEmail) parts.push('<a href="mailto:' + esc(c.contactEmail) + '">' + esc(c.contactEmail) + '</a>');
+                let html = parts.join(' · ');
+                if (c.tagline) html += (html ? ' — ' : '') + '<em>' + esc(c.tagline) + '</em>';
+                if (html) {
+                    const el = document.getElementById('legalCredits');
+                    if (el) el.innerHTML = html;
+                }
+            }
+
+            // Date de mise à jour de la page
+            const upd = document.getElementById('legalUpdated');
+            if (upd) {
+                const now = new Date();
+                upd.textContent = 'Dernière mise à jour : ' + now.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long' })
+                    + ' — les personnalisations affichées proviennent du panneau d\'administration.';
+            }
+        })();
+
+        /** Rouvre le bandeau de consentement (cookies.js écoute cet événement). */
+        function manageCookies() {
+            window.dispatchEvent(new Event('eduquest:cookie-reopen'));
+        }
+    </script>
+</body>
+</html>

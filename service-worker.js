@@ -1,0 +1,70 @@
+const CACHE_NAME = 'eduquest-cache-v1.21.0';
+
+const PRECACHE_URLS = [
+  './',
+  'index.html',
+  'admin.html',
+  'dashboard.html',
+  'jouer.html',
+  'login.html',
+  'map.html',
+  'legal.html',
+  'global.css',
+  'style.css',
+  'admin.css',
+  'app.js',
+  'db.js',
+  'admin.js',
+  'admin-store.js',
+  'ai-provider.js',
+  'cookies.js',
+  'question-bank.js',
+  'quiz-engine.js',
+  'manifest.webmanifest',
+  'Image/logo.webp'
+];
+
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(PRECACHE_URLS))
+      .then(self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', event => {
+  const currentCaches = [CACHE_NAME];
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return cacheNames.filter(cacheName => !currentCaches.includes(cacheName));
+    }).then(cachesToDelete => {
+      return Promise.all(cachesToDelete.map(cacheToDelete => {
+        return caches.delete(cacheToDelete);
+      }));
+    }).then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', event => {
+  // Ignorer les requêtes non GET
+  if (event.request.method !== 'GET') return;
+
+  event.respondWith(
+    caches.match(event.request).then(cachedResponse => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      return fetch(event.request).then(response => {
+        // Optionnel : Mettre en cache les nouvelles requêtes réussies
+        if (!response || response.status !== 200 || response.type !== 'basic') {
+          return response;
+        }
+        const responseToCache = response.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, responseToCache);
+        });
+        return response;
+      });
+    })
+  );
+});
