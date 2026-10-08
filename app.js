@@ -1857,8 +1857,27 @@ function initDashboard() {
     }
 
     function renderDashboard() {
+        const currentNiveau = (typeof DB !== 'undefined' && DB.getNiveau) ? (DB.getNiveau() || '6eme') : '6eme';
         const cards = DASH_SUBJECTS.map(s => {
-            const done = state.progress[s.id] || 0;
+            let done = 0;
+            const progressKey = 'eduquest_' + s.name.toLowerCase() + '_' + currentNiveau + '_progress';
+            const savedData = localStorage.getItem(progressKey);
+            if (savedData) {
+                try {
+                    const data = JSON.parse(savedData);
+                    if (data && data.levels) {
+                        for (let key in data.levels) {
+                            if (data.levels[key].stars > 0) {
+                                done++;
+                            }
+                        }
+                    }
+                } catch(e) {}
+            }
+            if (done === 0) {
+                done = state.progress[s.id] || 0;
+            }
+            
             const total = s.lessons.length;
             const pct = Math.round((done / total) * 100);
             return `<div class="dash-subject-card" onclick="window._dashOpenMap('${s.id}')" tabindex="0" role="button" aria-label="${escapeHtml(s.name)}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window._dashOpenMap('${s.id}');}">
