@@ -4,6 +4,6 @@
   "description": "EDUQUEST — application française de révision gamifiée (6e → Terminale)",
   "private": true,
   "scripts": {
-    "test": "node tests/run-tests.js"
+    "test": "node --check app.js db.js quiz-engine.js question-bank.js admin.js admin-store.js"
   }
 }

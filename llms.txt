@@ -38,11 +38,9 @@ histoire, anglais, apprentissage gamifié, éducation nationale, gratuit
 
 | Route | Description |
 |-------|-------------|
-| `index.html` | Accueil — point d'entrée du jeu |
-| `jouer.html` | Choix du niveau scolaire (6e → Terminale) et de la matière |
-| `map.html` | Carte du monde : les îles-matières et les niveaux |
-| `dashboard.html` | Tableau de bord élève : progression, badges, avatars |
-| `login.html` | Création de compte / connexion locale |
+| `index.html` | Accueil — point d'entrée, options, connexion et sélection de classe |
+| `dashboard.html` | Tableau de bord élève : missions quotidiennes, matières, boutique, succès |
+| `map.html` | Carte de la matière : parcours des îles et niveaux de quiz |
 | `legal.html` | Mentions légales, politique de confidentialité et cookies |
 
 ## Pages exclues de l'indexation

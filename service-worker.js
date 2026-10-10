@@ -1,16 +1,15 @@
-const CACHE_NAME = 'eduquest-cache-v1.21.0';
+const CACHE_NAME = 'eduquest-cache-v1.22.0';
 
 const PRECACHE_URLS = [
   './',
   'index.html',
   'admin.html',
   'dashboard.html',
-  'jouer.html',
-  'login.html',
   'map.html',
   'legal.html',
   'global.css',
   'style.css',
+  'quests.css',
   'admin.css',
   'app.js',
   'db.js',

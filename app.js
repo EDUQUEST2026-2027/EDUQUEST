@@ -23,6 +23,56 @@
    ========================================================================== */
 
 /* ==========================================================================
+   GESTIONNAIRE D'ERREUR GLOBAL (PWA / Audit v1.18)
+   Capture les erreurs fatales pour afficher une UI élégante plutôt qu'un écran blanc.
+========================================================================== */
+function setupGlobalErrorHandler() {
+    function showErrorScreen(msg) {
+        if (document.getElementById('eduquest-crash-screen')) return;
+        const crashScreen = document.createElement('div');
+        crashScreen.id = 'eduquest-crash-screen';
+        crashScreen.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(10, 15, 36, 0.95); backdrop-filter: blur(10px);
+            z-index: 999999; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; color: white;
+            font-family: var(--font-pixel-ui, 'Cinzel', serif); text-align: center;
+            padding: 20px; box-sizing: border-box;
+        `;
+        crashScreen.innerHTML = `
+            <div style="font-size: 4rem; margin-bottom: 20px;">⚠️</div>
+            <h1 style="color: #ff4757; margin-bottom: 15px; font-size: 2rem;">Aïe... Le jeu a trébuché !</h1>
+            <p style="color: #a4b0be; max-width: 600px; margin-bottom: 30px; line-height: 1.6;">
+                Une erreur inattendue s'est produite en coulisses.<br>
+                <code style="display: block; margin-top: 15px; padding: 10px; background: #2f3542; color: #ff6b81; border-radius: 5px; font-family: monospace; font-size: 0.9rem;">${msg}</code>
+            </p>
+            <button onclick="window.location.reload(true)" style="
+                background: linear-gradient(135deg, #1e90ff, #3742fa);
+                border: none; padding: 15px 30px; color: white; font-weight: bold;
+                border-radius: 8px; cursor: pointer; font-size: 1.2rem;
+                box-shadow: 0 4px 15px rgba(30, 144, 255, 0.4);
+                transition: transform 0.2s;
+            " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                🔄 Recharger la page
+            </button>
+        `;
+        document.body.appendChild(crashScreen);
+    }
+
+    window.addEventListener('error', (event) => {
+        console.error("Global error caught:", event.error);
+        showErrorScreen(event.message || "Erreur de script inconnue.");
+    });
+
+    window.addEventListener('unhandledrejection', (event) => {
+        console.error("Unhandled promise rejection:", event.reason);
+        const msg = event.reason instanceof Error ? event.reason.message : String(event.reason);
+        showErrorScreen("Erreur asynchrone : " + msg);
+    });
+}
+setupGlobalErrorHandler();
+
+/* ==========================================================================
    1. UTILITAIRES PARTAGÉS
    Fonctions simples utilisées sur plusieurs pages.
    ========================================================================== */
@@ -937,6 +987,247 @@ function initOptions() {
  */
 
 /* ==========================================================================
+   6bis. CÉLÉBRATIONS (confettis) & QUÊTES JOURNALIÈRES
+   Modules partagés entre map.html et dashboard.html.
+   ========================================================================== */
+
+/**
+ * Moteur de confettis autonome (aucune dépendance externe / CDN) :
+ * fonctionne hors-ligne et avec le service worker.
+ *   Celebrate.confetti();                  // pluie depuis le haut
+ *   Celebrate.burst(element);              // explosion depuis un élément
+ */
+const Celebrate = (() => {
+    const COLORS = ['#ffd166', '#c8a84b', '#6bca82', '#4cc9f0', '#f72585', '#b388ff', '#ff9f43'];
+    let canvas = null, ctx = null, particles = [], rafId = null;
+
+    function reducedMotion() {
+        return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+
+    function ensureCanvas() {
+        if (canvas) return;
+        canvas = document.createElement('canvas');
+        canvas.className = 'confetti-canvas';
+        canvas.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(canvas);
+        ctx = canvas.getContext('2d');
+        resize();
+        window.addEventListener('resize', resize);
+    }
+
+    function resize() {
+        if (!canvas) return;
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = window.innerWidth * dpr;
+        canvas.height = window.innerHeight * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function spawn(x, y, count, spread, power, angle) {
+        for (let i = 0; i < count; i++) {
+            const a = angle + (Math.random() - 0.5) * spread;
+            const v = power * (0.5 + Math.random() * 0.7);
+            particles.push({
+                x, y,
+                vx: Math.cos(a) * v,
+                vy: Math.sin(a) * v,
+                w: 6 + Math.random() * 6,
+                h: 4 + Math.random() * 6,
+                rot: Math.random() * Math.PI,
+                vr: (Math.random() - 0.5) * 0.3,
+                color: COLORS[(Math.random() * COLORS.length) | 0],
+                shape: Math.random() < 0.3 ? 'circle' : 'rect',
+                life: 0,
+                maxLife: 140 + Math.random() * 80,
+            });
+        }
+        if (!rafId) rafId = requestAnimationFrame(tick);
+    }
+
+    function tick() {
+        ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        particles = particles.filter(p => p.life < p.maxLife && p.y < window.innerHeight + 40);
+        particles.forEach(p => {
+            p.life++;
+            p.vy += 0.18;          // gravité
+            p.vx *= 0.985;         // frottement de l'air
+            p.vy *= 0.985;
+            p.x += p.vx + Math.sin(p.life / 10) * 0.6; // léger flottement
+            p.y += p.vy;
+            p.rot += p.vr;
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, 1 - p.life / p.maxLife);
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot);
+            ctx.fillStyle = p.color;
+            if (p.shape === 'circle') {
+                ctx.beginPath(); ctx.arc(0, 0, p.w / 2.5, 0, Math.PI * 2); ctx.fill();
+            } else {
+                ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.rot)));
+            }
+            ctx.restore();
+        });
+        if (particles.length) {
+            rafId = requestAnimationFrame(tick);
+        } else {
+            rafId = null;
+            ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        }
+    }
+
+    return {
+        /** Grande célébration : deux canons latéraux + pluie centrale. */
+        confetti() {
+            if (reducedMotion()) return;
+            ensureCanvas();
+            const w = window.innerWidth, h = window.innerHeight;
+            spawn(0, h * 0.75, 70, 0.9, 17, -Math.PI / 3);
+            spawn(w, h * 0.75, 70, 0.9, 17, -Math.PI * 2 / 3);
+            setTimeout(() => spawn(w / 2, h * 0.35, 60, Math.PI * 2, 9, 0), 180);
+        },
+        /** Petite explosion centrée sur un élément (ex : bouton « Réclamer »). */
+        burst(el) {
+            if (reducedMotion()) return;
+            ensureCanvas();
+            const r = el && el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+            const x = r ? r.left + r.width / 2 : window.innerWidth / 2;
+            const y = r ? r.top + r.height / 2 : window.innerHeight / 2;
+            spawn(x, y, 55, Math.PI * 2, 10, 0);
+        },
+    };
+})();
+window.Celebrate = Celebrate;
+
+/**
+ * Quêtes journalières — source de vérité unique (localStorage via DB).
+ * Les quêtes se renouvellent à minuit (heure locale) ; 3 quêtes sont tirées
+ * chaque jour dans QUEST_POOL (tirage déterministe basé sur la date), plus la
+ * quête de connexion. Une quête accomplie doit être « réclamée » sur le
+ * tableau de bord pour toucher sa récompense (XP + pièces).
+ */
+const DailyQuests = (() => {
+    const VERSION = 2;
+    const BONUS_COINS = 50; // Coffre bonus quand toutes les quêtes sont réclamées
+
+    const QUEST_POOL = [
+        { type: 'xp',       icon: '⚡', title: 'Gagne 30 XP',                      target: 30, xp: 20, coins: 10, color: '#ffb547' },
+        { type: 'xp',       icon: '🔥', title: 'Gagne 60 XP',                      target: 60, xp: 35, coins: 15, color: '#ff6b6b' },
+        { type: 'levels',   icon: '🏝️', title: 'Réussis 2 niveaux',                target: 2,  xp: 20, coins: 10, color: '#4cc9f0' },
+        { type: 'levels',   icon: '🗺️', title: 'Réussis 4 niveaux',                target: 4,  xp: 35, coins: 20, color: '#3ddc97' },
+        { type: 'perfect',  icon: '⭐', title: 'Décroche 3 étoiles sur un niveau', target: 1,  xp: 25, coins: 15, color: '#ffd166' },
+        { type: 'firstTry', icon: '🎯', title: 'Réponds juste du 1er coup 3 fois', target: 3,  xp: 30, coins: 15, color: '#b388ff' },
+    ];
+
+    function todayKey() {
+        const d = new Date();
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    /** Tirage pseudo-aléatoire reproductible pour une date donnée. */
+    function seededPick(dateStr) {
+        let seed = 0;
+        for (const ch of dateStr) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+        const rand = () => { seed = (seed * 1103515245 + 12345) >>> 0; return seed / 4294967296; };
+        const picked = [], usedTypes = new Set();
+        const pool = QUEST_POOL.slice().sort(() => rand() - 0.5);
+        for (const q of pool) {
+            if (usedTypes.has(q.type)) continue;
+            usedTypes.add(q.type);
+            picked.push(q);
+            if (picked.length === 3) break;
+        }
+        return picked;
+    }
+
+    function generate(date) {
+        const quests = [
+            { id: 'q_login', type: 'login', icon: '🌅', title: 'Connecte-toi aujourd\'hui', target: 1, progress: 1, xp: 10, coins: 5, color: '#6bca82', claimed: false },
+            ...seededPick(date).map((q, i) => ({ id: 'q_' + q.type + '_' + i, ...q, progress: 0, claimed: false })),
+        ];
+        return { v: VERSION, date, quests, bonusClaimed: false };
+    }
+
+    function save(data) {
+        if (typeof DB !== 'undefined' && DB.saveDailyQuests) DB.saveDailyQuests(data);
+    }
+
+    function get() {
+        const today = todayKey();
+        let data = (typeof DB !== 'undefined' && DB.getDailyQuests) ? DB.getDailyQuests() : null;
+        if (!data || data.v !== VERSION || data.date !== today || !Array.isArray(data.quests)) {
+            data = generate(today);
+            save(data);
+        }
+        return data;
+    }
+
+    const isComplete = q => q.progress >= q.target;
+
+    /**
+     * Enregistre la progression après un niveau réussi.
+     * @param {{levels?:number, perfect?:number, firstTry?:number, xp?:number}} delta
+     * @returns {Array} quêtes nouvellement accomplies
+     */
+    function track(delta) {
+        const data = get();
+        const newlyDone = [];
+        data.quests.forEach(q => {
+            const inc = delta[q.type] || 0;
+            if (!inc || isComplete(q)) return;
+            q.progress = Math.min(q.target, q.progress + inc);
+            if (isComplete(q)) newlyDone.push(q);
+        });
+        save(data);
+        if (newlyDone.length) {
+            setTimeout(() => {
+                Celebrate.confetti();
+                newlyDone.forEach(q => showNotification(`🎉 Quête accomplie : ${q.title} — récompense à réclamer !`));
+            }, 450);
+        }
+        return newlyDone;
+    }
+
+    function addRewards(xp, coins) {
+        saveOption('dash_xp', String(parseInt(getOption('dash_xp') || '0') + xp));
+        saveOption('dash_coins', String(parseInt(getOption('dash_coins') || '30') + coins));
+    }
+
+    /** Réclame la récompense d'une quête accomplie. Retourne la quête ou null. */
+    function claim(id) {
+        const data = get();
+        const q = data.quests.find(x => x.id === id);
+        if (!q || q.claimed || !isComplete(q)) return null;
+        q.claimed = true;
+        addRewards(q.xp, q.coins);
+        save(data);
+        return q;
+    }
+
+    /** Ouvre le coffre bonus (toutes les quêtes réclamées). */
+    function claimBonus() {
+        const data = get();
+        if (data.bonusClaimed || !data.quests.every(q => q.claimed)) return 0;
+        data.bonusClaimed = true;
+        addRewards(0, BONUS_COINS);
+        save(data);
+        return BONUS_COINS;
+    }
+
+    /** Temps restant avant le renouvellement (minuit local), en texte. */
+    function timeLeftLabel() {
+        const now = new Date();
+        const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        const mins = Math.max(0, Math.ceil((midnight - now) / 60000));
+        const h = Math.floor(mins / 60), m = mins % 60;
+        return h > 0 ? `${h}h ${String(m).padStart(2, '0')}min` : `${m} min`;
+    }
+
+    return { get, track, claim, claimBonus, isComplete, timeLeftLabel, todayKey, BONUS_COINS };
+})();
+window.DailyQuests = DailyQuests;
+
+/* ==========================================================================
    7. CARTE DES MATIÈRES (page map.html)
    Gère l'affichage et l'interaction de la carte de progression par matière.
    ========================================================================== */
@@ -1349,6 +1640,17 @@ function initMap() {
 
         saveProgress(progress);
         renderLevels(progress);
+
+        // Célébration + progression des quêtes journalières
+        if (starsEarned > 0) {
+            Celebrate.confetti();
+            DailyQuests.track({
+                levels:   1,
+                xp:       isFirstSuccess ? 15 : 0,
+                perfect:  starsEarned === 3 ? 1 : 0,
+                firstTry: starsEarned === 3 ? 1 : 0,
+            });
+        }
         return isFirstSuccess;
     }
 
@@ -1582,12 +1884,15 @@ const DASH_SKINS = [
     { id: 'ametiste', name: 'Nova Améthyste',   color: '#b685f5', cost: 90 },
     { id: 'rose',     name: 'Étoile Rose',      color: '#f58fc2', cost: 130 },
     { id: 'braise',   name: 'Braise Cosmique',  color: '#f5714f', cost: 170 },
+    { id: 'neon',     name: 'Éclair Néon',      color: '#00ffcc', cost: 250 },
+    { id: 'magma',    name: 'Flamboiement Magma', color: '#ff3300', cost: 300 },
     // Skins "personnage" (v2.2) — portraits au lieu d'un halo de couleur.
     // `color` reste renseigné : il sert de couleur de halo derrière le
     // portrait (voir renderHud/renderShop), le portrait lui-même vient de `img`.
     { id: 'einstein',          name: 'Albert Einstein',     color: '#7fb3d5', img: 'Image/personnages/einstein.webp',          cost: 150 },
     { id: 'marie-curie',       name: 'Marie Curie',         color: '#6bca82', img: 'Image/personnages/marie-curie.webp',       cost: 150 },
     { id: 'christophe-colomb', name: 'Christophe Colomb',   color: '#c8a84b', img: 'Image/personnages/christophe-colomb.webp', cost: 200 },
+    { id: 'lovelace',          name: 'Ada Lovelace',        color: '#ff66b2', img: 'Image/personnages/lovelace.webp',          cost: 400 },
 ];
 
 const RAW_DASH_SUBJECTS = [
@@ -1737,6 +2042,10 @@ function initDashboard() {
     if (!dashApp) return; // Pas sur la page dashboard.html → on sort
 
     /* ============ ÉTAT PERSISTÉ ============ */
+
+    // Les quêtes journalières sont gérées par le module global DailyQuests
+    // (partagé avec map.html) : elles ne sont plus copiées dans `state`, pour
+    // éviter qu'une copie périmée n'écrase la progression faite sur la carte.
 
     /**
      * Charge l'état du dashboard depuis localStorage via DB.
@@ -1917,10 +2226,75 @@ function initDashboard() {
                 <div class="dash-progress-track"><div class="dash-progress-fill" style="width:${pct}%"></div></div>
             </div>`;
         }).join('');
-        return `<section>
+
+        return `
+        ${renderQuests()}
+        <section>
             <div class="dash-eyebrow">Ta progression</div>
             <h2 style="font-family:'Cinzel',serif; font-size:22px; color:#fff; text-shadow:0 0 10px rgba(200,168,75,0.4), 2px 2px 6px rgba(0,0,0,0.7); letter-spacing:1px;">Choisis une matière à explorer</h2>
             <div class="dash-subjects-grid">${cards}</div>
+        </section>`;
+    }
+
+    /** Tableau des quêtes journalières : cartes avec anneau de progression. */
+    function renderQuests() {
+        const data = DailyQuests.get();
+        const total = data.quests.length;
+        const claimedCount = data.quests.filter(q => q.claimed).length;
+        const allClaimed = claimedCount === total;
+        const R = 26, C = 2 * Math.PI * R; // Anneau SVG
+
+        const cards = data.quests.map((q, i) => {
+            const done = DailyQuests.isComplete(q);
+            const pct = Math.min(1, q.progress / q.target);
+            const status = q.claimed ? 'claimed' : done ? 'ready' : 'active';
+            const action = q.claimed
+                ? `<div class="quest-stamp">✓ Réclamée</div>`
+                : done
+                    ? `<button class="quest-claim-btn" id="quest-claim-${q.id}" onclick="window._dashClaimQuest('${q.id}', this)">Réclamer</button>`
+                    : `<div class="quest-progress-label mono">${q.progress} / ${q.target}</div>`;
+            return `<article class="quest-card is-${status}" style="--q-color:${q.color}; --q-delay:${i * 70}ms">
+                <div class="quest-ring">
+                    <svg viewBox="0 0 64 64" aria-hidden="true">
+                        <circle class="quest-ring-bg" cx="32" cy="32" r="${R}"></circle>
+                        <circle class="quest-ring-fg" cx="32" cy="32" r="${R}"
+                            stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${(C * (1 - pct)).toFixed(2)}"></circle>
+                    </svg>
+                    <span class="quest-icon">${q.icon}</span>
+                </div>
+                <h3 class="quest-title">${escapeHtml(q.title)}</h3>
+                <div class="quest-rewards">
+                    <span class="quest-chip xp">+${q.xp} XP</span>
+                    <span class="quest-chip coin"><span class="dash-coin-dot"></span>${q.coins}</span>
+                </div>
+                ${action}
+            </article>`;
+        }).join('');
+
+        const chestState = data.bonusClaimed ? 'opened' : allClaimed ? 'ready' : 'locked';
+        const chest = `<button class="quest-chest is-${chestState}" id="quest-bonus-chest"
+                ${chestState === 'ready' ? `onclick="window._dashClaimBonus(this)"` : 'disabled'}
+                title="${chestState === 'opened' ? 'Coffre ouvert — reviens demain !' : `Réclame toutes les quêtes pour +${DailyQuests.BONUS_COINS} pièces`}">
+                <span class="quest-chest-icon">${chestState === 'opened' ? '🎁' : chestState === 'ready' ? '🎁' : '🔒'}</span>
+                <span class="quest-chest-text">${chestState === 'opened' ? 'Bonus récupéré' : chestState === 'ready' ? `Ouvrir (+${DailyQuests.BONUS_COINS})` : `Bonus +${DailyQuests.BONUS_COINS}`}</span>
+            </button>`;
+
+        return `<section class="quest-board" aria-labelledby="quest-board-title">
+            <div class="quest-board-head">
+                <div>
+                    <div class="dash-eyebrow quest-eyebrow">Quêtes du jour</div>
+                    <h2 id="quest-board-title" class="quest-board-title">Tes missions quotidiennes</h2>
+                    <div class="quest-timer">⏳ Nouvelles quêtes dans <b>${DailyQuests.timeLeftLabel()}</b></div>
+                </div>
+                <div class="quest-board-side">
+                    <div class="quest-overall">
+                        <div class="quest-overall-label mono">${claimedCount}/${total}</div>
+                        <div class="quest-overall-track"><div class="quest-overall-fill" style="width:${(claimedCount / total) * 100}%"></div></div>
+                    </div>
+                    ${chest}
+                </div>
+            </div>
+            <div class="quest-grid">${cards}</div>
         </section>`;
     }
 
@@ -2057,11 +2431,17 @@ function initDashboard() {
                 ? `<div class="dash-modal-actions"><button class="dash-btn-primary" onclick="window._dashFinishQuiz()">Continuer</button></div>`
                 : `<div class="dash-modal-actions"><button class="dash-btn-ghost" onclick="window._dashCloseQuiz()">Quitter</button><button class="dash-btn-primary" onclick="window._dashRetryQuiz()">Réessayer</button></div>`;
 
+        const chronoEnabled = (typeof DB !== 'undefined' && DB.getOption('modeChrono') === 'true');
+        const chronoHtml = chronoEnabled && !answered && !checking 
+            ? `<div id="chrono-bar-container" style="width:100%; height:8px; background:#2f3542; border-radius:4px; margin-bottom:15px; overflow:hidden;"><div id="chrono-bar" style="width:100%; height:100%; background:#ff4757; transition: width 1s linear;"></div></div>`
+            : '';
+
         const overlay = document.createElement('div');
         overlay.className = 'dash-overlay';
         overlay.id = 'dashQuizOverlay';
         overlay.innerHTML = `<div class="dash-modal">
             <div class="dash-eyebrow">${escapeHtml(subject.name)} · ${escapeHtml(lesson.title)}</div>
+            ${chronoHtml}
             <h3>${escapeHtml(lesson.q)}</h3>
             <div class="dash-quiz-body">${QuizEngine.renderBody(lesson)}</div>
             ${feedback}
@@ -2076,6 +2456,19 @@ function initDashboard() {
             QuizEngine.reveal(body, lesson, submitted);
         } else if (!checking) {
             QuizEngine.bind(body, lesson, state.quiz, window._dashSubmitQuiz);
+            if (chronoEnabled) {
+                window.quizTimeRemaining = 30;
+                if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
+                window.quizChronoInterval = setInterval(() => {
+                    window.quizTimeRemaining--;
+                    const chronoBar = document.getElementById('chrono-bar');
+                    if (chronoBar) chronoBar.style.width = Math.max(0, (window.quizTimeRemaining / 30) * 100) + '%';
+                    if (window.quizTimeRemaining <= 0) {
+                        clearInterval(window.quizChronoInterval);
+                        window._dashSubmitQuiz('TEMPS_ECOULE');
+                    }
+                }, 1000);
+            }
         }
     }
 
@@ -2151,11 +2544,13 @@ function initDashboard() {
     };
 
     window._dashCloseQuiz = function () {
+        if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
         state.quiz = null;
         render();
     };
 
     window._dashRetryQuiz = function () {
+        if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
         state.quiz.submitted = null;
         state.quiz.answered = false;
         state.quiz.isCorrect = false;
@@ -2171,6 +2566,7 @@ function initDashboard() {
      * repli local sinon) — voir ai-provider.js.
      */
     window._dashSubmitQuiz = async function (rawAnswer) {
+        if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
         const quiz = state.quiz;
         quiz.submitted = rawAnswer;
         quiz.attempts += 1;
@@ -2194,16 +2590,64 @@ function initDashboard() {
     window._dashFinishQuiz = function () {
         const { subjectId, lessonIndex, attempts } = state.quiz;
         let unlocked = [];
+        let xpGained = 0;
+        let coinsGained = 0;
+        
         if (lessonIndex === (state.progress[subjectId] || 0)) {
             state.progress[subjectId] = (state.progress[subjectId] || 0) + 1;
-            state.xp += 15;
-            state.coins += 10;
+            
+            const chronoEnabled = (typeof DB !== 'undefined' && DB.getOption('modeChrono') === 'true');
+            const xpBase = 15;
+            xpGained = chronoEnabled ? Math.floor(xpBase * (window.quizTimeRemaining / 30)) + xpBase : xpBase;
+            coinsGained = 10;
+            
+            state.xp += xpGained;
+            state.coins += coinsGained;
             unlocked = checkBadges({ justAnsweredFirstTry: attempts === 1 });
+
         }
         state.quiz = null;
         persistState(); // Sauvegarde la progression, XP, pièces et badges
+
+        // --- Quêtes journalières + confettis (module partagé DailyQuests) ---
+        Celebrate.confetti();
+        DailyQuests.track({
+            levels:   1,
+            xp:       xpGained,
+            perfect:  attempts === 1 ? 1 : 0,
+            firstTry: attempts === 1 ? 1 : 0,
+        });
+
         render();
-        showNotification('✓ +15 XP et +10 pièces !');
+        if (xpGained > 0) {
+            showNotification(`✓ +${xpGained} XP et +${coinsGained} pièces !`);
+        }
+    };
+
+    /** Relit XP / pièces après une récompense écrite par DailyQuests. */
+    function syncWallet() {
+        state.xp = parseInt(getOption('dash_xp') || '0');
+        state.coins = parseInt(getOption('dash_coins') || '30');
+    }
+
+    window._dashClaimQuest = function (id, btn) {
+        const q = DailyQuests.claim(id);
+        if (!q) return;
+        if (btn) Celebrate.burst(btn);
+        syncWallet();
+        checkBadges();
+        render();
+        showNotification(`${q.icon} Récompense : +${q.xp} XP et +${q.coins} pièces !`);
+    };
+
+    window._dashClaimBonus = function (btn) {
+        const coins = DailyQuests.claimBonus();
+        if (!coins) return;
+        if (btn) Celebrate.burst(btn);
+        Celebrate.confetti();
+        syncWallet();
+        render();
+        showNotification(`🎁 Coffre du jour ouvert : +${coins} pièces !`);
     };
 
     window._dashBuySkin = function (id) {

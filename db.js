@@ -67,6 +67,7 @@ const DB = (() => {
         TRACK:         'eduquest_current_track',   // Index de la piste audio en cours
         MUSIC_TIME:    'eduquest_music_time',      // Position (secondes) dans la piste en cours
         SESSION:       'eduquest_session',         // Session utilisateur connecté (token + username)
+        QUESTS:        'eduquest_daily_quests',    // Quêtes journalières
     };
 
     /* -----------------------------------------------------------------------
@@ -842,6 +843,15 @@ const DB = (() => {
         // --- Badges (succès) ---
         getBadges,              // Liste des identifiants de badges débloqués
         unlockBadge,            // Débloque un badge (idempotent)
+
+        // --- Quêtes (Phase 3.2) ---
+        getDailyQuests: () => {
+            try { return JSON.parse(localStorage.getItem(KEYS.QUESTS)) || null; }
+            catch { return null; }
+        },
+        saveDailyQuests: (questsObj) => {
+            localStorage.setItem(KEYS.QUESTS, JSON.stringify(questsObj));
+        },
 
         // --- Membres / comptes locaux (panneau d'administration) ---
         listLocalMembers,       // Liste des comptes locaux (email, pseudo, rôle, date)

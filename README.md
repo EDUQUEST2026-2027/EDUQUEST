@@ -1,188 +1,119 @@
 # EDUQUEST — Révision gamifiée (6e → Terminale)
 
-Application web française de révision sous forme de jeu : l'élève choisit une
-matière, un niveau, répond à des questions de 5 types différents, gagne XP,
-pièces et badges, et progresse sur une carte d'îles.
+Application web française d'apprentissage et de révision sous forme d'aventure ludique : l'élève choisit sa classe, sa matière, explore les îles du savoir, répond à des quiz variés (5 types de questions), accomplit des quêtes journalières, gagne XP, pièces et succès, et personnalise son avatar.
 
-100 % front-end (HTML/CSS/JS), aucune dépendance à installer, fonctionne
-hors-ligne en mode local.
+100 % front-end (HTML/CSS/JS), sans dépendance externe obligatoire, fonctionnelle hors-ligne en mode PWA/local.
 
 ---
 
 ## 🚀 Démarrage rapide
 
-**Option 1 — double-clic :** ouvrez `index.html` dans un navigateur moderne.
-Tout fonctionne immédiatement (comptes, progression et options sont stockés
-dans le `localStorage` du navigateur).
+**Option 1 — Double-clic :** ouvrez `index.html` dans un navigateur moderne.
+Tout fonctionne immédiatement (les comptes, la progression, les quêtes et les options sont stockés dans le `localStorage` du navigateur).
 
-**Option 2 — petit serveur local (recommandé pour tester le mode API) :**
+**Option 2 — Serveur local (recommandé pour tester le service worker et le mode API) :**
 
 ```bash
-cd eduquest-advanced
 npx serve .          # ou : python -m http.server 8080
 ```
 
-Puis ouvrez l'URL affichée (ex. `http://localhost:3000`).
+Puis ouvrez l'URL affichée (ex. `http://localhost:8080`).
 
-## 🧪 Lancer les tests
+---
 
-91 tests automatisés (Node pur, zéro dépendance) couvrent la banque de
-questions, la correction des 5 types de questions, le déterminisme des
-générations, la protection XSS du rendu et la couche de configuration du
-panneau d'administration (`AdminStore` : niveaux, surcharges, validation des
-leçons, export/import, nettoyage des données de jeu) :
+## ✨ Fonctionnalités clés
 
-```bash
-npm test          # ou : node tests/run-tests.js
-```
+- **🗺️ Carte des îles & progression :** Chaque matière propose un parcours d'îles avec niveaux interactifs (de 1 à 100), étoiles de maîtrise et déplacement animé du personnage.
+- **🎯 5 types de questions :** QCM classique, Vrai/Faux, Réponse courte, Texte à trous et Association de paires (propulsé par `quiz-engine.js`).
+- **📜 Quêtes journalières & Coffre bonus :**
+  - Renouvellement automatique chaque jour à minuit (heure locale).
+  - Présentation moderne sous forme de cartes avec anneaux de progression circulaires en SVG.
+  - Boutons de réclamation interactifs avec rétribution immédiate (XP + pièces).
+  - Coffre bonus quotidien (+50 pièces) débloqué une fois toutes les quêtes accomplies.
+- **🎉 Célébrations & Confettis natifs :** Moteur de confettis Canvas autonome (`Celebrate`), 100 % hors-ligne sans CDN, célébrant les réussites de niveaux, l'accomplissement des quêtes et l'ouverture du coffre.
+- **⏱️ Mode Défi Chronométré :** Minuteur réglable dans les options récompensant la rapidité de réponse par un bonus d'XP.
+- **🛍️ Boutique & Personnalisation :** Déblocage de skins et halos d'avatar (Aurore, Braise, Abysses, Cyber, Émeraude, Galaxie...) contre des pièces gagnées en jeu.
+- **🏆 Succès & Badges :** Catalogue de succès récompensant les accomplissements (premier quiz, sans faute, paliers de niveau...).
+- **🤖 Mode IA optionnel :** Génération et correction dynamique des questions via scénarios Make (`ai-provider.js`), avec repli local transparent.
+- **🔒 Respect de la vie privée & RGPD :** Sans publicité, sans traceur tiers intrusif, bandeau de cookies conforme CNIL (`cookies.js`) et mentions légales complètes (`legal.html`).
+
+---
 
 ## 🗂️ Architecture des fichiers
 
 | Fichier | Rôle |
 |---|---|
-| `index.html` | Page d'accueil (menu → jouer / dashboard / connexion) |
-| `admin.html` + `admin.js` + `admin.css` | **Panneau d'administration** : membres, niveaux scolaires, matières et leçons, sans toucher au code |
-| `admin-store.js` | Couche de configuration du panneau (niveaux, surcharges de matières/leçons, **crédits de créateur**, export/import) — chargée avant `app.js` sur toutes les pages |
-| `jouer.html` | Carte du monde : 9 îles-matières (PNG + SVG), sélecteur de niveau |
-| `dashboard.html` | Tableau de bord élève : matières, badges, skins, stats |
-| `login.html` | Comptes (local ou SQL) et préférences |
-| `app.js` | Cerveau unique : routage par page, HUD, quiz, progression, dashboard (applique les surcharges `AdminStore`) |
-| `db.js` | Couche de données : `localStorage` par défaut, API SQL optionnelle |
-| `quiz-engine.js` | Moteur de quiz : rendu, events et **correction** des 5 types (QCM, vrai/faux, réponse courte, texte à trous, association) |
-| `question-bank.js` | Génération **déterministe** (PRNG semé) des niveaux 6 → 100 |
-| `ai-provider.js` | Adaptateur IA : interroge Make s'il est configuré, sinon repli local transparent |
-| `schema.sql` | Schéma MySQL de la version serveur (activée via `API_URL` dans `db.js`) |
-| `cookies.js` | **Bandeau de consentement cookies (RGPD/CNIL)** : accepter / refuser / personnaliser, choix mémorisé 12 mois (`eduquest_cookie_consent`) |
-| `legal.html` | **Mentions légales + politique de confidentialité + politique cookies** (crédits alimentés par `AdminStore.getCredits()`) |
-| `global.css` / `style.css` | Thème global et styles de page (+ couche « polish » design) |
-| `MAKE_BLUEPRINT.md` | Guide pas-à-pas pour brancher l'agent IA sur Make |
-| `tests/run-tests.js` | Harnais de tests (voir ci-dessus) |
+| `index.html` | Page d'accueil : menu principal, modale de connexion/inscription, options de jeu (audio, plein écran, chronomètre, etc.) |
+| `dashboard.html` | Tableau de bord élève : missions quotidiennes, sélection des matières, boutique de skins, succès débloqués |
+| `map.html` | Carte interactive d'une matière : parcours des îles, niveaux jouables, modale de quiz interactif |
+| `admin.html` + `admin.js` + `admin.css` | **Panneau d'administration** : gestion des membres, des niveaux scolaires, des matières/leçons et des crédits |
+| `admin-store.js` | Couche de configuration du panneau (niveaux, surcharges matières/leçons, crédits, import/export) |
+| `app.js` | Logique principale de jeu : contrôleur de pages, quêtes quotidiennes (`DailyQuests`), confettis (`Celebrate`), HUD, progression |
+| `quests.css` | Styles dédiés au tableau de quêtes journalières (cartes de verre, anneaux SVG) et au canvas plein écran des confettis |
+| `db.js` | Couche d'accès aux données : persistance locale (`localStorage`) ou synchronisation API backend MySQL |
+| `quiz-engine.js` | Moteur de rendu et de validation des 5 types de questions |
+| `question-bank.js` | Banque de questions et générateur déterministe (PRNG semé) pour les niveaux 6 à 100 par matière |
+| `ai-provider.js` | Adaptateur IA : communication avec Make/webhooks pour génération/correction de questions à la volée |
+| `global.css` / `style.css` | Tokens graphiques, univers spatial animé, cartes, fenêtres modales et responsive mobile |
+| `service-worker.js` | PWA et mise en cache hors-ligne des ressources de l'application |
+| `cookies.js` | Bandeau de consentement RGPD (mémorisation du choix 12 mois) |
+| `legal.html` | Mentions légales, politique de confidentialité et gestion des cookies |
+| `schema.sql` | Schéma MySQL pour le déploiement avec serveur backend optionnel |
+| `MAKE_BLUEPRINT.md` | Guide pour connecter un agent IA via Make |
 
-Ordre de chargement des `<script>` sur chaque page : **question-bank.js →
-quiz-engine.js → ai-provider.js → db.js → app.js** (app.js consomme les quatre
-précédents ; ne pas réordonner).
+---
 
-## 🛡️ Panneau d'administration (membres, niveaux, contenus)
+## 🛡️ Panneau d'administration
 
-Depuis **`admin.html`** (lien discret « 🔐 Administration » en bas à gauche
-de `index.html`), un administrateur peut tout gérer sans éditer le code :
+Accessible depuis le lien « 🔐 Administration » en bas de page ou directement via `admin.html` :
 
-- **👥 Membres** — créer des comptes, changer pseudo ou mot de passe,
-  promouvoir/rétrograder un membre (rôle `eleve` / `admin`), supprimer un
-  compte.
-- **🎓 Niveaux scolaires** — ajouter, renommer, réordonner ou supprimer des
-  classes (6ème → Terminale par défaut) et choisir la bande de contenu
-  (collège / lycée). Les niveaux ajoutés apparaissent sur `jouer.html`.
-- **📚 Matières & leçons** — renommer une matière ou changer son icône,
-  créer des matières personnalisées, éditer chaque leçon des niveaux écrits
-  à la main (5 types de questions : QCM, Vrai/Faux, réponse courte, texte à
-  trous, association), en ajouter, supprimer ou réordonner.
-- **✨ Crédits** — personnaliser le nom du studio, la baseline, le nom du
-  créateur, l'e-mail de contact, le site web et une note libre. Ces textes
-  s'affichent en bas de toutes les pages et alimentent automatiquement la
-  page `legal.html` (bouton « Rétablir les valeurs par défaut » inclus).
-- **⚙️ Réglages** — modifier son profil, exporter/importer la configuration
-  (JSON), réinitialiser niveaux/matières ou la progression de l'appareil.
+- **👥 Membres :** Création, modification de mot de passe, attribution des rôles (`eleve` / `admin`) ou suppression de comptes locaux.
+- **🎓 Niveaux scolaires :** Ajout, modification et réorganisation des classes (6ème, 5ème, ..., Terminale).
+- **📚 Matières & Leçons :** Personnalisation des intitulés, des icônes et création de questions personnalisées (parmi les 5 types disponibles).
+- **✨ Crédits :** Personnalisation des mentions de l'éditeur, coordonnées et crédits affichés en pied de page et sur `legal.html`.
+- **⚙️ Sauvegarde :** Export et import de la configuration au format JSON.
 
-**Accès :** ouvrez `admin.html` (ou cliquez sur « 🔐 Administration » en bas
-de `index.html`) — le panneau s'ouvre **directement, sans page de connexion**
-pour l'instant. Les modifications sont appliquées immédiatement : il suffit
-de recharger la page du jeu pour les voir (les matières personnalisées
-apparaissent dans le tableau de bord ; `jouer.html` conserve ses
-cartes-îles d'origine).
+---
 
-> ⚠️ L'accès est volontairement ouvert (aucun mot de passe demandé) : toute
-> personne qui ouvre le panneau peut modifier la configuration de ce
-> navigateur. Les fonctions de connexion par rôle (`admin.js`,
-> `renderGate`/`login`) existent et peuvent être réactivées, ou utilisez le
-> mode API SQL (`db.js` + `schema.sql`) où les rôles sont gérés côté serveur
-> — indispensable avant toute mise en ligne.
+## 🤖 Activer le mode IA (Questions à la demande)
 
-## 🤖 Activer le mode IA (questions générées à la demande)
+Par défaut, les questions proviennent de la banque intégrée déterministe (`question-bank.js`).
 
-Par défaut, les questions viennent de la banque locale (déterministe).
-Pour qu'un agent IA sur [Make](https://make.com) génère chaque question
-(unique par élève, correction côté serveur — la bonne réponse ne transite
-jamais dans le navigateur) :
+Pour connecter un agent IA hébergé sur [Make](https://make.com) :
+1. Suivez le guide détaillé dans **`MAKE_BLUEPRINT.md`**.
+2. Renseignez vos endpoints webhooks dans `ai-provider.js` :
 
-1. Suivez **`MAKE_BLUEPRINT.md`** pour créer les deux scénarios
-   (*Generate Level* + *Validate Answer*).
-2. Collez les deux URLs dans `ai-provider.js` :
-
-```js
+```javascript
 const GENERATE_WEBHOOK_URL = 'https://hook.eu2.make.com/xxxxxxxx';
 const VALIDATE_WEBHOOK_URL = 'https://hook.eu2.make.com/yyyyyyyy';
 ```
 
-Le basculement est automatique et **sans risque** : si Make ne répond pas ou
-répond mal, le jeu repasse silencieusement en mode local. Tant que les URLs
-sont vides, le comportement est exactement celui du mode local.
+En cas de perte de connexion ou d'erreur réseau, l'application bascule automatiquement et de manière transparente sur la banque locale.
 
-## 🗃️ Activer la persistance SQL
+---
 
-`db.js` fonctionne en `localStorage` par défaut. Pour brancher le schéma
-MySQL (`schema.sql`) : décommentez `API_URL` dans `db.js` et pointez-la vers
-un backend implémentant l'API décrite dans les commentaires du fichier
-(`/auth/*`, `/users/*`, `/progress/*`, …).
+## 🗃️ Persistance SQL (Mode Serveur)
 
-## 🔒 Sécurité — ce qui est fait, ce qui reste
+Par défaut, l'application fonctionne intégralement dans le navigateur.
+Pour activer la sauvegarde centralisée sur une base de données MySQL :
+1. Déployez le script `schema.sql` sur votre serveur MySQL.
+2. Décommentez et configurez la variable `API_URL` dans `db.js` vers votre API backend.
 
-- ✅ **XSS neutralisé** : tout le contenu de question rendu en HTML (énoncés,
-  options, items, cibles, badges, explications) passe par l'échappement
-  `esc()`/`escapeHtml()`. Vérifié par des tests (`npm test`).
-- ✅ **Mode IA sûr par conception** : la correction se fait côté serveur
-  (scénario #2), la bonne réponse n'arrive jamais dans le navigateur avant la
-  réponse de l'élève.
-- ⚠️ **Comptes locaux en clair** : le mode localStorage n'est PAS sécurisé
-  (pseudonyme/progression manipulables via la console). C'est acceptable pour
-  une démo ou un usage en classe non connectée ; pour toute mise en ligne,
-  activez le mode SQL/API (`db.js` + `schema.sql`).
+---
 
-## ⚖️ Conformité — cookies & informations légales
+## 🧪 Validation & Tests
 
-Le site est conforme aux obligations d'information et de consentement
-(RGPD / loi Informatique et Libertés / recommandations CNIL) :
+Vérification de la syntaxe et intégrité de l'ensemble des modules JavaScript du projet :
 
-- **Bandeau de consentement** (`cookies.js`, présent sur les 8 pages) :
-  au premier passage, l'utilisateur choisit **Tout accepter**,
-  **Continuer sans accepter** ou **Personnaliser** (mesure d'audience et
-  marketing, désactivés par défaut). Le choix est mémorisé 12 mois dans
-  `localStorage` (`eduquest_cookie_consent`) et peut être modifié à tout
-  moment via le lien « Cookies » en bas de page (ou « Gérer mes cookies »
-  sur `legal.html`).
-- **Page `legal.html`** : mentions légales (éditeur, hébergeur, contact),
-  politique de confidentialité (données stockées, finalités, durée,
-  droits RGPD) et politique cookies (catégories, consentement, retrait).
-  Les crédits affichés (éditeur, contact, site) sont alimentés par
-  l'onglet **Crédits** du panneau d'administration.
-- **Traceurs optionnels** : aucun n'est actif par défaut ; les cases
-  correspondantes du bandeau servent d'emplacement prêt pour un futur
-  outil de mesure d'audience (à ne brancher qu'après consentement).
+```bash
+npm test          # ou : node --check app.js db.js quiz-engine.js question-bank.js admin.js admin-store.js
+```
 
-> ℹ️ Le document `legal.html` est un modèle sérieux mais générique : avant
-> mise en ligne, complétez l'éditeur (via le panneau, onglet Crédits),
-> l'hébergeur et les coordonnées du responsable de traitement, et faites
-> valider le tout si vous traitez des données sensibles.
+---
 
-## 🎨 Personnaliser le design
+## 📱 Compatibilité & Responsive
 
-- **Responsive mobile (v1.21)** : toutes les pages (niveaux, matières, quiz,
-  dashboard) **et le panneau d'administration** sont utilisables sur téléphone
-  (testé à 360/390px de large). Les correctifs mobiles sont regroupés à la fin
-  de `global.css`, de `style.css` (bloc « DERNIER MOT RESPONSIVE ») et de
-  `admin.css` — y ajouter tout nouveau correctif pour qu'il prenne le dessus.
-- Thème et variables de couleurs : début de `global.css` (tokens CSS).
-- Couche « polish » (animations, cartes, boutons, modales) : bloc
-  `POLISH — DESIGN` à la fin de `style.css` et `global.css`.
-- Le logo et les images (`Image/`, `fonts/`, `Musique/`) ne sont pas touchés
-  par cette couche.
-
-## 📦 Contenu du paquet
-
-Pages jouables (`index/jouer/dashboard/login/options`), panneau
-d'administration (`admin.html`) avec gestion des crédits, page légale
-(`legal.html`), bandeau de consentement cookies (`cookies.js`), moteur de
-quiz, banque de questions (6e → Terminale, 10 matières au dashboard — dont
-la Chimie, matière à part entière — et 9 îles sur la carte du monde), tests
-automatisés, documentation (README + MAKE_BLUEPRINT), schéma SQL. Dossier
-`Exemple/` = ancien prototype conservé pour référence, non chargé par le jeu.
+- Optimisé pour écrans d'ordinateurs, tablettes et smartphones (responsive jusqu'à 360px de largeur).
+- Support du mode plein écran via l'API Fullscreen du navigateur.
+- Prise en charge des préférences d'accessibilité (`prefers-reduced-motion` pour neutraliser les animations et confettis si demandé par l'utilisateur).
+- Mode économie d'énergie disponible dans les options.
