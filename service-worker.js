@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eduquest-cache-v1.22.0';
+const CACHE_NAME = 'eduquest-cache-v1.23.0';
 
 const PRECACHE_URLS = [
   './',
@@ -20,7 +20,17 @@ const PRECACHE_URLS = [
   'question-bank.js',
   'quiz-engine.js',
   'manifest.webmanifest',
-  'Image/logo.webp'
+  'Image/logo.webp',
+  'Image/personnages/robot.webp',
+  'Image/personnages/einstein.webp',
+  'Image/personnages/marie-curie.webp',
+  'Image/personnages/christophe-colomb.webp',
+  'Image/personnages/lovelace.webp',
+  'Image/personnages/pythagore.webp',
+  'Image/personnages/davinci.webp',
+  'Image/personnages/hugo.webp',
+  'Image/personnages/astronaute.webp',
+  'Image/personnages/mage.webp'
 ];
 
 self.addEventListener('install', event => {

@@ -178,6 +178,8 @@
     const TABS = [
         { id: 'levels', icon: '🎓', label: 'Niveaux scolaires' },
         { id: 'subjects', icon: '📚', label: 'Matières & leçons' },
+        { id: 'shop', icon: '🛍️', label: 'Boutique' },
+        { id: 'rewards', icon: '🎁', label: 'Récompenses' },
         { id: 'members', icon: '👥', label: 'Membres' },
         { id: 'credits', icon: '✨', label: 'Crédits' },
         { id: 'settings', icon: '⚙️', label: 'Réglages' },
@@ -189,7 +191,7 @@
                 <div class="adm-stat"><b>…</b><span>Comptes</span></div>
                 <div class="adm-stat"><b>…</b><span>Admins</span></div>
                 <div class="adm-stat"><b>…</b><span>Matières</span></div>
-                <div class="adm-stat"><b>…</b><span>Niveaux scolaires</span></div>
+                <div class="adm-stat"><b>…</b><span>Articles Boutique</span></div>
             </div>
             <div class="adm-tabs">
                 ${TABS.map(t => `
@@ -206,6 +208,8 @@
     function renderTab() {
         if (S.tab === 'levels') return renderLevels();
         if (S.tab === 'subjects') return renderSubjects();
+        if (S.tab === 'shop') return renderShop();
+        if (S.tab === 'rewards') return renderRewards();
         if (S.tab === 'members') return renderMembers();
         if (S.tab === 'credits') return renderCredits();
         if (S.tab === 'settings') return renderSettings();
@@ -221,14 +225,14 @@
             if (r.ok) { members = r.data; admins = members.filter(m => m.role === 'admin').length; }
         } catch { /* stats optionnelles */ }
         const subs = typeof AdminStore !== 'undefined' ? AdminStore.listEditable(AdminStore.getDefaultSubjects()) : [];
-        const levels = typeof AdminStore !== 'undefined' ? AdminStore.getLevels() : [];
+        const shopItems = typeof AdminStore !== 'undefined' ? AdminStore.getShopItems() : [];
         if (!wrap) return;
         const cells = wrap.querySelectorAll('.adm-stat b');
-        if (cells.length === 4) {
+        if (cells.length >= 4) {
             cells[0].textContent = String(members.length);
             cells[1].textContent = String(admins);
             cells[2].textContent = String(subs.length);
-            cells[3].textContent = String(levels.length);
+            cells[3].textContent = String(shopItems.length);
         }
     }
 
@@ -519,6 +523,257 @@
             lesson.exp = val('admF_exp').trim();
         }
         return lesson;
+    }
+
+    /* ============================== ONGLET : BOUTIQUE ============================== */
+
+    const SHOP_CATEGORY_LABELS = {
+        all: '🌟 Tous',
+        aura: '🔮 Auras & Halos',
+        avatar: '👤 Personnages',
+        title: '📜 Titres',
+        theme: '🎨 Thèmes',
+        booster: '⚡ Boosters',
+    };
+
+    function renderShop() {
+        const cat = S.shopCategory || 'all';
+        const allItems = (typeof AdminStore !== 'undefined') ? AdminStore.getShopItems() : [];
+        const filtered = cat === 'all' ? allItems : allItems.filter(it => it.category === cat);
+
+        const editor = S.editingShopItem ? renderShopItemEditor(S.editingShopItem) : '';
+
+        const itemCards = filtered.map((item) => {
+            return `
+                <div class="adm-shop-card ${item.disabled ? 'disabled' : ''}">
+                    <div class="adm-shop-card-head">
+                        <div class="adm-shop-orb" style="--sc:${esc(item.color || '#c8a84b')}">
+                            ${item.img ? `<img src="${esc(item.img)}" alt="">` : (item.icon || '✨')}
+                        </div>
+                        <div class="adm-shop-meta">
+                            <div class="adm-shop-title">
+                                <b>${esc(item.name)}</b>
+                                <span class="adm-badge adm-badge-type">${esc(SHOP_CATEGORY_LABELS[item.category] || item.category)}</span>
+                            </div>
+                            <div class="adm-shop-cost">🪙 ${item.cost === 0 ? 'Offert' : item.cost + ' pièces'}</div>
+                        </div>
+                    </div>
+                    <p class="adm-shop-desc">${esc(item.desc || 'Aucune description')}</p>
+                    <div class="adm-shop-actions">
+                        <span class="adm-badge ${item.disabled ? 'adm-badge-admin' : 'adm-badge-eleve'}">${item.disabled ? 'Désactivé' : 'Actif'}</span>
+                        <div class="adm-row-actions">
+                            <button class="adm-ico-btn" title="Modifier" onclick="ADM.editShopItem('${esc(item.id)}')">✏️ Modifier</button>
+                            <button class="adm-ico-btn danger" title="Supprimer" onclick="ADM.deleteShopItem('${esc(item.id)}')">🗑️</button>
+                        </div>
+                    </div>
+                </div>`;
+        }).join('');
+
+        return `
+            <div class="adm-card">
+                <div class="adm-toolbar">
+                    <h2 style="margin:0;">🛍️ Gestion de la Boutique <small>${allItems.length} article(s)</small></h2>
+                    <button class="adm-btn adm-btn-ok adm-right" onclick="ADM.newShopItem()">+ Ajouter un article</button>
+                </div>
+                <p class="adm-hint">Personnalisez les prix, l'apparence et ajoutez de nouveaux articles (Halos, Avatars, Titres, Thèmes, Boosters) pour motiver les élèves.</p>
+
+                <!-- Filtres de catégories -->
+                <div class="adm-shop-filter-tabs">
+                    ${Object.keys(SHOP_CATEGORY_LABELS).map(k => `
+                        <button class="adm-shop-filter-btn ${cat === k ? 'active' : ''}" onclick="ADM.setShopCategory('${k}')">
+                            ${SHOP_CATEGORY_LABELS[k]} (${k === 'all' ? allItems.length : allItems.filter(i => i.category === k).length})
+                        </button>
+                    `).join('')}
+                </div>
+
+                ${editor}
+
+                <div class="adm-shop-grid">
+                    ${itemCards || '<div class="adm-empty" style="grid-column: 1/-1;">Aucun article dans cette catégorie.</div>'}
+                </div>
+
+                <div class="adm-toolbar" style="margin-top:20px; border-top: 1px dashed rgba(154,167,216,0.2); padding-top: 14px;">
+                    <button class="adm-btn adm-btn-ghost" onclick="ADM.resetShopItems()">🔄 Rétablir la boutique par défaut</button>
+                </div>
+            </div>`;
+    }
+
+    function renderShopItemEditor(item) {
+        const isNew = Boolean(item._isNew);
+        return `
+            <div class="adm-editor" style="margin: 16px 0;">
+                <h3>${isNew ? '➕ Nouvel article de boutique' : '✏️ Modifier l\'article « ' + esc(item.name) + ' »'}</h3>
+                <div class="adm-form">
+                    <div class="adm-grid-2">
+                        <div class="adm-field">
+                            <label>Identifiant unique (slug)</label>
+                            <input class="adm-input" id="admShopId" value="${esc(item.id || '')}" ${isNew ? '' : 'readonly'} placeholder="ex: super-halo">
+                        </div>
+                        <div class="adm-field">
+                            <label>Nom affiché</label>
+                            <input class="adm-input" id="admShopName" value="${esc(item.name || '')}" placeholder="ex: Dragon Flamboyant" oninput="ADM.updateShopPreview()">
+                        </div>
+                    </div>
+
+                    <div class="adm-grid-2">
+                        <div class="adm-field">
+                            <label>Catégorie</label>
+                            <select class="adm-select" id="admShopCategory" onchange="ADM.updateShopPreview()">
+                                <option value="aura" ${item.category === 'aura' ? 'selected' : ''}>🔮 Aura / Halo</option>
+                                <option value="avatar" ${item.category === 'avatar' ? 'selected' : ''}>👤 Personnage / Avatar</option>
+                                <option value="title" ${item.category === 'title' ? 'selected' : ''}>📜 Titre honorifique</option>
+                                <option value="theme" ${item.category === 'theme' ? 'selected' : ''}>🎨 Thème & Effet</option>
+                                <option value="booster" ${item.category === 'booster' ? 'selected' : ''}>⚡ Booster d'XP / Bouclier</option>
+                            </select>
+                        </div>
+                        <div class="adm-field">
+                            <label>Prix (en pièces d'or)</label>
+                            <input class="adm-input" type="number" id="admShopCost" min="0" value="${item.cost ?? 50}" placeholder="0 = Offert" oninput="ADM.updateShopPreview()">
+                        </div>
+                    </div>
+
+                    <div class="adm-grid-2">
+                        <div class="adm-field">
+                            <label>Couleur du Halo / Aura (Hex)</label>
+                            <div style="display:flex; gap:8px;">
+                                <input class="adm-input" type="color" id="admShopColorPicker" value="${item.color || '#c8a84b'}" style="width:50px; padding:2px; height:38px; cursor:pointer;" onchange="document.getElementById('admShopColor').value = this.value; ADM.updateShopPreview();">
+                                <input class="adm-input" id="admShopColor" value="${esc(item.color || '#c8a84b')}" placeholder="#4fd8c4" oninput="document.getElementById('admShopColorPicker').value = this.value; ADM.updateShopPreview();">
+                            </div>
+                        </div>
+                        <div class="adm-field">
+                            <label>Chemin de l'image (pour avatar, optionnel)</label>
+                            <input class="adm-input" id="admShopImg" value="${esc(item.img || '')}" placeholder="ex: Image/personnages/lovelace.webp" oninput="ADM.updateShopPreview()">
+                        </div>
+                    </div>
+
+                    <div class="adm-field">
+                        <label>Description & Effet en jeu</label>
+                        <textarea class="adm-textarea" id="admShopDesc" rows="2" placeholder="Description de l'article visible dans la boutique...">${esc(item.desc || '')}</textarea>
+                    </div>
+
+                    <div class="adm-field" style="max-width:260px;">
+                        <label class="checkbox-container" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                            <input type="checkbox" id="admShopDisabled" ${item.disabled ? 'checked' : ''}>
+                            <span style="font-size:14px; color:var(--ink);">Désactiver cet article</span>
+                        </label>
+                    </div>
+
+                    <!-- Live preview card -->
+                    <div style="margin: 10px 0; padding: 12px; background: rgba(7,11,26,0.5); border-radius: 10px; border: 1px dashed rgba(200,168,75,0.3);">
+                        <div style="font-size:12px; color:var(--muted); margin-bottom:6px; text-transform:uppercase;">Aperçu dans la boutique :</div>
+                        <div id="admShopLivePreview" style="display:inline-flex; align-items:center; gap:14px; background: rgba(13,19,48,0.9); padding:12px 18px; border-radius:12px; border:1px solid rgba(200,168,75,0.4);">
+                            <div class="adm-shop-orb" id="admPreviewOrb" style="--sc:${item.color || '#c8a84b'}; width:50px; height:50px; margin:0;">
+                                ${item.img ? `<img id="admPreviewImg" src="${esc(item.img)}" alt="">` : '<span id="admPreviewIcon">✨</span>'}
+                            </div>
+                            <div>
+                                <div id="admPreviewTitle" style="font-weight:700; color:#fff;">${esc(item.name || 'Nom de l\'article')}</div>
+                                <div id="admPreviewCost" style="font-size:12px; color:var(--gold);">🪙 ${item.cost === 0 ? 'Offert' : (item.cost || 50) + ' pièces'}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="adm-error" id="admShopErr"></div>
+                    <div class="adm-toolbar">
+                        <button class="adm-btn adm-btn-ok" onclick="ADM.saveShopItem()">💾 Enregistrer l'article</button>
+                        <button class="adm-btn adm-btn-ghost" onclick="ADM.cancelShopItem()">Annuler</button>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    /* ============================== ONGLET : RÉCOMPENSES ============================== */
+
+    function renderRewards() {
+        const r = (typeof AdminStore !== 'undefined') ? AdminStore.getRewardsConfig() : { xpBase: 15, coinsBase: 10, chronoBonusMaxXp: 15, dailyChestCoins: 50, firstTryBonusXp: 10, questRewardMultiplier: 1 };
+
+        return `
+            <div class="adm-card">
+                <h2>🎁 Gestion des Récompenses & de l'Économie</h2>
+                <p class="adm-hint">Réglez la générosité des gains en XP, en pièces et les bonus accordés aux élèves pour chaque action de jeu.</p>
+
+                <div class="adm-card" style="border-color: rgba(95,212,230,0.35); margin-top: 14px;">
+                    <h3 style="font-family:'Cinzel',serif; font-size:15px; color:var(--cyan); margin-bottom:12px;">🎯 Récompenses de base des Quiz</h3>
+                    <div class="adm-form">
+                        <div class="adm-grid-2">
+                            <div class="adm-field">
+                                <label>XP de base par niveau réussi</label>
+                                <input class="adm-input" type="number" id="admRwXpBase" min="1" max="500" value="${r.xpBase}">
+                                <span class="adm-hint">Par défaut : 15 XP.</span>
+                            </div>
+                            <div class="adm-field">
+                                <label>Pièces gagnées par niveau réussi</label>
+                                <input class="adm-input" type="number" id="admRwCoinsBase" min="0" max="500" value="${r.coinsBase}">
+                                <span class="adm-hint">Par défaut : 10 pièces.</span>
+                            </div>
+                        </div>
+                        <div class="adm-grid-2">
+                            <div class="adm-field">
+                                <label>Bonus max Mode Défi Chronométré (XP)</label>
+                                <input class="adm-input" type="number" id="admRwChronoXp" min="0" max="500" value="${r.chronoBonusMaxXp}">
+                                <span class="adm-hint">Calculé au prorata des secondes restantes (0s → 0 XP, 30s → max XP).</span>
+                            </div>
+                            <div class="adm-field">
+                                <label>Bonus premier coup sans faute (XP)</label>
+                                <input class="adm-input" type="number" id="admRwFirstTryXp" min="0" max="500" value="${r.firstTryBonusXp}">
+                                <span class="adm-hint">Bonus accordé si la bonne réponse est trouvée dès le premier essai.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="adm-card" style="border-color: rgba(200,168,75,0.35); margin-top: 16px;">
+                    <h3 style="font-family:'Cinzel',serif; font-size:15px; color:var(--gold-soft); margin-bottom:12px;">📜 Quêtes Quotidiennes & Coffre Bonus</h3>
+                    <div class="adm-form">
+                        <div class="adm-grid-2">
+                            <div class="adm-field">
+                                <label>Pièces du coffre bonus quotidien</label>
+                                <input class="adm-input" type="number" id="admRwDailyChest" min="0" max="1000" value="${r.dailyChestCoins}">
+                                <span class="adm-hint">Débloqué lorsque toutes les 3 quêtes du jour sont accomplies.</span>
+                            </div>
+                            <div class="adm-field">
+                                <label>Multiplicateur des récompenses de quêtes</label>
+                                <input class="adm-input" type="number" step="0.1" min="0.1" max="5.0" id="admRwQuestMult" value="${r.questRewardMultiplier}">
+                                <span class="adm-hint">Ex: 1.5 pour +50% de gains sur toutes les quêtes journalières.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="adm-toolbar" style="margin-top:16px;">
+                    <button class="adm-btn adm-btn-ok" onclick="ADM.rewardsSave()">💾 Enregistrer les récompenses</button>
+                    <button class="adm-btn adm-btn-ghost" onclick="ADM.rewardsReset()">Rétablir les valeurs par défaut</button>
+                </div>
+
+                <!-- Outil de crédit rapide pour tests de la boutique -->
+                <div class="adm-card" style="border-color: rgba(102,187,106,0.35); margin-top: 16px;">
+                    <h3 style="font-family:'Cinzel',serif; font-size:15px; color:var(--green); margin-bottom:8px;">💰 Outil de test de l'Économie (Portefeuille Local)</h3>
+                    <p class="adm-hint" style="margin-bottom:12px;">Ajoutez des pièces ou de l'XP sur cet appareil pour tester immédiatement les achats en boutique.</p>
+                    <div class="adm-toolbar">
+                        <button class="adm-btn adm-btn-ghost" onclick="ADM.grantPlayerReward(0, 100)">+100 Pièces 🪙</button>
+                        <button class="adm-btn adm-btn-ghost" onclick="ADM.grantPlayerReward(0, 500)">+500 Pièces 🪙</button>
+                        <button class="adm-btn adm-btn-ghost" onclick="ADM.grantPlayerReward(100, 0)">+100 XP ⚡</button>
+                        <button class="adm-btn adm-btn-danger adm-right" onclick="ADM.grantPlayerReward(0, 0, true)">Réinitialiser à 30 pièces & 0 XP</button>
+                    </div>
+                </div>
+
+                <!-- Catalogue des Succès / Badges -->
+                <div class="adm-card" style="margin-top: 16px;">
+                    <h3 style="font-family:'Cinzel',serif; font-size:15px; color:var(--gold-soft); margin-bottom:8px;">🏆 Succès & Badges Disponibles</h3>
+                    <div class="adm-table-wrap">
+                        <table class="adm-table">
+                            <thead><tr><th>Icône</th><th>Nom du Succès</th><th>Description / Condition</th><th>Statut</th></tr></thead>
+                            <tbody>
+                                <tr><td>🎯</td><td><b>Premier pas</b></td><td>Réussir sa toute première question de quiz</td><td><span class="adm-badge adm-badge-eleve">Actif</span></td></tr>
+                                <tr><td>✨</td><td><b>Sans-faute</b></td><td>Répondre juste du premier coup, sans réessayer</td><td><span class="adm-badge adm-badge-eleve">Actif</span></td></tr>
+                                <tr><td>🌐</td><td><b>Touche-à-tout</b></td><td>Terminer au moins une leçon dans chaque matière</td><td><span class="adm-badge adm-badge-eleve">Actif</span></td></tr>
+                                <tr><td>🏆</td><td><b>Expert(e)</b></td><td>Terminer toutes les leçons d'une même matière</td><td><span class="adm-badge adm-badge-eleve">Actif</span></td></tr>
+                                <tr><td>🎨</td><td><b>Collectionneur</b></td><td>Posséder au moins 3 skins différents dans la boutique</td><td><span class="adm-badge adm-badge-eleve">Actif</span></td></tr>
+                                <tr><td>🚀</td><td><b>Étoile montante</b></td><td>Atteindre le niveau 5 du joueur (400+ XP)</td><td><span class="adm-badge adm-badge-eleve">Actif</span></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>`;
     }
 
     /* ============================== ONGLET : MEMBRES ============================== */
@@ -877,6 +1132,130 @@
             if (!r.ok) { toast(r.error || 'Déplacement impossible.', 'err'); return; }
             S.subjectList = [];
             renderTabContent();
+        },
+
+        /* ----- Boutique ----- */
+        setShopCategory(cat) {
+            S.shopCategory = cat;
+            renderTabContent();
+        },
+        newShopItem() {
+            S.editingShopItem = {
+                _isNew: true,
+                id: '',
+                name: '',
+                category: S.shopCategory && S.shopCategory !== 'all' ? S.shopCategory : 'aura',
+                cost: 100,
+                color: '#c8a84b',
+                img: '',
+                desc: '',
+                disabled: false
+            };
+            renderTabContent();
+        },
+        editShopItem(id) {
+            const item = AdminStore.getShopItem(id);
+            if (!item) return;
+            S.editingShopItem = JSON.parse(JSON.stringify(item));
+            renderTabContent();
+        },
+        cancelShopItem() {
+            S.editingShopItem = null;
+            renderTabContent();
+        },
+        updateShopPreview() {
+            const name = (document.getElementById('admShopName') || {}).value || 'Nom de l\'article';
+            const cost = parseInt((document.getElementById('admShopCost') || {}).value || '0', 10);
+            const color = (document.getElementById('admShopColor') || {}).value || '#c8a84b';
+            const img = (document.getElementById('admShopImg') || {}).value || '';
+
+            const t = document.getElementById('admPreviewTitle');
+            const c = document.getElementById('admPreviewCost');
+            const orb = document.getElementById('admPreviewOrb');
+            if (t) t.textContent = name;
+            if (c) c.textContent = '🪙 ' + (cost === 0 ? 'Offert' : cost + ' pièces');
+            if (orb) {
+                orb.style.setProperty('--sc', color);
+                orb.innerHTML = img ? `<img src="${esc(img)}" alt="">` : '<span>✨</span>';
+            }
+        },
+        saveShopItem() {
+            const id = (document.getElementById('admShopId') || {}).value || '';
+            const name = (document.getElementById('admShopName') || {}).value || '';
+            const category = (document.getElementById('admShopCategory') || {}).value || 'aura';
+            const cost = parseInt((document.getElementById('admShopCost') || {}).value || '0', 10);
+            const color = (document.getElementById('admShopColor') || {}).value || '#c8a84b';
+            const img = (document.getElementById('admShopImg') || {}).value || '';
+            const desc = (document.getElementById('admShopDesc') || {}).value || '';
+            const disabled = Boolean((document.getElementById('admShopDisabled') || {}).checked);
+
+            const r = AdminStore.saveShopItem({ id, name, category, cost, color, img, desc, disabled });
+            if (!r.ok) {
+                setError('admShopErr', r.error || 'Erreur d\'enregistrement.');
+                return;
+            }
+            S.editingShopItem = null;
+            renderTabContent();
+            toast('Article « ' + name + ' » enregistré ✔', 'ok');
+        },
+        deleteShopItem(id) {
+            const item = AdminStore.getShopItem(id);
+            if (!item) return;
+            if (!confirm('Supprimer ou masquer l\'article « ' + item.name + ' » de la boutique ?')) return;
+            AdminStore.deleteShopItem(id);
+            if (S.editingShopItem && S.editingShopItem.id === id) S.editingShopItem = null;
+            renderTabContent();
+            toast('Article supprimé de la boutique.', 'ok');
+        },
+        resetShopItems() {
+            if (!confirm('Rétablir tous les articles par défaut de la boutique ?')) return;
+            AdminStore.resetShopItems();
+            S.editingShopItem = null;
+            renderTabContent();
+            toast('Boutique réinitialisée aux articles d\'origine.', 'ok');
+        },
+
+        /* ----- Récompenses & Économie ----- */
+        rewardsSave() {
+            const xpBase = parseInt((document.getElementById('admRwXpBase') || {}).value, 10);
+            const coinsBase = parseInt((document.getElementById('admRwCoinsBase') || {}).value, 10);
+            const chronoBonusMaxXp = parseInt((document.getElementById('admRwChronoXp') || {}).value, 10);
+            const dailyChestCoins = parseInt((document.getElementById('admRwDailyChest') || {}).value, 10);
+            const firstTryBonusXp = parseInt((document.getElementById('admRwFirstTryXp') || {}).value, 10);
+            const questRewardMultiplier = parseFloat((document.getElementById('admRwQuestMult') || {}).value);
+
+            const r = AdminStore.saveRewardsConfig({
+                xpBase, coinsBase, chronoBonusMaxXp, dailyChestCoins, firstTryBonusXp, questRewardMultiplier
+            });
+            if (!r.ok) {
+                toast(r.error || 'Erreur lors de la sauvegarde des récompenses.', 'err');
+                return;
+            }
+            renderTabContent();
+            toast('Récompenses et paramètres économiques enregistrés ✔', 'ok');
+        },
+        rewardsReset() {
+            if (!confirm('Rétablir les récompenses par défaut ?')) return;
+            AdminStore.resetRewardsConfig();
+            renderTabContent();
+            toast('Récompenses rétablies par défaut.', 'ok');
+        },
+        grantPlayerReward(xp, coins, reset = false) {
+            let currentXp = parseInt(DB.getOption('dash_xp') || '0', 10);
+            let currentCoins = parseInt(DB.getOption('dash_coins') || '30', 10);
+            if (reset) {
+                currentXp = 0;
+                currentCoins = 30;
+                DB.saveOption('dash_xp', '0');
+                DB.saveOption('dash_coins', '30');
+                toast('Portefeuille local réinitialisé à 30 pièces.', 'ok');
+            } else {
+                currentXp += xp;
+                currentCoins += coins;
+                DB.saveOption('dash_xp', String(currentXp));
+                DB.saveOption('dash_coins', String(currentCoins));
+                toast(`Ajouté avec succès : +${xp} XP et +${coins} pièces !`, 'ok');
+            }
         },
 
         /* ----- Membres ----- */
