@@ -1,68 +1,69 @@
 /* ==========================================================================
-   STYLE.CSS — EDUQUEST v2.0
-   Feuille de style spécifique définissant le design de chaque page.
+   STYLE.CSS â€” EDUQUEST v2.0
+   Feuille de style spÃ©cifique dÃ©finissant le design de chaque page.
 
    STRUCTURE DU FICHIER :
-   Ce fichier regroupe les styles spécifiques de toutes les pages du jeu.
-   Pour faciliter la maintenance, il est divisé en sections par page :
-     1. ACCUEIL   (index.html)   → Logo, menu principal, animations
-     2. OPTIONS   (options.html) → Panneaux de réglage, sliders, cases à cocher
-     3. LOGIN     (login.html)   → Formulaires de connexion/inscription, onglets
-     4. JOUER     (jouer.html)   → Sélecteur de niveau (pills), grille des matières
-     5. MAP       (map.html)     → Carte du monde, chemin, personnage, niveaux, modale
+   Ce fichier regroupe les styles spÃ©cifiques de toutes les pages du jeu.
+   Pour faciliter la maintenance, il est divisÃ© en sections par page :
+     1. ACCUEIL   (index.html)   â†’ Logo, menu principal, animations
+     2. OPTIONS   (options.html) â†’ Panneaux de rÃ©glage, sliders, cases Ã  cocher
+     3. LOGIN     (login.html)   â†’ Formulaires de connexion/inscription, onglets
+     4. JOUER     (jouer.html)   â†’ SÃ©lecteur de niveau (pills), grille des matiÃ¨res
+     5. MAP       (map.html)     â†’ Carte du monde, chemin, personnage, niveaux, modale
 
-   DÉPENDANCE :
-   Ce fichier utilise les variables CSS définies dans global.css (ex: var(--c-night)).
-   global.css doit toujours être chargé AVANT style.css dans le HTML.
+   DÃ‰PENDANCE :
+   Ce fichier utilise les variables CSS dÃ©finies dans global.css (ex: var(--c-night)).
+   global.css doit toujours Ãªtre chargÃ© AVANT style.css dans le HTML.
    ========================================================================== */
 
 /* ==========================================================================
-   POLICES PIXEL — v2.5, inspiré de la direction artistique de Codédex
-   (codedex.io) : une police "display" très blocky pour les gros titres,
-   une police pixel plus lisible pour les libellés/HUD/boutons, le tout
-   hébergé localement (fichiers .ttf dans /fonts) pour rester 100% hors-ligne.
-   Polices sous licence SIL Open Font License — voir fonts/OFL-*.txt.
+   POLICES PIXEL â€” v2.5, inspirÃ© de la direction artistique de CodÃ©dex
+   (codedex.io) : une police "display" trÃ¨s blocky pour les gros titres,
+   une police pixel plus lisible pour les libellÃ©s/HUD/boutons, le tout
+   hÃ©bergÃ© localement (fichiers .ttf dans /fonts) pour rester 100% hors-ligne.
+   Polices sous licence SIL Open Font License â€” voir fonts/OFL-*.txt.
    ========================================================================== */
 @font-face {
     font-family: 'Press Start 2P';
     src: url('fonts/PressStart2P-Regular.woff2') format('woff2'),
-         url('fonts/PressStart2P-Regular.ttf')   format('truetype');
+        url('fonts/PressStart2P-Regular.ttf') format('truetype');
     font-weight: 400;
     font-display: swap;
 }
+
 @font-face {
     font-family: 'Silkscreen';
     src: url('fonts/Silkscreen-Regular.woff2') format('woff2'),
-         url('fonts/Silkscreen-Regular.ttf')   format('truetype');
+        url('fonts/Silkscreen-Regular.ttf') format('truetype');
     font-weight: 400;
     font-display: swap;
 }
+
 @font-face {
     font-family: 'Silkscreen';
     src: url('fonts/Silkscreen-Bold.woff2') format('woff2'),
-         url('fonts/Silkscreen-Bold.ttf')   format('truetype');
+        url('fonts/Silkscreen-Bold.ttf') format('truetype');
     font-weight: 700;
     font-display: swap;
 }
+
 :root {
-    /* Réservée aux très gros titres ponctuels (très large, à utiliser avec
-       parcimonie — jamais sur une phrase entière, seulement 2-3 mots). */
+    /* RÃ©servÃ©e aux trÃ¨s gros titres ponctuels (trÃ¨s large, Ã  utiliser avec
+       parcimonie â€” jamais sur une phrase entiÃ¨re, seulement 2-3 mots). */
     --font-pixel-display: 'Press Start 2P', var(--font-display, 'Cinzel', serif);
-    /* Pour les boutons, onglets, libellés de HUD, nombres (XP/pièces/niveaux)
-       — plus compacte et lisible que Press Start 2P à petite taille. */
+    /* Pour les boutons, onglets, libellÃ©s de HUD, nombres (XP/piÃ¨ces/niveaux)
+       â€” plus compacte et lisible que Press Start 2P Ã  petite taille. */
     --font-pixel-ui: 'Silkscreen', var(--font-mono, monospace);
 }
 
-/* Coins "en escalier" façon boîte de dialogue de jeu 8-bit — technique CSS
-   pure (clip-path), sans image. Réutilisée sur les boutons, cartes et
-   modales du dashboard pour une cohérence visuelle façon RPG rétro. */
+/* Coins "en escalier" faÃ§on boÃ®te de dialogue de jeu 8-bit â€” technique CSS
+   pure (clip-path), sans image. RÃ©utilisÃ©e sur les boutons, cartes et
+   modales du dashboard pour une cohÃ©rence visuelle faÃ§on RPG rÃ©tro. */
 .pixel-corners {
-    clip-path: polygon(
-        0 8px, 8px 8px, 8px 0,
-        calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px,
-        100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%,
-        8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px)
-    );
+    clip-path: polygon(0 8px, 8px 8px, 8px 0,
+            calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px,
+            100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%,
+            8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px));
 }
 
 /* ==========================================================================
@@ -73,31 +74,37 @@
 .container {
     display: flex;
     flex-direction: column;
-    align-items: center;       /* Centre horizontalement */
-    justify-content: center;   /* Centre verticalement */
-    min-height: 100vh;         /* Occupe toute la hauteur de l'écran */
+    align-items: center;
+    /* Centre horizontalement */
+    justify-content: center;
+    /* Centre verticalement */
+    min-height: 100vh;
+    /* Occupe toute la hauteur de l'Ã©cran */
     padding: 20px;
-    padding-bottom: 120px;     /* Laisse la place pour le footer + bouton */
+    padding-bottom: 120px;
+    /* Laisse la place pour le footer + bouton */
     position: relative;
 }
 
-/* --- Logo Principal — Effet Néon Doré + Scan --- */
+/* --- Logo Principal â€” Effet NÃ©on DorÃ© + Scan --- */
 .logo {
-    margin-bottom: clamp(32px, 7vh, 64px); /* S'adapte à la hauteur de l'écran */
+    margin-bottom: clamp(32px, 7vh, 64px);
+    /* S'adapte Ã  la hauteur de l'Ã©cran */
     position: relative;
-    /* Apparition depuis le haut avec léger dé-zoom et flou */
+    /* Apparition depuis le haut avec lÃ©ger dÃ©-zoom et flou */
     animation: logoEntrance 1s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .logo-text {
     font-family: 'Cinzel', serif;
-    font-size: clamp(2.6rem, 8vw, 5rem); /* Police adaptative (responsive) */
+    font-size: clamp(2.6rem, 8vw, 5rem);
+    /* Police adaptative (responsive) */
     font-weight: 900;
     color: #fff;
     letter-spacing: clamp(6px, 1.5vw, 16px);
     position: relative;
     text-transform: uppercase;
-    /* Multiples ombres pour un effet d'éclat lumineux (Glow) intense */
+    /* Multiples ombres pour un effet d'Ã©clat lumineux (Glow) intense */
     text-shadow:
         0 0 8px rgba(200, 168, 75, 0.9),
         0 0 30px rgba(200, 168, 75, 0.5),
@@ -108,8 +115,8 @@
     animation: logoPulse 4s ease-in-out infinite;
 }
 
-/* Logo officiel (Image/Logo V2 finale.png) — remplace .logo-text sur index.html.
-   Le halo doré est simulé avec drop-shadow (contrairement à text-shadow, ça
+/* Logo officiel (Image/Logo V2 finale.png) â€” remplace .logo-text sur index.html.
+   Le halo dorÃ© est simulÃ© avec drop-shadow (contrairement Ã  text-shadow, Ã§a
    respecte la transparence du PNG au lieu de dessiner un rectangle). */
 .logo-image {
     display: block;
@@ -119,20 +126,20 @@
     animation: logoImagePulse 4s ease-in-out infinite;
 }
 
-/* Ligne de scan animée qui descend sur le logo (effet sci-fi/magique) */
+/* Ligne de scan animÃ©e qui descend sur le logo (effet sci-fi/magique) */
 .logo-text::after {
     content: '';
     position: absolute;
     left: 0;
     right: 0;
     height: 3px;
-    /* Dégradé brillant au centre, transparent sur les bords */
+    /* DÃ©gradÃ© brillant au centre, transparent sur les bords */
     background: linear-gradient(90deg,
-        transparent 0%,
-        rgba(200, 168, 75, 0.8) 40%,
-        rgba(255, 255, 255, 1) 50%,
-        rgba(200, 168, 75, 0.8) 60%,
-        transparent 100%);
+            transparent 0%,
+            rgba(200, 168, 75, 0.8) 40%,
+            rgba(255, 255, 255, 1) 50%,
+            rgba(200, 168, 75, 0.8) 60%,
+            transparent 100%);
     border-radius: 2px;
     animation: logoScan 3s ease-in-out infinite;
     box-shadow: 0 0 12px rgba(200, 168, 75, 0.8);
@@ -140,7 +147,7 @@
 
 /* Sous-titre discret sous le logo */
 .logo::after {
-    content: '— EDUQUEZ-VOUS EN JOUANT —';
+    content: 'â€” EDUQUEZ-VOUS EN JOUANT â€”';
     display: block;
     text-align: center;
     font-family: 'Rajdhani', monospace;
@@ -157,36 +164,41 @@
     flex-direction: column;
     gap: clamp(18px, 3.5vh, 36px);
     width: 100%;
-    max-width: 440px; /* Limite la largeur sur grand écran */
-    /* Le menu apparaît après le logo (délai de 0.3s) */
+    max-width: 440px;
+    /* Limite la largeur sur grand Ã©cran */
+    /* Le menu apparaÃ®t aprÃ¨s le logo (dÃ©lai de 0.3s) */
     animation: menuEntrance 1s 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Dimensions spécifiques des boutons sur l'accueil (plus gros) */
+/* Dimensions spÃ©cifiques des boutons sur l'accueil (plus gros) */
 .menu-button {
     padding: clamp(16px, 2.8vh, 26px) clamp(24px, 5vw, 52px);
     font-size: clamp(0.85rem, 1.8vw, 1.05rem);
     border-radius: 0;
     letter-spacing: 1.5px;
-    border-width: 2px !important; /* Contour net façon pixel-art, plus épais que le 1px des variantes */
+    border-width: 2px !important;
+    /* Contour net faÃ§on pixel-art, plus Ã©pais que le 1px des variantes */
     clip-path: polygon(0 8px, 8px 8px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px));
-    /* Ombre pixel dure (décalée, sans flou), en plus des lueurs propres à
-       chaque variante ci-dessous — remplace la sensation "verre" par un
-       rendu "cartouche de jeu" plus proche de Codédex. Retirée au clic
+    /* Ombre pixel dure (dÃ©calÃ©e, sans flou), en plus des lueurs propres Ã 
+       chaque variante ci-dessous â€” remplace la sensation "verre" par un
+       rendu "cartouche de jeu" plus proche de CodÃ©dex. RetirÃ©e au clic
        pour simuler un bouton qui s'enfonce. */
     box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.45);
 }
+
 .menu-button:active {
-    box-shadow: 0 0 0 rgba(0, 0, 0, 0.45) !important; /* !important : doit primer sur le glow de :hover pendant le clic */
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0.45) !important;
+    /* !important : doit primer sur le glow de :hover pendant le clic */
 }
 
-/* Bouton JOUER (Primaire) — Vert forêt dominant */
+/* Bouton JOUER (Primaire) â€” Vert forÃªt dominant */
 .menu-button.primary {
     background: rgba(45, 80, 22, 0.45);
     border: 1px solid rgba(74, 124, 89, 0.4);
-    border-top-color: rgba(107, 202, 130, 0.4); /* Reflet lumineux haut */
+    border-top-color: rgba(107, 202, 130, 0.4);
+    /* Reflet lumineux haut */
     box-shadow:
-         5px 5px 0 rgba(0, 0, 0, 0.45),
+        5px 5px 0 rgba(0, 0, 0, 0.45),
         0 2px 0 rgba(107, 202, 130, 0.12) inset,
         0 -1px 0 rgba(0, 0, 0, 0.3) inset,
         0 10px 40px rgba(0, 0, 0, 0.55),
@@ -198,22 +210,22 @@
     border-color: rgba(107, 202, 130, 0.55);
     border-top-color: rgba(107, 202, 130, 0.6);
     box-shadow:
-         5px 5px 0 rgba(0, 0, 0, 0.45),
+        5px 5px 0 rgba(0, 0, 0, 0.45),
         0 2px 0 rgba(107, 202, 130, 0.15) inset,
         0 -1px 0 rgba(0, 0, 0, 0.3) inset,
         0 20px 60px rgba(0, 0, 0, 0.6),
         0 0 35px rgba(74, 124, 89, 0.3),
         0 0 80px rgba(74, 124, 89, 0.1);
-    text-shadow: 0 0 20px rgba(107, 202, 130, 0.6), 0 2px 8px rgba(0,0,0,0.9);
+    text-shadow: 0 0 20px rgba(107, 202, 130, 0.6), 0 2px 8px rgba(0, 0, 0, 0.9);
 }
 
-/* Bouton OPTIONS (Défaut) — Brun/Or */
+/* Bouton OPTIONS (DÃ©faut) â€” Brun/Or */
 .menu-button:not(.primary):not(.secondary):not(.danger) {
     background: rgba(107, 68, 35, 0.38);
     border: 1px solid rgba(200, 168, 75, 0.25);
     border-top-color: rgba(200, 168, 75, 0.4);
     box-shadow:
-         5px 5px 0 rgba(0, 0, 0, 0.45),
+        5px 5px 0 rgba(0, 0, 0, 0.45),
         0 2px 0 rgba(255, 255, 255, 0.08) inset,
         0 -1px 0 rgba(0, 0, 0, 0.3) inset,
         0 10px 40px rgba(0, 0, 0, 0.55),
@@ -225,21 +237,21 @@
     border-color: rgba(200, 168, 75, 0.5);
     border-top-color: rgba(200, 168, 75, 0.65);
     box-shadow:
-         5px 5px 0 rgba(0, 0, 0, 0.45),
+        5px 5px 0 rgba(0, 0, 0, 0.45),
         0 2px 0 rgba(200, 168, 75, 0.12) inset,
         0 -1px 0 rgba(0, 0, 0, 0.3) inset,
         0 20px 60px rgba(0, 0, 0, 0.6),
         0 0 30px rgba(200, 168, 75, 0.2);
-    text-shadow: 0 0 18px rgba(200, 168, 75, 0.5), 0 2px 8px rgba(0,0,0,0.9);
+    text-shadow: 0 0 18px rgba(200, 168, 75, 0.5), 0 2px 8px rgba(0, 0, 0, 0.9);
 }
 
-/* Bouton SE CONNECTER (Secondaire) — Bleu acier */
+/* Bouton SE CONNECTER (Secondaire) â€” Bleu acier */
 .menu-button.secondary {
     background: rgba(74, 92, 124, 0.38);
     border: 1px solid rgba(120, 150, 200, 0.3);
     border-top-color: rgba(150, 185, 230, 0.4);
     box-shadow:
-         5px 5px 0 rgba(0, 0, 0, 0.45),
+        5px 5px 0 rgba(0, 0, 0, 0.45),
         0 2px 0 rgba(255, 255, 255, 0.08) inset,
         0 -1px 0 rgba(0, 0, 0, 0.3) inset,
         0 10px 40px rgba(0, 0, 0, 0.55),
@@ -251,21 +263,21 @@
     border-color: rgba(150, 185, 230, 0.55);
     border-top-color: rgba(180, 210, 255, 0.6);
     box-shadow:
-         5px 5px 0 rgba(0, 0, 0, 0.45),
+        5px 5px 0 rgba(0, 0, 0, 0.45),
         0 2px 0 rgba(180, 210, 255, 0.1) inset,
         0 -1px 0 rgba(0, 0, 0, 0.3) inset,
         0 20px 60px rgba(0, 0, 0, 0.6),
         0 0 30px rgba(74, 92, 124, 0.3);
-    text-shadow: 0 0 18px rgba(150, 185, 230, 0.6), 0 2px 8px rgba(0,0,0,0.9);
+    text-shadow: 0 0 18px rgba(150, 185, 230, 0.6), 0 2px 8px rgba(0, 0, 0, 0.9);
 }
 
-/* Bouton QUITTER (Danger) — Rouge intense */
+/* Bouton QUITTER (Danger) â€” Rouge intense */
 .menu-button.danger {
     background: rgba(100, 30, 30, 0.38);
     border: 1px solid rgba(200, 80, 80, 0.3);
     border-top-color: rgba(220, 110, 110, 0.4);
     box-shadow:
-         5px 5px 0 rgba(0, 0, 0, 0.45),
+        5px 5px 0 rgba(0, 0, 0, 0.45),
         0 2px 0 rgba(255, 255, 255, 0.08) inset,
         0 -1px 0 rgba(0, 0, 0, 0.3) inset,
         0 10px 40px rgba(0, 0, 0, 0.55),
@@ -277,15 +289,15 @@
     border-color: rgba(220, 100, 100, 0.55);
     border-top-color: rgba(240, 130, 130, 0.6);
     box-shadow:
-         5px 5px 0 rgba(0, 0, 0, 0.45),
+        5px 5px 0 rgba(0, 0, 0, 0.45),
         0 2px 0 rgba(240, 130, 130, 0.1) inset,
         0 -1px 0 rgba(0, 0, 0, 0.3) inset,
         0 20px 60px rgba(0, 0, 0, 0.6),
         0 0 30px rgba(139, 58, 58, 0.3);
-    text-shadow: 0 0 18px rgba(240, 130, 130, 0.6), 0 2px 8px rgba(0,0,0,0.9);
+    text-shadow: 0 0 18px rgba(240, 130, 130, 0.6), 0 2px 8px rgba(0, 0, 0, 0.9);
 }
 
-/* --- Écran de Sortie (clic sur Quitter) --- */
+/* --- Ã‰cran de Sortie (clic sur Quitter) --- */
 .exit-message {
     text-align: center;
     animation: fadeIn 1.2s cubic-bezier(0.22, 1, 0.36, 1);
@@ -295,7 +307,7 @@
     font-family: 'Cinzel', serif;
     font-size: clamp(1.8rem, 5vw, 3.2rem);
     color: #fff;
-    text-shadow: 0 0 20px rgba(200, 168, 75, 0.6), 3px 3px 8px rgba(0,0,0,0.8);
+    text-shadow: 0 0 20px rgba(200, 168, 75, 0.6), 3px 3px 8px rgba(0, 0, 0, 0.8);
     margin-bottom: 28px;
     letter-spacing: 3px;
 }
@@ -309,7 +321,9 @@
 
 /* --- Animations Locales (Accueil) --- */
 @keyframes logoPulse {
-    0%, 100% {
+
+    0%,
+    100% {
         text-shadow:
             0 0 8px rgba(200, 168, 75, 0.9),
             0 0 30px rgba(200, 168, 75, 0.5),
@@ -317,7 +331,9 @@
             0 4px 0 rgba(0, 0, 0, 0.5),
             4px 4px 20px rgba(0, 0, 0, 0.8);
     }
-    50% { /* Pic de luminosité (Glow max) */
+
+    50% {
+        /* Pic de luminositÃ© (Glow max) */
         text-shadow:
             0 0 12px rgba(200, 168, 75, 1),
             0 0 50px rgba(200, 168, 75, 0.7),
@@ -327,32 +343,64 @@
     }
 }
 
-/* Équivalent de logoPulse pour l'image du logo (drop-shadow au lieu de
+/* Ã‰quivalent de logoPulse pour l'image du logo (drop-shadow au lieu de
    text-shadow, pour respecter la transparence du PNG). */
 @keyframes logoImagePulse {
-    0%, 100% {
+
+    0%,
+    100% {
         filter: drop-shadow(0 0 10px rgba(200, 168, 75, 0.6)) drop-shadow(0 4px 14px rgba(0, 0, 0, 0.6));
     }
+
     50% {
         filter: drop-shadow(0 0 26px rgba(200, 168, 75, 0.9)) drop-shadow(0 4px 14px rgba(0, 0, 0, 0.6));
     }
 }
 
 @keyframes logoScan {
-    0%   { top: -4px; opacity: 0; }
-    5%   { opacity: 1; }
-    95%  { opacity: 1; }
-    100% { top: 105%; opacity: 0; }
+    0% {
+        top: -4px;
+        opacity: 0;
+    }
+
+    5% {
+        opacity: 1;
+    }
+
+    95% {
+        opacity: 1;
+    }
+
+    100% {
+        top: 105%;
+        opacity: 0;
+    }
 }
 
 @keyframes logoEntrance {
-    from { opacity: 0; transform: translateY(-30px) scale(0.9); filter: blur(8px); }
-    to   { opacity: 1; transform: translateY(0)      scale(1);   filter: blur(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.9);
+        filter: blur(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
 }
 
 @keyframes menuEntrance {
-    from { opacity: 0; transform: translateY(24px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* --- Responsive (Accueil) --- */
@@ -362,14 +410,31 @@
         padding: 15px 20px;
         letter-spacing: 1.5px;
     }
-    .logo-text { letter-spacing: 4px; }
+
+    .logo-text {
+        letter-spacing: 4px;
+    }
 }
 
 @media (max-height: 600px) {
-    .logo { margin-bottom: 12px; }
-    .menu { gap: 10px; }
-    .menu-button { padding: 11px 18px; font-size: 0.95rem; }
-    .logo::after { display: none; } /* Cache le sous-titre si manque de place */
+    .logo {
+        margin-bottom: 12px;
+    }
+
+    .menu {
+        gap: 10px;
+    }
+
+    .menu-button {
+        padding: 11px 18px;
+        font-size: 0.95rem;
+    }
+
+    .logo::after {
+        display: none;
+    }
+
+    /* Cache le sous-titre si manque de place */
 }
 
 
@@ -382,61 +447,66 @@
     width: 100%;
     max-width: 620px;
     background: rgba(8, 14, 24, 0.72);
-    /* backdrop-filter: floute l'arrière plan derrière le panneau */
+    /* backdrop-filter: floute l'arriÃ¨re plan derriÃ¨re le panneau */
     backdrop-filter: blur(32px) saturate(1.5);
     -webkit-backdrop-filter: blur(32px) saturate(1.5);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-top: 1px solid rgba(255,255,255,0.22);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.22);
     border-radius: 28px;
     padding: clamp(28px, 4.5vw, 50px);
     box-shadow:
-        0 2px 0 rgba(255,255,255,0.08) inset,
-        0 32px 80px rgba(0,0,0,0.7),
-        0 0 60px rgba(200,168,75,0.06);
+        0 2px 0 rgba(255, 255, 255, 0.08) inset,
+        0 32px 80px rgba(0, 0, 0, 0.7),
+        0 0 60px rgba(200, 168, 75, 0.06);
     animation: panelSlideIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
     position: relative;
-    /* Pour les petits écrans : ajoute un scroll interne au lieu de déborder sous le footer */
+    /* Pour les petits Ã©crans : ajoute un scroll interne au lieu de dÃ©border sous le footer */
     max-height: 85vh;
     overflow-y: auto;
     overflow-x: hidden;
 }
 
-/* Coins décoratifs dorés (en haut à gauche et en bas à droite) */
+/* Coins dÃ©coratifs dorÃ©s (en haut Ã  gauche et en bas Ã  droite) */
 .options-container::before {
     content: '';
     position: absolute;
-    top: 0; left: 0;
-    width: 60px; height: 60px;
-    background: linear-gradient(135deg, rgba(200,168,75,0.3) 0%, transparent 60%);
+    top: 0;
+    left: 0;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, rgba(200, 168, 75, 0.3) 0%, transparent 60%);
     border-top-left-radius: 28px;
 }
+
 .options-container::after {
     content: '';
     position: absolute;
-    bottom: 0; right: 0;
-    width: 60px; height: 60px;
-    background: linear-gradient(315deg, rgba(200,168,75,0.2) 0%, transparent 60%);
+    bottom: 0;
+    right: 0;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(315deg, rgba(200, 168, 75, 0.2) 0%, transparent 60%);
     border-bottom-right-radius: 28px;
 }
 
-/* En-tête "⚙ OPTIONS" */
+/* En-tÃªte "âš™ OPTIONS" */
 .options-header {
     font-family: 'Cinzel', serif;
     font-size: clamp(1.6rem, 4vw, 2.5rem);
     font-weight: 900;
     color: #fff;
     text-shadow:
-        0 0 12px rgba(200,168,75,0.6),
-        0 0 35px rgba(200,168,75,0.25),
-        3px 3px 8px rgba(0,0,0,0.9);
+        0 0 12px rgba(200, 168, 75, 0.6),
+        0 0 35px rgba(200, 168, 75, 0.25),
+        3px 3px 8px rgba(0, 0, 0, 0.9);
     margin-bottom: clamp(24px, 4vh, 44px);
     text-align: center;
     padding-bottom: clamp(14px, 2.5vh, 24px);
-    border-bottom: 1px solid rgba(200,168,75,0.2);
+    border-bottom: 1px solid rgba(200, 168, 75, 0.2);
     letter-spacing: 4px;
 }
 
-/* --- Groupes et Libellés --- */
+/* --- Groupes et LibellÃ©s --- */
 .option-group {
     margin-bottom: clamp(14px, 2.2vh, 24px);
 }
@@ -444,12 +514,12 @@
 .option-label {
     display: block;
     font-family: 'Rajdhani', monospace;
-    color: rgba(255,255,255,0.85);
+    color: rgba(255, 255, 255, 0.85);
     font-size: clamp(1rem, 2.5vw, 1.15rem);
     font-weight: 600;
     margin-bottom: 10px;
     letter-spacing: 1px;
-    text-shadow: 1px 1px 4px rgba(0,0,0,0.8);
+    text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
 }
 
 /* --- Sliders de Volume (Range Input) --- */
@@ -458,26 +528,29 @@
     align-items: center;
     gap: 14px;
     padding: 10px 16px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-top-color: rgba(255,255,255,0.14);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-top-color: rgba(255, 255, 255, 0.14);
     border-radius: 14px;
-    box-shadow: 0 2px 0 rgba(255,255,255,0.05) inset;
+    box-shadow: 0 2px 0 rgba(255, 255, 255, 0.05) inset;
 }
 
 .slider {
     flex: 1;
     height: 6px;
-    background: rgba(255,255,255,0.08);
+    background: rgba(255, 255, 255, 0.08);
     border-radius: 6px;
     outline: none;
-    -webkit-appearance: none; /* Nécessaire pour styliser les sliders sur Webkit (Chrome/Safari) */
+    -webkit-appearance: none;
+    /* NÃ©cessaire pour styliser les sliders sur Webkit (Chrome/Safari) */
     appearance: none;
     transition: background 0.25s;
     cursor: pointer;
 }
 
-.slider:hover { background: rgba(255,255,255,0.14); }
+.slider:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
 
 /* Le "pouce" (thumb) du slider = le bouton qu'on fait glisser (Webkit) */
 .slider::-webkit-slider-thumb {
@@ -486,16 +559,16 @@
     width: 22px;
     height: 22px;
     background: linear-gradient(135deg, #8fd4a0 0%, #4a7c59 100%);
-    border: 2px solid rgba(255,255,255,0.5);
+    border: 2px solid rgba(255, 255, 255, 0.5);
     border-radius: 50%;
     cursor: pointer;
-    box-shadow: 0 0 12px rgba(74,124,89,0.5), 0 2px 6px rgba(0,0,0,0.5);
+    box-shadow: 0 0 12px rgba(74, 124, 89, 0.5), 0 2px 6px rgba(0, 0, 0, 0.5);
     transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .slider::-webkit-slider-thumb:hover {
     transform: scale(1.2);
-    box-shadow: 0 0 20px rgba(107,202,130,0.7), 0 3px 10px rgba(0,0,0,0.5);
+    box-shadow: 0 0 20px rgba(107, 202, 130, 0.7), 0 3px 10px rgba(0, 0, 0, 0.5);
 }
 
 /* Pouce du slider pour Firefox */
@@ -503,36 +576,36 @@
     width: 22px;
     height: 22px;
     background: linear-gradient(135deg, #8fd4a0 0%, #4a7c59 100%);
-    border: 2px solid rgba(255,255,255,0.5);
+    border: 2px solid rgba(255, 255, 255, 0.5);
     border-radius: 50%;
     cursor: pointer;
-    box-shadow: 0 0 12px rgba(74,124,89,0.5);
+    box-shadow: 0 0 12px rgba(74, 124, 89, 0.5);
 }
 
 /* Texte de la valeur du volume (ex: 75%) */
 .volume-value {
     font-family: 'Cinzel', serif;
-    color: rgba(200,168,75,0.9);
+    color: rgba(200, 168, 75, 0.9);
     font-weight: 700;
     min-width: 48px;
     text-align: right;
     font-size: 1rem;
     letter-spacing: 1px;
-    text-shadow: 0 0 8px rgba(200,168,75,0.4);
+    text-shadow: 0 0 8px rgba(200, 168, 75, 0.4);
 }
 
-/* --- Checkboxes Personnalisées --- */
-/* La stratégie est de cacher l'input radio natif (display:none) et de
-   styliser un faux checkbox (.checkbox) avec un symbole (✓) dynamique */
+/* --- Checkboxes PersonnalisÃ©es --- */
+/* La stratÃ©gie est de cacher l'input radio natif (display:none) et de
+   styliser un faux checkbox (.checkbox) avec un symbole (âœ“) dynamique */
 .checkbox-container {
     display: flex;
     align-items: center;
     gap: 16px;
     cursor: pointer;
     padding: clamp(12px, 1.8vh, 18px) 16px;
-    background: rgba(255,255,255,0.035);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-top-color: rgba(255,255,255,0.13);
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-top-color: rgba(255, 255, 255, 0.13);
     border-radius: 14px;
     transition: all 0.3s ease;
     position: relative;
@@ -544,76 +617,87 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.04) 50%, transparent 60%);
+    background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.04) 50%, transparent 60%);
     transform: translateX(-100%) skewX(-15deg);
     transition: transform 0.5s;
 }
-.checkbox-container:hover::before { transform: translateX(200%) skewX(-15deg); }
+
+.checkbox-container:hover::before {
+    transform: translateX(200%) skewX(-15deg);
+}
 
 .checkbox-container:hover {
-    background: rgba(255,255,255,0.06);
-    border-color: rgba(255,255,255,0.14);
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.14);
     transform: translateX(4px);
-    box-shadow: -3px 0 0 rgba(200,168,75,0.3);
+    box-shadow: -3px 0 0 rgba(200, 168, 75, 0.3);
 }
 
-/* Changement de style quand la case est cochée (:has() est supporté par les navs modernes) */
+/* Changement de style quand la case est cochÃ©e (:has() est supportÃ© par les navs modernes) */
 .checkbox-container:has(input:checked) {
-    border-color: rgba(74,124,89,0.35);
-    border-top-color: rgba(107,202,130,0.4);
-    box-shadow: 0 0 14px rgba(74,124,89,0.1);
+    border-color: rgba(74, 124, 89, 0.35);
+    border-top-color: rgba(107, 202, 130, 0.4);
+    box-shadow: 0 0 14px rgba(74, 124, 89, 0.1);
 }
 
-/* État désactivé (grisé) par JS si le son global est off */
+/* Ã‰tat dÃ©sactivÃ© (grisÃ©) par JS si le son global est off */
 .checkbox-container.disabled {
     opacity: 0.35;
     cursor: not-allowed;
     pointer-events: none;
 }
 
-.checkbox-container .option-label { margin: 0; }
+.checkbox-container .option-label {
+    margin: 0;
+}
 
-/* La "fausse" case carrée */
+/* La "fausse" case carrÃ©e */
 .checkbox {
     width: 32px;
     height: 32px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.18);
-    border-top-color: rgba(255,255,255,0.32);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-top-color: rgba(255, 255, 255, 0.32);
     border-radius: 10px;
     cursor: pointer;
     position: relative;
     transition: all 0.3s;
     flex: 0 0 auto;
-    box-shadow: 0 2px 0 rgba(255,255,255,0.06) inset;
+    box-shadow: 0 2px 0 rgba(255, 255, 255, 0.06) inset;
 }
 
-.checkbox input { display: none; } /* Cache la case native */
+.checkbox input {
+    display: none;
+}
 
-/* La coche "✓" */
+/* Cache la case native */
+
+/* La coche "âœ“" */
 .checkbox-mark {
-    display: none; /* Cachée par défaut */
+    display: none;
+    /* CachÃ©e par dÃ©faut */
     position: absolute;
     inset: 0;
     align-items: center;
     justify-content: center;
-    color: #6bca82; /* Vert vif */
+    color: #6bca82;
+    /* Vert vif */
     font-size: 1.2rem;
     font-weight: bold;
-    text-shadow: 0 0 12px rgba(107,202,130,0.8);
+    text-shadow: 0 0 12px rgba(107, 202, 130, 0.8);
 }
 
 /* Si input:checked, la coche devient flex et lance l'animation (pop) */
-.checkbox input:checked + .checkbox-mark {
+.checkbox input:checked+.checkbox-mark {
     display: flex;
     animation: checkPop 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Le fond de la fausse case devient vert si cochée */
+/* Le fond de la fausse case devient vert si cochÃ©e */
 .checkbox-container:has(input:checked) .checkbox {
-    background: rgba(74,124,89,0.3);
-    border-color: rgba(107,202,130,0.5);
-    box-shadow: 0 0 14px rgba(74,124,89,0.35), 0 2px 0 rgba(107,202,130,0.1) inset;
+    background: rgba(74, 124, 89, 0.3);
+    border-color: rgba(107, 202, 130, 0.5);
+    box-shadow: 0 0 14px rgba(74, 124, 89, 0.35), 0 2px 0 rgba(107, 202, 130, 0.1) inset;
 }
 
 /* --- Boutons d'Action (Options) --- */
@@ -622,27 +706,60 @@
     gap: 14px;
     margin-top: clamp(22px, 3.5vh, 40px);
 }
+
 /* Les boutons normaux prennent la classe .option-button ou .menu-button de global.css,
-   plus des ajustements mineurs ci-dessous si nécessaire. */
+   plus des ajustements mineurs ci-dessous si nÃ©cessaire. */
 
 /* --- Animation Locale --- */
 @keyframes checkPop {
-    0%   { transform: scale(0) rotate(-15deg); opacity: 0; }
-    60%  { transform: scale(1.3) rotate(5deg);  opacity: 1; }
-    100% { transform: scale(1)   rotate(0);      opacity: 1; }
+    0% {
+        transform: scale(0) rotate(-15deg);
+        opacity: 0;
+    }
+
+    60% {
+        transform: scale(1.3) rotate(5deg);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1) rotate(0);
+        opacity: 1;
+    }
 }
 
 /* --- Responsive (Options) --- */
 @media (max-width: 768px) {
-    .options-container { padding: 22px; border-radius: 20px; }
-    .options-buttons { flex-direction: column; } /* Boutons l'un sous l'autre */
+    .options-container {
+        padding: 22px;
+        border-radius: 20px;
+    }
+
+    .options-buttons {
+        flex-direction: column;
+    }
+
+    /* Boutons l'un sous l'autre */
 }
 
 @media (max-height: 700px) {
-    .options-container { padding: 16px; }
-    .options-header { margin-bottom: 14px; padding-bottom: 10px; font-size: 1.4rem; }
-    .option-group { margin-bottom: 10px; }
-    .checkbox-container { padding: 9px 12px; }
+    .options-container {
+        padding: 16px;
+    }
+
+    .options-header {
+        margin-bottom: 14px;
+        padding-bottom: 10px;
+        font-size: 1.4rem;
+    }
+
+    .option-group {
+        margin-bottom: 10px;
+    }
+
+    .checkbox-container {
+        padding: 9px 12px;
+    }
 }
 
 
@@ -654,56 +771,61 @@
 .login-container {
     width: 100%;
     max-width: 490px;
-    background: rgba(8,14,24,0.72);
+    background: rgba(8, 14, 24, 0.72);
     backdrop-filter: blur(32px) saturate(1.5);
     -webkit-backdrop-filter: blur(32px) saturate(1.5);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-top: 1px solid rgba(255,255,255,0.22);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.22);
     border-radius: 28px;
     padding: clamp(28px, 5vw, 48px);
     box-shadow:
-        0 2px 0 rgba(255,255,255,0.07) inset,
-        0 32px 80px rgba(0,0,0,0.7),
-        0 0 60px rgba(74,92,124,0.07);
-    animation: panelSlideIn 0.6s cubic-bezier(0.22,1,0.36,1) both;
+        0 2px 0 rgba(255, 255, 255, 0.07) inset,
+        0 32px 80px rgba(0, 0, 0, 0.7),
+        0 0 60px rgba(74, 92, 124, 0.07);
+    animation: panelSlideIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
     position: relative;
-    /* Évite le débordement sur les petits écrans */
+    /* Ã‰vite le dÃ©bordement sur les petits Ã©crans */
     max-height: 85vh;
     overflow-y: auto;
     overflow-x: hidden;
 }
 
-/* Coins décoratifs bleu acier */
+/* Coins dÃ©coratifs bleu acier */
 .login-container::before {
     content: '';
     position: absolute;
-    top: 0; left: 0;
-    width: 55px; height: 55px;
-    background: linear-gradient(135deg, rgba(74,92,124,0.35) 0%, transparent 60%);
+    top: 0;
+    left: 0;
+    width: 55px;
+    height: 55px;
+    background: linear-gradient(135deg, rgba(74, 92, 124, 0.35) 0%, transparent 60%);
     border-top-left-radius: 28px;
 }
+
 .login-container::after {
     content: '';
     position: absolute;
-    bottom: 0; right: 0;
-    width: 55px; height: 55px;
-    background: linear-gradient(315deg, rgba(74,92,124,0.2) 0%, transparent 60%);
+    bottom: 0;
+    right: 0;
+    width: 55px;
+    height: 55px;
+    background: linear-gradient(315deg, rgba(74, 92, 124, 0.2) 0%, transparent 60%);
     border-bottom-right-radius: 28px;
 }
 
-/* Boîte descriptive au-dessus des inputs */
+/* BoÃ®te descriptive au-dessus des inputs */
 .login-description {
     text-align: center;
     margin-bottom: 24px;
     padding: 13px 18px;
-    background: rgba(255,255,255,0.035);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-top-color: rgba(255,255,255,0.13);
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-top-color: rgba(255, 255, 255, 0.13);
     border-radius: 12px;
 }
 
 .login-description-text {
-    color: rgba(255,255,255,0.65);
+    color: rgba(255, 255, 255, 0.65);
     font-size: 1.02rem;
     font-weight: 600;
     letter-spacing: 0.5px;
@@ -717,40 +839,41 @@
     font-family: 'Rajdhani', monospace;
     font-weight: 600;
     letter-spacing: 1px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-top-color: rgba(255,255,255,0.18);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top-color: rgba(255, 255, 255, 0.18);
     border-radius: 14px;
     color: #fff;
     margin-bottom: 14px;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 0 rgba(255,255,255,0.04) inset;
+    box-shadow: 0 2px 0 rgba(255, 255, 255, 0.04) inset;
 }
 
 .login-input::placeholder {
-    color: rgba(255,255,255,0.3);
+    color: rgba(255, 255, 255, 0.3);
     letter-spacing: 0.5px;
 }
 
-/* Effet néon bleu acier au focus sur un champ */
+/* Effet nÃ©on bleu acier au focus sur un champ */
 .login-input:focus {
     outline: none;
-    border-color: rgba(150,185,230,0.55);
-    border-top-color: rgba(180,210,255,0.6);
-    background: rgba(255,255,255,0.07);
+    border-color: rgba(150, 185, 230, 0.55);
+    border-top-color: rgba(180, 210, 255, 0.6);
+    background: rgba(255, 255, 255, 0.07);
     box-shadow:
-        0 2px 0 rgba(255,255,255,0.06) inset,
-        0 0 0 3px rgba(74,92,124,0.18),
-        0 0 20px rgba(74,92,124,0.2);
+        0 2px 0 rgba(255, 255, 255, 0.06) inset,
+        0 0 0 3px rgba(74, 92, 124, 0.18),
+        0 0 20px rgba(74, 92, 124, 0.2);
 }
 
-/* --- Ligne de séparation (- OU -) --- */
+/* --- Ligne de sÃ©paration (- OU -) --- */
 .login-separator {
     text-align: center;
     margin: 20px 0;
     position: relative;
 }
-/* Barres latérales */
+
+/* Barres latÃ©rales */
 .login-separator::before,
 .login-separator::after {
     content: '';
@@ -758,37 +881,45 @@
     top: 50%;
     width: 35%;
     height: 1px;
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
 }
-.login-separator::before { left: 0; }
-.login-separator::after  { right: 0; }
+
+.login-separator::before {
+    left: 0;
+}
+
+.login-separator::after {
+    right: 0;
+}
 
 .login-separator-text {
-    color: rgba(200,168,75,0.45);
+    color: rgba(200, 168, 75, 0.45);
     font-family: 'Cinzel', serif;
     font-size: 0.8rem;
     letter-spacing: 3px;
 }
 
-/* --- Bouton Spécifique : Se connecter avec Google --- */
+/* --- Bouton SpÃ©cifique : Se connecter avec Google --- */
 .google-login-button {
     width: 100%;
     margin-bottom: 4px;
     padding: 15px;
-    background: rgba(40,65,110,0.42); /* Bleu dominant Google */
-    border: 1px solid rgba(120,150,200,0.3);
-    border-top-color: rgba(150,185,230,0.42);
-    box-shadow: 0 2px 0 rgba(150,185,230,0.08) inset, 0 8px 24px rgba(0,0,0,0.5);
-}
-.google-login-button:hover {
-    background: rgba(60,90,150,0.58);
-    border-color: rgba(150,185,230,0.52);
-    border-top-color: rgba(180,210,255,0.65);
-    box-shadow: 0 14px 36px rgba(0,0,0,0.55), 0 0 24px rgba(74,92,124,0.25);
-    text-shadow: 0 0 14px rgba(150,185,230,0.5), 0 2px 6px rgba(0,0,0,0.9);
+    background: rgba(40, 65, 110, 0.42);
+    /* Bleu dominant Google */
+    border: 1px solid rgba(120, 150, 200, 0.3);
+    border-top-color: rgba(150, 185, 230, 0.42);
+    box-shadow: 0 2px 0 rgba(150, 185, 230, 0.08) inset, 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
-/* --- Onglets (Se connecter / Créer un compte) --- */
+.google-login-button:hover {
+    background: rgba(60, 90, 150, 0.58);
+    border-color: rgba(150, 185, 230, 0.52);
+    border-top-color: rgba(180, 210, 255, 0.65);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55), 0 0 24px rgba(74, 92, 124, 0.25);
+    text-shadow: 0 0 14px rgba(150, 185, 230, 0.5), 0 2px 6px rgba(0, 0, 0, 0.9);
+}
+
+/* --- Onglets (Se connecter / CrÃ©er un compte) --- */
 .login-tabs {
     display: flex;
     gap: 4px;
@@ -814,7 +945,7 @@
     transition: background 0.25s, color 0.25s, box-shadow 0.25s;
 }
 
-/* Onglet actif (cliqué) → surlignage or */
+/* Onglet actif (cliquÃ©) â†’ surlignage or */
 .login-tab.active {
     background: rgba(255, 215, 0, 0.18);
     color: #ffd700;
@@ -826,7 +957,7 @@
     color: rgba(255, 255, 255, 0.8);
 }
 
-/* --- Panneau d'Information (quand l'utilisateur est connecté) --- */
+/* --- Panneau d'Information (quand l'utilisateur est connectÃ©) --- */
 .user-info-panel {
     display: flex;
     flex-direction: column;
@@ -839,7 +970,8 @@
     border-radius: 14px;
     width: 100%;
     box-sizing: border-box;
-    animation: fadeIn 0.4s ease-in; /* Apparition douce par JS */
+    animation: fadeIn 0.4s ease-in;
+    /* Apparition douce par JS */
 }
 
 .user-info-text {
@@ -852,12 +984,26 @@
 
 /* --- Responsive (Login) --- */
 @media (max-width: 768px) {
-    .login-container { padding: 22px; border-radius: 20px; }
-    .login-input { padding: 13px 16px; margin-bottom: 12px; }
+    .login-container {
+        padding: 22px;
+        border-radius: 20px;
+    }
+
+    .login-input {
+        padding: 13px 16px;
+        margin-bottom: 12px;
+    }
 }
+
 @media (max-height: 600px) {
-    .login-container { padding: 16px; }
-    .login-input { padding: 10px 14px; margin-bottom: 10px; }
+    .login-container {
+        padding: 16px;
+    }
+
+    .login-input {
+        padding: 10px 14px;
+        margin-bottom: 10px;
+    }
 }
 
 
@@ -865,7 +1011,7 @@
    5. MAP (map.html)
    ========================================================================== */
 
-/* --- Conteneur global, fixe la page à 100vh sans défilement --- */
+/* --- Conteneur global, fixe la page Ã  100vh sans dÃ©filement --- */
 .subject-page {
     position: relative;
     z-index: 2;
@@ -874,7 +1020,7 @@
     min-height: 100vh;
 }
 
-/* --- En-tête (Nom de la matière + Boutons) --- */
+/* --- En-tÃªte (Nom de la matiÃ¨re + Boutons) --- */
 .map-header {
     position: fixed;
     top: 18px;
@@ -885,14 +1031,16 @@
     align-items: center;
     justify-content: space-between;
     gap: 18px;
-    pointer-events: none; /* Pour pouvoir cliquer sur la map derrière */
+    pointer-events: none;
+    /* Pour pouvoir cliquer sur la map derriÃ¨re */
 }
 
-.map-header > div {
+.map-header>div {
     display: flex;
     align-items: center;
     gap: 14px;
-    pointer-events: auto; /* Rétablit le clic sur l'en-tête */
+    pointer-events: auto;
+    /* RÃ©tablit le clic sur l'en-tÃªte */
 }
 
 .subject-icon {
@@ -905,10 +1053,10 @@
     font-size: clamp(1.5rem, 5vw, 3rem);
     color: #fff;
     text-shadow:
-        0 0 12px rgba(200,168,75,0.7),
-        0 0 30px rgba(200,168,75,0.3),
-        3px 3px 0 rgba(85,40,0,0.6),
-        0 6px 16px rgba(0,0,0,0.7);
+        0 0 12px rgba(200, 168, 75, 0.7),
+        0 0 30px rgba(200, 168, 75, 0.3),
+        3px 3px 0 rgba(85, 40, 0, 0.6),
+        0 6px 16px rgba(0, 0, 0, 0.7);
     letter-spacing: 2px;
 }
 
@@ -924,30 +1072,30 @@
     font-weight: 700;
     letter-spacing: 1.5px;
     color: #fff;
-    background: rgba(100,30,30,0.55);
+    background: rgba(100, 30, 30, 0.55);
     backdrop-filter: blur(16px);
-    border: 1px solid rgba(200,80,80,0.35);
-    border-top-color: rgba(220,110,110,0.5);
+    border: 1px solid rgba(200, 80, 80, 0.35);
+    border-top-color: rgba(220, 110, 110, 0.5);
     border-radius: 12px;
     box-shadow:
-        0 2px 0 rgba(220,110,110,0.1) inset,
-        0 6px 20px rgba(0,0,0,0.5),
-        0 0 14px rgba(139,58,58,0.15);
+        0 2px 0 rgba(220, 110, 110, 0.1) inset,
+        0 6px 20px rgba(0, 0, 0, 0.5),
+        0 0 14px rgba(139, 58, 58, 0.15);
     text-decoration: none;
-    text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
     pointer-events: auto;
-    transition: all 0.28s cubic-bezier(0.25,0.46,0.45,0.94);
+    transition: all 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     position: relative;
     overflow: hidden;
 }
 
 .back-button:hover {
-    background: rgba(130,45,45,0.7);
-    border-color: rgba(220,100,100,0.55);
-    border-top-color: rgba(240,130,130,0.65);
+    background: rgba(130, 45, 45, 0.7);
+    border-color: rgba(220, 100, 100, 0.55);
+    border-top-color: rgba(240, 130, 130, 0.65);
     transform: translateY(-3px);
-    box-shadow: 0 10px 28px rgba(0,0,0,0.55), 0 0 20px rgba(139,58,58,0.25);
-    text-shadow: 0 0 12px rgba(240,130,130,0.5), 0 2px 6px rgba(0,0,0,0.9);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), 0 0 20px rgba(139, 58, 58, 0.25);
+    text-shadow: 0 0 12px rgba(240, 130, 130, 0.5), 0 2px 6px rgba(0, 0, 0, 0.9);
 }
 
 /* --- Conteneur du Chemin et des Niveaux --- */
@@ -958,25 +1106,27 @@
     height: 100vh;
     border: 0;
     border-radius: 0;
-    overflow-y: auto;   /* v2.3 : la piste peut dépasser 100vh (jusqu'à 100 niveaux) */
+    overflow-y: auto;
+    /* v2.3 : la piste peut dÃ©passer 100vh (jusqu'Ã  100 niveaux) */
     overflow-x: hidden;
     background: transparent;
-    /* Assombrit légèrement le bas de l'écran pour ancrer la route */
+    /* Assombrit lÃ©gÃ¨rement le bas de l'Ã©cran pour ancrer la route */
     box-shadow: inset 0 -90px 90px rgba(11, 42, 18, 0.24);
 }
 
-/* Piste défilante contenant le chemin SVG, le personnage et les boutons de
-   niveau (générés par JS — voir buildLevelTrack dans app.js). La hauteur
-   est fixée dynamiquement selon TOTAL_LEVELS (inline style, voir JS). */
+/* Piste dÃ©filante contenant le chemin SVG, le personnage et les boutons de
+   niveau (gÃ©nÃ©rÃ©s par JS â€” voir buildLevelTrack dans app.js). La hauteur
+   est fixÃ©e dynamiquement selon TOTAL_LEVELS (inline style, voir JS). */
 .level-track {
     position: relative;
     width: 100%;
 }
 
-/* Illustration de l'îlot de la matière, très discrète, derrière le chemin
-   et les niveaux (z-index négatif) — purement décorative. */
+/* Illustration de l'Ã®lot de la matiÃ¨re, trÃ¨s discrÃ¨te, derriÃ¨re le chemin
+   et les niveaux (z-index nÃ©gatif) â€” purement dÃ©corative. */
 .subject-bg-island {
-    position: fixed; /* v2.3 : reste centré dans la fenêtre même quand .level-map défile */
+    position: fixed;
+    /* v2.3 : reste centrÃ© dans la fenÃªtre mÃªme quand .level-map dÃ©file */
     top: 50%;
     left: 50%;
     transform: translate(-50%, -55%);
@@ -999,25 +1149,32 @@
     overflow: visible;
     pointer-events: none;
 }
+
 .path path {
     fill: none;
     stroke-linecap: round;
     stroke-linejoin: round;
-    vector-effect: non-scaling-stroke; /* L'épaisseur ne varie pas si on redimensionne l'écran */
+    vector-effect: non-scaling-stroke;
+    /* L'Ã©paisseur ne varie pas si on redimensionne l'Ã©cran */
 }
 
 /* Couches du chemin (Superposition 3D) */
 .path-shadow {
     stroke: rgba(84, 53, 21, 0.25);
     stroke-width: 46px;
-    transform: translateY(8px); /* Décalé vers le bas pour l'ombre */
+    transform: translateY(8px);
+    /* DÃ©calÃ© vers le bas pour l'ombre */
 }
+
 .path-ground {
-    stroke: #c8944f; /* Terre/Sable */
+    stroke: #c8944f;
+    /* Terre/Sable */
     stroke-width: 38px;
 }
+
 .path-light {
-    stroke: rgba(238, 190, 103, 0.52); /* Reflet sur le dessus */
+    stroke: rgba(238, 190, 103, 0.52);
+    /* Reflet sur le dessus */
     stroke-width: 22px;
 }
 
@@ -1027,11 +1184,11 @@
     z-index: 20;
     width: 50px;
     height: 70px;
-    /* Origine au centre en bas pour s'aligner sur les coordonnées */
+    /* Origine au centre en bas pour s'aligner sur les coordonnÃ©es */
     transform: translate(-50%, -100%);
-    /* Animation fluide lors du déplacement de niveau en niveau (géré par JS style.left/top) */
+    /* Animation fluide lors du dÃ©placement de niveau en niveau (gÃ©rÃ© par JS style.left/top) */
     transition: left 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
-                top 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        top 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
     pointer-events: none;
 }
 
@@ -1050,7 +1207,8 @@
     transform: translateX(-50%);
     width: 34px;
     height: 34px;
-    background: radial-gradient(circle at 40% 35%, #ffe0b2, #ffb74d); /* Peau */
+    background: radial-gradient(circle at 40% 35%, #ffe0b2, #ffb74d);
+    /* Peau */
     border-radius: 50%;
     border: 3px solid #e09540;
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
@@ -1071,7 +1229,8 @@
     height: 6px;
     background: #2d1600;
     border-radius: 50%;
-    animation: blink 4s infinite; /* Clignement périodique */
+    animation: blink 4s infinite;
+    /* Clignement pÃ©riodique */
 }
 
 .character-mouth {
@@ -1082,7 +1241,8 @@
     width: 8px;
     height: 4px;
     background: #c75030;
-    border-radius: 0 0 50% 50%; /* Sourit */
+    border-radius: 0 0 50% 50%;
+    /* Sourit */
 }
 
 .character-hat {
@@ -1090,16 +1250,19 @@
     bottom: 36px;
     left: 50%;
     transform: translateX(-50%);
-    width: 0; height: 0;
+    width: 0;
+    height: 0;
     border-left: 18px solid transparent;
     border-right: 18px solid transparent;
-    border-bottom: 30px solid #3949ab; /* Triangle bleu */
+    border-bottom: 30px solid #3949ab;
+    /* Triangle bleu */
     border-radius: 4px;
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
-.character-hat::before { /* Étoile sur le chapeau */
-    content: "⭐";
+.character-hat::before {
+    /* Ã‰toile sur le chapeau */
+    content: "â­�";
     position: absolute;
     top: 14px;
     left: 50%;
@@ -1108,7 +1271,8 @@
     filter: drop-shadow(0 0 3px rgba(255, 235, 59, 0.8));
 }
 
-.character-hat::after { /* Rebord du chapeau */
+.character-hat::after {
+    /* Rebord du chapeau */
     content: "";
     position: absolute;
     top: 28px;
@@ -1132,7 +1296,8 @@
     border-radius: 0 0 12px 12px;
     border: 2px solid #283593;
     border-top: none;
-    animation: cape-wave 2s ease-in-out infinite; /* Ondule au vent */
+    animation: cape-wave 2s ease-in-out infinite;
+    /* Ondule au vent */
 }
 
 .character-shadow {
@@ -1144,12 +1309,13 @@
     height: 8px;
     background: rgba(0, 0, 0, 0.25);
     border-radius: 50%;
-    animation: shadow-pulse 1.8s ease-in-out infinite; /* Suit le sautillement */
+    animation: shadow-pulse 1.8s ease-in-out infinite;
+    /* Suit le sautillement */
 }
 
 /* --- Boutons de Niveaux (Level Dots) --- */
 
-/* État de base : Débloqué mais pas commencé (Doré/Sable) */
+/* Ã‰tat de base : DÃ©bloquÃ© mais pas commencÃ© (DorÃ©/Sable) */
 .level-dot {
     position: absolute;
     z-index: 8;
@@ -1169,7 +1335,8 @@
         inset 0 -8px 0 rgba(103, 57, 17, 0.22),
         0 6px 0 #7c4f1e,
         0 14px 16px rgba(44, 80, 27, 0.24);
-    transform: translate(-50%, -50%); /* Centré sur les coordonnées */
+    transform: translate(-50%, -50%);
+    /* CentrÃ© sur les coordonnÃ©es */
     transition: transform 0.18s ease, filter 0.18s ease;
 }
 
@@ -1180,7 +1347,7 @@
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-/* Étiquettes des étoiles (injectées par JS, ex: ⭐⭐☆) */
+/* Ã‰tiquettes des Ã©toiles (injectÃ©es par JS, ex: â­�â­�â˜†) */
 .level-stars-display {
     position: absolute;
     bottom: -22px;
@@ -1193,14 +1360,14 @@
     min-height: 14px;
 }
 
-/* Survol d'un niveau jouable (s'élève) */
+/* Survol d'un niveau jouable (s'Ã©lÃ¨ve) */
 .level-dot:hover:not(.locked),
 .level-dot.selected:not(.locked) {
     transform: translate(-50%, calc(-50% - 8px)) scale(1.07);
     filter: drop-shadow(0 0 12px rgba(255, 246, 124, 0.9));
 }
 
-/* État Verrouillé : Grisé (Classe ajoutée par JS) */
+/* Ã‰tat VerrouillÃ© : GrisÃ© (Classe ajoutÃ©e par JS) */
 .level-dot.locked {
     cursor: not-allowed;
     color: #8a8278;
@@ -1217,16 +1384,19 @@
     opacity: 0.7;
 }
 
-.level-dot.locked .level-number { color: #777; text-shadow: none; }
+.level-dot.locked .level-number {
+    color: #777;
+    text-shadow: none;
+}
 
-/* Tremble si on essaie de cliquer sur un verrouillé */
+/* Tremble si on essaie de cliquer sur un verrouillÃ© */
 .level-dot.locked:hover {
     transform: translate(-50%, -50%);
     filter: grayscale(80%) brightness(0.6);
     animation: locked-shake 0.4s ease;
 }
 
-/* État Actif : Niveau courant en cours à faire (Bleu/Magique) */
+/* Ã‰tat Actif : Niveau courant en cours Ã  faire (Bleu/Magique) */
 .level-dot.active {
     color: #fff;
     border-color: #b9ddff;
@@ -1238,10 +1408,11 @@
         inset 0 -8px 0 rgba(16, 47, 107, 0.3),
         0 6px 0 #174785,
         0 14px 16px rgba(44, 80, 27, 0.24);
-    animation: active-glow 2s ease-in-out infinite; /* Pulse lumineuse */
+    animation: active-glow 2s ease-in-out infinite;
+    /* Pulse lumineuse */
 }
 
-/* État Complété : Réussi avec des étoiles (Vert) */
+/* Ã‰tat ComplÃ©tÃ© : RÃ©ussi avec des Ã©toiles (Vert) */
 .level-dot.completed {
     color: #2d5a00;
     border-color: #a8e66e;
@@ -1254,14 +1425,18 @@
         0 6px 0 #2d5a05,
         0 14px 16px rgba(44, 80, 27, 0.24);
 }
-.level-dot.completed .level-number { color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); }
 
-/* Positions calculées dynamiquement par JS (levelCoords, v2.3) — voir
-   buildLevelTrack dans app.js. Les anciennes règles .level-1..level-6 codées
-   en dur ont été retirées (jusqu'à 100 niveaux : plus question de les lister
+.level-dot.completed .level-number {
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Positions calculÃ©es dynamiquement par JS (levelCoords, v2.3) â€” voir
+   buildLevelTrack dans app.js. Les anciennes rÃ¨gles .level-1..level-6 codÃ©es
+   en dur ont Ã©tÃ© retirÃ©es (jusqu'Ã  100 niveaux : plus question de les lister
    une par une). */
 
-/* --- Modale de Complétion de Niveau --- */
+/* --- Modale de ComplÃ©tion de Niveau --- */
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -1274,21 +1449,23 @@
     animation: fade-in 0.3s ease;
 }
 
-/* Utilisé par JS pour afficher/cacher : modal.hidden = true */
-.modal-overlay[hidden] { display: none; }
+/* UtilisÃ© par JS pour afficher/cacher : modal.hidden = true */
+.modal-overlay[hidden] {
+    display: none;
+}
 
 .modal {
-    background: rgba(8,14,28,0.92);
+    background: rgba(8, 14, 28, 0.92);
     backdrop-filter: blur(32px) saturate(1.5);
-    border: 1px solid rgba(200,168,75,0.3);
-    border-top: 1px solid rgba(200,168,75,0.55);
+    border: 1px solid rgba(200, 168, 75, 0.3);
+    border-top: 1px solid rgba(200, 168, 75, 0.55);
     border-radius: 22px;
     padding: 32px 36px;
     text-align: center;
     box-shadow:
-        0 2px 0 rgba(200,168,75,0.1) inset,
-        0 24px 70px rgba(0,0,0,0.75),
-        0 0 40px rgba(200,168,75,0.1);
+        0 2px 0 rgba(200, 168, 75, 0.1) inset,
+        0 24px 70px rgba(0, 0, 0, 0.75),
+        0 0 40px rgba(200, 168, 75, 0.1);
     max-width: 420px;
     width: 90%;
     animation: modal-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1);
@@ -1302,9 +1479,9 @@
     font-weight: 900;
     color: #fff;
     text-shadow:
-        0 0 12px rgba(200,168,75,0.7),
-        0 0 30px rgba(200,168,75,0.3),
-        2px 2px 0 rgba(85,40,0,0.5);
+        0 0 12px rgba(200, 168, 75, 0.7),
+        0 0 30px rgba(200, 168, 75, 0.3),
+        2px 2px 0 rgba(85, 40, 0, 0.5);
     margin-bottom: 8px;
     letter-spacing: 2px;
 }
@@ -1315,7 +1492,7 @@
     margin-bottom: 24px;
 }
 
-/* Les 3 boutons d'étoiles (simulation) */
+/* Les 3 boutons d'Ã©toiles (simulation) */
 .modal-stars-choice {
     display: flex;
     gap: 12px;
@@ -1339,13 +1516,20 @@
 
 .star-choice:hover {
     background: rgba(255, 217, 133, 0.2);
-    border-color: #ffd985; /* Or/Jaune vif */
+    border-color: #ffd985;
+    /* Or/Jaune vif */
     transform: translateY(-4px) scale(1.05);
     box-shadow: 0 8px 20px rgba(255, 217, 133, 0.2);
 }
 
-.star-choice span:first-child { font-size: 1.4rem; }
-.star-label { font-size: 0.75rem; color: #8aa; }
+.star-choice span:first-child {
+    font-size: 1.4rem;
+}
+
+.star-label {
+    font-size: 0.75rem;
+    color: #8aa;
+}
 
 /* Boutons d'action dans la modale */
 .modal-close-btn {
@@ -1361,6 +1545,7 @@
     transition: all 0.2s ease;
     margin-bottom: 10px;
 }
+
 .modal-close-btn:hover {
     background: rgba(178, 67, 50, 0.4);
     border-color: #b24332;
@@ -1379,6 +1564,7 @@
     font-size: 0.78rem;
     transition: all 0.2s ease;
 }
+
 .modal-reset-btn:hover {
     background: rgba(255, 80, 80, 0.15);
     border-color: #ff6b6b;
@@ -1386,28 +1572,65 @@
 
 /* --- Animations Locales (Map) --- */
 @keyframes character-bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
 }
 
 @keyframes shadow-pulse {
-    0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.25; }
-    50% { transform: translateX(-50%) scale(0.7); opacity: 0.15; }
+
+    0%,
+    100% {
+        transform: translateX(-50%) scale(1);
+        opacity: 0.25;
+    }
+
+    50% {
+        transform: translateX(-50%) scale(0.7);
+        opacity: 0.15;
+    }
 }
 
 @keyframes cape-wave {
-    0%, 100% { transform: translateX(-50%) skewX(0deg); }
-    25% { transform: translateX(-50%) skewX(5deg); }
-    75% { transform: translateX(-50%) skewX(-5deg); }
+
+    0%,
+    100% {
+        transform: translateX(-50%) skewX(0deg);
+    }
+
+    25% {
+        transform: translateX(-50%) skewX(5deg);
+    }
+
+    75% {
+        transform: translateX(-50%) skewX(-5deg);
+    }
 }
 
 @keyframes blink {
-    0%, 45%, 55%, 100% { transform: scaleY(1); }
-    50% { transform: scaleY(0.1); }
+
+    0%,
+    45%,
+    55%,
+    100% {
+        transform: scaleY(1);
+    }
+
+    50% {
+        transform: scaleY(0.1);
+    }
 }
 
 @keyframes active-glow {
-    0%, 100% {
+
+    0%,
+    100% {
         box-shadow:
             inset 0 5px 0 rgba(255, 255, 255, 0.55),
             inset 0 -8px 0 rgba(16, 47, 107, 0.3),
@@ -1415,6 +1638,7 @@
             0 14px 16px rgba(44, 80, 27, 0.24),
             0 0 15px rgba(78, 165, 255, 0.3);
     }
+
     50% {
         box-shadow:
             inset 0 5px 0 rgba(255, 255, 255, 0.55),
@@ -1426,54 +1650,113 @@
 }
 
 @keyframes locked-shake {
-    0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
-    20% { transform: translate(-50%, -50%) rotate(-3deg); }
-    40% { transform: translate(-50%, -50%) rotate(3deg); }
-    60% { transform: translate(-50%, -50%) rotate(-2deg); }
-    80% { transform: translate(-50%, -50%) rotate(2deg); }
+
+    0%,
+    100% {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+
+    20% {
+        transform: translate(-50%, -50%) rotate(-3deg);
+    }
+
+    40% {
+        transform: translate(-50%, -50%) rotate(3deg);
+    }
+
+    60% {
+        transform: translate(-50%, -50%) rotate(-2deg);
+    }
+
+    80% {
+        transform: translate(-50%, -50%) rotate(2deg);
+    }
 }
 
 @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes modal-pop {
-    from { transform: scale(0.8); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 /* --- Responsive (Map) --- */
 @media (max-width: 720px) {
     .map-header {
-        top: 12px; left: 12px; right: 12px;
+        top: 12px;
+        left: 12px;
+        right: 12px;
         align-items: flex-start;
         flex-direction: column;
     }
-    .level-map { min-height: 100vh; }
 
-    /* Réduction du personnage */
-    .character { width: 40px; height: 56px; }
-    .character-head { width: 28px; height: 28px; }
+    .level-map {
+        min-height: 100vh;
+    }
+
+    /* RÃ©duction du personnage */
+    .character {
+        width: 40px;
+        height: 56px;
+    }
+
+    .character-head {
+        width: 28px;
+        height: 28px;
+    }
+
     .character-hat {
         border-left: 14px solid transparent;
         border-right: 14px solid transparent;
         border-bottom: 24px solid #3949ab;
         bottom: 30px;
     }
-    .character-hat::after { width: 34px; height: 6px; top: 22px; }
-    .character-hat::before { font-size: 8px; top: 10px; }
-    .character-cape { width: 24px; height: 14px; }
 
-    .modal { padding: 24px 20px; }
-    .modal-stars-choice { flex-direction: column; }
+    .character-hat::after {
+        width: 34px;
+        height: 6px;
+        top: 22px;
+    }
+
+    .character-hat::before {
+        font-size: 8px;
+        top: 10px;
+    }
+
+    .character-cape {
+        width: 24px;
+        height: 14px;
+    }
+
+    .modal {
+        padding: 24px 20px;
+    }
+
+    .modal-stars-choice {
+        flex-direction: column;
+    }
 }
 
 
 /* ==========================================================================
    6. DASHBOARD (dashboard.html)
-   Tableau de bord avec matières, carte de progression, quiz et boutique.
-   Adapté d'edu_maj.html vers la charte graphique du projet.
+   Tableau de bord avec matiÃ¨res, carte de progression, quiz et boutique.
+   AdaptÃ© d'edu_maj.html vers la charte graphique du projet.
    ========================================================================== */
 
 /* --- HUD (Barre de statut du joueur) --- */
@@ -1575,7 +1858,7 @@
     box-shadow: 0 0 6px rgba(200, 168, 75, 0.5);
 }
 
-/* --- Onglets de navigation (Matières | Boutique) --- */
+/* --- Onglets de navigation (MatiÃ¨res | Boutique) --- */
 .dash-tabs {
     display: flex;
     gap: 8px;
@@ -1590,15 +1873,21 @@
     border: 2px solid #000;
     color: rgba(255, 255, 255, 0.6);
     padding: 10px 18px;
-    border-radius: 0; /* Les coins pixel remplacent l'arrondi */
+    border-radius: 0;
+    /* Les coins pixel remplacent l'arrondi */
     cursor: pointer;
     transition: transform 0.1s ease, background 0.25s ease, color 0.25s ease;
     letter-spacing: 0.5px;
     text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.6);
-    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5); /* Ombre "3D" façon bouton pixel */
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5);
+    /* Ombre "3D" faÃ§on bouton pixel */
     clip-path: polygon(0 6px, 6px 6px, 6px 0, calc(100% - 6px) 0, calc(100% - 6px) 6px, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 6px calc(100% - 6px), 0 calc(100% - 6px));
 }
-.dash-tab:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5); }
+
+.dash-tab:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+}
 
 .dash-tab.active {
     background: rgba(200, 168, 75, 0.2);
@@ -1619,7 +1908,7 @@
     outline-offset: 2px;
 }
 
-/* --- En-tête du dashboard --- */
+/* --- En-tÃªte du dashboard --- */
 .dash-header {
     display: flex;
     align-items: center;
@@ -1662,7 +1951,7 @@
     text-shadow: 0 0 8px rgba(107, 202, 130, 0.3);
 }
 
-/* --- Grille des matières (Dashboard) --- */
+/* --- Grille des matiÃ¨res (Dashboard) --- */
 .dash-subjects-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -1676,7 +1965,8 @@
     -webkit-backdrop-filter: blur(16px);
     border: 2px solid rgba(0, 0, 0, 0.5);
     border-top: 2px solid rgba(255, 255, 255, 0.12);
-    border-radius: 6px; /* Coins plus francs, façon boîtier de jeu — inspiré de Codédex */
+    border-radius: 6px;
+    /* Coins plus francs, faÃ§on boÃ®tier de jeu â€” inspirÃ© de CodÃ©dex */
     padding: 18px;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -1732,8 +2022,8 @@
     letter-spacing: 0.5px;
 }
 
-/* Barre de progression compacte (v2.3) — remplace les pastilles unitaires
-   .dash-dots, impraticables au-delà de quelques niveaux (100 désormais). */
+/* Barre de progression compacte (v2.3) â€” remplace les pastilles unitaires
+   .dash-dots, impraticables au-delÃ  de quelques niveaux (100 dÃ©sormais). */
 .dash-progress-track {
     height: 6px;
     border-radius: 99px;
@@ -1851,7 +2141,8 @@
     -webkit-backdrop-filter: blur(32px) saturate(1.5);
     border: 2px solid rgba(0, 0, 0, 0.7);
     border-top: 2px solid rgba(200, 168, 75, 0.45);
-    border-radius: 8px; /* Coins plus francs, façon fenêtre de dialogue de RPG rétro */
+    border-radius: 8px;
+    /* Coins plus francs, faÃ§on fenÃªtre de dialogue de RPG rÃ©tro */
     padding: 28px;
     max-width: 480px;
     width: 100%;
@@ -1865,7 +2156,7 @@
     overflow: hidden;
 }
 
-/* Coins décoratifs dorés */
+/* Coins dÃ©coratifs dorÃ©s */
 .dash-modal::before {
     content: '';
     position: absolute;
@@ -1957,7 +2248,7 @@
     cursor: default;
 }
 
-/* Feedback (bonne/mauvaise réponse) */
+/* Feedback (bonne/mauvaise rÃ©ponse) */
 .dash-feedback {
     margin-top: 14px;
     padding: 14px 16px;
@@ -1981,7 +2272,7 @@
     color: #fff;
 }
 
-/* Récompenses */
+/* RÃ©compenses */
 .dash-reward-line {
     display: flex;
     gap: 14px;
@@ -2021,6 +2312,7 @@
 .dash-btn-primary:hover {
     background: #5c9938;
 }
+
 .dash-btn-primary:active {
     transform: translate(3px, 3px);
     box-shadow: 0 0 0 rgba(0, 0, 0, 0.55);
@@ -2045,6 +2337,7 @@
 .dash-btn-ghost:hover {
     color: #fff;
 }
+
 .dash-btn-ghost:active {
     transform: translate(3px, 3px);
     box-shadow: 0 0 0 rgba(0, 0, 0, 0.4);
@@ -2123,6 +2416,7 @@
     transition: transform 0.1s ease, background 0.2s ease;
     box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.4);
 }
+
 .dash-skin-btn:active:not(:disabled) {
     transform: translate(2px, 2px);
     box-shadow: 0 0 0 rgba(0, 0, 0, 0.4);
@@ -2164,6 +2458,72 @@
     border: 1px solid rgba(107, 202, 130, 0.35);
     color: var(--c-green-light);
     cursor: default;
+}
+
+.dash-skin-card.is-equipped {
+    border-color: rgba(107, 202, 130, 0.6);
+    box-shadow: 0 0 20px rgba(107, 202, 130, 0.15), 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.dash-skin-card.is-owned {
+    border-top-color: rgba(200, 168, 75, 0.3);
+}
+
+.dash-shop-filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 16px 0 20px 0;
+}
+
+.dash-shop-filter-btn {
+    background: rgba(8, 14, 24, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-family: 'Rajdhani', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.dash-shop-filter-btn:hover {
+    background: rgba(200, 168, 75, 0.15);
+    border-color: rgba(200, 168, 75, 0.4);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.dash-shop-filter-btn.active {
+    background: rgba(200, 168, 75, 0.25);
+    border-color: var(--c-gold);
+    color: var(--c-gold);
+    box-shadow: 0 0 12px rgba(200, 168, 75, 0.25);
+}
+
+.dash-shop-badge {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+}
+
+.dash-hud-title-badge {
+    display: inline-block;
+    vertical-align: middle;
+    font-family: 'Rajdhani', monospace;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+#chrono-bar-container, #map-chrono-bar-container {
+    animation: fadeIn 0.3s ease;
 }
 
 /* --- Bouton Retour au Menu (Dashboard) --- */
@@ -2234,25 +2594,31 @@
     .dash-hud {
         padding: 8px 12px 8px 8px;
     }
+
     .dash-avatar {
         width: 38px;
         height: 38px;
         font-size: 12px;
     }
+
     .dash-tabs {
         overflow-x: auto;
     }
+
     .dash-subjects-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 10px;
     }
+
     .dash-skins-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 10px;
     }
+
     .dash-modal {
         padding: 20px 16px;
     }
+
     .dash-back-btn {
         width: calc(100% - 20px);
     }
@@ -2262,12 +2628,14 @@
     .dash-subjects-grid {
         grid-template-columns: 1fr;
     }
+
     .dash-skins-grid {
         grid-template-columns: 1fr;
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
+
     .dash-subject-card,
     .dash-xp-fill,
     .dash-skin-card {
@@ -2276,10 +2644,10 @@
 }
 
 /* =============================================================================
-   AJOUTS v2.1 — Multi-types de question (quiz-engine.js) + badges
+   AJOUTS v2.1 â€” Multi-types de question (quiz-engine.js) + badges
    ============================================================================= */
 
-/* Pseudo affiché dans le header du dashboard quand un compte est connecté */
+/* Pseudo affichÃ© dans le header du dashboard quand un compte est connectÃ© */
 .dash-user-greeting {
     margin-left: auto;
     font-size: 13px;
@@ -2287,16 +2655,19 @@
     font-weight: 600;
 }
 
-/* --- Vrai / Faux : mêmes boutons que le QCM, disposés en 2 colonnes --- */
+/* --- Vrai / Faux : mÃªmes boutons que le QCM, disposÃ©s en 2 colonnes --- */
 .dash-vf-btn {
     display: inline-block;
     width: calc(50% - 6px);
     text-align: center;
     font-weight: 700;
 }
-.dash-vf-btn:first-child { margin-right: 6px; }
 
-/* --- Réponse courte --- */
+.dash-vf-btn:first-child {
+    margin-right: 6px;
+}
+
+/* --- RÃ©ponse courte --- */
 .dash-short-input {
     width: 100%;
     box-sizing: border-box;
@@ -2308,15 +2679,23 @@
     font-size: 14px;
     margin-bottom: 10px;
 }
-.dash-short-input:focus { outline: none; border-color: var(--c-gold); }
-.dash-short-submit { width: 100%; }
 
-/* --- Texte à trous --- */
+.dash-short-input:focus {
+    outline: none;
+    border-color: var(--c-gold);
+}
+
+.dash-short-submit {
+    width: 100%;
+}
+
+/* --- Texte Ã  trous --- */
 .dash-blanks-sentence {
     line-height: 2.2;
     font-size: 15px;
     color: var(--c-white);
 }
+
 .dash-blank-input {
     width: 110px;
     background: rgba(255, 255, 255, 0.08);
@@ -2328,10 +2707,26 @@
     text-align: center;
     margin: 0 3px;
 }
-.dash-blank-input:focus { outline: none; border-color: var(--c-gold); }
-.dash-blank-input.correct { border-color: var(--c-green-light); background: rgba(107, 202, 130, 0.15); }
-.dash-blank-input.wrong { border-color: var(--c-red); background: rgba(139, 58, 58, 0.2); }
-.dash-blanks-submit { width: 100%; margin-top: 12px; }
+
+.dash-blank-input:focus {
+    outline: none;
+    border-color: var(--c-gold);
+}
+
+.dash-blank-input.correct {
+    border-color: var(--c-green-light);
+    background: rgba(107, 202, 130, 0.15);
+}
+
+.dash-blank-input.wrong {
+    border-color: var(--c-red);
+    background: rgba(139, 58, 58, 0.2);
+}
+
+.dash-blanks-submit {
+    width: 100%;
+    margin-top: 12px;
+}
 
 /* --- Association ("drag & drop" en cliquer-associer) --- */
 .dash-dd-hint {
@@ -2339,12 +2734,14 @@
     color: rgba(255, 255, 255, 0.55);
     margin-bottom: 10px;
 }
+
 .dash-dd-row {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 10px;
 }
+
 .dash-dd-chip {
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(200, 168, 75, 0.3);
@@ -2354,8 +2751,17 @@
     font-size: 13px;
     cursor: pointer;
 }
-.dash-dd-chip.selected { border-color: var(--c-gold); background: rgba(200, 168, 75, 0.2); }
-.dash-dd-chip.placed { opacity: 0.4; cursor: default; }
+
+.dash-dd-chip.selected {
+    border-color: var(--c-gold);
+    background: rgba(200, 168, 75, 0.2);
+}
+
+.dash-dd-chip.placed {
+    opacity: 0.4;
+    cursor: default;
+}
+
 .dash-dd-target {
     display: block;
     width: 100%;
@@ -2369,6 +2775,7 @@
     margin-bottom: 6px;
     cursor: pointer;
 }
+
 .dash-dd-drop {
     display: block;
     margin-top: 4px;
@@ -2377,13 +2784,32 @@
     color: var(--c-gold);
     min-height: 14px;
 }
-.dash-dd-submit { width: 100%; margin-top: 6px; }
-.dash-dd-submit:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* --- Badges (onglet Succès) --- */
-.dash-badge-card { position: relative; }
-.dash-badge-card.locked { opacity: 0.45; filter: grayscale(0.6); }
-.dash-badge-icon { font-size: 34px; margin-bottom: 10px; }
+.dash-dd-submit {
+    width: 100%;
+    margin-top: 6px;
+}
+
+.dash-dd-submit:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* --- Badges (onglet SuccÃ¨s) --- */
+.dash-badge-card {
+    position: relative;
+}
+
+.dash-badge-card.locked {
+    opacity: 0.45;
+    filter: grayscale(0.6);
+}
+
+.dash-badge-icon {
+    font-size: 34px;
+    margin-bottom: 10px;
+}
+
 .dash-badge-desc {
     font-size: 12px;
     color: rgba(255, 255, 255, 0.6);
@@ -2392,7 +2818,7 @@
 }
 
 /* =============================================================================
-   AJOUTS v2.2 — Skins "personnage" (portraits au lieu d'un halo de couleur)
+   AJOUTS v2.2 â€” Skins "personnage" (portraits au lieu d'un halo de couleur)
    ============================================================================= */
 .dash-avatar img,
 .dash-skin-orb img {
@@ -2404,20 +2830,20 @@
 }
 
 /* =============================================================================
-   9. POLISH v1.17 — RAFFINEMENTS VISUELS (couche appliquée en dernier)
+   9. POLISH v1.17 â€” RAFFINEMENTS VISUELS (couche appliquÃ©e en dernier)
    -----------------------------------------------------------------------------
-   Objectifs de cette couche (sans changer l'identité du jeu, ni le logo) :
-   - Accessibilité : anneau de focus clavier visible sur TOUT élément interactif
-   - Confort de lecture : sélection de texte, scrollbar et footer plus lisibles
-   - Cohérence : les icônes emoji (Géographie, Chimie) reçoivent un socle lumineux
-     qui les intègre au même langage visuel que les îlots PNG
-   - Fidélité pixel-art : rendu net des illustrations (image-rendering)
+   Objectifs de cette couche (sans changer l'identitÃ© du jeu, ni le logo) :
+   - AccessibilitÃ© : anneau de focus clavier visible sur TOUT Ã©lÃ©ment interactif
+   - Confort de lecture : sÃ©lection de texte, scrollbar et footer plus lisibles
+   - CohÃ©rence : les icÃ´nes emoji (GÃ©ographie, Chimie) reÃ§oivent un socle lumineux
+     qui les intÃ¨gre au mÃªme langage visuel que les Ã®lots PNG
+   - FidÃ©litÃ© pixel-art : rendu net des illustrations (image-rendering)
    - Corriger la collision footer / bouton "Retour au menu" sur jouer.html
    ============================================================================= */
 
 /* --- Focus clavier (navigation au tabulateur) ---
-   Tous les éléments interactifs reçoivent un anneau doré net, cohérent avec
-   l'esthétique pixel-art (contraste garanti pour l'accessibilité WCAG). */
+   Tous les Ã©lÃ©ments interactifs reÃ§oivent un anneau dorÃ© net, cohÃ©rent avec
+   l'esthÃ©tique pixel-art (contraste garanti pour l'accessibilitÃ© WCAG). */
 .menu-button:focus-visible,
 .option-button:focus-visible,
 .niveau-pill:focus-visible,
@@ -2439,23 +2865,32 @@
     outline-offset: 3px;
 }
 
-/* Les champs déjà stylés via :focus gardent leur bordure dorée, l'outline
-   s'ajoute en doublon sans gêner. */
+/* Les champs dÃ©jÃ  stylÃ©s via :focus gardent leur bordure dorÃ©e, l'outline
+   s'ajoute en doublon sans gÃªner. */
 
-/* --- Sélection de texte --- */
+/* --- SÃ©lection de texte --- */
 ::selection {
     background: rgba(200, 168, 75, 0.35);
     color: #fff;
 }
 
-/* --- Scrollbar intégrée au thème --- */
-::-webkit-scrollbar { width: 10px; }
-::-webkit-scrollbar-track { background: rgba(6, 13, 26, 0.6); }
+/* --- Scrollbar intÃ©grÃ©e au thÃ¨me --- */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(6, 13, 26, 0.6);
+}
+
 ::-webkit-scrollbar-thumb {
     background: rgba(200, 168, 75, 0.25);
     border-radius: 6px;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(200, 168, 75, 0.45); }
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(200, 168, 75, 0.45);
+}
 
 /* --- Illustrations pixel-art : rendu net (pas d'interpolation floue) --- */
 img.matiere-icon,
@@ -2465,10 +2900,10 @@ img.matiere-icon,
     image-rendering: pixelated;
 }
 
-/* --- Socle lumineux des matières en emoji (Géographie, Chimie) ---
-   Les îlots PNG ont une illustration riche ; les emojis seuls paraissaient
-   plats. Un disque dégradé + halo doré derrière l'emoji leur donne la même
-   présence visuelle dans la grille. */
+/* --- Socle lumineux des matiÃ¨res en emoji (GÃ©ographie, Chimie) ---
+   Les Ã®lots PNG ont une illustration riche ; les emojis seuls paraissaient
+   plats. Un disque dÃ©gradÃ© + halo dorÃ© derriÃ¨re l'emoji leur donne la mÃªme
+   prÃ©sence visuelle dans la grille. */
 span.matiere-icon {
     width: clamp(120px, 16vw, 150px);
     aspect-ratio: 1 / 1;
@@ -2478,54 +2913,66 @@ span.matiere-icon {
     line-height: 1;
     border-radius: 50%;
     background:
-        radial-gradient(circle at 32% 25%, rgba(255,255,255,0.14) 0 18%, transparent 20%),
-        radial-gradient(circle at 50% 60%, rgba(74,124,89,0.5) 0 45%, rgba(10,22,40,0.9) 78%);
-    border: 3px solid rgba(200,168,75,0.4);
+        radial-gradient(circle at 32% 25%, rgba(255, 255, 255, 0.14) 0 18%, transparent 20%),
+        radial-gradient(circle at 50% 60%, rgba(74, 124, 89, 0.5) 0 45%, rgba(10, 22, 40, 0.9) 78%);
+    border: 3px solid rgba(200, 168, 75, 0.4);
     box-shadow:
-        inset 0 4px 0 rgba(255,255,255,0.18),
-        inset 0 -6px 0 rgba(0,0,0,0.35),
-        0 6px 0 rgba(0,0,0,0.45),
-        0 0 26px rgba(200,168,75,0.18);
+        inset 0 4px 0 rgba(255, 255, 255, 0.18),
+        inset 0 -6px 0 rgba(0, 0, 0, 0.35),
+        0 6px 0 rgba(0, 0, 0, 0.45),
+        0 0 26px rgba(200, 168, 75, 0.18);
 }
-span.matiere-icon::before { content: none; }
 
-/* --- Ornement du titre de sélection de niveau --- */
+span.matiere-icon::before {
+    content: none;
+}
+
+/* --- Ornement du titre de sÃ©lection de niveau --- */
 .niveau-title::after {
     content: '';
     display: block;
     width: min(220px, 60%);
     height: 2px;
     margin: 12px auto 0;
-    background: linear-gradient(90deg, transparent, rgba(200,168,75,0.55), transparent);
+    background: linear-gradient(90deg, transparent, rgba(200, 168, 75, 0.55), transparent);
 }
 
 /* --- Footer : lisible et sans collision avec le bouton Retour --- */
 .footer {
     bottom: 10px;
     color: rgba(200, 168, 75, 0.45);
-    z-index: 101; /* Au-dessus du bouton Retour (z-index 100) en cas de contact */
+    z-index: 101;
+    /* Au-dessus du bouton Retour (z-index 100) en cas de contact */
 }
 
 /* Le bouton Retour au menu gagne de l'air : moins large, plus haut au-dessus
-   du footer, et la grille réserve l'espace qu'il occupe pour que la dernière
-   rangée de cartes ne passe jamais derrière lui. */
+   du footer, et la grille rÃ©serve l'espace qu'il occupe pour que la derniÃ¨re
+   rangÃ©e de cartes ne passe jamais derriÃ¨re lui. */
 .retour-button-matieres {
     bottom: 44px;
     width: auto;
     min-width: 230px;
     padding: 12px 30px;
 }
-.matieres-grid { padding-bottom: 0; }
-main.container:has(.retour-button-matieres) { padding-bottom: 130px; }
 
-/* --- focus-visible des cartes matières du dashboard (clavier) --- */
+.matieres-grid {
+    padding-bottom: 0;
+}
+
+main.container:has(.retour-button-matieres) {
+    padding-bottom: 130px;
+}
+
+/* --- focus-visible des cartes matiÃ¨res du dashboard (clavier) --- */
 .dash-subject-card:focus-visible {
     border-color: var(--c-gold);
     transform: translateY(-4px);
 }
 
-/* --- Niveaux verrouillés : curseur cohérent même au clavier --- */
-.level-dot.locked:focus-visible { cursor: not-allowed; }
+/* --- Niveaux verrouillÃ©s : curseur cohÃ©rent mÃªme au clavier --- */
+.level-dot.locked:focus-visible {
+    cursor: not-allowed;
+}
 
 /* --- Tab actif : renforcement discret de l'indicateur --- */
 .dash-tab.active {
@@ -2534,15 +2981,24 @@ main.container:has(.retour-button-matieres) { padding-bottom: 130px; }
         0 -2px 0 rgba(200, 168, 75, 0.55) inset;
 }
 
-/* --- Respect des préférences système : réduire les animations ---
-   (vertige, épilepsie photosensible, batterie). Les éléments restent
-   entièrement utilisables, sans mouvements permanents. */
+/* --- Respect des prÃ©fÃ©rences systÃ¨me : rÃ©duire les animations ---
+   (vertige, Ã©pilepsie photosensible, batterie). Les Ã©lÃ©ments restent
+   entiÃ¨rement utilisables, sans mouvements permanents. */
 @media (prefers-reduced-motion: reduce) {
-    .star, .cloud, .matiere-icon, .logo-image, .level-dot.active,
-    .dash-map-wrap circle, .dash-node-group circle {
+
+    .star,
+    .cloud,
+    .matiere-icon,
+    .logo-image,
+    .level-dot.active,
+    .dash-map-wrap circle,
+    .dash-node-group circle {
         animation: none !important;
     }
-    *, *::before, *::after {
+
+    *,
+    *::before,
+    *::after {
         transition-duration: 0.01ms !important;
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
@@ -2551,29 +3007,60 @@ main.container:has(.retour-button-matieres) { padding-bottom: 130px; }
 
 /* --- Impression : inutile d'imprimer le fond spatial --- */
 @media print {
-    .background, .stars, .clouds { display: none; }
+
+    .background,
+    .stars,
+    .clouds {
+        display: none;
+    }
 }
 
 /* =========================================================================
-   v1.21 — DERNIER MOT RESPONSIVE (petits téléphones ≤ 600px)
-   Placé TOUT À LA FIN du fichier pour surmonter la couche « polish »
+   v1.21 â€” DERNIER MOT RESPONSIVE (petits tÃ©lÃ©phones â‰¤ 600px)
+   PlacÃ© TOUT Ã€ LA FIN du fichier pour surmonter la couche Â« polish Â»
    (ex : .matieres-grid { padding-bottom: 0 } ligne ~2842). Ce bloc doit
-   toujours rester dernier : tout correctif mobile ultérieur s'ajoute ici.
+   toujours rester dernier : tout correctif mobile ultÃ©rieur s'ajoute ici.
    ========================================================================= */
 @media (max-width: 600px) {
-    /* Espace sous la grille des matières pour le bouton « Retour » flottant
-       et le pied de page — sinon les dernières cartes sont recouvertes. */
+
+    /* Espace sous la grille des matiÃ¨res pour le bouton Â« Retour Â» flottant
+       et le pied de page â€” sinon les derniÃ¨res cartes sont recouvertes. */
     .matieres-grid.visible {
         padding-bottom: 150px;
     }
 }
 
-/* --- Mode �conomie d'�nergie --- */
-body.eco-mode-active * { animation: none !important; }
-body.eco-mode-active .stars, body.eco-mode-active .clouds { display: none !important; }
+/* --- Mode Économie d'Énergie --- */
+body.eco-mode-active * {
+    animation: none !important;
+}
 
-/* S�lecteur de classe dans le dashboard */
-.dash-grade-select { background: rgba(8,14,24,0.6); color: var(--text); border: 1px solid rgba(255,255,255,0.18); border-radius: 8px; padding: 4px 10px; font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 600; outline: none; cursor: pointer; transition: border-color 0.2s; margin-left: 15px; }
-.dash-grade-select:hover { border-color: var(--gold); }
-.dash-grade-select option { background: #070b1a; color: white; }
+body.eco-mode-active .stars,
+body.eco-mode-active .clouds {
+    display: none !important;
+}
 
+/* Sélecteur de classe dans le dashboard */
+.dash-grade-select {
+    background: rgba(8, 14, 24, 0.6);
+    color: var(--text);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    margin-left: 15px;
+}
+
+.dash-grade-select:hover {
+    border-color: var(--gold);
+}
+
+.dash-grade-select option {
+    background: #070b1a;
+    color: white;
+}

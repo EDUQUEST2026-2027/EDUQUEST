@@ -23,12 +23,64 @@
    ========================================================================== */
 
 /* ==========================================================================
+   GESTIONNAIRE D'ERREUR GLOBAL (PWA / Audit v1.18)
+   Capture les erreurs fatales pour afficher une UI élégante plutôt qu'un écran blanc.
+========================================================================== */
+function setupGlobalErrorHandler() {
+    function showErrorScreen(msg) {
+        if (document.getElementById('eduquest-crash-screen')) return;
+        const crashScreen = document.createElement('div');
+        crashScreen.id = 'eduquest-crash-screen';
+        crashScreen.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(10, 15, 36, 0.95); backdrop-filter: blur(10px);
+            z-index: 999999; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; color: white;
+            font-family: var(--font-pixel-ui, 'Cinzel', serif); text-align: center;
+            padding: 20px; box-sizing: border-box;
+        `;
+        crashScreen.innerHTML = `
+            <div style="font-size: 4rem; margin-bottom: 20px;">⚠️</div>
+            <h1 style="color: #ff4757; margin-bottom: 15px; font-size: 2rem;">Aïe... Le jeu a trébuché !</h1>
+            <p style="color: #a4b0be; max-width: 600px; margin-bottom: 30px; line-height: 1.6;">
+                Une erreur inattendue s'est produite en coulisses.<br>
+                <code style="display: block; margin-top: 15px; padding: 10px; background: #2f3542; color: #ff6b81; border-radius: 5px; font-family: monospace; font-size: 0.9rem;">${msg}</code>
+            </p>
+            <button onclick="window.location.reload(true)" style="
+                background: linear-gradient(135deg, #1e90ff, #3742fa);
+                border: none; padding: 15px 30px; color: white; font-weight: bold;
+                border-radius: 8px; cursor: pointer; font-size: 1.2rem;
+                box-shadow: 0 4px 15px rgba(30, 144, 255, 0.4);
+                transition: transform 0.2s;
+            " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                🔄 Recharger la page
+            </button>
+        `;
+        document.body.appendChild(crashScreen);
+    }
+
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+        window.addEventListener('error', (event) => {
+            console.error("Global error caught:", event.error);
+            showErrorScreen(event.message || "Erreur de script inconnue.");
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error("Unhandled promise rejection:", event.reason);
+            const msg = event.reason instanceof Error ? event.reason.message : String(event.reason);
+            showErrorScreen("Erreur asynchrone : " + msg);
+        });
+    }
+}
+setupGlobalErrorHandler();
+
+/* ==========================================================================
    1. UTILITAIRES PARTAGÉS
    Fonctions simples utilisées sur plusieurs pages.
    ========================================================================== */
 
 /** Version de l'application — affichée dans le footer de toutes les pages. */
-const APP_VERSION = '1.21.0';
+const APP_VERSION = '1.23.0';
 
 /**
  * Crédits du créateur (v1.20) — affichés dans le footer de toutes les pages.
@@ -695,6 +747,7 @@ function initOptions() {
     const backButton       = document.getElementById('backButton');     // Bouton "Retour"
     const particulesCheckbox = document.getElementById('particules');   // Checkbox particules
     const ecoModeCheckbox    = document.getElementById('ecoMode');          // Checkbox Économie d'énergie
+    const modeChronoCheckbox = document.getElementById('modeChrono');    // Checkbox Mode Défi Chronométré
 
     // Détection de la page : si saveOptions n'existe pas, on n'est pas sur options.html
     if (!saveOptionsBtn) return;
@@ -801,9 +854,10 @@ function initOptions() {
         updateVolumeEffets();  // Met à jour l'affichage
 
         // Checkboxes (booléens stockés en string)
-        ['pleinEcran', 'particules', 'ecoMode', 'sonsActifs', 'musiqueActive', 'effetsActifs'].forEach(id => {
+        ['pleinEcran', 'particules', 'ecoMode', 'sonsActifs', 'musiqueActive', 'effetsActifs', 'modeChrono'].forEach(id => {
             const value = getOption(id);
             const el    = document.getElementById(id);
+            if (!el) return;
             if (value !== null) {
                 el.checked = value === 'true'; // Convertit la string en booléen
             } else if (['sonsActifs', 'musiqueActive', 'effetsActifs'].includes(id)) {
@@ -866,32 +920,29 @@ function initOptions() {
      * on sauvegarde les valeurs "précédentes" (avant désactivation) pour les
      * restaurer correctement à la prochaine ouverture.
      */
-    // Extraction de la logique de sauvegarde pour pouvoir l'appeler facilement
-    function performSaveOptions() {
+    function saveCurrentOptionsLocally() {
         saveOption('volumeMusique', volumeMusique.value);
         saveOption('volumeEffets', volumeEffets.value);
         saveOption('pleinEcran', String(pleinEcran.checked));
         saveOption('particules', String(particulesCheckbox.checked));
         saveOption('ecoMode', String(ecoModeCheckbox.checked));
         saveOption('sonsActifs', String(sonsActifs.checked));
+        if (modeChronoCheckbox) saveOption('modeChrono', String(modeChronoCheckbox.checked));
 
         if (sonsActifs.checked) {
+            // Son global activé → on sauvegarde les états actuels des sous-options
             saveOption('musiqueActive', String(musiqueActive.checked));
             saveOption('effetsActifs', String(effetsActifs.checked));
         } else {
+            // Son global désactivé → on sauvegarde les états "d'avant" pour les restaurer
+            // dataset.prevChecked contient 'true' ou 'false' sous forme de string
             saveOption('musiqueActive', String(musiqueActive.dataset.prevChecked !== 'false'));
             saveOption('effetsActifs', String(effetsActifs.dataset.prevChecked !== 'false'));
         }
     }
 
-    // Sauvegarde automatique à chaque changement pour que ce soit toujours "sincro"
-    [volumeMusique, volumeEffets, pleinEcran, particulesCheckbox, ecoModeCheckbox, sonsActifs, musiqueActive, effetsActifs].forEach(el => {
-        el.addEventListener('change', performSaveOptions);
-    });
-
     saveOptionsBtn.addEventListener('click', () => {
-        performSaveOptions();
-
+        saveCurrentOptionsLocally();
         showNotification('⚙ Options sauvegardées !');
         // Retour à l'accueil après 1 seconde pour laisser le temps de voir la notification
         setTimeout(() => { 
@@ -899,12 +950,25 @@ function initOptions() {
         }, 1000);
     });
 
-    // Bouton Retour : navigation sans sauvegarder
+    // Bouton Retour : sauvegarde automatique et navigation
     if (backButton) {
         backButton.addEventListener('click', () => {
+            saveCurrentOptionsLocally(); // Sauvegarde automatique pour éviter la perte de configs
             if(document.getElementById('modalOptions')) document.getElementById('modalOptions').hidden = true;
         });
     }
+
+    // Auto-save en temps réel à chaque modification pour éviter toute perte
+    const autoSave = () => saveCurrentOptionsLocally();
+    sonsActifs.addEventListener('change', autoSave);
+    musiqueActive.addEventListener('change', autoSave);
+    effetsActifs.addEventListener('change', autoSave);
+    volumeMusique.addEventListener('change', autoSave);
+    volumeEffets.addEventListener('change', autoSave);
+    pleinEcran.addEventListener('change', autoSave);
+    particulesCheckbox.addEventListener('change', autoSave);
+    ecoModeCheckbox.addEventListener('change', autoSave);
+    if (modeChronoCheckbox) modeChronoCheckbox.addEventListener('change', autoSave);
 
     // Sync de la checkbox plein écran quand l'utilisateur appuie sur Échap
     document.addEventListener('fullscreenchange', () => {
@@ -927,6 +991,260 @@ function initOptions() {
  * - Gère le clic sur une pill : sélectionne le niveau, sauvegarde via DB.setNiveau()
  *   et affiche la grille avec une animation
  */
+
+/* ==========================================================================
+   6bis. CÉLÉBRATIONS (confettis) & QUÊTES JOURNALIÈRES
+   Modules partagés entre map.html et dashboard.html.
+   ========================================================================== */
+
+/**
+ * Moteur de confettis autonome (aucune dépendance externe / CDN) :
+ * fonctionne hors-ligne et avec le service worker.
+ *   Celebrate.confetti();                  // pluie depuis le haut
+ *   Celebrate.burst(element);              // explosion depuis un élément
+ */
+const Celebrate = (() => {
+    const COLORS = ['#ffd166', '#c8a84b', '#6bca82', '#4cc9f0', '#f72585', '#b388ff', '#ff9f43'];
+    let canvas = null, ctx = null, particles = [], rafId = null;
+
+    function reducedMotion() {
+        return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+
+    function ensureCanvas() {
+        if (canvas) return;
+        canvas = document.createElement('canvas');
+        canvas.className = 'confetti-canvas';
+        canvas.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(canvas);
+        ctx = canvas.getContext('2d');
+        resize();
+        window.addEventListener('resize', resize);
+    }
+
+    function resize() {
+        if (!canvas) return;
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = window.innerWidth * dpr;
+        canvas.height = window.innerHeight * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function spawn(x, y, count, spread, power, angle) {
+        for (let i = 0; i < count; i++) {
+            const a = angle + (Math.random() - 0.5) * spread;
+            const v = power * (0.5 + Math.random() * 0.7);
+            particles.push({
+                x, y,
+                vx: Math.cos(a) * v,
+                vy: Math.sin(a) * v,
+                w: 6 + Math.random() * 6,
+                h: 4 + Math.random() * 6,
+                rot: Math.random() * Math.PI,
+                vr: (Math.random() - 0.5) * 0.3,
+                color: COLORS[(Math.random() * COLORS.length) | 0],
+                shape: Math.random() < 0.3 ? 'circle' : 'rect',
+                life: 0,
+                maxLife: 140 + Math.random() * 80,
+            });
+        }
+        if (!rafId) rafId = requestAnimationFrame(tick);
+    }
+
+    function tick() {
+        ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        particles = particles.filter(p => p.life < p.maxLife && p.y < window.innerHeight + 40);
+        particles.forEach(p => {
+            p.life++;
+            p.vy += 0.18;          // gravité
+            p.vx *= 0.985;         // frottement de l'air
+            p.vy *= 0.985;
+            p.x += p.vx + Math.sin(p.life / 10) * 0.6; // léger flottement
+            p.y += p.vy;
+            p.rot += p.vr;
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, 1 - p.life / p.maxLife);
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot);
+            ctx.fillStyle = p.color;
+            if (p.shape === 'circle') {
+                ctx.beginPath(); ctx.arc(0, 0, p.w / 2.5, 0, Math.PI * 2); ctx.fill();
+            } else {
+                ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.rot)));
+            }
+            ctx.restore();
+        });
+        if (particles.length) {
+            rafId = requestAnimationFrame(tick);
+        } else {
+            rafId = null;
+            ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        }
+    }
+
+    return {
+        /** Grande célébration : deux canons latéraux + pluie centrale. */
+        confetti() {
+            if (reducedMotion()) return;
+            ensureCanvas();
+            const w = window.innerWidth, h = window.innerHeight;
+            spawn(0, h * 0.75, 70, 0.9, 17, -Math.PI / 3);
+            spawn(w, h * 0.75, 70, 0.9, 17, -Math.PI * 2 / 3);
+            setTimeout(() => spawn(w / 2, h * 0.35, 60, Math.PI * 2, 9, 0), 180);
+        },
+        /** Petite explosion centrée sur un élément (ex : bouton « Réclamer »). */
+        burst(el) {
+            if (reducedMotion()) return;
+            ensureCanvas();
+            const r = el && el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+            const x = r ? r.left + r.width / 2 : window.innerWidth / 2;
+            const y = r ? r.top + r.height / 2 : window.innerHeight / 2;
+            spawn(x, y, 55, Math.PI * 2, 10, 0);
+        },
+    };
+})();
+window.Celebrate = Celebrate;
+
+/**
+ * Quêtes journalières — source de vérité unique (localStorage via DB).
+ * Les quêtes se renouvellent à minuit (heure locale) ; 3 quêtes sont tirées
+ * chaque jour dans QUEST_POOL (tirage déterministe basé sur la date), plus la
+ * quête de connexion. Une quête accomplie doit être « réclamée » sur le
+ * tableau de bord pour toucher sa récompense (XP + pièces).
+ */
+const DailyQuests = (() => {
+    const VERSION = 2;
+    const BONUS_COINS = 50; // Coffre bonus quand toutes les quêtes sont réclamées
+
+    const QUEST_POOL = [
+        { type: 'xp',       icon: '⚡', title: 'Gagne 30 XP',                      target: 30, xp: 20, coins: 10, color: '#ffb547' },
+        { type: 'xp',       icon: '🔥', title: 'Gagne 60 XP',                      target: 60, xp: 35, coins: 15, color: '#ff6b6b' },
+        { type: 'levels',   icon: '🏝️', title: 'Réussis 2 niveaux',                target: 2,  xp: 20, coins: 10, color: '#4cc9f0' },
+        { type: 'levels',   icon: '🗺️', title: 'Réussis 4 niveaux',                target: 4,  xp: 35, coins: 20, color: '#3ddc97' },
+        { type: 'perfect',  icon: '⭐', title: 'Décroche 3 étoiles sur un niveau', target: 1,  xp: 25, coins: 15, color: '#ffd166' },
+        { type: 'firstTry', icon: '🎯', title: 'Réponds juste du 1er coup 3 fois', target: 3,  xp: 30, coins: 15, color: '#b388ff' },
+    ];
+
+    function todayKey() {
+        const d = new Date();
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    /** Tirage pseudo-aléatoire reproductible pour une date donnée. */
+    function seededPick(dateStr) {
+        let seed = 0;
+        for (const ch of dateStr) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+        const rand = () => { seed = (seed * 1103515245 + 12345) >>> 0; return seed / 4294967296; };
+        const picked = [], usedTypes = new Set();
+        const pool = QUEST_POOL.slice().sort(() => rand() - 0.5);
+        for (const q of pool) {
+            if (usedTypes.has(q.type)) continue;
+            usedTypes.add(q.type);
+            picked.push(q);
+            if (picked.length === 3) break;
+        }
+        return picked;
+    }
+
+    function generate(date) {
+        const quests = [
+            { id: 'q_daily', type: 'login', icon: '🌅', title: 'Connecte-toi aujourd\'hui', target: 1, progress: 1, xp: 10, coins: 5, color: '#6bca82', claimed: false },
+            ...seededPick(date).map((q, i) => ({ id: 'q_' + q.type + '_' + i, ...q, progress: 0, claimed: false })),
+        ];
+        return { v: VERSION, date, quests, bonusClaimed: false };
+    }
+
+    function save(data) {
+        if (typeof DB !== 'undefined' && DB.saveDailyQuests) DB.saveDailyQuests(data);
+    }
+
+    function get() {
+        const today = todayKey();
+        let data = (typeof DB !== 'undefined' && DB.getDailyQuests) ? DB.getDailyQuests() : null;
+        if (!data || data.v !== VERSION || data.date !== today || !Array.isArray(data.quests)) {
+            data = generate(today);
+            save(data);
+        }
+        return data;
+    }
+
+    const isComplete = q => q.progress >= q.target;
+
+    /**
+     * Enregistre la progression après un niveau réussi.
+     * @param {{levels?:number, perfect?:number, firstTry?:number, xp?:number}} delta
+     * @returns {Array} quêtes nouvellement accomplies
+     */
+    function track(delta) {
+        const data = get();
+        const newlyDone = [];
+        data.quests.forEach(q => {
+            const inc = delta[q.type] || 0;
+            if (!inc || isComplete(q)) return;
+            q.progress = Math.min(q.target, q.progress + inc);
+            if (isComplete(q)) newlyDone.push(q);
+        });
+        save(data);
+        if (newlyDone.length) {
+            setTimeout(() => {
+                Celebrate.confetti();
+                newlyDone.forEach(q => showNotification(`🎉 Quête accomplie : ${q.title} — récompense à réclamer !`));
+            }, 450);
+        }
+        return newlyDone;
+    }
+
+    function addRewards(xp, coins) {
+        saveOption('dash_xp', String(parseInt(getOption('dash_xp') || '0') + xp));
+        saveOption('dash_coins', String(parseInt(getOption('dash_coins') || '30') + coins));
+    }
+
+    /** Réclame la récompense d'une quête accomplie. Retourne la quête ou null. */
+    function claim(id) {
+        const data = get();
+        const q = data.quests.find(x => x.id === id);
+        if (!q || q.claimed || !isComplete(q)) return null;
+        q.claimed = true;
+        const mult = (typeof AdminStore !== 'undefined' && typeof AdminStore.getRewardsConfig === 'function')
+            ? (AdminStore.getRewardsConfig().questRewardMultiplier || 1)
+            : 1;
+        const finalXp = Math.round(q.xp * mult);
+        const finalCoins = Math.round(q.coins * mult);
+        addRewards(finalXp, finalCoins);
+        save(data);
+        return { ...q, xp: finalXp, coins: finalCoins };
+    }
+
+    function getBonusCoins() {
+        if (typeof AdminStore !== 'undefined' && typeof AdminStore.getRewardsConfig === 'function') {
+            return AdminStore.getRewardsConfig().dailyChestCoins || BONUS_COINS;
+        }
+        return BONUS_COINS;
+    }
+
+    /** Ouvre le coffre bonus (toutes les quêtes réclamées). */
+    function claimBonus() {
+        const data = get();
+        if (data.bonusClaimed || !data.quests.every(q => q.claimed)) return 0;
+        const chestCoins = getBonusCoins();
+        data.bonusClaimed = true;
+        addRewards(0, chestCoins);
+        save(data);
+        return chestCoins;
+    }
+
+    /** Temps restant avant le renouvellement (minuit local), en texte. */
+    function timeLeftLabel() {
+        const now = new Date();
+        const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        const mins = Math.max(0, Math.ceil((midnight - now) / 60000));
+        const h = Math.floor(mins / 60), m = mins % 60;
+        return h > 0 ? `${h}h ${String(m).padStart(2, '0')}min` : `${m} min`;
+    }
+
+    return { get, track, claim, claimBonus, getBonusCoins, isComplete, timeLeftLabel, todayKey, BONUS_COINS };
+})();
+window.DailyQuests = DailyQuests;
 
 /* ==========================================================================
    7. CARTE DES MATIÈRES (page map.html)
@@ -1324,41 +1642,65 @@ function initMap() {
 
     /** Débloque le niveau suivant et sauvegarde, commun aux deux modes. */
     function unlockNextAndSave(starsEarned) {
-        const wasCompleted = progress.levels[currentModalLevel].stars > 0;
-
+        if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
+        const isFirstSuccess = progress.levels[currentModalLevel].stars === 0 && starsEarned > 0;
         if (starsEarned > progress.levels[currentModalLevel].stars) {
             progress.levels[currentModalLevel].stars = starsEarned;
         }
         if (currentModalLevel + 1 <= TOTAL_LEVELS) {
             progress.levels[currentModalLevel + 1].unlocked = true;
         }
+        
+        let xpGained = 0;
+        let coinsGained = 0;
+
+        if (isFirstSuccess) {
+            const rewards = (typeof AdminStore !== 'undefined' && typeof AdminStore.getRewardsConfig === 'function')
+                ? AdminStore.getRewardsConfig()
+                : { xpBase: 15, coinsBase: 10, chronoBonusMaxXp: 15, dailyChestCoins: 50, firstTryBonusXp: 10, questRewardMultiplier: 1 };
+
+            const chronoEnabled = (typeof DB !== 'undefined' && DB.getOption('modeChrono') === 'true');
+            const chronoBonus = (chronoEnabled && (window.mapQuizTimeRemaining || 0) > 0)
+                ? Math.floor(rewards.chronoBonusMaxXp * (window.mapQuizTimeRemaining / 30))
+                : 0;
+            const firstTryBonus = (starsEarned === 3) ? (rewards.firstTryBonusXp || 0) : 0;
+
+            xpGained = rewards.xpBase + chronoBonus + firstTryBonus;
+            coinsGained = rewards.coinsBase;
+
+            const currentXp = parseInt(getOption('dash_xp') || '0', 10);
+            const currentCoins = parseInt(getOption('dash_coins') || '30', 10);
+            saveOption('dash_xp', String(currentXp + xpGained));
+            saveOption('dash_coins', String(currentCoins + coinsGained));
+        }
+
         saveProgress(progress);
         renderLevels(progress);
 
-        // --- Synchronisation pour le Dashboard ---
-        let completedCount = 0;
-        for (let i = 1; i <= TOTAL_LEVELS; i++) {
-            if (progress.levels[i] && progress.levels[i].stars > 0) {
-                completedCount++;
+        // Synchroniser également dash_progress pour le dashboard
+        let dashProg = {};
+        try { dashProg = JSON.parse(getOption('dash_progress') || '{}'); } catch(e) {}
+        const subjId = carteSubject ? carteSubject.id : (MATIERE_TO_SUBJECT_ID[subject] || subject);
+        let countCompleted = 0;
+        if (progress && progress.levels) {
+            for (let k in progress.levels) {
+                if (progress.levels[k].stars > 0) countCompleted++;
             }
         }
-        
-        if (carteSubject) {
-            let dashProg = {};
-            try { dashProg = JSON.parse(DB.getOption('dash_progress') || '{}'); } catch(e) {}
-            dashProg[carteSubject.id] = completedCount;
-            DB.saveOption('dash_progress', JSON.stringify(dashProg));
-        }
+        dashProg[subjId] = Math.max(dashProg[subjId] || 0, countCompleted);
+        saveOption('dash_progress', JSON.stringify(dashProg));
 
-        // Ajout XP/Coins seulement si c'est la première fois qu'on termine ce niveau
-        if (!wasCompleted) {
-            let currentXp = parseInt(DB.getOption('dash_xp') || '0');
-            let currentCoins = parseInt(DB.getOption('dash_coins') || '30');
-            currentXp += 15;
-            currentCoins += 10;
-            DB.saveOption('dash_xp', String(currentXp));
-            DB.saveOption('dash_coins', String(currentCoins));
+        // Célébration + progression des quêtes journalières
+        if (starsEarned > 0) {
+            Celebrate.confetti();
+            DailyQuests.track({
+                levels:   1,
+                xp:       xpGained,
+                perfect:  starsEarned === 3 ? 1 : 0,
+                firstTry: starsEarned === 3 ? 1 : 0,
+            });
         }
+        return { isFirstSuccess, xpGained, coinsGained };
     }
 
     /** Rendu de la question courante dans #modal-quiz-zone (mode quiz réel). */
@@ -1369,17 +1711,39 @@ function initMap() {
         const feedbackEl = document.getElementById('modal-quiz-feedback');
         const actionsEl = document.getElementById('modal-quiz-actions');
 
+        const chronoEnabled = (typeof DB !== 'undefined' && DB.getOption('modeChrono') === 'true');
+        let chronoBarEl = document.getElementById('map-chrono-bar-container');
+
         /* --- État « génération en cours » (AiProvider.fetchQuestion) --- */
         if (checking === 'loading' || !lesson) {
+            if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
+            if (chronoBarEl) chronoBarEl.remove();
             questionEl.textContent = 'Génération de la question…';
             body.innerHTML = `<div class="dash-feedback">⏳ Préparation de la question du niveau ${currentModalLevel}…</div>`;
             feedbackEl.innerHTML = '';
             actionsEl.innerHTML = `<button class="dash-btn-ghost" id="modal-quiz-cancel">Annuler</button>`;
             document.getElementById('modal-quiz-cancel').addEventListener('click', () => {
+                if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
                 modal.hidden = true;
                 positionCharacter(findCurrentLevel(progress), true);
             });
             return;
+        }
+
+        // Gestion de la barre chrono visuelle
+        if (chronoEnabled && !answered && !checking) {
+            if (!chronoBarEl) {
+                chronoBarEl = document.createElement('div');
+                chronoBarEl.id = 'map-chrono-bar-container';
+                chronoBarEl.style.cssText = 'width:100%; height:10px; background:#1c2430; border-radius:5px; margin-bottom:14px; overflow:hidden; position:relative; box-shadow:inset 0 1px 3px rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.1);';
+                chronoBarEl.innerHTML = `
+                    <div id="map-chrono-bar" style="width:${Math.max(0, (window.mapQuizTimeRemaining / 30) * 100)}%; height:100%; background:linear-gradient(90deg, #ff4757, #ffa502); transition: width 1s linear;"></div>
+                    <span id="map-chrono-time-text" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); font-family:'Rajdhani',monospace; font-weight:700; font-size:11px; color:#fff; text-shadow:0 1px 2px #000;">⏱ ${window.mapQuizTimeRemaining || 30}s</span>
+                `;
+                questionEl.parentNode.insertBefore(chronoBarEl, questionEl);
+            }
+        } else if (chronoBarEl) {
+            chronoBarEl.remove();
         }
 
         questionEl.textContent = lesson.q;
@@ -1389,17 +1753,32 @@ function initMap() {
             feedbackEl.innerHTML = '';
             actionsEl.innerHTML = `<button class="dash-btn-ghost" id="modal-quiz-cancel">Annuler</button>`;
             document.getElementById('modal-quiz-cancel').addEventListener('click', () => {
+                if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
                 modal.hidden = true;
                 positionCharacter(findCurrentLevel(progress), true);
             });
             QuizEngine.bind(body, lesson, currentAttempt, _mapSubmitQuiz);
+
+            if (chronoEnabled) {
+                if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
+                window.mapQuizChronoInterval = setInterval(() => {
+                    window.mapQuizTimeRemaining--;
+                    const bar = document.getElementById('map-chrono-bar');
+                    const text = document.getElementById('map-chrono-time-text');
+                    if (bar) bar.style.width = Math.max(0, (window.mapQuizTimeRemaining / 30) * 100) + '%';
+                    if (text) text.textContent = '⏱ ' + Math.max(0, window.mapQuizTimeRemaining) + 's';
+                    if (window.mapQuizTimeRemaining <= 0) {
+                        clearInterval(window.mapQuizChronoInterval);
+                        _mapSubmitQuiz('TEMPS_ECOULE');
+                    }
+                }, 1000);
+            }
         } else if (checking) {
-            /* --- État « correction en cours » (potentiellement côté serveur) ---
-               Le corps interactif reste affiché mais sans events attachés
-               (même comportement que le dashboard pendant sa correction). */
+            if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
             feedbackEl.innerHTML = `<div class="dash-feedback" role="status" aria-live="polite">Correction en cours…</div>`;
             actionsEl.innerHTML = '';
         } else {
+            if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
             QuizEngine.reveal(body, lesson, submitted);
             feedbackEl.innerHTML = `<div class="dash-feedback ${isCorrect ? 'ok' : 'ko'}">${isCorrect ? '✓ Bonne réponse ! ' : '✗ Pas tout à fait. '}${escapeHtml(currentAttempt.explanation || lesson.exp || '')}</div>`;
 
@@ -1407,19 +1786,22 @@ function initMap() {
                 actionsEl.innerHTML = `<button class="dash-btn-primary" id="modal-quiz-continue">Continuer</button>`;
                 document.getElementById('modal-quiz-continue').addEventListener('click', () => {
                     const stars = starsFromAttempts(currentAttempt.attempts);
-                    unlockNextAndSave(stars);
+                    const res = unlockNextAndSave(stars);
                     modal.hidden = true;
-                    showNotification(`✓ Niveau réussi — ${'⭐'.repeat(stars)}`);
+                    showNotification(`✓ Niveau réussi — ${'⭐'.repeat(stars)}${res.isFirstSuccess ? ` (+${res.xpGained} XP, +${res.coinsGained} pièces)` : ''}`);
                 });
             } else {
                 actionsEl.innerHTML = `
                     <button class="dash-btn-ghost" id="modal-quiz-quit">Quitter</button>
                     <button class="dash-btn-primary" id="modal-quiz-retry">Réessayer</button>`;
                 document.getElementById('modal-quiz-quit').addEventListener('click', () => {
+                    if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
                     modal.hidden = true;
                     positionCharacter(findCurrentLevel(progress), true);
                 });
                 document.getElementById('modal-quiz-retry').addEventListener('click', () => {
+                    if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
+                    window.mapQuizTimeRemaining = 30;
                     currentAttempt.submitted = null;
                     currentAttempt.answered = false;
                     currentAttempt.isCorrect = false;
@@ -1438,6 +1820,7 @@ function initMap() {
      * dans la leçon pour que reveal() surligne la bonne réponse.
      */
     async function _mapSubmitQuiz(rawAnswer) {
+        if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
         const attempt = currentAttempt;
         attempt.submitted = rawAnswer;
         attempt.attempts += 1;
@@ -1452,7 +1835,9 @@ function initMap() {
         attempt.checking = false;
         attempt.answered = true;
         attempt.isCorrect = result.isCorrect;
-        attempt.explanation = result.explanation;
+        attempt.explanation = (rawAnswer === 'TEMPS_ECOULE')
+            ? "Temps écoulé ! Tu as dépassé les 30 secondes accordées."
+            : result.explanation;
         attempt.lesson = { ...attempt.lesson, ...result.answerKey };
         renderModalQuiz();
     }
@@ -1472,6 +1857,8 @@ function initMap() {
 
             if (!modal) return;
             document.getElementById('modal-title').textContent = 'Niveau ' + currentModalLevel;
+            window.mapQuizTimeRemaining = 30;
+            if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
 
             if (carteSubject && carteSubject.lessons[currentModalLevel - 1]) {
                 quizZone.hidden = false;
@@ -1526,8 +1913,12 @@ function initMap() {
     document.querySelectorAll('.star-choice').forEach(btn => {
         btn.addEventListener('click', () => {
             if (!currentModalLevel) return;
-            unlockNextAndSave(parseInt(btn.dataset.stars));
+            const stars = parseInt(btn.dataset.stars);
+            const res = unlockNextAndSave(stars);
             modal.hidden = true;
+            if (res.isFirstSuccess) {
+                showNotification(`✓ Progression sauvegardée (+${res.xpGained} XP, +${res.coinsGained} pièces)`);
+            }
         });
     });
 
@@ -1537,6 +1928,7 @@ function initMap() {
      */
     const closeBtn = document.getElementById('modal-close');
     if (closeBtn) closeBtn.addEventListener('click', () => {
+        if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
         modal.hidden = true;
         positionCharacter(findCurrentLevel(progress), true);
     });
@@ -1548,6 +1940,7 @@ function initMap() {
      */
     const resetBtn = document.getElementById('reset-progress');
     if (resetBtn) resetBtn.addEventListener('click', () => {
+        if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
         progress = getDefaultProgress(); // Remet à zéro en mémoire
         saveProgress(progress);          // Sauvegarde la progression réinitialisée
         modal.hidden = true;
@@ -1587,12 +1980,15 @@ const DASH_SKINS = [
     { id: 'ametiste', name: 'Nova Améthyste',   color: '#b685f5', cost: 90 },
     { id: 'rose',     name: 'Étoile Rose',      color: '#f58fc2', cost: 130 },
     { id: 'braise',   name: 'Braise Cosmique',  color: '#f5714f', cost: 170 },
+    { id: 'neon',     name: 'Éclair Néon',      color: '#00ffcc', cost: 250 },
+    { id: 'magma',    name: 'Flamboiement Magma', color: '#ff3300', cost: 300 },
     // Skins "personnage" (v2.2) — portraits au lieu d'un halo de couleur.
     // `color` reste renseigné : il sert de couleur de halo derrière le
     // portrait (voir renderHud/renderShop), le portrait lui-même vient de `img`.
     { id: 'einstein',          name: 'Albert Einstein',     color: '#7fb3d5', img: 'Image/personnages/einstein.webp',          cost: 150 },
     { id: 'marie-curie',       name: 'Marie Curie',         color: '#6bca82', img: 'Image/personnages/marie-curie.webp',       cost: 150 },
     { id: 'christophe-colomb', name: 'Christophe Colomb',   color: '#c8a84b', img: 'Image/personnages/christophe-colomb.webp', cost: 200 },
+    { id: 'lovelace',          name: 'Ada Lovelace',        color: '#ff66b2', img: 'Image/personnages/lovelace.webp',          cost: 400 },
 ];
 
 const RAW_DASH_SUBJECTS = [
@@ -1741,6 +2137,12 @@ function initDashboard() {
     const dashApp = document.getElementById('dashboard-app');
     if (!dashApp) return; // Pas sur la page dashboard.html → on sort
 
+    function getShopCatalog() {
+        return (typeof AdminStore !== 'undefined' && typeof AdminStore.getShopItems === 'function')
+            ? AdminStore.getShopItems()
+            : DASH_SKINS;
+    }
+
     /* ============ ÉTAT PERSISTÉ ============ */
 
     /**
@@ -1749,25 +2151,30 @@ function initDashboard() {
      */
     function loadState() {
         return {
-            coins:        parseInt(getOption('dash_coins') || '30'),
-            xp:           parseInt(getOption('dash_xp') || '0'),
-            equippedSkin: getOption('dash_equippedSkin') || 'aurore',
-            ownedSkins:   JSON.parse(getOption('dash_ownedSkins') || '["aurore"]'),
-            view:         'dashboard', // Toujours revenir au dashboard au chargement
+            coins:          parseInt(getOption('dash_coins') || '30', 10),
+            xp:             parseInt(getOption('dash_xp') || '0', 10),
+            equippedSkin:   getOption('dash_equippedSkin') || 'aurore',
+            equippedTitle:  getOption('dash_equippedTitle') || '',
+            equippedTheme:  getOption('dash_equippedTheme') || 'default',
+            ownedSkins:     JSON.parse(getOption('dash_ownedSkins') || '["aurore", "robot"]'),
+            shopCategory:   'all',
+            view:           'dashboard', // Toujours revenir au dashboard au chargement
             currentSubject: null,
-            progress:     JSON.parse(getOption('dash_progress') || '{}'),
-            quiz:         null,
-            badges:       DB.getBadges(), // Identifiants des badges déjà débloqués
+            progress:       JSON.parse(getOption('dash_progress') || '{}'),
+            quiz:           null,
+            badges:         DB.getBadges(), // Identifiants des badges déjà débloqués
         };
     }
 
     /** Sauvegarde l'état modifiable dans localStorage via DB. */
     function persistState() {
-        saveOption('dash_coins',        String(state.coins));
-        saveOption('dash_xp',           String(state.xp));
-        saveOption('dash_equippedSkin', state.equippedSkin);
-        saveOption('dash_ownedSkins',   JSON.stringify(state.ownedSkins));
-        saveOption('dash_progress',     JSON.stringify(state.progress));
+        saveOption('dash_coins',         String(state.coins));
+        saveOption('dash_xp',            String(state.xp));
+        saveOption('dash_equippedSkin',  state.equippedSkin);
+        saveOption('dash_equippedTitle', state.equippedTitle);
+        saveOption('dash_equippedTheme', state.equippedTheme);
+        saveOption('dash_ownedSkins',    JSON.stringify(state.ownedSkins));
+        saveOption('dash_progress',      JSON.stringify(state.progress));
     }
 
     let state = loadState();
@@ -1778,11 +2185,13 @@ function initDashboard() {
 
     /* ============ HELPERS ============ */
     function skinColor(id) {
-        return (DASH_SKINS.find(s => s.id === id) || DASH_SKINS[0]).color;
+        const item = getShopCatalog().find(s => s.id === id);
+        return item ? (item.color || '#4fd8c4') : '#4fd8c4';
     }
     /** Chemin de l'image de portrait d'un skin, ou null pour les skins "halo de couleur" pure. */
     function skinImage(id) {
-        return (DASH_SKINS.find(s => s.id === id) || DASH_SKINS[0]).img || null;
+        const item = getShopCatalog().find(s => s.id === id);
+        return (item && item.img) ? item.img : null;
     }
     function level() { return Math.floor(state.xp / 100) + 1; }
     function xpInLevel() { return state.xp % 100; }
@@ -1840,26 +2249,45 @@ function initDashboard() {
         const niveaux = (window.AdminStore && typeof AdminStore.getNiveauxScolaires === 'function') 
             ? AdminStore.getNiveauxScolaires() 
             : [
-                {id:'6eme', name:'6ème'}, {id:'5eme', name:'5ème'}, {id:'4eme', name:'4ème'},
-                {id:'3eme', name:'3ème'}, {id:'2nde', name:'2nde'}, {id:'1ere', name:'1ère'}, {id:'terminale', name:'Terminale'}
+                { id: '6eme', label: '6ème', name: '6ème' },
+                { id: '5eme', label: '5ème', name: '5ème' },
+                { id: '4eme', label: '4ème', name: '4ème' },
+                { id: '3eme', label: '3ème', name: '3ème' },
+                { id: '2nde', label: '2nde', name: '2nde' },
+                { id: '1ere', label: '1ère', name: '1ère' },
+                { id: 'terminale', label: 'Terminale', name: 'Terminale' }
             ];
-        const currentNiveau = DB.getNiveau() || '6eme';
-        const optionsHtml = niveaux.map(n => `<option value="${n.id}" ${n.id === currentNiveau ? 'selected' : ''}>${escapeHtml(n.label || n.name)}</option>`).join('');
+        const currentNiveau = (typeof DB !== 'undefined' && DB.getNiveau) ? (DB.getNiveau() || '6eme') : '6eme';
+        const optionsHtml = niveaux.map(n => {
+            const label = n.label || n.name || n.id;
+            const isSelected = n.id === currentNiveau;
+            return `<option value="${escapeHtml(n.id)}"${isSelected ? ' selected' : ''}>🎓 ${escapeHtml(label)}</option>`;
+        }).join('');
 
         return `<header class="dash-header">
-            <div class="dash-brand"><b>EDU</b><span>QUEST</span></div>
-            <select class="dash-grade-select" onchange="window._dashChangeNiveau(this.value)" aria-label="Choisir sa classe">
-                ${optionsHtml}
-            </select>
+            <div class="dash-header-left" style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                <div class="dash-brand"><b>EDU</b><span>QUEST</span></div>
+                <div class="dash-grade-wrap" style="display: inline-flex; align-items: center;">
+                    <select class="dash-grade-select" onchange="window._dashChangeNiveau(this.value)" aria-label="Choisir sa classe">
+                        ${optionsHtml}
+                    </select>
+                </div>
+            </div>
             ${greeting}
-        </header>`;    }
+        </header>`;
+    }
 
     function renderHud() {
         const pct = xpInLevel();
+        const equippedTitleObj = state.equippedTitle ? getShopCatalog().find(x => x.id === state.equippedTitle) : null;
+        const titleBadge = equippedTitleObj
+            ? `<span class="dash-hud-title-badge" style="color:${equippedTitleObj.color}; border: 1px solid ${equippedTitleObj.color}44; background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 6px;">${escapeHtml(equippedTitleObj.name)}</span>`
+            : '';
+
         return `<div class="dash-hud">
-            <div class="dash-avatar" style="--dash-skin:${skinColor(state.equippedSkin)}">${skinImage(state.equippedSkin) ? `<img src="${skinImage(state.equippedSkin)}" alt="">` : `N${level()}`}</div>
+            <div class="dash-avatar" style="--dash-skin:${skinColor(state.equippedSkin)}">${skinImage(state.equippedSkin) ? `<img src="${skinImage(state.equippedSkin)}" alt="Avatar">` : `N${level()}`}</div>
             <div class="dash-hud-mid">
-                <div class="dash-hud-level">Niveau ${level()} <span class="mono">· ${pct}/100 XP</span></div>
+                <div class="dash-hud-level">Niveau ${level()} <span class="mono">· ${pct}/100 XP</span> ${titleBadge}</div>
                 <div class="dash-xp-track"><div class="dash-xp-fill" style="width:${pct}%"></div></div>
             </div>
             <div class="dash-coins"><span class="dash-coin-dot"></span>${state.coins}</div>
@@ -1892,8 +2320,31 @@ function initDashboard() {
     }
 
     function renderDashboard() {
+        const currentNiveau = (typeof DB !== 'undefined' && DB.getNiveau) ? (DB.getNiveau() || '6eme') : '6eme';
+        
+        let dashProg = {};
+        try { dashProg = JSON.parse(getOption('dash_progress') || '{}'); } catch(e) {}
+
         const cards = DASH_SUBJECTS.map(s => {
-            const done = state.progress[s.id] || 0;
+            let done = 0;
+
+            // 1. Progression de la carte (map.html) sauvegardée dans DB
+            const mapProg = (typeof DB !== 'undefined' && DB.getProgress)
+                ? (DB.getProgress(s.name, currentNiveau) || DB.getProgress(s.id, currentNiveau))
+                : null;
+            if (mapProg && mapProg.levels) {
+                for (let key in mapProg.levels) {
+                    if (mapProg.levels[key].stars > 0) {
+                        done++;
+                    }
+                }
+            }
+
+            // 2. Progression sauvegardée dans dash_progress et state.progress
+            const fromDash = dashProg[s.id] || dashProg[s.name] || 0;
+            const fromState = (state && state.progress) ? (state.progress[s.id] || state.progress[s.name] || 0) : 0;
+            done = Math.max(done, fromDash, fromState);
+            
             const total = s.lessons.length;
             const pct = Math.round((done / total) * 100);
             return `<div class="dash-subject-card" onclick="window._dashOpenMap('${s.id}')" tabindex="0" role="button" aria-label="${escapeHtml(s.name)}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window._dashOpenMap('${s.id}');}">
@@ -1903,10 +2354,76 @@ function initDashboard() {
                 <div class="dash-progress-track"><div class="dash-progress-fill" style="width:${pct}%"></div></div>
             </div>`;
         }).join('');
-        return `<section>
+
+        return `
+        ${renderQuests()}
+        <section>
             <div class="dash-eyebrow">Ta progression</div>
             <h2 style="font-family:'Cinzel',serif; font-size:22px; color:#fff; text-shadow:0 0 10px rgba(200,168,75,0.4), 2px 2px 6px rgba(0,0,0,0.7); letter-spacing:1px;">Choisis une matière à explorer</h2>
             <div class="dash-subjects-grid">${cards}</div>
+        </section>`;
+    }
+
+    /** Tableau des quêtes journalières : cartes avec anneau de progression. */
+    function renderQuests() {
+        const data = DailyQuests.get();
+        const total = data.quests.length;
+        const claimedCount = data.quests.filter(q => q.claimed).length;
+        const allClaimed = claimedCount === total;
+        const R = 26, C = 2 * Math.PI * R; // Anneau SVG
+
+        const cards = data.quests.map((q, i) => {
+            const done = DailyQuests.isComplete(q);
+            const pct = Math.min(1, q.progress / q.target);
+            const status = q.claimed ? 'claimed' : done ? 'ready' : 'active';
+            const action = q.claimed
+                ? `<div class="quest-stamp">✓ Réclamée</div>`
+                : done
+                    ? `<button class="quest-claim-btn" id="quest-claim-${q.id}" onclick="window._dashClaimQuest('${q.id}', this)">Réclamer</button>`
+                    : `<div class="quest-progress-label mono">${q.progress} / ${q.target}</div>`;
+            return `<article class="quest-card is-${status}" style="--q-color:${q.color}; --q-delay:${i * 70}ms">
+                <div class="quest-ring">
+                    <svg viewBox="0 0 64 64" aria-hidden="true">
+                        <circle class="quest-ring-bg" cx="32" cy="32" r="${R}"></circle>
+                        <circle class="quest-ring-fg" cx="32" cy="32" r="${R}"
+                            stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${(C * (1 - pct)).toFixed(2)}"></circle>
+                    </svg>
+                    <span class="quest-icon">${q.icon}</span>
+                </div>
+                <h3 class="quest-title">${escapeHtml(q.title)}</h3>
+                <div class="quest-rewards">
+                    <span class="quest-chip xp">+${q.xp} XP</span>
+                    <span class="quest-chip coin"><span class="dash-coin-dot"></span>${q.coins}</span>
+                </div>
+                ${action}
+            </article>`;
+        }).join('');
+
+        const bonusCoins = (typeof DailyQuests.getBonusCoins === 'function') ? DailyQuests.getBonusCoins() : DailyQuests.BONUS_COINS;
+        const chestState = data.bonusClaimed ? 'opened' : allClaimed ? 'ready' : 'locked';
+        const chest = `<button class="quest-chest is-${chestState}" id="quest-bonus-chest"
+                ${chestState === 'ready' ? `onclick="window._dashClaimBonus(this)"` : 'disabled'}
+                title="${chestState === 'opened' ? 'Coffre ouvert — reviens demain !' : `Réclame toutes les quêtes pour +${bonusCoins} pièces`}">
+                <span class="quest-chest-icon">${chestState === 'opened' ? '🎁' : chestState === 'ready' ? '🎁' : '🔒'}</span>
+                <span class="quest-chest-text">${chestState === 'opened' ? 'Bonus récupéré' : chestState === 'ready' ? `Ouvrir (+${bonusCoins})` : `Bonus +${bonusCoins}`}</span>
+            </button>`;
+
+        return `<section class="quest-board" aria-labelledby="quest-board-title">
+            <div class="quest-board-head">
+                <div>
+                    <div class="dash-eyebrow quest-eyebrow">Quêtes du jour</div>
+                    <h2 id="quest-board-title" class="quest-board-title">Tes missions quotidiennes</h2>
+                    <div class="quest-timer">⏳ Nouvelles quêtes dans <b>${DailyQuests.timeLeftLabel()}</b></div>
+                </div>
+                <div class="quest-board-side">
+                    <div class="quest-overall">
+                        <div class="quest-overall-label mono">${claimedCount}/${total}</div>
+                        <div class="quest-overall-track"><div class="quest-overall-fill" style="width:${(claimedCount / total) * 100}%"></div></div>
+                    </div>
+                    ${chest}
+                </div>
+            </div>
+            <div class="quest-grid">${cards}</div>
         </section>`;
     }
 
@@ -1924,9 +2441,6 @@ function initDashboard() {
     function renderMap() {
         const subject = DASH_SUBJECTS.find(s => s.id === state.currentSubject);
         const done = state.progress[subject.id] || 0;
-        // Repli constellation (EMC uniquement, voir _dashOpenMap) : cette vue
-        // n'est pas défilante, donc on plafonne l'affichage pour rester lisible
-        // plutôt que de compresser 100 nœuds sur 600px de large.
         const MAX_VISIBLE = 12;
         const visibleLessons = subject.lessons.slice(0, MAX_VISIBLE);
         const positions = nodePositions(visibleLessons.length);
@@ -1937,8 +2451,7 @@ function initDashboard() {
             const completed = i < done;
             const current = i === done;
             const locked = i > done;
-            // Couleurs adaptées à la charte global.css
-            let fill = 'rgba(255,255,255,0.12)'; // locked
+            let fill = 'rgba(255,255,255,0.12)';
             let ring = '';
             if (completed) fill = 'var(--c-green-light)';
             if (current) {
@@ -1975,40 +2488,84 @@ function initDashboard() {
     }
 
     function renderShop() {
-        const cards = DASH_SKINS.map(s => {
+        const catalog = getShopCatalog();
+        const activeCategory = state.shopCategory || 'all';
+        const filtered = activeCategory === 'all' ? catalog : catalog.filter(item => (item.category || 'aura') === activeCategory);
+
+        const categoryFilters = [
+            { id: 'all', label: 'Tous', icon: '✨' },
+            { id: 'aura', label: 'Halos', icon: '🌟' },
+            { id: 'avatar', label: 'Personnages', icon: '👤' },
+            { id: 'title', label: 'Titres', icon: '🏷️' },
+            { id: 'theme', label: 'Thèmes', icon: '🎨' },
+            { id: 'booster', label: 'Boosters', icon: '⚡' },
+        ].map(cat => {
+            const count = cat.id === 'all' ? catalog.length : catalog.filter(i => (i.category || 'aura') === cat.id).length;
+            const active = activeCategory === cat.id ? 'active' : '';
+            return `<button class="dash-shop-filter-btn ${active}" onclick="window._dashSetShopCategory('${cat.id}')">${cat.icon} ${cat.label} <span class="dash-shop-badge">${count}</span></button>`;
+        }).join('');
+
+        const cards = filtered.map(s => {
+            const cat = s.category || 'aura';
+            const isAuraOrAvatar = (cat === 'aura' || cat === 'avatar');
+            const isTitle = cat === 'title';
+            const isTheme = cat === 'theme';
+            const isBooster = cat === 'booster';
+
             const owned = state.ownedSkins.includes(s.id);
-            const equipped = state.equippedSkin === s.id;
-            let btn;
-            if (equipped) {
-                btn = `<button class="dash-skin-btn equipped" disabled>Équipé</button>`;
+            const isEquipped = isAuraOrAvatar
+                ? (state.equippedSkin === s.id)
+                : isTitle
+                    ? (state.equippedTitle === s.id)
+                    : isTheme
+                        ? (state.equippedTheme === s.id)
+                        : false;
+
+            let visualHtml = '';
+            if (s.img) {
+                visualHtml = `<div class="dash-skin-orb" style="--sc:${s.color || '#4fd8c4'}"><img src="${s.img}" alt="${escapeHtml(s.name)}"></div>`;
+            } else if (isTitle) {
+                visualHtml = `<div class="dash-shop-title-preview" style="color:${s.color || '#ffd166'}; border: 1px dashed ${s.color || '#ffd166'}88; background: rgba(0,0,0,0.3); border-radius: 4px; padding: 10px 6px; margin: 0 auto 12px; max-width: 140px; font-weight: 700; font-size: 13px;">${escapeHtml(s.name)}</div>`;
+            } else if (isTheme) {
+                visualHtml = `<div class="dash-shop-theme-preview" style="display: flex; gap: 4px; justify-content: center; margin: 0 auto 12px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px;">
+                    <div style="width: 16px; height: 16px; border-radius: 50%; background: ${s.color}; box-shadow: 0 0 6px ${s.color};"></div>
+                    <div style="width: 16px; height: 16px; border-radius: 50%; background: #1a103c;"></div>
+                    <div style="width: 16px; height: 16px; border-radius: 50%; background: #ffd166;"></div>
+                </div>`;
+            } else if (isBooster) {
+                visualHtml = `<div class="dash-shop-booster-preview" style="width: 48px; height: 48px; line-height: 48px; border-radius: 50%; margin: 0 auto 12px; background: radial-gradient(circle, ${s.color}66, rgba(0,0,0,0.5)); border: 1px solid ${s.color}; font-size: 22px;">⚡</div>`;
+            } else {
+                visualHtml = `<div class="dash-skin-orb" style="--sc:${s.color || '#4fd8c4'}"></div>`;
+            }
+
+            let btn = '';
+            if (isEquipped) {
+                btn = `<button class="dash-skin-btn equipped" disabled>✓ Équipé</button>`;
             } else if (owned) {
-                btn = `<button class="dash-skin-btn equip" onclick="window._dashEquipSkin('${s.id}')">Équiper</button>`;
+                const actionLabel = isTitle ? 'Porter ce titre' : isTheme ? 'Appliquer' : isBooster ? 'Possédé' : 'Équiper';
+                btn = `<button class="dash-skin-btn equip" onclick="window._dashEquipSkin('${s.id}')">${actionLabel}</button>`;
             } else {
                 const affordable = state.coins >= s.cost;
-                btn = `<button class="dash-skin-btn buy" ${affordable ? '' : 'disabled'} onclick="window._dashBuySkin('${s.id}')">Acheter</button>`;
+                btn = `<button class="dash-skin-btn buy" ${affordable ? '' : 'disabled'} onclick="window._dashBuySkin('${s.id}')">${s.cost === 0 ? 'Obtenir' : `Acheter (${s.cost} pièces)`}</button>`;
             }
-            return `<div class="dash-skin-card">
-                <div class="dash-skin-orb" style="--sc:${s.color}">${s.img ? `<img src="${s.img}" alt="">` : ''}</div>
+
+            return `<div class="dash-skin-card ${owned ? 'is-owned' : ''} ${isEquipped ? 'is-equipped' : ''}">
+                ${visualHtml}
                 <div class="dash-skin-name">${escapeHtml(s.name)}</div>
-                <div class="dash-skin-cost">${s.cost === 0 ? 'Offert' : s.cost + ' pièces'}</div>
+                ${s.desc ? `<div class="dash-skin-desc" style="font-size: 11px; color: rgba(255,255,255,0.6); margin-bottom: 8px; line-height: 1.3;">${escapeHtml(s.desc)}</div>` : ''}
+                <div class="dash-skin-cost">${s.cost === 0 ? 'Offert' : `${s.cost} pièces`}</div>
                 ${btn}
             </div>`;
         }).join('');
+
         return `<section>
-            <div class="dash-eyebrow">Boutique</div>
-            <h2 style="font-family:'Cinzel',serif; font-size:22px; color:#fff; text-shadow:0 0 10px rgba(200,168,75,0.4), 2px 2px 6px rgba(0,0,0,0.7); letter-spacing:1px;">Personnalise ton halo</h2>
+            <div class="dash-eyebrow">Boutique & Personnalisation</div>
+            <h2 style="font-family:'Cinzel',serif; font-size:22px; color:#fff; text-shadow:0 0 10px rgba(200,168,75,0.4), 2px 2px 6px rgba(0,0,0,0.7); letter-spacing:1px;">Personnalise ton héros</h2>
+            <div class="dash-shop-filters" style="display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 18px 0;">${categoryFilters}</div>
             <div class="dash-skins-grid">${cards}</div>
         </section>`;
     }
 
-    /**
-     * Rendu de la modale de quiz. Contrairement à la version v2.0 (QCM
-     * uniquement, boutons générés ici-même), la zone de réponse est
-     * maintenant déléguée à QuizEngine, qui sait rendre/corriger les 5
-     * types de questions (voir quiz-engine.js). Ce qui reste propre au
-     * dashboard (titre, feedback, boutons Continuer/Réessayer, récompenses)
-     * continue d'être généré ici.
-     */
     function renderQuizModal() {
         const { subjectId, lessonIndex, submitted, answered, isCorrect, loading, checking, explanation } = state.quiz;
         const subject = DASH_SUBJECTS.find(s => s.id === subjectId);
@@ -2018,7 +2575,7 @@ function initDashboard() {
             overlay.className = 'dash-overlay';
             overlay.id = 'dashQuizOverlay';
             overlay.innerHTML = `<div class="dash-modal">
-                <div class="dash-eyebrow">${subject.name} · Niveau ${lessonIndex + 1}</div>
+                <div class="dash-eyebrow">${subject ? escapeHtml(subject.name) : 'Quiz'} · Niveau ${lessonIndex + 1}</div>
                 <h3 role="status" aria-live="polite">Génération de la question…</h3>
             </div>`;
             dashApp.appendChild(overlay);
@@ -2033,7 +2590,15 @@ function initDashboard() {
         } else if (answered) {
             feedback = `<div class="dash-feedback ${isCorrect ? 'ok' : 'ko'}">${isCorrect ? '✓ Bonne réponse ! ' : '✗ Pas tout à fait. '}${escapeHtml(explanation)}</div>`;
             if (isCorrect) {
-                feedback += `<div class="dash-reward-line"><span>+15 XP</span><span>+10 <span class="dash-coin-dot" style="display:inline-block; width:10px;height:10px; vertical-align:middle;"></span></span></div>`;
+                const rewards = (typeof AdminStore !== 'undefined' && typeof AdminStore.getRewardsConfig === 'function')
+                    ? AdminStore.getRewardsConfig()
+                    : { xpBase: 15, coinsBase: 10, chronoBonusMaxXp: 15, firstTryBonusXp: 10 };
+                const chronoEnabled = (typeof DB !== 'undefined' && DB.getOption('modeChrono') === 'true');
+                const chronoBonus = (chronoEnabled && (window.quizTimeRemaining || 0) > 0)
+                    ? Math.floor(rewards.chronoBonusMaxXp * (window.quizTimeRemaining / 30))
+                    : 0;
+                const totalXp = rewards.xpBase + chronoBonus + (state.quiz.attempts === 1 ? (rewards.firstTryBonusXp || 0) : 0);
+                feedback += `<div class="dash-reward-line"><span>+${totalXp} XP</span><span>+${rewards.coinsBase} <span class="dash-coin-dot" style="display:inline-block; width:10px;height:10px; vertical-align:middle;"></span></span></div>`;
             }
         }
 
@@ -2043,25 +2608,46 @@ function initDashboard() {
                 ? `<div class="dash-modal-actions"><button class="dash-btn-primary" onclick="window._dashFinishQuiz()">Continuer</button></div>`
                 : `<div class="dash-modal-actions"><button class="dash-btn-ghost" onclick="window._dashCloseQuiz()">Quitter</button><button class="dash-btn-primary" onclick="window._dashRetryQuiz()">Réessayer</button></div>`;
 
+        const chronoEnabled = (typeof DB !== 'undefined' && DB.getOption('modeChrono') === 'true');
+        const chronoHtml = chronoEnabled && !answered && !checking 
+            ? `<div id="chrono-bar-container" style="width:100%; height:10px; background:#1c2430; border-radius:5px; margin-bottom:15px; overflow:hidden; position:relative; box-shadow:inset 0 1px 3px rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.1);">
+                <div id="chrono-bar" style="width:${Math.max(0, (window.quizTimeRemaining / 30) * 100)}%; height:100%; background:linear-gradient(90deg, #ff4757, #ffa502); transition: width 1s linear;"></div>
+                <span id="chrono-time-text" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); font-family:'Rajdhani',monospace; font-weight:700; font-size:11px; color:#fff; text-shadow:0 1px 2px #000;">⏱ ${window.quizTimeRemaining || 30}s</span>
+               </div>`
+            : '';
+
         const overlay = document.createElement('div');
         overlay.className = 'dash-overlay';
         overlay.id = 'dashQuizOverlay';
         overlay.innerHTML = `<div class="dash-modal">
-            <div class="dash-eyebrow">${escapeHtml(subject.name)} · ${escapeHtml(lesson.title)}</div>
-            <h3>${escapeHtml(lesson.q)}</h3>
-            <div class="dash-quiz-body">${QuizEngine.renderBody(lesson)}</div>
+            <div class="dash-eyebrow">${escapeHtml(subject ? subject.name : '')} · ${escapeHtml(lesson ? lesson.title : '')}</div>
+            ${chronoHtml}
+            <h3>${escapeHtml(lesson ? lesson.q : '')}</h3>
+            <div class="dash-quiz-body">${lesson ? QuizEngine.renderBody(lesson) : ''}</div>
             ${feedback}
             ${actions}
         </div>`;
         dashApp.appendChild(overlay);
 
-        // La zone interactive est câblée après insertion dans le DOM (les
-        // événements ont besoin des vrais éléments, pas de la chaîne HTML).
         const body = overlay.querySelector('.dash-quiz-body');
-        if (answered) {
+        if (answered && lesson) {
             QuizEngine.reveal(body, lesson, submitted);
-        } else if (!checking) {
+        } else if (!checking && lesson) {
             QuizEngine.bind(body, lesson, state.quiz, window._dashSubmitQuiz);
+            if (chronoEnabled) {
+                if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
+                window.quizChronoInterval = setInterval(() => {
+                    window.quizTimeRemaining--;
+                    const chronoBar = document.getElementById('chrono-bar');
+                    const chronoText = document.getElementById('chrono-time-text');
+                    if (chronoBar) chronoBar.style.width = Math.max(0, (window.quizTimeRemaining / 30) * 100) + '%';
+                    if (chronoText) chronoText.textContent = '⏱ ' + Math.max(0, window.quizTimeRemaining) + 's';
+                    if (window.quizTimeRemaining <= 0) {
+                        clearInterval(window.quizChronoInterval);
+                        window._dashSubmitQuiz('TEMPS_ECOULE');
+                    }
+                }, 1000);
+            }
         }
     }
 
@@ -2069,7 +2655,6 @@ function initDashboard() {
 
     window._dashChangeNiveau = function(val) {
         DB.setNiveau(val);
-        // Force la recharge du dashboard complet (HUD, Map, etc.)
         render();
     };
 
@@ -2090,45 +2675,31 @@ function initDashboard() {
     };
 
     window._dashOpenMap = function (id) {
-        // v1.19 — Matières renommées/personnalisées via le panneau d'admin :
-        // on cherche d'abord le sujet réel dans DASH_SUBJECTS pour son nom et
-        // son icône actuels, puis on retombe sur la correspondance historique
-        // (îlots graphiques dédiés avec fichiers PNG/SVG dans Image/ile/).
         const subj = DASH_SUBJECTS.find(s => s.id === id);
-        // L'icône fichier (îlot graphique) reste prioritaire quand elle existe
-        // (SUBJECT_TO_MATIERE) ; sinon on utilise l'icône/emoji de la matière.
         const island = SUBJECT_TO_MATIERE[id];
         const matiere = subj ? { name: subj.name, icon: island ? island.icon : subj.icon } : null;
         if (matiere) {
-            // Redirige vers la vraie carte de progression (100 niveaux, v2.3).
             window.location.href = 'map.html?matiere=' + encodeURIComponent(matiere.name) + '&icon=' + encodeURIComponent(matiere.icon);
             return;
         }
-        // Repli : constellation interne (voir renderMap), pour les matières
-        // sans îlot graphique dédié.
         state.currentSubject = id;
         state.view = 'map';
         render();
     };
 
     window._dashOpenQuiz = async function (subjectId, lessonIndex) {
-        // "loading: true" affiche un état d'attente pendant l'appel à
-        // l'agent IA (voir renderQuizModal) — indispensable maintenant que
-        // la question n'est plus toujours disponible instantanément en mémoire.
+        window.quizTimeRemaining = 30;
+        if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
         state.quiz = { subjectId, lessonIndex, loading: true, lesson: null, questionId: null, submitted: null, answered: false, isCorrect: false, attempts: 0, explanation: '' };
         render();
 
         const niveauBand = currentNiveauBand();
-        // v1.19 — La leçon du niveau (éventuellement surchargée par le panneau
-        // d'administration) est servie telle quelle en mode local, comme sur
-        // map.html ; sinon on laisse l'IA / le générateur faire.
         const dashSubj = DASH_SUBJECTS.find(s => s.id === subjectId);
         const localLesson = dashSubj && dashSubj.lessons[lessonIndex] ? dashSubj.lessons[lessonIndex] : null;
         const { lesson, questionId } = await AiProvider.fetchQuestion(
             subjectId, lessonIndex, niveauBand, localLesson ? { localLesson } : {}
         );
 
-        // Si l'élève a fermé la modale pendant le chargement, on ignore le résultat.
         if (!state.quiz || state.quiz.subjectId !== subjectId || state.quiz.lessonIndex !== lessonIndex) return;
         state.quiz.lesson = lesson;
         state.quiz.questionId = questionId;
@@ -2137,11 +2708,14 @@ function initDashboard() {
     };
 
     window._dashCloseQuiz = function () {
+        if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
         state.quiz = null;
         render();
     };
 
     window._dashRetryQuiz = function () {
+        if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
+        window.quizTimeRemaining = 30;
         state.quiz.submitted = null;
         state.quiz.answered = false;
         state.quiz.isCorrect = false;
@@ -2149,69 +2723,143 @@ function initDashboard() {
         render();
     };
 
-    /**
-     * Appelée par QuizEngine.bind() quel que soit le type de question :
-     * un index (QCM), un booléen (Vrai/Faux), une chaîne (réponse courte),
-     * un tableau (texte à trous) ou un objet de paires (association).
-     * La correction elle-même passe par AiProvider (agent IA si configuré,
-     * repli local sinon) — voir ai-provider.js.
-     */
     window._dashSubmitQuiz = async function (rawAnswer) {
+        if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
         const quiz = state.quiz;
         quiz.submitted = rawAnswer;
         quiz.attempts += 1;
-        quiz.checking = true; // Court instant d'attente pendant la correction côté IA
+        quiz.checking = true;
         render();
 
         const result = await AiProvider.submitAnswer(quiz.questionId, quiz.lesson, rawAnswer);
-        if (state.quiz !== quiz) return; // Modale fermée entre-temps
+        if (state.quiz !== quiz) return;
 
         quiz.checking = false;
         quiz.answered = true;
         quiz.isCorrect = result.isCorrect;
-        quiz.explanation = result.explanation;
-        // Fusionne la clé de correction (ex. correctIndex) dans la leçon en
-        // mémoire, pour que QuizEngine.reveal() puisse surligner la bonne
-        // réponse — elle n'était pas présente avant cette réponse en mode IA.
+        quiz.explanation = (rawAnswer === 'TEMPS_ECOULE')
+            ? "Temps écoulé ! Tu as dépassé les 30 secondes accordées."
+            : result.explanation;
         quiz.lesson = { ...quiz.lesson, ...result.answerKey };
         render();
     };
 
     window._dashFinishQuiz = function () {
+        if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
         const { subjectId, lessonIndex, attempts } = state.quiz;
-        let unlocked = [];
+        let xpGained = 0;
+        let coinsGained = 0;
+        
         if (lessonIndex === (state.progress[subjectId] || 0)) {
             state.progress[subjectId] = (state.progress[subjectId] || 0) + 1;
-            state.xp += 15;
-            state.coins += 10;
-            unlocked = checkBadges({ justAnsweredFirstTry: attempts === 1 });
+            
+            const rewards = (typeof AdminStore !== 'undefined' && typeof AdminStore.getRewardsConfig === 'function')
+                ? AdminStore.getRewardsConfig()
+                : { xpBase: 15, coinsBase: 10, chronoBonusMaxXp: 15, dailyChestCoins: 50, firstTryBonusXp: 10, questRewardMultiplier: 1 };
+
+            const chronoEnabled = (typeof DB !== 'undefined' && DB.getOption('modeChrono') === 'true');
+            const chronoBonus = (chronoEnabled && (window.quizTimeRemaining || 0) > 0)
+                ? Math.floor(rewards.chronoBonusMaxXp * (window.quizTimeRemaining / 30))
+                : 0;
+            const firstTryBonus = (attempts === 1) ? (rewards.firstTryBonusXp || 0) : 0;
+            
+            xpGained = rewards.xpBase + chronoBonus + firstTryBonus;
+            coinsGained = rewards.coinsBase;
+            
+            state.xp += xpGained;
+            state.coins += coinsGained;
+            checkBadges({ justAnsweredFirstTry: attempts === 1 });
         }
         state.quiz = null;
-        persistState(); // Sauvegarde la progression, XP, pièces et badges
+        persistState();
+
+        Celebrate.confetti();
+        DailyQuests.track({
+            levels:   1,
+            xp:       xpGained,
+            perfect:  attempts === 1 ? 1 : 0,
+            firstTry: attempts === 1 ? 1 : 0,
+        });
+
         render();
-        showNotification('✓ +15 XP et +10 pièces !');
+        if (xpGained > 0) {
+            showNotification(`✓ +${xpGained} XP et +${coinsGained} pièces !`);
+        }
+    };
+
+    function syncWallet() {
+        state.xp = parseInt(getOption('dash_xp') || '0', 10);
+        state.coins = parseInt(getOption('dash_coins') || '30', 10);
+    }
+
+    window._dashClaimQuest = function (id, btn) {
+        const q = DailyQuests.claim(id);
+        if (!q) return;
+        if (btn) Celebrate.burst(btn);
+        syncWallet();
+        checkBadges();
+        render();
+        showNotification(`${q.icon} Récompense : +${q.xp} XP et +${q.coins} pièces !`);
+    };
+
+    window._dashClaimBonus = function (btn) {
+        const coins = DailyQuests.claimBonus();
+        if (!coins) return;
+        if (btn) Celebrate.burst(btn);
+        Celebrate.confetti();
+        syncWallet();
+        render();
+        showNotification(`🎁 Coffre du jour ouvert : +${coins} pièces !`);
+    };
+
+    window._dashSetShopCategory = function (cat) {
+        state.shopCategory = cat;
+        render();
     };
 
     window._dashBuySkin = function (id) {
-        const skin = DASH_SKINS.find(s => s.id === id);
-        if (state.coins < skin.cost) return;
-        state.coins -= skin.cost;
-        state.ownedSkins.push(id);
-        state.equippedSkin = id;
+        const item = getShopCatalog().find(s => s.id === id);
+        if (!item) return;
+        if (state.coins < item.cost) {
+            showNotification('❌ Pas assez de pièces pour cet article !');
+            return;
+        }
+        state.coins -= item.cost;
+        if (!state.ownedSkins.includes(id)) {
+            state.ownedSkins.push(id);
+        }
+        if (item.category === 'title') {
+            state.equippedTitle = id;
+        } else if (item.category === 'theme') {
+            state.equippedTheme = id;
+        } else {
+            state.equippedSkin = id;
+        }
         checkBadges();
-        persistState(); // Sauvegarde l'achat (+ les badges éventuellement débloqués)
+        persistState();
         render();
-        showNotification('✓ Skin « ' + skin.name + ' » acheté et équipé !');
+        showNotification(`✓ « ${item.name} » débloqué et équipé !`);
     };
 
     window._dashEquipSkin = function (id) {
-        state.equippedSkin = id;
-        persistState(); // Sauvegarde l'équipement
+        const item = getShopCatalog().find(s => s.id === id);
+        if (!item) return;
+        if (item.category === 'title') {
+            state.equippedTitle = (state.equippedTitle === id ? '' : id);
+            showNotification(state.equippedTitle ? `🏷️ Titre « ${item.name} » activé !` : 'Titre retiré.');
+        } else if (item.category === 'theme') {
+            state.equippedTheme = (state.equippedTheme === id ? 'default' : id);
+            showNotification(`🎨 Thème « ${item.name} » appliqué !`);
+        } else {
+            state.equippedSkin = id;
+            showNotification(`✓ « ${item.name} » équipé !`);
+        }
+        persistState();
         render();
     };
 
     /* ============ PREMIER RENDU ============ */
-    persistState(); // Sauvegarde initiale pour créer les clés si elles n'existent pas
+    persistState();
     render();
 }
 
@@ -2253,7 +2901,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 3ter. Consentement cookies (v1.20) — filet de sécurité si cookies.js
     // n'a pas pu s'initialiser (le bandeau lui-même est auto-suffisant)
-    // setupCookieConsentFallback();
+    // Pas de cookies
 
     // 4. Plein écran automatique si activé dans les options
     // Première tentative au chargement (souvent bloquée par les navigateurs)
@@ -2269,7 +2917,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 5. Initialisation des fonctionnalités spécifiques à chaque page
     // Chaque fonction détecte si elle est sur la bonne page avant d'agir
     initAccueil();    // index.html   → bouton Quitter
-    // initConnexion();  // login.html   → formulaires connexion + inscription
+    // initConnexion(); // Désactivé (pas de comptes ni de connexion)
     initOptions();    // options.html → contrôles de préférences
 
     initMap();        // map.html     → carte de progression par niveau

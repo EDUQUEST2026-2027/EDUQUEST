@@ -1,78 +1,64 @@
 # EDUQUEST — llms.txt
 # Documentation destinée aux agents IA et assistants conversationnels.
 # Standard : https://llmstxt.org/
-# Dernière mise à jour : 2026-09-23
+# Version : 1.23.0
 
 > EDUQUEST est une application web éducative française de révision gamifiée
 > pour les élèves du collège et du lycée (6e → Terminale). 100 % front-end,
-> 100 % gratuit, sans publicité, sans traceur, fonctionnelle hors-ligne.
+> 100 % gratuit, sans publicité, sans cookie, sans collecte de données, fonctionnelle hors-ligne.
 
 ## Identité
 
 - **Nom** : EDUQUEST
-- **Version** : 1.21.0
-- **Type** : Application web éducative (jeu de révision)
+- **Version** : 1.23.0
+- **Type** : Application web éducative (jeu de révision gamifié)
 - **Langue** : français (fr-FR)
 - **Public** : élèves (6e → Terminale), enseignants, familles
 - **Catégorie** : éducation / apprentissage gamifié
-- **Accès** : 100 % gratuit, sans abonnement, sans publicité
+- **Accès** : 100 % gratuit, sans abonnement, sans publicité, sans inscription
 - **Installation** : aucune — fonctionne dans le navigateur, hors-ligne après le premier chargement
 
 ## Pitch
 
 **Court** : Le jeu de révision pour le collège et le lycée.
 
-**Complet** : EDUQUEST transforme les révisions en aventure : l'élève choisit
-sa matière, son niveau scolaire, puis gravit des îles en répondant à des quiz
-variés (QCM, vrai/faux, réponse courte, texte à trous, association). XP,
-pièces, badges et avatars maintiennent la motivation. 10 matières, 100 niveaux
-par matière, contenus ajustables par l'enseignant via un panneau
-d'administration intégré.
+**Complet** : EDUQUEST transforme les révisions scolaires en aventure : l'élève choisit
+sa matière, sa classe (6e à Terminale), puis gravit des îles thématiques en répondant à des quiz
+interactifs variés (QCM, vrai/faux, réponse courte, texte à trous, association). XP,
+pièces, badges, quêtes journalières et personnalisation du héros (avatars illustrés, titres, thèmes)
+maintiennent la motivation. 10 matières, 100 niveaux par matière, moteur de confettis autonome, mode chrono 30s.
 
 ## Mots-clés
 
 révision, jeu éducatif, quiz, collège, lycée, mathématiques, français, SVT,
-histoire, anglais, apprentissage gamifié, éducation nationale, gratuit
+histoire, anglais, physique, chimie, technologie, apprentissage gamifié, éducation nationale, gratuit, sans cookie, sans inscription
 
 ## Pages publiques
 
 | Route | Description |
 |-------|-------------|
-| `index.html` | Accueil — point d'entrée du jeu |
-| `jouer.html` | Choix du niveau scolaire (6e → Terminale) et de la matière |
-| `map.html` | Carte du monde : les îles-matières et les niveaux |
-| `dashboard.html` | Tableau de bord élève : progression, badges, avatars |
-| `login.html` | Création de compte / connexion locale |
-| `legal.html` | Mentions légales, politique de confidentialité et cookies |
-
-## Pages exclues de l'indexation
-
-| Route | Raison |
-|-------|--------|
-| `admin.html` | Panneau d'administration (usage interne, protégé) |
+| `index.html` | Accueil — point d'entrée du jeu et réglages d'options |
+| `dashboard.html` | Tableau de bord élève : quêtes journalières, progression, boutique et succès |
+| `map.html` | Carte d'aventure d'une matière : parcours de 100 niveaux |
+| `legal.html` | Mentions légales et politique de confidentialité (garantie 0 donnée & 0 cookie) |
 
 ## Architecture technique
 
 | Fichier | Rôle |
 |---------|------|
-| `app.js` | Moteur principal du jeu, chargé sur toutes les pages |
-| `db.js` | Couche d'abstraction base de données (localStorage / API REST) |
-| `question-bank.js` | Génération déterministe de 100 niveaux par matière |
-| `quiz-engine.js` | Correction des 5 types de questions |
-| `ai-provider.js` | Pont IA (Make webhook) + repli local |
-| `admin-store.js` | Configuration du panneau d'administration |
-| `admin.js` | Interface du panneau d'administration |
-| `cookies.js` | Bandeau de consentement RGPD/CNIL |
+| `app.js` | Moteur principal du jeu : DailyQuests, Celebrate, boutique, quiz |
+| `db.js` | Couche de stockage temporaire en mémoire de session (`sessionStorage`) |
+| `admin-store.js` | Catalogue de la boutique (25+ items) et configuration des récompenses |
+| `question-bank.js` | Génération déterministe (PRNG) des niveaux 6 à 100 par matière |
+| `quiz-engine.js` | Moteur interactif et correction des 5 types de questions |
+| `ai-provider.js` | Adaptateur IA (scénarios Make) avec repli local instantané |
+| `quests.css` | Styles des quêtes quotidiennes avec anneaux de progression SVG |
+| `service-worker.js` | Mise en cache PWA pour le mode 100 % hors-ligne |
 
-## Données personnelles
+## Données personnelles & Confidentialité
 
-- Aucune donnée personnelle n'est envoyée à un serveur.
-- Tout reste dans le localStorage du navigateur.
-- Aucun cookie publicitaire, aucun traceur tiers, aucun profilage.
-- Bandeau de consentement conforme RGPD/CNIL à la première visite.
+- **Aucune donnée personnelle n'est collectée ni envoyée à un serveur.**
+- **Stockage strictement éphémère** : toutes les données sont conservées en mémoire de session (`sessionStorage`) et s'effacent automatiquement à la fermeture de l'onglet ou du navigateur.
+- **Zéro cookie** : aucun cookie n'est utilisé (`document.cookie` non sollicité).
+- **Aucune connexion ni création de compte requise.**
 - Page de référence : `legal.html`
-
-## Contact
-
-Le créateur est renseigné par l'onglet « Crédits » du panneau
-d'administration, puis affiché dans `legal.html`.

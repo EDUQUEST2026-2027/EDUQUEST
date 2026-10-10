@@ -35,14 +35,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EDUQUEST — Le jeu de révision pour le collège et le lycée</title>
-    <meta name="description" content="Apprends en t'amusant : 10 matières, 100 niveaux, quiz variés, XP, badges et avatars. 100 % gratuit, sans publicité, du 6ème à la Terminale.">
+    <meta name="description"
+        content="Apprends en t'amusant : 10 matières, 100 niveaux, quiz variés, XP, badges et avatars. 100 % gratuit, sans publicité, du 6ème à la Terminale.">
     <!-- v1.21 : référencement & partage (moteurs, réseaux sociaux, assistants IA — voir bot.txt) -->
     <meta name="theme-color" content="#0d1330">
     <meta name="robots" content="index, follow">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="EDUQUEST">
     <meta property="og:title" content="EDUQUEST — Le jeu de révision pour le collège et le lycée">
-    <meta property="og:description" content="Gravisse les îles du savoir : maths, français, SVT, histoire… 100 niveaux par matière, XP et badges. Gratuit et sans publicité.">
+    <meta property="og:description"
+        content="Gravisse les îles du savoir : maths, français, SVT, histoire… 100 niveaux par matière, XP et badges. Gratuit et sans publicité.">
     <meta property="og:image" content="Image/logo.webp">
     <meta name="twitter:card" content="summary_large_image">
     <!-- Icône de l'application dans l'onglet du navigateur -->
@@ -59,7 +61,7 @@
          Ces divs sont vides au chargement. JavaScript (createEnvironment)
          y injecte dynamiquement les étoiles et les nuages animés.
     ================================================================ -->
-    <div class="background"></div>       <!-- Fond dégradé statique (CSS pure) -->
+    <div class="background"></div> <!-- Fond dégradé statique (CSS pure) -->
     <div class="stars" id="stars"></div> <!-- Conteneur des étoiles (rempli par JS) -->
     <div class="clouds" id="clouds"></div> <!-- Conteneur des nuages (rempli par JS) -->
 
@@ -84,7 +86,8 @@
             <a class="menu-button primary" href="dashboard.html">⚔ JOUER</a>
 
             <!-- Lien vers les préférences du jeu -->
-            <button class="menu-button" onclick="document.getElementById('modalOptions').hidden = false;">⚙ OPTIONS</button>
+            <button class="menu-button" onclick="document.getElementById('modalOptions').hidden = false;">⚙
+                OPTIONS</button>
 
             <!-- Lien vers la page de connexion/inscription -->
 
@@ -123,13 +126,14 @@
     ================================================================ -->
     <script src="db.js"></script> <!-- Couche base de données (localStorage ↔ API SQL) -->
     <script src="admin-store.js"></script> <!-- v1.19 : config du panneau d'administration (chargée avant app.js) -->
-    <script src="question-bank.js"></script> <!-- Génère DASH_SUBJECTS (100 niveaux/matière) — requis par app.js dès son chargement -->
+    <script src="question-bank.js"></script>
+    <!-- Génère DASH_SUBJECTS (100 niveaux/matière) — requis par app.js dès son chargement -->
     <script src="app.js"></script> <!-- Moteur principal du jeu -->
 
-    
-<!-- MODALS -->
-<div id="modalOptions" class="modal-overlay" hidden>
-<section class="options-container">
+
+    <!-- MODALS -->
+    <div id="modalOptions" class="modal-overlay" hidden>
+        <section class="options-container">
             <h1 class="options-header">⚙ OPTIONS</h1>
 
             <!-- ============================================================
@@ -257,10 +261,7 @@
                 </label>
             </div>
 
-            <!-- Option 8 : Mode Économie d'énergie (Remplace l'ancienne V-Sync)
-                 Désactive les animations CSS gourmandes (particules, dégradés animés)
-                 pour préserver la batterie des appareils mobiles.
-            -->
+            <!-- Option 8 : Mode Économie d'énergie -->
             <div class="option-group">
                 <label class="checkbox-container">
                     <span class="checkbox">
@@ -274,16 +275,31 @@
                 </p>
             </div>
 
+            <!-- Option 9 : Mode Défi Chronométré -->
+            <div class="option-group">
+                <label class="checkbox-container">
+                    <span class="checkbox">
+                        <input type="checkbox" id="modeChrono">
+                        <span class="checkbox-mark">✓</span>
+                    </span>
+                    <span class="option-label">⏱ Mode Défi Chronométré (30s)</span>
+                </label>
+                <p class="adm-hint" style="margin-top: 4px; padding-left: 36px;">
+                    Réponds en moins de 30 secondes pour remporter un bonus d'XP selon ta rapidité !
+                </p>
+            </div>
+
             <!-- Boutons d'action -->
             <!-- #saveOptions → déclenche la sauvegarde de toutes les options via DB -->
             <!-- #backButton  → retour sans sauvegarder (window.location.href = 'index.html') -->
             <div class="options-buttons">
                 <button class="option-button" id="saveOptions">💾 SAUVEGARDER</button>
-                <button class="option-button danger" id="backButton" onclick="document.getElementById('modalOptions').hidden = true;">← RETOUR</button>
+                <button class="option-button danger" id="backButton"
+                    onclick="document.getElementById('modalOptions').hidden = true;">← RETOUR</button>
             </div>
 
         </section>
-</div>
+    </div>
 
 
 </body>

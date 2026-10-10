@@ -1,34 +1,39 @@
-const CACHE_NAME = 'eduquest-cache-v1.21.0';
+const CACHE_NAME = 'eduquest-cache-v1.23.0';
 
 const PRECACHE_URLS = [
   './',
   'index.html',
-  'admin.html',
   'dashboard.html',
-  'jouer.html',
-  'login.html',
   'map.html',
   'legal.html',
   'global.css',
   'style.css',
-  'admin.css',
+  'quests.css',
   'app.js',
   'db.js',
-  'admin.js',
   'admin-store.js',
   'ai-provider.js',
-  'cookies.js',
   'question-bank.js',
   'quiz-engine.js',
   'manifest.webmanifest',
-  'Image/logo.webp'
+  'Image/logo.webp',
+  'Image/personnages/robot.webp',
+  'Image/personnages/einstein.webp',
+  'Image/personnages/marie-curie.webp',
+  'Image/personnages/christophe-colomb.webp',
+  'Image/personnages/lovelace.webp',
+  'Image/personnages/pythagore.webp',
+  'Image/personnages/davinci.webp',
+  'Image/personnages/hugo.webp',
+  'Image/personnages/astronaute.webp',
+  'Image/personnages/mage.webp'
 ];
 
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(PRECACHE_URLS))
-      .then(self.skipWaiting())
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -46,7 +51,6 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // Ignorer les requêtes non GET
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
@@ -55,7 +59,6 @@ self.addEventListener('fetch', event => {
         return cachedResponse;
       }
       return fetch(event.request).then(response => {
-        // Optionnel : Mettre en cache les nouvelles requêtes réussies
         if (!response || response.status !== 200 || response.type !== 'basic') {
           return response;
         }

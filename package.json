@@ -1,6 +1,6 @@
 {
   "name": "eduquest-advanced",
-  "version": "1.21.0",
+  "version": "1.23.0",
   "description": "EDUQUEST — application française de révision gamifiée (6e → Terminale)",
   "private": true,
   "scripts": {

@@ -31,26 +31,131 @@
    Rajdhani     : police sans-serif condensée, lisible à petite taille
    font-display:swap → polices système en attendant (évite le FOUT)
    -------------------------------------------------------------------------- */
-@font-face { font-family: 'Cinzel'; font-style: normal; font-weight: 700; font-display: swap; src: url('fonts/cinzel-700-subset0.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
-@font-face { font-family: 'Cinzel'; font-style: normal; font-weight: 700; font-display: swap; src: url('fonts/cinzel-700-subset1.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
-@font-face { font-family: 'Cinzel'; font-style: normal; font-weight: 900; font-display: swap; src: url('fonts/cinzel-900-subset2.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
-@font-face { font-family: 'Cinzel'; font-style: normal; font-weight: 900; font-display: swap; src: url('fonts/cinzel-900-subset3.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
-@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 400; font-display: swap; src: url('fonts/rajdhani-400-subset0.woff2') format('woff2'); unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09; }
-@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 400; font-display: swap; src: url('fonts/rajdhani-400-subset1.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
-@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 400; font-display: swap; src: url('fonts/rajdhani-400-subset2.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
-@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 600; font-display: swap; src: url('fonts/rajdhani-600-subset3.woff2') format('woff2'); unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09; }
-@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 600; font-display: swap; src: url('fonts/rajdhani-600-subset4.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
-@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 600; font-display: swap; src: url('fonts/rajdhani-600-subset5.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
-@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 700; font-display: swap; src: url('fonts/rajdhani-700-subset6.woff2') format('woff2'); unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09; }
-@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 700; font-display: swap; src: url('fonts/rajdhani-700-subset7.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
-@font-face { font-family: 'Rajdhani'; font-style: normal; font-weight: 700; font-display: swap; src: url('fonts/rajdhani-700-subset8.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face {
+    font-family: 'Cinzel';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('fonts/cinzel-700-subset0.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Cinzel';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('fonts/cinzel-700-subset1.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Cinzel';
+    font-style: normal;
+    font-weight: 900;
+    font-display: swap;
+    src: url('fonts/cinzel-900-subset2.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Cinzel';
+    font-style: normal;
+    font-weight: 900;
+    font-display: swap;
+    src: url('fonts/cinzel-900-subset3.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Rajdhani';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('fonts/rajdhani-400-subset0.woff2') format('woff2');
+    unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09;
+}
+
+@font-face {
+    font-family: 'Rajdhani';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('fonts/rajdhani-400-subset1.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Rajdhani';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('fonts/rajdhani-400-subset2.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Rajdhani';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('fonts/rajdhani-600-subset3.woff2') format('woff2');
+    unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09;
+}
+
+@font-face {
+    font-family: 'Rajdhani';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('fonts/rajdhani-600-subset4.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Rajdhani';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('fonts/rajdhani-600-subset5.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Rajdhani';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('fonts/rajdhani-700-subset6.woff2') format('woff2');
+    unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09;
+}
+
+@font-face {
+    font-family: 'Rajdhani';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('fonts/rajdhani-700-subset7.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Rajdhani';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('fonts/rajdhani-700-subset8.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
 /* --------------------------------------------------------------------------
    1. RÉINITIALISATION CSS
    Supprime les marges et paddings par défaut du navigateur.
    box-sizing: border-box → la largeur d'un élément inclut padding et border.
    -------------------------------------------------------------------------- */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -72,18 +177,30 @@
      Or/accent   : --c-gold (utilisé pour les surbrillances dorées)
    -------------------------------------------------------------------------- */
 :root {
-    --c-night:       #060d1a;  /* Fond le plus sombre (fond principal du body) */
-    --c-deep:        #0a1628;  /* Fond intermédiaire */
-    --c-ocean:       #1a3a52;  /* Bleu océan (accentuation gauche du fond) */
-    --c-forest:      #2d5016;  /* Vert forêt profond */
-    --c-green:       #4a7c59;  /* Vert moyen (boutons succès) */
-    --c-green-light: #6bca82;  /* Vert vif (bordures de notification succès) */
-    --c-brown:       #6b4423;  /* Marron chaud */
-    --c-brown-dark:  #140e08;  /* Marron très sombre */
-    --c-red:         #8b3a3a;  /* Rouge danger (boutons, notifications d'erreur) */
-    --c-blue:        #4a5c7c;  /* Bleu acier (fond glassmorphe) */
-    --c-gold:        #c8a84b;  /* Or doré (accents, footer, surbrillances) */
-    --c-white:       #ffffff;  /* Blanc pur (textes principaux) */
+    --c-night: #060d1a;
+    /* Fond le plus sombre (fond principal du body) */
+    --c-deep: #0a1628;
+    /* Fond intermédiaire */
+    --c-ocean: #1a3a52;
+    /* Bleu océan (accentuation gauche du fond) */
+    --c-forest: #2d5016;
+    /* Vert forêt profond */
+    --c-green: #4a7c59;
+    /* Vert moyen (boutons succès) */
+    --c-green-light: #6bca82;
+    /* Vert vif (bordures de notification succès) */
+    --c-brown: #6b4423;
+    /* Marron chaud */
+    --c-brown-dark: #140e08;
+    /* Marron très sombre */
+    --c-red: #8b3a3a;
+    /* Rouge danger (boutons, notifications d'erreur) */
+    --c-blue: #4a5c7c;
+    /* Bleu acier (fond glassmorphe) */
+    --c-gold: #c8a84b;
+    /* Or doré (accents, footer, surbrillances) */
+    --c-white: #ffffff;
+    /* Blanc pur (textes principaux) */
 }
 
 /* --------------------------------------------------------------------------
@@ -93,11 +210,16 @@ body {
     font-family: 'Rajdhani', 'Courier New', monospace;
     /* Rajdhani comme police principale, avec fallbacks système */
 
-    overflow-x: hidden; /* Empêche le scroll horizontal (les nuages sortent à droite) */
-    overflow-y: auto;   /* Scroll vertical autorisé si le contenu dépasse */
-    background: var(--c-night); /* Couleur de fond de secours si le CSS .background rate */
-    min-height: 100vh;  /* Assure que le body occupe au moins tout l'écran */
-    color: var(--c-white); /* Couleur de texte par défaut */
+    overflow-x: hidden;
+    /* Empêche le scroll horizontal (les nuages sortent à droite) */
+    overflow-y: auto;
+    /* Scroll vertical autorisé si le contenu dépasse */
+    background: var(--c-night);
+    /* Couleur de fond de secours si le CSS .background rate */
+    min-height: 100vh;
+    /* Assure que le body occupe au moins tout l'écran */
+    color: var(--c-white);
+    /* Couleur de texte par défaut */
 }
 
 /* --------------------------------------------------------------------------
@@ -133,7 +255,7 @@ body {
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.7) 100%);
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.7) 100%);
 }
 
 /* Texture scanlines : lignes horizontales très subtiles pour effet "écran" */
@@ -141,57 +263,85 @@ body {
     content: '';
     position: absolute;
     inset: 0;
-    background: repeating-linear-gradient(
-        0deg,              /* Lignes horizontales */
-        transparent,
-        transparent 2px,
-        rgba(0, 0, 0, 0.04) 2px,  /* Ligne sombre de 2px */
-        rgba(0, 0, 0, 0.04) 4px   /* Répétition toutes les 4px */
-    );
+    background: repeating-linear-gradient(0deg,
+            /* Lignes horizontales */
+            transparent,
+            transparent 2px,
+            rgba(0, 0, 0, 0.04) 2px,
+            /* Ligne sombre de 2px */
+            rgba(0, 0, 0, 0.04) 4px
+            /* Répétition toutes les 4px */
+        );
     z-index: 1;
-    pointer-events: none; /* Ne bloque pas les clics */
+    pointer-events: none;
+    /* Ne bloque pas les clics */
 }
 
 /* Conteneur des étoiles et nuages
    pointer-events: none → l'arrière-plan ne capture pas les clics */
-.stars, .clouds {
+.stars,
+.clouds {
     position: fixed;
     inset: 0;
-    z-index: -2; /* Au-dessus du fond, en dessous du contenu */
+    z-index: -2;
+    /* Au-dessus du fond, en dessous du contenu */
     overflow: hidden;
     pointer-events: none;
 }
 
 /* Les étoiles occupent seulement le haut de l'écran (ciel) */
-.stars { height: 65%; }
+.stars {
+    height: 65%;
+}
 
 /* Style d'une étoile individuelle (créée par JS dans createEnvironment)
    La taille et la position sont définies en JS via style.width, style.left, style.top */
 .star {
     position: absolute;
-    background: #fff;              /* Couleur par défaut : blanc */
-    border-radius: 50%;            /* Cercle parfait */
+    background: #fff;
+    /* Couleur par défaut : blanc */
+    border-radius: 50%;
+    /* Cercle parfait */
     animation: twinkle var(--dur, 3s) var(--delay, 0s) infinite;
     /* La durée (--dur) et le délai (--delay) peuvent être personnalisés par CSS */
 }
 
 /* Variation de couleur des étoiles selon leur position dans le DOM (nth-child) */
-.star:nth-child(3n)   { background: #c8e4ff; }             /* Bleu clair (1 étoile/3) */
-.star:nth-child(5n)   { background: #ffe4c8; }             /* Orange pâle (1 étoile/5) */
-.star:nth-child(7n)   { background: var(--c-green-light); opacity: 0.6; } /* Vert (1/7) */
+.star:nth-child(3n) {
+    background: #c8e4ff;
+}
+
+/* Bleu clair (1 étoile/3) */
+.star:nth-child(5n) {
+    background: #ffe4c8;
+}
+
+/* Orange pâle (1 étoile/5) */
+.star:nth-child(7n) {
+    background: var(--c-green-light);
+    opacity: 0.6;
+}
+
+/* Vert (1/7) */
 
 /* Style d'un nuage (créé par JS dans createEnvironment)
    La taille, position et durée d'animation sont définies en JS */
 .cloud {
     position: absolute;
-    background: rgba(255, 255, 255, 0.07); /* Très transparent → effet brume */
-    border-radius: 100px;                  /* Forme arrondie (ellipse) */
-    animation: float 30s infinite linear;  /* Dérive de gauche à droite */
-    filter: blur(2px);                     /* Flou pour l'aspect nuageux */
+    background: rgba(255, 255, 255, 0.07);
+    /* Très transparent → effet brume */
+    border-radius: 100px;
+    /* Forme arrondie (ellipse) */
+    animation: float 30s infinite linear;
+    /* Dérive de gauche à droite */
+    filter: blur(2px);
+    /* Flou pour l'aspect nuageux */
 }
 
 /* Classe utilitaire pour cacher un élément (utilisé sur #exitPage par ex.) */
-.hidden { display: none !important; }
+.hidden {
+    display: none !important;
+}
 
 /* --------------------------------------------------------------------------
    5. COMPOSANTS COMMUNS
@@ -208,16 +358,22 @@ body {
 */
 .menu-button,
 .option-button {
-    font-family: var(--font-pixel-ui, 'Cinzel', serif); /* Police pixel — direction Codédex (v2.6) */
+    font-family: var(--font-pixel-ui, 'Cinzel', serif);
+    /* Police pixel — direction Codédex (v2.6) */
     font-weight: 700;
     color: #fff;
     cursor: pointer;
     text-align: center;
-    text-decoration: none;     /* Supprime le soulignement des liens <a> */
-    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Animation douce */
-    user-select: none;         /* Empêche la sélection du texte au clic */
-    position: relative;        /* Nécessaire pour ::before et ::after */
-    overflow: hidden;          /* Cache l'effet de lumière quand il est hors du bouton */
+    text-decoration: none;
+    /* Supprime le soulignement des liens <a> */
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    /* Animation douce */
+    user-select: none;
+    /* Empêche la sélection du texte au clic */
+    position: relative;
+    /* Nécessaire pour ::before et ::after */
+    overflow: hidden;
+    /* Cache l'effet de lumière quand il est hors du bouton */
     display: block;
 }
 
@@ -229,7 +385,8 @@ body {
     inset: 0;
     /* Gradient diagonal : transparent → reflet blanc → transparent */
     background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-    transform: translateX(-100%) skewX(-15deg); /* Commence à gauche du bouton */
+    transform: translateX(-100%) skewX(-15deg);
+    /* Commence à gauche du bouton */
     transition: transform 0.6s ease;
 }
 
@@ -248,19 +405,25 @@ body {
     left: 10%;
     right: 10%;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-    opacity: 0; /* Invisible par défaut */
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    opacity: 0;
+    /* Invisible par défaut */
     transition: opacity 0.3s;
 }
 
 .menu-button:hover::after,
-.option-button:hover::after { opacity: 1; } /* Apparaît au survol */
+.option-button:hover::after {
+    opacity: 1;
+}
+
+/* Apparaît au survol */
 
 /* Léger enfoncement au clic (feedback visuel façon bouton pixel pressé) */
 .menu-button:active,
 .option-button:active {
     transform: translate(3px, 3px);
-    transition-duration: 0.1s; /* Plus rapide pour le clic que pour le survol */
+    transition-duration: 0.1s;
+    /* Plus rapide pour le clic que pour le survol */
 }
 
 /* ===== ROUE D'OPTIONS (.options-wheel) =====
@@ -275,28 +438,37 @@ body {
     width: 48px;
     height: 48px;
     color: #fff;
-    background: rgba(8, 14, 24, 0.6);        /* Fond semi-transparent sombre */
-    backdrop-filter: blur(20px);              /* Flou glassmorphe */
-    -webkit-backdrop-filter: blur(20px);      /* Safari */
+    background: rgba(8, 14, 24, 0.6);
+    /* Fond semi-transparent sombre */
+    backdrop-filter: blur(20px);
+    /* Flou glassmorphe */
+    -webkit-backdrop-filter: blur(20px);
+    /* Safari */
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-top-color: rgba(255, 255, 255, 0.25); /* Bord du dessus plus lumineux */
-    border-radius: 50%;                       /* Cercle */
+    border-top-color: rgba(255, 255, 255, 0.25);
+    /* Bord du dessus plus lumineux */
+    border-radius: 50%;
+    /* Cercle */
     box-shadow:
-        0 2px 0 rgba(255, 255, 255, 0.06) inset, /* Reflet intérieur haut */
-        0 6px 20px rgba(0, 0, 0, 0.45);          /* Ombre portée */
+        0 2px 0 rgba(255, 255, 255, 0.06) inset,
+        /* Reflet intérieur haut */
+        0 6px 20px rgba(0, 0, 0, 0.45);
+    /* Ombre portée */
     text-decoration: none;
     font-size: 1.45rem;
     cursor: pointer;
     transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     user-select: none;
-    pointer-events: auto; /* Overrides le pointer-events:none du parent sur map.html */
+    pointer-events: auto;
+    /* Overrides le pointer-events:none du parent sur map.html */
 }
 
 /* Survol : rotation de 90° + bordure dorée + ombre lumineuse */
 .options-wheel:hover {
     transform: rotate(90deg) scale(1.12);
     background: rgba(20, 32, 50, 0.75);
-    border-color: rgba(200, 168, 75, 0.5);   /* Bordure or au survol */
+    border-color: rgba(200, 168, 75, 0.5);
+    /* Bordure or au survol */
     box-shadow: 0 0 20px rgba(200, 168, 75, 0.25), 0 8px 24px rgba(0, 0, 0, 0.55);
 }
 
@@ -305,7 +477,8 @@ body {
     position: fixed;
     top: 20px;
     right: 20px;
-    z-index: 1000; /* Au-dessus de tout le contenu */
+    z-index: 1000;
+    /* Au-dessus de tout le contenu */
 }
 
 /* ===== NOTIFICATIONS TOAST (.notification) =====
@@ -321,10 +494,12 @@ body {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    background: rgba(45, 80, 22, 0.92);          /* Fond vert sombre translucide */
+    background: rgba(45, 80, 22, 0.92);
+    /* Fond vert sombre translucide */
     backdrop-filter: blur(24px);
     border: 1px solid rgba(107, 202, 130, 0.4);
-    border-top-color: rgba(107, 202, 130, 0.6);  /* Bord supérieur plus vif */
+    border-top-color: rgba(107, 202, 130, 0.6);
+    /* Bord supérieur plus vif */
     border-radius: 14px;
     padding: 16px 26px;
     color: #fff;
@@ -332,19 +507,21 @@ body {
     font-size: 1rem;
     font-weight: 700;
     letter-spacing: 1px;
-    text-shadow: 1px 1px 4px rgba(0,0,0,0.8);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 20px rgba(74,124,89,0.3);
-    z-index: 10000; /* Au-dessus de absolument tout, même les modales */
+    text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 20px rgba(74, 124, 89, 0.3);
+    z-index: 10000;
+    /* Au-dessus de absolument tout, même les modales */
     /* slideInRight : entre depuis la droite / fadeOut : sort vers la droite après 2.5s */
-    animation: slideInRight 0.4s cubic-bezier(0.22,1,0.36,1), fadeOut 0.5s ease 2.5s;
-    pointer-events: none; /* Ne capture pas les clics (derrière si besoin) */
+    animation: slideInRight 0.4s cubic-bezier(0.22, 1, 0.36, 1), fadeOut 0.5s ease 2.5s;
+    pointer-events: none;
+    /* Ne capture pas les clics (derrière si besoin) */
 }
 
 /* Variante erreur : fond rouge */
 .notification.error {
     background: rgba(100, 30, 30, 0.92);
     border-color: rgba(220, 100, 100, 0.45);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 18px rgba(139,58,58,0.25);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 18px rgba(139, 58, 58, 0.25);
 }
 
 /* ===== FOOTER GLOBAL (.footer) =====
@@ -358,10 +535,12 @@ body {
     position: fixed;
     bottom: 18px;
     left: 50%;
-    transform: translateX(-50%); /* Centrage horizontal */
+    transform: translateX(-50%);
+    /* Centrage horizontal */
     font-family: 'Rajdhani', monospace;
     font-size: 0.8rem;
-    color: rgba(200, 168, 75, 0.3); /* Or très transparent */
+    color: rgba(200, 168, 75, 0.3);
+    /* Or très transparent */
     letter-spacing: 3px;
     text-transform: uppercase;
     transition: color 0.3s;
@@ -385,22 +564,36 @@ body {
     white-space: normal;
     z-index: 500;
 }
+
 .footer.footer-with-links a {
     color: #5fd4e6;
     text-decoration: none;
     border-bottom: 1px dotted rgba(95, 212, 230, 0.5);
 }
-.footer.footer-with-links a:hover { color: #9ae4f0; border-bottom-color: #9ae4f0; }
-.footer.footer-with-links em { opacity: 0.75; font-style: italic; }
+
+.footer.footer-with-links a:hover {
+    color: #9ae4f0;
+    border-bottom-color: #9ae4f0;
+}
+
+.footer.footer-with-links em {
+    opacity: 0.75;
+    font-style: italic;
+}
 
 /* Légèrement plus visible au survol */
-.footer:hover { color: rgba(200, 168, 75, 0.7); }
+.footer:hover {
+    color: rgba(200, 168, 75, 0.7);
+}
 
 /* --- Focus clavier global (complément au polish v1.17 de style.css) ---
    Les navigateurs retirent le contour par défaut sur :focus-visible avec
    certains styles custom ; on garantit un contour de secours pour tout
    élément interactif non listé dans style.css (options, formulaires…). */
-a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
     outline: 2px solid var(--c-gold);
     outline-offset: 2px;
 }
@@ -413,8 +606,17 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
 /* Étoile : clignotement lent (scintillement) */
 @keyframes twinkle {
-    0%, 100% { opacity: 0.2; transform: scale(1); }
-    50%       { opacity: 1;   transform: scale(1.3); }
+
+    0%,
+    100% {
+        opacity: 0.2;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.3);
+    }
 }
 
 /* --------------------------------------------------------------------------
@@ -436,6 +638,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
     background: rgba(7, 11, 26, 0.35);
     transition: color 0.15s ease, background 0.15s ease;
 }
+
 .admin-panel-link:hover {
     color: #1c1607;
     background: rgba(200, 168, 75, 0.85);
@@ -454,6 +657,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
     letter-spacing: 0.3px;
     color: rgba(255, 255, 255, 0.6);
 }
+
 .legal-links a {
     color: inherit;
     text-decoration: none;
@@ -461,7 +665,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
     border-radius: 8px;
     background: rgba(7, 11, 26, 0.35);
 }
-.legal-links a:hover { color: #e6cf8a; background: rgba(200, 168, 75, 0.25); }
+
+.legal-links a:hover {
+    color: #e6cf8a;
+    background: rgba(200, 168, 75, 0.25);
+}
 
 /* --------------------------------------------------------------------------
    v1.21 — RESPONSIVE MOBILE (téléphones, ≤ 600px)
@@ -470,6 +678,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
    sur petit écran. Les adaptations par page restent dans style.css/admin.css.
    -------------------------------------------------------------------------- */
 @media (max-width: 600px) {
+
     /* Roue ⚙ flottante : réduite et décollée du bord pour laisser la place
        au titre « Choisis ton niveau » qui passe en dessous (voir style.css) */
     .options-wheel.floating {
@@ -486,7 +695,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
         left: 8px;
         right: 8px;
         transform: none;
-        bottom: 34px; /* au-dessus de la rangée .legal-links */
+        bottom: 34px;
+        /* au-dessus de la rangée .legal-links */
         font-size: 11px;
         padding: 5px 10px;
         text-align: center;
@@ -523,30 +733,64 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
 /* Nuage : déplacement horizontal continu de gauche à droite */
 @keyframes float {
-    from { transform: translateX(-300px); }  /* Commence hors écran à gauche */
-    to   { transform: translateX(calc(100vw + 300px)); } /* Finit hors écran à droite */
+    from {
+        transform: translateX(-300px);
+    }
+
+    /* Commence hors écran à gauche */
+    to {
+        transform: translateX(calc(100vw + 300px));
+    }
+
+    /* Finit hors écran à droite */
 }
 
 /* Apparition simple : fondu + montée légère (utilisé sur plusieurs éléments) */
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-16px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Apparition de panneau : fondu + montée + légère remise à l'échelle + déflou
    Plus élaboré que fadeIn, utilisé pour les panneaux principaux */
 @keyframes panelSlideIn {
-    from { opacity: 0; transform: translateY(24px) scale(0.97); filter: blur(4px); }
-    to   { opacity: 1; transform: translateY(0)     scale(1);    filter: blur(0); }
+    from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.97);
+        filter: blur(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
 }
 
 /* Entrée depuis la droite : pour les notifications toast */
 @keyframes slideInRight {
-    from { transform: translateX(400px); opacity: 0; }
-    to   { transform: translateX(0);     opacity: 1; }
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }
 
 /* Sortie vers la droite : pour la disparition des notifications après 2.5s */
 @keyframes fadeOut {
-    to { opacity: 0; transform: translateX(400px); }
+    to {
+        opacity: 0;
+        transform: translateX(400px);
+    }
 }

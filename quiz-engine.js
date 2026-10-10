@@ -228,11 +228,11 @@ const QuizEngine = (() => {
     /* ================= REGISTRE ================= */
 
     const QUESTION_ENGINES = {
-        qcm:            { render: renderQCM,            bind: bindQCM,            grade: gradeQCM,            reveal: revealQCM },
-        vrai_faux:      { render: renderVraiFaux,        bind: bindVraiFaux,       grade: gradeVraiFaux,       reveal: revealVraiFaux },
-        reponse_courte: { render: renderReponseCourte,   bind: bindReponseCourte,  grade: gradeReponseCourte,  reveal: revealReponseCourte },
-        texte_a_trous:  { render: renderTexteATrous,     bind: bindTexteATrous,    grade: gradeTexteATrous,    reveal: revealTexteATrous },
-        drag_and_drop:  { render: renderDragAndDrop,     bind: bindDragAndDrop,    grade: gradeDragAndDrop,    reveal: revealDragAndDrop },
+        qcm: { render: renderQCM, bind: bindQCM, grade: gradeQCM, reveal: revealQCM },
+        vrai_faux: { render: renderVraiFaux, bind: bindVraiFaux, grade: gradeVraiFaux, reveal: revealVraiFaux },
+        reponse_courte: { render: renderReponseCourte, bind: bindReponseCourte, grade: gradeReponseCourte, reveal: revealReponseCourte },
+        texte_a_trous: { render: renderTexteATrous, bind: bindTexteATrous, grade: gradeTexteATrous, reveal: revealTexteATrous },
+        drag_and_drop: { render: renderDragAndDrop, bind: bindDragAndDrop, grade: gradeDragAndDrop, reveal: revealDragAndDrop },
     };
 
     function engineFor(question) {
@@ -258,3 +258,8 @@ const QuizEngine = (() => {
         },
     };
 })();
+
+if (typeof window !== 'undefined') {
+    window.QuizEngine = QuizEngine;
+}
+

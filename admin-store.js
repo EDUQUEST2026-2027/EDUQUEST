@@ -12,7 +12,7 @@
                             leçons (niveaux) écrites à la main.
 
    FONCTIONNEMENT :
-   Tout est stocké sous UNE SEULE clé localStorage : 'eduquest_admin_data'.
+   Tout est stocké sous UNE SEULE clé sessionStorage : 'eduquest_admin_data'.
    - Les valeurs par défaut (7 niveaux scolaires) vivent dans ce fichier.
    - Les leçons par défaut des matières ne sont PAS dupliquées ici : elles
      sont « enregistrées » à l'exécution par app.js (registerDefaults) puis
@@ -21,7 +21,7 @@
    - app.js appelle AdminStore.applyOverrides(RAW_DASH_SUBJECTS) pour
      construire DASH_SUBJECTS avec les personnalisations appliquées.
 
-   DÉPENDANCE : aucune (localStorage uniquement). À charger AVANT app.js.
+   DÉPENDANCE : aucune (sessionStorage uniquement). À charger AVANT app.js.
    ============================================================================= */
 
 const AdminStore = (() => {
@@ -30,7 +30,7 @@ const AdminStore = (() => {
        CONSTANTES
        ----------------------------------------------------------------------- */
 
-    // Clé localStorage unique pour toute la configuration administrateur
+    // Clé sessionStorage unique pour toute la configuration administrateur
     const LS_KEY = 'eduquest_admin_data';
 
     // Niveaux scolaires par défaut (identiques à jouer.html) : id stable
@@ -49,6 +49,58 @@ const AdminStore = (() => {
     // Types de leçons pris en charge par quiz-engine.js
     const LESSON_TYPES = ['qcm', 'vrai_faux', 'reponse_courte', 'texte_a_trous', 'drag_and_drop'];
 
+    // Catalogue des articles par défaut de la boutique (Halos, Personnages, Titres, Thèmes, Boosters)
+    const DEFAULT_SHOP_ITEMS = [
+        // --- HALOS & AURAS ---
+        { id: 'aurore', name: 'Aurore Boréale', category: 'aura', color: '#4fd8c4', cost: 0, desc: 'Lueur polaire chatoyante offerte à tous les élèves.' },
+        { id: 'or', name: 'Comète Dorée', category: 'aura', color: '#c8a84b', cost: 60, desc: 'Rayonnement étincelant d\'or pur.' },
+        { id: 'ametiste', name: 'Nova Améthyste', category: 'aura', color: '#b685f5', cost: 90, desc: 'Éclats mystiques de cristaux violets.' },
+        { id: 'rose', name: 'Étoile Rose', category: 'aura', color: '#f58fc2', cost: 130, desc: 'Halo scintillant rose poudré.' },
+        { id: 'braise', name: 'Braise Cosmique', category: 'aura', color: '#f5714f', cost: 170, desc: 'Ferveur ardente et braises solaires.' },
+        { id: 'neon', name: 'Éclair Néon', category: 'aura', color: '#00ffcc', cost: 250, desc: 'Impulsion électrique cyberpunk hyper-lumineuse.' },
+        { id: 'magma', name: 'Flamboiement Magma', category: 'aura', color: '#ff3300', cost: 300, desc: 'Puissance volcanique incandescente.' },
+        { id: 'nebuleuse', name: 'Nébuleuse Profonde', category: 'aura', color: '#8a2be2', cost: 350, desc: 'Vortex stellaire aux teintes cosmiques.' },
+        { id: 'supernova', name: 'Supernova Suprême', category: 'aura', color: '#ffd700', cost: 450, desc: 'Explosion d\'énergie céleste aveuglante.' },
+        { id: 'dragon-aura', name: 'Flamme du Dragon', category: 'aura', color: '#00e5ff', cost: 600, desc: 'Aura mythique d\'azur et de flammes spectrales.' },
+
+        // --- PERSONNAGES & AVATARS ---
+        { id: 'robot', name: 'Robot Assistant', category: 'avatar', color: '#8fb8c9', img: 'Image/personnages/robot.webp', cost: 0, desc: 'Le fidèle compagnon d\'aventure mécanique.' },
+        { id: 'einstein', name: 'Albert Einstein', category: 'avatar', color: '#7fb3d5', img: 'Image/personnages/einstein.webp', cost: 150, desc: 'Le génie de la physique et de la relativité.' },
+        { id: 'marie-curie', name: 'Marie Curie', category: 'avatar', color: '#6bca82', img: 'Image/personnages/marie-curie.webp', cost: 150, desc: 'Pionnière de la radioactivité et double Prix Nobel.' },
+        { id: 'christophe-colomb', name: 'Christophe Colomb', category: 'avatar', color: '#c8a84b', img: 'Image/personnages/christophe-colomb.webp', cost: 200, desc: 'Grand navigateur et explorateur des océans.' },
+        { id: 'lovelace', name: 'Ada Lovelace', category: 'avatar', color: '#ff66b2', img: 'Image/personnages/lovelace.webp', cost: 250, desc: 'Première programmeuse informatique de l\'Histoire.' },
+        { id: 'pythagore', name: 'Pythagore', category: 'avatar', color: '#ffd166', img: 'Image/personnages/pythagore.webp', cost: 300, desc: 'Maître des triangles, des nombres et de l\'harmonie.' },
+        { id: 'davinci', name: 'Léonard de Vinci', category: 'avatar', color: '#a8dadc', img: 'Image/personnages/davinci.webp', cost: 350, desc: 'Polymathe universel, artiste et inventeur de génie.' },
+        { id: 'hugo', name: 'Victor Hugo', category: 'avatar', color: '#457b9d', img: 'Image/personnages/hugo.webp', cost: 350, desc: 'Géant de la littérature française et de la poésie.' },
+        { id: 'astronaute', name: 'Astronaute Céleste', category: 'avatar', color: '#f1faee', img: 'Image/personnages/astronaute.webp', cost: 400, desc: 'Pionnier du cosmos bravant le vide interstellaire.' },
+        { id: 'mage', name: 'Archimage du Savoir', category: 'avatar', color: '#9d4edd', img: 'Image/personnages/mage.webp', cost: 500, desc: 'Gardien des grimoires anciens et des secrets du monde.' },
+
+        // --- TITRES HONORIFIQUES ---
+        { id: 'titre-apprenti', name: '📜 Apprenti Curieux', category: 'title', color: '#64dfdf', cost: 50, desc: 'Titre honorifique affiché fièrement sur ton profil.' },
+        { id: 'titre-chrono', name: '⚡ Maître du Temps', category: 'title', color: '#ffbe0b', cost: 120, desc: 'Titre réservé aux as de la rapidité en mode chrono.' },
+        { id: 'titre-explorateur', name: '🌌 Explorateur Cosmique', category: 'title', color: '#7209b7', cost: 200, desc: 'Titre des grands arpenteurs des îles du savoir.' },
+        { id: 'titre-erudit', name: '👑 Érudit Suprême', category: 'title', color: '#f72585', cost: 500, desc: 'La plus haute distinction académique d\'EDUQUEST.' },
+
+        // --- THÈMES & EFFETS ---
+        { id: 'theme-cyber', name: '🌐 Thème Cyber Néon', category: 'theme', color: '#00f5d4', cost: 180, desc: 'Ambiance futuriste aux teintes cyan et magenta.' },
+        { id: 'theme-galaxie', name: '🌌 Thème Abysses Stellaires', category: 'theme', color: '#7b2cbf', cost: 220, desc: 'Fond spatial étoilé et nébuleuses profondes.' },
+        { id: 'theme-or', name: '✨ Thème Palais Doré', category: 'theme', color: '#e0a96d', cost: 300, desc: 'Cadre impérial et dorures antiques.' },
+
+        // --- BOOSTERS ---
+        { id: 'boost-xp', name: '🧪 Potion Double XP', category: 'booster', color: '#38b000', cost: 75, desc: 'Double l\'XP gagnée au prochain niveau réussi !' },
+        { id: 'boost-shield', name: '🛡️ Bouclier d\'Étoile', category: 'booster', color: '#0077b6', cost: 100, desc: 'Préserve tes 3 étoiles même en cas de première erreur.' },
+    ];
+
+    // Configuration par défaut des récompenses
+    const DEFAULT_REWARDS = {
+        xpBase: 15,              // XP par quiz réussi
+        coinsBase: 10,           // Pièces par quiz réussi
+        chronoBonusMaxXp: 15,    // Bonus max de rapidité en mode Chrono
+        dailyChestCoins: 50,     // Récompense du coffre bonus quotidien
+        firstTryBonusXp: 10,     // Bonus premier essai
+        questRewardMultiplier: 1,// Multiplicateur récompenses des quêtes
+    };
+
     /* -----------------------------------------------------------------------
        ÉTAT INTERNE
        ----------------------------------------------------------------------- */
@@ -56,16 +108,16 @@ const AdminStore = (() => {
     let cache = null;                 // Config chargée en mémoire
     let defaults = null;              // Matières par défaut (enregistrées par app.js)
 
-    /** Lecture brute de la config depuis localStorage. */
+    /** Lecture brute de la config depuis sessionStorage. */
     function _read() {
-        try { return JSON.parse(localStorage.getItem(LS_KEY) || 'null'); }
+        try { return JSON.parse(sessionStorage.getItem(LS_KEY) || 'null'); }
         catch { return null; }
     }
 
     /** Écriture de la config (avec cache). */
     function _write(d) {
         cache = d;
-        try { localStorage.setItem(LS_KEY, JSON.stringify(d)); }
+        try { sessionStorage.setItem(LS_KEY, JSON.stringify(d)); }
         catch { /* quota dépassé : on reste en mémoire pour la session */ }
     }
 
@@ -74,9 +126,18 @@ const AdminStore = (() => {
         if (cache) return cache;
         const d = _read();
         if (d && d.v === 1 && d.subjects && Array.isArray(d.subjects.customs)) {
+            if (!d.shop) d.shop = { overrides: {}, customs: [] };
+            if (!d.rewards) d.rewards = null;
             cache = d;
         } else {
-            cache = { v: 1, levels: null, subjects: { overrides: {}, customs: [] } };
+            cache = {
+                v: 1,
+                levels: null,
+                subjects: { overrides: {}, customs: [] },
+                credits: {},
+                shop: { overrides: {}, customs: [] },
+                rewards: null,
+            };
         }
         return cache;
     }
@@ -207,7 +268,13 @@ const AdminStore = (() => {
     /** Liste effective des niveaux scolaires (config admin OU valeurs par défaut). */
     function getLevels() {
         const stored = _data().levels;
-        return stored ? _clone(stored) : _clone(DEFAULT_LEVELS);
+        const list = stored ? _clone(stored) : _clone(DEFAULT_LEVELS);
+        return list.map(l => ({
+            id: l.id,
+            label: l.label || l.name || l.id,
+            name: l.label || l.name || l.id,
+            band: l.band || 'college'
+        }));
     }
 
     /** true si l'administrateur a personnalisé la liste des niveaux. */
@@ -226,7 +293,7 @@ const AdminStore = (() => {
     function levelLabel(niveauId) {
         if (!niveauId) return '';
         const found = getLevels().find(l => l.id === niveauId);
-        return found ? found.label : niveauId;
+        return found ? (found.label || found.name || found.id) : niveauId;
     }
 
     /** Valide et enregistre la liste des niveaux scolaires. */
@@ -319,7 +386,7 @@ const AdminStore = (() => {
     /**
      * Enregistre une copie des matières par défaut (RAW_DASH_SUBJECTS).
      * Appelé une seule fois par app.js au chargement. Ces matières ne sont
-     * pas dupliquées dans localStorage : seule leur surcharge est stockée.
+     * pas dupliquées dans sessionStorage : seule leur surcharge est stockée.
      */
     function registerDefaults(rawSubjects) {
         if (defaults || !Array.isArray(rawSubjects)) return;
@@ -510,10 +577,132 @@ const AdminStore = (() => {
     }
 
     /* -----------------------------------------------------------------------
+       BOUTIQUE (GESTION DES ARTICLES)
+       ----------------------------------------------------------------------- */
+
+    /** Liste effective des articles de la boutique (défauts + surcharges + customs). */
+    function getShopItems() {
+        const data = _data();
+        const overrides = (data.shop && data.shop.overrides) ? data.shop.overrides : {};
+        const customs = (data.shop && Array.isArray(data.shop.customs)) ? data.shop.customs : [];
+
+        const merged = DEFAULT_SHOP_ITEMS.map(def => {
+            const ov = overrides[def.id];
+            if (!ov) return _clone(def);
+            if (ov.deleted) return null; // Article système masqué/supprimé
+            return Object.assign(_clone(def), ov);
+        }).filter(Boolean);
+
+        customs.forEach(c => {
+            if (!c.deleted) {
+                merged.push(Object.assign(_clone(c), { _custom: true }));
+            }
+        });
+
+        return merged;
+    }
+
+    function getShopItem(id) {
+        return getShopItems().find(item => item.id === id) || null;
+    }
+
+    /** Valide et sauvegarde un article de boutique (système ou personnalisé). */
+    function saveShopItem(item) {
+        if (!item || typeof item !== 'object') return { ok: false, error: 'Article invalide.' };
+        const id = String(item.id || '').trim();
+        const name = String(item.name || '').trim();
+        const category = ['aura', 'avatar', 'title', 'theme', 'booster'].includes(item.category) ? item.category : 'aura';
+        const cost = Math.max(0, parseInt(item.cost || 0, 10) || 0);
+        const color = String(item.color || '#c8a84b').trim();
+        const img = item.img ? String(item.img).trim() : '';
+        const desc = item.desc ? String(item.desc).trim() : '';
+        const disabled = Boolean(item.disabled);
+
+        if (!name) return { ok: false, error: 'Le nom de l\'article est obligatoire.' };
+
+        const data = _data();
+        if (!data.shop) data.shop = { overrides: {}, customs: [] };
+
+        const isDefault = DEFAULT_SHOP_ITEMS.some(d => d.id === id);
+        if (isDefault) {
+            data.shop.overrides[id] = { id, name, category, cost, color, img, desc, disabled, deleted: false };
+        } else {
+            const cleanId = id || slug(name);
+            const idx = data.shop.customs.findIndex(c => c.id === cleanId);
+            const entry = { id: cleanId, name, category, cost, color, img, desc, disabled, deleted: false, _custom: true };
+            if (idx >= 0) {
+                data.shop.customs[idx] = entry;
+            } else {
+                data.shop.customs.push(entry);
+            }
+        }
+        _save();
+        return { ok: true, item: getShopItem(id) };
+    }
+
+    /** Supprime un article personnalisé ou masque un article système. */
+    function deleteShopItem(id) {
+        if (!id) return { ok: false, error: 'Identifiant manquant.' };
+        const data = _data();
+        if (!data.shop) data.shop = { overrides: {}, customs: [] };
+
+        const isDefault = DEFAULT_SHOP_ITEMS.some(d => d.id === id);
+        if (isDefault) {
+            data.shop.overrides[id] = { deleted: true };
+        } else {
+            const idx = data.shop.customs.findIndex(c => c.id === id);
+            if (idx >= 0) data.shop.customs.splice(idx, 1);
+        }
+        _save();
+        return { ok: true };
+    }
+
+    /** Réinitialise la boutique aux articles par défaut. */
+    function resetShopItems() {
+        const data = _data();
+        data.shop = { overrides: {}, customs: [] };
+        _save();
+    }
+
+    /* -----------------------------------------------------------------------
+       RÉCOMPENSES & PROGRESSION
+       ----------------------------------------------------------------------- */
+
+    /** Configuration effective des récompenses (personnalisée ou par défaut). */
+    function getRewardsConfig() {
+        const data = _data();
+        return Object.assign(_clone(DEFAULT_REWARDS), data.rewards || {});
+    }
+
+    /** Sauvegarde la configuration des récompenses. */
+    function saveRewardsConfig(values) {
+        if (!values || typeof values !== 'object') return { ok: false, error: 'Configuration invalide.' };
+        const clean = {
+            xpBase: Math.max(1, parseInt(values.xpBase, 10) || DEFAULT_REWARDS.xpBase),
+            coinsBase: Math.max(0, parseInt(values.coinsBase, 10) || DEFAULT_REWARDS.coinsBase),
+            chronoBonusMaxXp: Math.max(0, parseInt(values.chronoBonusMaxXp, 10) || DEFAULT_REWARDS.chronoBonusMaxXp),
+            dailyChestCoins: Math.max(0, parseInt(values.dailyChestCoins, 10) || DEFAULT_REWARDS.dailyChestCoins),
+            firstTryBonusXp: Math.max(0, parseInt(values.firstTryBonusXp, 10) || DEFAULT_REWARDS.firstTryBonusXp),
+            questRewardMultiplier: Math.max(0.1, parseFloat(values.questRewardMultiplier) || 1),
+        };
+        const data = _data();
+        data.rewards = clean;
+        _save();
+        return { ok: true, rewards: getRewardsConfig() };
+    }
+
+    /** Réinitialise les récompenses aux valeurs par défaut. */
+    function resetRewardsConfig() {
+        const data = _data();
+        data.rewards = null;
+        _save();
+    }
+
+    /* -----------------------------------------------------------------------
        EXPORT / IMPORT / RÉINITIALISATION
        ----------------------------------------------------------------------- */
 
-    /** Exporte la configuration administrateur (niveaux + matières + crédits). */
+    /** Exporte la configuration administrateur complète (niveaux + matières + crédits + boutique + récompenses). */
     function exportJson() {
         return JSON.stringify(_data(), null, 2);
     }
@@ -556,14 +745,20 @@ const AdminStore = (() => {
             const r = saveCredits(parsed.credits);
             if (!r.ok) return r;
         }
+        if (parsed.shop && typeof parsed.shop === 'object') {
+            _data().shop = _clone(parsed.shop);
+        }
+        if (parsed.rewards && typeof parsed.rewards === 'object') {
+            _data().rewards = _clone(parsed.rewards);
+        }
         _save();
         return { ok: true };
     }
 
-    /** Supprime toute la configuration administrateur (niveaux + matières). */
+    /** Supprime toute la configuration administrateur (niveaux + matières + boutique + récompenses). */
     function resetAll() {
         cache = null;
-        try { localStorage.removeItem(LS_KEY); } catch {}
+        try { sessionStorage.removeItem(LS_KEY); } catch {}
     }
 
     /**
@@ -574,14 +769,14 @@ const AdminStore = (() => {
     function clearLocalGameData() {
         const remove = [];
         try {
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
+            for (let i = 0; i < sessionStorage.length; i++) {
+                const key = sessionStorage.key(i);
                 if (!key) continue;
                 if (key === 'eduquest_options' || key === 'eduquest_niveau' || /^eduquest_.*_progress$/.test(key)) {
                     remove.push(key);
                 }
             }
-            remove.forEach(k => localStorage.removeItem(k));
+            remove.forEach(k => sessionStorage.removeItem(k));
         } catch {}
         return remove.length;
     }
@@ -593,6 +788,8 @@ const AdminStore = (() => {
     return {
         // Constantes utiles à l'interface
         DEFAULT_LEVELS: _clone(DEFAULT_LEVELS),
+        DEFAULT_SHOP_ITEMS: _clone(DEFAULT_SHOP_ITEMS),
+        DEFAULT_REWARDS: _clone(DEFAULT_REWARDS),
         LESSON_TYPES: LESSON_TYPES.slice(),
 
         // Utilitaires
@@ -604,6 +801,7 @@ const AdminStore = (() => {
 
         // Niveaux scolaires
         getLevels,
+        getNiveauxScolaires: getLevels, // Alias pour app.js / dashboard
         levelsModified,
         levelBand,
         levelLabel,
@@ -633,6 +831,16 @@ const AdminStore = (() => {
         deleteCustomSubject,
         resetSubject,
 
+        // Boutique & Récompenses
+        getShopItems,
+        getShopItem,
+        saveShopItem,
+        deleteShopItem,
+        resetShopItems,
+        getRewardsConfig,
+        saveRewardsConfig,
+        resetRewardsConfig,
+
         // Export / import / réinitialisation
         exportJson,
         importJson,
@@ -642,8 +850,6 @@ const AdminStore = (() => {
 })();
 
 // Rendu accessible aux autres scripts (app.js, admin.js…) :
-// `const` de portée globale est déjà visible, on l'attache aussi à window
-// pour les cas où le chargement se fait via des modules ou des bundles.
 if (typeof window !== 'undefined') {
     window.AdminStore = AdminStore;
 }
