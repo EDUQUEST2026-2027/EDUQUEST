@@ -59,7 +59,6 @@ Puis ouvrez l'URL affichée (ex. `http://localhost:8080`).
 | `cookies.js` | Bandeau de consentement RGPD (mémorisation du choix 12 mois) |
 | `legal.html` | Mentions légales, politique de confidentialité et gestion des cookies |
 | `schema.sql` | Schéma MySQL pour le déploiement avec serveur backend optionnel |
-| `MAKE_BLUEPRINT.md` | Guide pour connecter un agent IA via Make |
 
 ---
 
@@ -79,9 +78,8 @@ Accessible depuis le lien « 🔐 Administration » en bas de page ou directemen
 
 Par défaut, les questions proviennent de la banque intégrée déterministe (`question-bank.js`).
 
-Pour connecter un agent IA hébergé sur [Make](https://make.com) :
-1. Suivez le guide détaillé dans **`MAKE_BLUEPRINT.md`**.
-2. Renseignez vos endpoints webhooks dans `ai-provider.js` :
+Pour connecter un agent IA génératif (ex. via Make ou webhook direct) :
+1. Renseignez vos endpoints webhooks dans `ai-provider.js` :
 
 ```javascript
 const GENERATE_WEBHOOK_URL = 'https://hook.eu2.make.com/xxxxxxxx';
