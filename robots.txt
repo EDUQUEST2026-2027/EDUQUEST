@@ -1,4 +1,4 @@
-# robots.txt — EDUQUEST (v1.24.0)
+# robots.txt — EDUQUEST (v1.25.0)
 # Règles normatives d'exploration. Manifeste complet pour agents IA : voir llms.txt.
 
 User-agent: *

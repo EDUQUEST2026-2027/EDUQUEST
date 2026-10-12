@@ -78,7 +78,7 @@ setupGlobalErrorHandler();
    ========================================================================== */
 
 /** Version de l'application — affichée dans le footer de toutes les pages. */
-const APP_VERSION = '1.21.0';
+const APP_VERSION = '1.25.0';
 
 /**
  * Crédits du créateur (v1.20) — affichés dans le footer de toutes les pages.

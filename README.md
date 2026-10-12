@@ -1,6 +1,6 @@
 # EDUQUEST — Révision gamifiée (6e → Terminale)
 
-Application web française d'apprentissage et de révision sous forme d'aventure spatiale et ludique : l'élève choisit sa classe, sa matière, explore les îles du savoir, répond à des quiz interactifs variés (5 types de questions), accomplit des quêtes journalières, gagne de l'XP, des pièces et des succès, et personnalise son avatar dans une boutique riche en récompenses.
+Application web française d'apprentissage et de révision sous forme d'aventure spatiale et ludique : l'élève choisit sa classe, sa matière, explore les îles du savoir, répond à des quiz interactifs variés (6 types de questions : QCM avec choix mélangés, Vrai/Faux, Réponse courte, Texte à trous avec banque de mots, Texte à choix avec menu déroulant, Association), accomplit des quêtes journalières, gagne de l'XP, des pièces et des succès, et personnalise son avatar dans une boutique riche en récompenses.
 
 100 % front-end (HTML5 / CSS3 / JavaScript Vanilla), sans dépendance externe obligatoire, hautement performante et fonctionnelle 100 % hors-ligne en mode PWA/local.
 
