@@ -550,3 +550,66 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 @keyframes fadeOut {
     to { opacity: 0; transform: translateX(400px); }
 }
+
+/* --------------------------------------------------------------------------
+   FIABILISATION DES HITBOXES DE BOUTONS
+   Empêche les pseudo-éléments décoratifs d'intercepter les clics
+   -------------------------------------------------------------------------- */
+button::before,
+button::after,
+.option-button::before,
+.option-button::after,
+.menu-button::before,
+.menu-button::after,
+.dash-option-btn::before,
+.dash-option-btn::after,
+.btn-action::before,
+.btn-action::after,
+.dash-skin-btn::before,
+.dash-skin-btn::after {
+    pointer-events: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   THÈMES VISUELS DE LA BOUTIQUE (data-theme)
+   -------------------------------------------------------------------------- */
+[data-theme="theme-cyber"] {
+    --c-night: #050814;
+    --c-deep: #081126;
+    --c-ocean: #002b3d;
+    --c-blue: #00b4d8;
+    --c-gold: #00f5d4;
+    --dash-skin: #00f5d4;
+}
+[data-theme="theme-cyber"] .background {
+    background: radial-gradient(circle at 50% 20%, rgba(0, 245, 212, 0.15), transparent 60%),
+                linear-gradient(135deg, #050814 0%, #081126 50%, #0d001a 100%) !important;
+}
+
+[data-theme="theme-galaxie"] {
+    --c-night: #08031a;
+    --c-deep: #13092e;
+    --c-ocean: #2d114d;
+    --c-blue: #7209b7;
+    --c-gold: #b5179e;
+    --dash-skin: #7209b7;
+}
+[data-theme="theme-galaxie"] .background {
+    background: radial-gradient(circle at 60% 30%, rgba(114, 9, 183, 0.25), transparent 65%),
+                radial-gradient(circle at 20% 80%, rgba(181, 23, 158, 0.2), transparent 60%),
+                linear-gradient(135deg, #08031a 0%, #13092e 50%, #03000a 100%) !important;
+}
+
+[data-theme="theme-or"] {
+    --c-night: #140e05;
+    --c-deep: #241909;
+    --c-ocean: #402c0d;
+    --c-blue: #8a621e;
+    --c-gold: #f3c648;
+    --dash-skin: #f3c648;
+}
+[data-theme="theme-or"] .background {
+    background: radial-gradient(circle at 50% 20%, rgba(243, 198, 72, 0.25), transparent 60%),
+                linear-gradient(135deg, #140e05 0%, #241909 50%, #1a1005 100%) !important;
+}
+

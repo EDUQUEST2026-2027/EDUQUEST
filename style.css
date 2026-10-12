@@ -1155,9 +1155,10 @@
     z-index: 8;
     display: grid;
     place-items: center;
-    width: clamp(42px, 5vw, 58px);
-    height: clamp(42px, 5vw, 58px);
+    width: clamp(44px, 5.5vw, 60px);
+    height: clamp(44px, 5.5vw, 60px);
     cursor: pointer;
+    touch-action: manipulation;
     color: #5f310e;
     border: 4px solid #f8e190;
     border-radius: 50%;
@@ -1171,6 +1172,19 @@
         0 14px 16px rgba(44, 80, 27, 0.24);
     transform: translate(-50%, -50%); /* Centré sur les coordonnées */
     transition: transform 0.18s ease, filter 0.18s ease;
+}
+
+/* Hitbox étendue : zone invisible de 14px pour un confort de clic maximal sans scintillement */
+.level-dot::after {
+    content: '';
+    position: absolute;
+    inset: -14px;
+    border-radius: 50%;
+    pointer-events: auto;
+}
+
+.level-dot > * {
+    pointer-events: none;
 }
 
 .level-number {
@@ -2446,12 +2460,28 @@
 .dash-dd-submit:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* --- Badges (onglet Succès) --- */
-.dash-badge-card { position: relative; }
-.dash-badge-card.locked { opacity: 0.45; filter: grayscale(0.6); }
+.dash-badge-card {
+    position: relative;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.dash-badge-card.is-unlocked {
+    border-color: rgba(200, 168, 75, 0.7);
+    background: radial-gradient(circle at top, rgba(200, 168, 75, 0.15), rgba(15, 23, 42, 0.75));
+    box-shadow: 0 4px 18px rgba(200, 168, 75, 0.2);
+}
+.dash-badge-card.is-unlocked:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 22px rgba(200, 168, 75, 0.35);
+}
+.dash-badge-card.locked {
+    opacity: 0.5;
+    filter: grayscale(0.6);
+    background: rgba(15, 23, 42, 0.5);
+}
 .dash-badge-icon { font-size: 34px; margin-bottom: 10px; }
 .dash-badge-desc {
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.65);
     line-height: 1.4;
     margin-top: 4px;
 }
@@ -2664,4 +2694,142 @@ body.eco-mode-active .stars, body.eco-mode-active .clouds { display: none !impor
     transform: translateY(-1px);
 }
 .dash-grade-select option { background: #070b1a; color: white; }
+
+/* =============================================================================
+   SYSTÈME DE STREAK, COMBOS ET MULTIPLICATEUR DE SCORE
+   ============================================================================= */
+
+.dash-streak-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(255, 71, 87, 0.12);
+    border: 1px solid rgba(255, 71, 87, 0.3);
+    padding: 6px 12px;
+    border-radius: 99px;
+    font-family: var(--font-pixel-ui);
+    font-size: 11px;
+    font-weight: 700;
+    color: #ff6b81;
+    white-space: nowrap;
+    text-shadow: 0 0 8px rgba(255, 71, 87, 0.4);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dash-streak-pill.is-hot {
+    background: linear-gradient(135deg, rgba(255, 71, 87, 0.25), rgba(255, 165, 2, 0.25));
+    border-color: rgba(255, 165, 2, 0.6);
+    color: #ffa502;
+    box-shadow: 0 0 14px rgba(255, 165, 2, 0.35);
+    animation: streakGlowPulse 2s infinite ease-in-out;
+}
+
+.dash-streak-flame {
+    font-size: 14px;
+    display: inline-block;
+    filter: drop-shadow(0 0 4px #ff4757);
+    animation: flameWiggle 1.2s infinite alternate ease-in-out;
+}
+
+.dash-streak-count {
+    font-size: 13px;
+    font-weight: 800;
+    color: #fff;
+}
+
+.dash-streak-label {
+    font-size: 9px;
+    opacity: 0.85;
+    letter-spacing: 0.5px;
+}
+
+.dash-combo-tag {
+    background: linear-gradient(90deg, #ff4757, #ffa502);
+    color: #fff;
+    padding: 2px 7px;
+    border-radius: 99px;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    box-shadow: 0 0 10px rgba(255, 165, 2, 0.6);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    animation: comboTagPop 0.4s ease-out;
+}
+
+/* Barre de Combo dans la modale de quiz */
+.dash-quiz-combo-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+}
+
+.dash-quiz-combo-bar.is-lit {
+    background: linear-gradient(90deg, rgba(255, 71, 87, 0.15), rgba(255, 165, 2, 0.15));
+    border-color: rgba(255, 165, 2, 0.5);
+    box-shadow: 0 0 14px rgba(255, 165, 2, 0.25);
+}
+
+.dash-combo-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dash-combo-txt {
+    font-family: var(--font-pixel-ui);
+    font-size: 11px;
+    font-weight: 700;
+    color: #ffbe0b;
+}
+
+.dash-combo-txt b {
+    font-size: 13px;
+    color: #fff;
+}
+
+.dash-combo-subtitle {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+}
+
+.dash-combo-mult-badge {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 165, 2, 0.3);
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-family: var(--font-pixel-ui);
+    font-size: 10px;
+    color: #ffa502;
+}
+
+.dash-combo-mult-badge b {
+    color: #fff;
+    font-size: 12px;
+}
+
+/* Animations */
+@keyframes flameWiggle {
+    0% { transform: rotate(-5deg) scale(0.95); }
+    100% { transform: rotate(5deg) scale(1.1); }
+}
+
+@keyframes streakGlowPulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(255, 165, 2, 0.25); }
+    50% { box-shadow: 0 0 20px rgba(255, 71, 87, 0.5); }
+}
+
+@keyframes comboTagPop {
+    0% { transform: scale(0.7); opacity: 0; }
+    70% { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); }
+}
 

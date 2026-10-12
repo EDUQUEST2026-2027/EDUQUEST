@@ -23,7 +23,18 @@ Puis ouvrez l'URL affichée (ex. `http://localhost:8080`).
 
 ## ✨ Fonctionnalités clés
 
-- **🗺️ Carte des îles & progression dynamique :** Chaque matière propose un parcours d'îles avec niveaux interactifs (de 1 à 100), étoiles de maîtrise et déplacement animé du personnage.
+- **🔥 Système de Séries (Streaks) & Combos dynamiques :**
+  - **Séries de victoires (`streak`) :** Suivi des victoires consécutives avec badge animé dans le HUD du tableau de bord et l'en-tête de carte.
+  - **Combos en chaîne (`combo`) :** Enchaînement de bonnes réponses consécutives avec 6 paliers visuels (Standard, En rythme, En feu, Surtension, Inarrêtable, Légendaire).
+  - **Multiplicateur de score & XP :** Bonus progressif de **x1.0** à **x2.5** appliqué au score total et aux points d'expérience.
+- **🧪 Potions & Boosters consommables (Boutique) :**
+  - **Potion Double XP :** Multiplie par 2 l'XP gagnée au prochain niveau réussi.
+  - **Bouclier d'Étoile :** Préserve le score 3 étoiles ainsi que la série de combos en cas de première erreur.
+  - Réachats illimités et historique d'inventaire complet par utilisateur.
+- **🏛️ Matières enrichies (11 matières) :**
+  - Ajout de la **Philosophie** avec îlot dédié (`philo.svg`) et questions de réflexion pour le lycée.
+  - Scission et correction définitive de la **Chimie** avec ses propres leçons et visuel.
+- **🗺️ Carte des îles & progression dynamique :** Chaque matière propose un parcours d'îles avec niveaux interactifs (de 1 à 100), hitbox étendue pour un confort tactile optimal, étoiles de maîtrise et déplacement animé du personnage.
 - **🎓 Sélecteur de niveau d'étude intégré :** Choix direct et persistant de la classe (6ème, 5ème, 4ème, 3ème, 2nde, 1ère, Terminale ou classes personnalisées) dans l'en-tête du tableau de bord (`dashboard.html`).
 - **🎯 5 types de questions interactives :** QCM classique, Vrai/Faux, Réponse courte, Texte à trous et Association de paires (propulsé par `quiz-engine.js`).
 - **⏱️ Mode Défi Chronométré :** Compte à rebours dynamique réglable dans les options de jeu avec multiplicateur d'XP bonus récompensant la vivacité d'esprit.
@@ -36,9 +47,9 @@ Puis ouvrez l'URL affichée (ex. `http://localhost:8080`).
   - **Auras & Halos lumineux :** Aurore Boréale, Comète Dorée, Nova Améthyste, Étoile Rose, Braise Cosmique, Éclair Néon.
   - **Personnages & Avatars historiques :** Ada Lovelace, Pythagore, Léonard de Vinci, Victor Hugo, Astronaute Cosmique, Archimage des Étoiles.
   - **Titres honorifiques exclusifs :** Apprenti des Étoiles, Explorateur Céleste, Maître du Savoir, Érudit Cosmique, Titan de la Connaissance.
-  - **Thèmes cosmiques & Boosters de progression.**
-- **🏆 Succès & Badges déblocables :** Système de trophées récompensant chaque grand palier (premier quiz, sans faute, score parfait, maître des îles...).
-- **🎉 Célébrations & Confettis natifs :** Moteur de confettis Canvas autonome (`Celebrate`), 100 % hors-ligne sans CDN, célébrant les montées de niveau, la réussite des quêtes et l'ouverture du coffre.
+  - **Thèmes cosmiques & Potions magiques.**
+- **🏆 Succès & Badges déblocables :** Système de trophées récompensant chaque grand palier (premier quiz, sans faute, score parfait, séries de victoires, maître du combo, maître des îles...).
+- **🎉 Célébrations & Confettis natifs :** Moteur de confettis Canvas autonome (`Celebrate`), 100 % hors-ligne sans CDN, célébrant les 3 étoiles, les montées de niveau, la réussite des quêtes et l'ouverture du coffre.
 - **🤖 Mode IA optionnel :** Génération et correction dynamique des questions via scénarios Make (`ai-provider.js`), avec repli local transparent.
 - **🔒 Respect de la vie privée & RGPD :** Zéro publicité, zéro traceur tiers intrusif, bandeau de cookies conforme CNIL (`cookies.js`) et mentions légales complètes (`legal.html`).
 
@@ -50,19 +61,19 @@ Puis ouvrez l'URL affichée (ex. `http://localhost:8080`).
 |---|---|
 | `index.html` | Page d'accueil : menu principal, modale de connexion/inscription, options de jeu (audio, mode chrono, éco-énergie, plein écran) |
 | `dashboard.html` | Tableau de bord élève : sélecteur de classe, missions quotidiennes, sélection des matières, boutique complète, succès |
-| `map.html` | Carte interactive d'une matière : parcours des îles, niveaux jouables, modale de quiz avec timer chrono optionnel |
+| `map.html` | Carte interactive d'une matière : parcours des îles, niveaux jouables, modale de quiz avec combo et timer chrono |
 | `admin.html` | **Panneau d'administration unifié** : interface d'administration avec navigation par onglets |
-| `admin.js` | Moteur du panneau d'administration : CRUD complet membres, niveaux, matières, boutique, récompenses et crédits |
+| `admin.js` | Moteur du panneau d'administration : CRUD complet membres, niveaux, matières, boutique, succès, récompenses et crédits |
 | `admin-store.js` | Couche de persistance et configuration centrale du panneau d'administration |
 | `admin.css` | Design system moderne pour l'administration (dark glassmorphism, responsive, feedback visuel) |
-| `app.js` | Logique principale de jeu : contrôleur de pages, quêtes quotidiennes (`DailyQuests`), confettis (`Celebrate`), HUD, boutique |
+| `app.js` | Logique principale de jeu : contrôleur de pages, quêtes quotidiennes (`DailyQuests`), confettis (`Celebrate`), HUD, boutique, combos |
 | `quests.css` | Styles dédiés au tableau de quêtes journalières (cartes de verre, anneaux SVG) et au canvas plein écran des confettis |
-| `db.js` | Couche d'accès aux données : persistance locale (`localStorage`) ou synchronisation API backend MySQL |
+| `db.js` | Couche d'accès aux données : persistance locale isolée par utilisateur (`localStorage`) ou synchronisation API backend MySQL |
 | `quiz-engine.js` | Moteur de rendu et de validation des 5 types de questions |
 | `question-bank.js` | Banque de questions et générateur déterministe (PRNG semé) pour les niveaux 6 à 100 par matière |
 | `ai-provider.js` | Adaptateur IA : communication avec Make/webhooks pour génération/correction de questions à la volée |
 | `global.css` / `style.css` | Tokens graphiques, univers spatial animé, cartes, fenêtres modales et responsive mobile |
-| `service-worker.js` | PWA et mise en cache hors-ligne des ressources de l'application (v1.23.0) |
+| `service-worker.js` | PWA et mise en cache hors-ligne des ressources de l'application (v1.24.0) |
 | `cookies.js` | Bandeau de consentement RGPD (mémorisation du choix 12 mois) |
 | `legal.html` | Mentions légales, politique de confidentialité et gestion des cookies |
 | `llms.txt` | Fiche documentaire pour agents IA et grands modèles de langage |
@@ -75,10 +86,11 @@ Puis ouvrez l'URL affichée (ex. `http://localhost:8080`).
 
 Accessible depuis le lien « 🔐 Administration » en bas de page ou directement via `admin.html` :
 
-- **👥 Membres :** Création, modification de mot de passe, attribution des rôles (`eleve` / `admin`) ou suppression de comptes locaux.
+- **👥 Membres :** Création, modification de mot de passe, attribution des rôles (`eleve` / `admin`) ou suppression de comptes locaux avec sessions isolées.
 - **🎓 Niveaux scolaires :** Ajout, modification, réorganisation et suppression des niveaux/classes (6ème, 5ème, 4ème, 3ème, 2nde, 1ère, Terminale, classes personnalisées).
 - **📚 Matières & Leçons :** Personnalisation des intitulés, des icônes et création de questions personnalisées (parmi les 5 types disponibles).
 - **🛍️ Boutique :** Création et gestion complète des articles (halos, personnages, titres, thèmes, boosters), prix en pièces, visuels et descriptions.
+- **🏆 Succès & Badges :** Édition, activation et attribution/retrait manuel des badges et succès élèves.
 - **🎁 Récompenses :** Configuration des barèmes de gains (XP et pièces pour leçons réussies, 3 étoiles, quêtes quotidiennes, coffre bonus, premier sans faute, multiplicateur chrono).
 - **✨ Crédits :** Personnalisation des mentions de l'éditeur, coordonnées et crédits affichés en pied de page et sur `legal.html`.
 - **💾 Sauvegarde & Export :** Export et import complet de la configuration au format JSON avec validation d'intégrité.

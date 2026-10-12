@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
+  <!-- ============================================================
+       ÎLOT « PHILOSOPHIE » — EDUQUEST
+       Temple grec classique, chouette d'Athéna, rouleau de papyrus,
+       olivier / laurier, torche de la vérité et bannière en bois.
+       ============================================================ -->
+  <defs>
+    <linearGradient id="phiRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8a5632"/>
+      <stop offset="0.5" stop-color="#5b3520"/>
+      <stop offset="1" stop-color="#3a2113"/>
+    </linearGradient>
+    <linearGradient id="phiRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a2c19"/>
+      <stop offset="1" stop-color="#241407"/>
+    </linearGradient>
+    <linearGradient id="phiGrass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#88d878"/>
+      <stop offset="1" stop-color="#46882f"/>
+    </linearGradient>
+    <linearGradient id="phiMarble" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.6" stop-color="#e8eaf0"/>
+      <stop offset="1" stop-color="#c9cbd4"/>
+    </linearGradient>
+    <linearGradient id="phiGold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffeaa7"/>
+      <stop offset="0.5" stop-color="#fdcb6e"/>
+      <stop offset="1" stop-color="#e17055"/>
+    </linearGradient>
+    <linearGradient id="phiBanner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6b4526"/>
+      <stop offset="1" stop-color="#43281a"/>
+    </linearGradient>
+    <radialGradient id="phiHalo" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#ffd32a" stop-opacity="0.35"/>
+      <stop offset="0.7" stop-color="#ffd32a" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="#ffd32a" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="phiShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- Halo d'illumination -->
+  <circle cx="210" cy="180" r="140" fill="url(#phiHalo)" />
+
+  <!-- Base flottante (rocher) -->
+  <g filter="url(#phiShadow)">
+    <path d="M 75 250 Q 210 275 345 250 Q 370 290 320 340 Q 210 395 100 340 Q 50 290 75 250 Z" fill="url(#phiRockDeep)"/>
+    <path d="M 85 245 Q 210 268 335 245 Q 360 275 320 310 Q 210 365 100 310 Q 60 275 85 245 Z" fill="url(#phiRockTop)"/>
+    <!-- Plateau verdoyant -->
+    <ellipse cx="210" cy="245" rx="140" ry="42" fill="url(#phiGrass)"/>
+    <ellipse cx="210" cy="242" rx="130" ry="34" fill="#a0e488" fill-opacity="0.4"/>
+  </g>
+
+  <!-- Arbres et oliviers en arrière-plan -->
+  <g>
+    <!-- Tronc gauche -->
+    <path d="M 105 240 Q 108 200 115 180" stroke="#5a381e" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="115" cy="170" r="22" fill="#588157"/>
+    <circle cx="125" cy="165" r="18" fill="#a3b18a"/>
+    <!-- Tronc droit -->
+    <path d="M 310 240 Q 306 205 298 185" stroke="#5a381e" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="295" cy="175" r="20" fill="#588157"/>
+    <circle cx="285" cy="170" r="16" fill="#a3b18a"/>
+  </g>
+
+  <!-- Temple classique grec de la Sagesse -->
+  <g filter="url(#phiShadow)">
+    <!-- Marches du stylobate -->
+    <rect x="135" y="222" width="150" height="8" rx="2" fill="url(#phiMarble)"/>
+    <rect x="140" y="215" width="140" height="7" rx="2" fill="url(#phiMarble)"/>
+    <rect x="145" y="209" width="130" height="6" rx="2" fill="url(#phiMarble)"/>
+
+    <!-- Colonnes ioniques / doriques -->
+    <rect x="155" y="145" width="12" height="64" rx="2" fill="url(#phiMarble)"/>
+    <rect x="185" y="145" width="12" height="64" rx="2" fill="url(#phiMarble)"/>
+    <rect x="223" y="145" width="12" height="64" rx="2" fill="url(#phiMarble)"/>
+    <rect x="253" y="145" width="12" height="64" rx="2" fill="url(#phiMarble)"/>
+
+    <!-- Chapiteaux -->
+    <ellipse cx="161" cy="144" rx="9" ry="3" fill="#ffffff"/>
+    <ellipse cx="191" cy="144" rx="9" ry="3" fill="#ffffff"/>
+    <ellipse cx="229" cy="144" rx="9" ry="3" fill="#ffffff"/>
+    <ellipse cx="259" cy="144" rx="9" ry="3" fill="#ffffff"/>
+
+    <!-- Entablement / Architrave -->
+    <rect x="145" y="136" width="130" height="8" rx="2" fill="url(#phiMarble)"/>
+
+    <!-- Fronton triangulaire -->
+    <polygon points="140,136 210,95 280,136" fill="url(#phiMarble)"/>
+    <!-- Décoration dorée du tympan (Chouette ou Soleil de la Vérité) -->
+    <circle cx="210" cy="122" r="7" fill="url(#phiGold)"/>
+    <polygon points="210,105 212,118 225,120 213,124 210,135 207,124 195,120 208,118" fill="url(#phiGold)" opacity="0.8"/>
+  </g>
+
+  <!-- Papyrus & Grimoire de Pensée au premier plan -->
+  <g filter="url(#phiShadow)">
+    <!-- Rouleau de parchemin ouvert -->
+    <path d="M 120 248 Q 140 242 160 250 Q 155 265 135 268 Q 115 264 120 248 Z" fill="#fdf0cd" stroke="#cbb279" stroke-width="1.5"/>
+    <!-- Lignes d'écriture grecque -->
+    <line x1="126" y1="252" x2="152" y2="250" stroke="#8b7355" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="127" y1="257" x2="148" y2="255" stroke="#8b7355" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="129" y1="262" x2="142" y2="261" stroke="#8b7355" stroke-width="1.5" stroke-linecap="round"/>
+
+    <!-- Chouette de Minerve perchée -->
+    <g transform="translate(265, 230)">
+      <!-- Corps -->
+      <ellipse cx="14" cy="18" rx="10" ry="14" fill="#6d597a"/>
+      <!-- Ailes -->
+      <path d="M 4 14 Q 2 24 10 28" fill="#4a3e56"/>
+      <path d="M 24 14 Q 26 24 18 28" fill="#4a3e56"/>
+      <!-- Tête -->
+      <circle cx="14" cy="8" r="9" fill="#7d678d"/>
+      <polygon points="9,2 7,8 11,6" fill="#4a3e56"/>
+      <polygon points="19,2 17,8 21,6" fill="#4a3e56"/>
+      <!-- Yeux dorés sages -->
+      <circle cx="10" cy="8" r="3.5" fill="#ffeaa7"/>
+      <circle cx="10" cy="8" r="1.5" fill="#2d3436"/>
+      <circle cx="18" cy="8" r="3.5" fill="#ffeaa7"/>
+      <circle cx="18" cy="8" r="1.5" fill="#2d3436"/>
+      <!-- Bec -->
+      <polygon points="14,10 12,13 16,13" fill="#e17055"/>
+    </g>
+  </g>
+
+  <!-- Torche de la Connaissance et flamme -->
+  <g transform="translate(202, 175)" filter="url(#phiShadow)">
+    <rect x="6" y="24" width="4" height="20" fill="#784e2d" rx="1"/>
+    <path d="M 4 24 L 12 24 L 10 18 L 6 18 Z" fill="#bfa054"/>
+    <!-- Flamme dorée vibrante -->
+    <path d="M 8 18 Q 4 10 8 4 Q 13 11 8 18 Z" fill="url(#phiGold)"/>
+    <circle cx="8" cy="12" r="3" fill="#fff9d2"/>
+  </g>
+
+  <!-- Bannière en bois du titre -->
+  <g filter="url(#phiShadow)">
+    <path d="M 110 320 L 310 320 L 320 338 L 310 356 L 110 356 L 100 338 Z" fill="url(#phiBanner)" stroke="#9c6644" stroke-width="2"/>
+    <rect x="116" y="325" width="188" height="26" rx="3" fill="#4a2c19"/>
+    <!-- Clous d'or -->
+    <circle cx="116" cy="338" r="2.5" fill="#f5c518"/>
+    <circle cx="304" cy="338" r="2.5" fill="#f5c518"/>
+    <!-- Texte PHILOSOPHIE -->
+    <text x="210" y="343" font-family="'Cinzel', 'Trajan Pro', 'Georgia', serif" font-size="14" font-weight="900" fill="#fbe8a6" text-anchor="middle" letter-spacing="2">PHILOSOPHIE</text>
+  </g>
+</svg>

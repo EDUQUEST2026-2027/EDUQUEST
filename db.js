@@ -62,12 +62,12 @@ const DB = (() => {
        pour éviter les fautes de frappe et faciliter les modifications futures.
     ----------------------------------------------------------------------- */
     const KEYS = {
-        OPTIONS:       'eduquest_options',        // Objet JSON de toutes les options du jeu
-        NIVEAU:        'eduquest_niveau',          // Niveau scolaire sélectionné (ex: "6eme")
-        TRACK:         'eduquest_current_track',   // Index de la piste audio en cours
-        MUSIC_TIME:    'eduquest_music_time',      // Position (secondes) dans la piste en cours
-        SESSION:       'eduquest_session',         // Session utilisateur connecté (token + username)
-        QUESTS:        'eduquest_daily_quests',    // Quêtes journalières
+        OPTIONS: 'eduquest_options',        // Objet JSON de toutes les options du jeu
+        NIVEAU: 'eduquest_niveau',          // Niveau scolaire sélectionné (ex: "6eme")
+        TRACK: 'eduquest_current_track',   // Index de la piste audio en cours
+        MUSIC_TIME: 'eduquest_music_time',      // Position (secondes) dans la piste en cours
+        SESSION: 'eduquest_session',         // Session utilisateur connecté (token + username)
+        QUESTS: 'eduquest_daily_quests',    // Quêtes journalières
     };
 
     /* -----------------------------------------------------------------------
@@ -177,16 +177,34 @@ const DB = (() => {
      *   'vsync'         → 'false'
      *   'volumeEffets'  → '80'
      */
+    function _userScope() {
+        const session = _getSession();
+        if (session && session.email) {
+            return 'u_' + String(session.email).trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+        }
+        return 'guest';
+    }
+
+    function _optionsKey() {
+        return 'eduquest_opts_' + _userScope();
+    }
+
     function getOption(name) {
         if (USE_API) {
-            // En mode API, on lit depuis le cache localStorage (mis à jour par syncOptionsFromServer)
-            // Remarque : pour une valeur fraîche du serveur, utiliser getOptionAsync()
             const cache = _getOptionsCache();
-            return cache.hasOwnProperty(name) ? cache[name] : null;
+            return (cache && cache.hasOwnProperty(name)) ? cache[name] : null;
         }
-        // En mode local, on lit directement le localStorage
         try {
-            const options = JSON.parse(localStorage.getItem(KEYS.OPTIONS) || '{}');
+            const key = _optionsKey();
+            let raw = localStorage.getItem(key);
+            if (!raw) {
+                const legacy = localStorage.getItem(KEYS.OPTIONS);
+                if (legacy) {
+                    try { localStorage.setItem(key, legacy); } catch { }
+                    raw = legacy;
+                }
+            }
+            const options = JSON.parse(raw || '{}');
             return options.hasOwnProperty(name) ? options[name] : null;
         } catch { return null; }
     }
@@ -194,29 +212,22 @@ const DB = (() => {
     /**
      * Sauvegarde une option (version synchrone).
      * En mode API : mise à jour immédiate du cache local, puis sync async vers le serveur.
-     * En mode local : écriture directe dans le localStorage.
-     *
-     * @param {string} name  - Nom de l'option
-     * @param {string} value - Valeur à enregistrer (toujours convertir en string)
-     *
-     * Exemple d'appel : DB.saveOption('volumeMusique', '60');
+     * En mode local : écriture directe dans le localStorage isolé par utilisateur.
      */
     function saveOption(name, value) {
         if (USE_API) {
-            // 1. Mise à jour locale immédiate pour que l'UI reste réactive
             const cache = _getOptionsCache();
             cache[name] = value;
             _setOptionsCache(cache);
-            // 2. Synchronisation vers le serveur en arrière-plan (sans attendre)
-            saveOptionAsync(name, value).catch(() => {});
+            saveOptionAsync(name, value).catch(() => { });
             return;
         }
-        // Mode local : écriture simple dans le localStorage
         try {
-            const options = JSON.parse(localStorage.getItem(KEYS.OPTIONS) || '{}');
+            const key = _optionsKey();
+            const options = JSON.parse(localStorage.getItem(key) || '{}');
             options[name] = value;
-            localStorage.setItem(KEYS.OPTIONS, JSON.stringify(options));
-        } catch {}
+            localStorage.setItem(key, JSON.stringify(options));
+        } catch { }
     }
 
     /**
@@ -282,7 +293,7 @@ const DB = (() => {
 
     /** Écrit l'objet options dans le localStorage (cache en mode API) */
     function _setOptionsCache(cache) {
-        try { localStorage.setItem(KEYS.OPTIONS, JSON.stringify(cache)); } catch {}
+        try { localStorage.setItem(KEYS.OPTIONS, JSON.stringify(cache)); } catch { }
     }
 
     /* -----------------------------------------------------------------------
@@ -323,64 +334,67 @@ const DB = (() => {
      * @returns {string} Clé localStorage (ex: 'eduquest_mathématiques_6eme_progress')
      */
     function _progressKey(matiere, niveau) {
-        return 'eduquest_' + matiere.toLowerCase() + '_' + niveau + '_progress';
+        const mat = String(matiere || '').toLowerCase().trim();
+        const niv = String(niveau || '6eme').toLowerCase().trim();
+        return 'eduquest_prog_' + _userScope() + '_' + mat + '_' + niv;
     }
 
     /**
      * Charge la progression d'un joueur pour une matière et un niveau scolaire.
-     * En mode API : tente de charger depuis le serveur, sinon utilise le cache local.
-     * En mode local : lit directement le localStorage.
-     *
-     * @param {string} matiere - Nom de la matière (ex: 'Mathématiques')
-     * @param {string} niveau  - Niveau scolaire (ex: '6eme')
-     * @returns {Promise<object|null>} Objet progression, ou null si aucune donnée (→ utiliser getDefaultProgress())
-     *
-     * Exemple d'appel dans app.js :
-     *   const data = await DB.loadProgress('Mathématiques', '6eme');
-     *   const progress = data || getDefaultProgress();
      */
     async function loadProgress(matiere, niveau) {
         if (USE_API) {
-            // Tentative de chargement depuis le serveur
             const res = await apiRequest('GET',
                 '/progression/' + encodeURIComponent(matiere) + '/' + encodeURIComponent(niveau)
             );
             if (res.ok && res.data) return res.data;
-            // En cas d'échec réseau, on lit le cache local (localStorage)
         }
-        // Mode local (ou fallback) : lecture du localStorage
         try {
-            const saved = localStorage.getItem(_progressKey(matiere, niveau));
+            const key = _progressKey(matiere, niveau);
+            let saved = localStorage.getItem(key);
+            if (!saved) {
+                // Migration / repli depuis l'ancienne clé globale si elle existe
+                const legacyKey = 'eduquest_' + String(matiere || '').toLowerCase() + '_' + niveau + '_progress';
+                saved = localStorage.getItem(legacyKey);
+                if (saved) {
+                    try { localStorage.setItem(key, saved); } catch { }
+                }
+            }
             if (saved) return JSON.parse(saved);
-        } catch {}
-        return null; // Aucune progression trouvée → l'appelant utilisera getDefaultProgress()
+        } catch { }
+        return null;
     }
 
     /**
      * Sauvegarde la progression d'un joueur.
-     * La progression est TOUJOURS sauvegardée localement en premier (immédiat),
-     * puis synchronisée vers le serveur si l'API est activée (asynchrone).
-     *
-     * @param {string} matiere - Nom de la matière
-     * @param {string} niveau  - Niveau scolaire
-     * @param {object} data    - Objet progression complet à sauvegarder
-     * @returns {Promise<{ok: boolean}>}
-     *
-     * Exemple d'appel dans app.js (après avoir modifié la progression) :
-     *   progress.levels[currentModalLevel].stars = starsEarned;
-     *   DB.saveProgress('Mathématiques', '6eme', progress);
      */
     async function saveProgress(matiere, niveau, data) {
-        // 1. Sauvegarde locale immédiate (toujours, pour ne pas perdre de données)
         try {
             localStorage.setItem(_progressKey(matiere, niveau), JSON.stringify(data));
-        } catch {}
+        } catch { }
 
-        // 2. Synchronisation vers le serveur si l'API est activée
         if (USE_API) {
             return await apiRequest('POST', '/progression', { matiere, niveau, data });
         }
         return { ok: true };
+    }
+
+    /**
+     * Lecture synchrone de la progression (utilisé par le dashboard pour l'état des matières).
+     */
+    function getProgressSync(matiere, niveau) {
+        try {
+            const key = _progressKey(matiere, niveau);
+            let saved = localStorage.getItem(key);
+            if (!saved) {
+                const legacyKey = 'eduquest_' + String(matiere || '').toLowerCase() + '_' + (niveau || '6eme') + '_progress';
+                saved = localStorage.getItem(legacyKey);
+                if (saved) {
+                    try { localStorage.setItem(key, saved); } catch { }
+                }
+            }
+            return saved ? JSON.parse(saved) : null;
+        } catch { return null; }
     }
 
     /* -----------------------------------------------------------------------
@@ -410,7 +424,7 @@ const DB = (() => {
         localStorage.setItem(KEYS.NIVEAU, niveau); // Sauvegarde locale immédiate
         if (USE_API) {
             // Synchronisation optionnelle vers le serveur
-            saveOptionAsync('niveau_actuel', niveau).catch(() => {});
+            saveOptionAsync('niveau_actuel', niveau).catch(() => { });
         }
     }
 
@@ -544,7 +558,7 @@ const DB = (() => {
     async function logout() {
         if (USE_API) {
             // Invalidation du token côté serveur (ignore les erreurs réseau)
-            await apiRequest('POST', '/auth/logout').catch(() => {});
+            await apiRequest('POST', '/auth/logout').catch(() => { });
         }
         _setSession(null); // Suppression de la session locale
     }
@@ -596,17 +610,183 @@ const DB = (() => {
         catch { return []; }
     }
 
-    /**
-     * Débloque un badge (idempotent : ne fait rien s'il est déjà possédé).
-     * @param {string} badgeId - identifiant du badge (voir BADGES_CATALOG dans app.js)
-     * @returns {boolean} true si le badge vient d'être débloqué, false s'il l'était déjà
-     */
     function unlockBadge(badgeId) {
         const badges = getBadges();
         if (badges.includes(badgeId)) return false;
         badges.push(badgeId);
         saveOption('dash_badges', JSON.stringify(badges));
         return true;
+    }
+
+    function lockBadge(badgeId) {
+        const badges = getBadges().filter(b => b !== badgeId);
+        saveOption('dash_badges', JSON.stringify(badges));
+        return true;
+    }
+
+    function resetBadges() {
+        saveOption('dash_badges', JSON.stringify([]));
+        return true;
+    }
+
+    function setBadges(list) {
+        saveOption('dash_badges', JSON.stringify(Array.isArray(list) ? list : []));
+        return true;
+    }
+
+    /* -----------------------------------------------------------------------
+       POTIONS ET BOOSTERS (Consommables)
+       ----------------------------------------------------------------------- */
+    function _boostersKey() {
+        return 'eduquest_boosters_' + _userScope();
+    }
+
+    function _boostersHistoryKey() {
+        return 'eduquest_boosters_history_' + _userScope();
+    }
+
+    function getBoosters() {
+        try {
+            return JSON.parse(localStorage.getItem(_boostersKey())) || {};
+        } catch {
+            return {};
+        }
+    }
+
+    function getBoostersHistory() {
+        try {
+            return JSON.parse(localStorage.getItem(_boostersHistoryKey())) || { acquired: {}, used: {} };
+        } catch {
+            return { acquired: {}, used: {} };
+        }
+    }
+
+    function _recordBoosterHistory(type, id, count = 1) {
+        try {
+            const h = getBoostersHistory();
+            if (!h.acquired) h.acquired = {};
+            if (!h.used) h.used = {};
+            const num = parseInt(count, 10) || 1;
+            if (type === 'acquired') {
+                h.acquired[id] = (h.acquired[id] || 0) + num;
+            } else if (type === 'used') {
+                h.used[id] = (h.used[id] || 0) + num;
+            }
+            localStorage.setItem(_boostersHistoryKey(), JSON.stringify(h));
+        } catch { }
+    }
+
+    function hasBooster(id) {
+        return (getBoosters()[id] || 0) > 0;
+    }
+
+    function addBooster(id, count = 1) {
+        const b = getBoosters();
+        b[id] = Math.max(0, (b[id] || 0) + (parseInt(count, 10) || 1));
+        try { localStorage.setItem(_boostersKey(), JSON.stringify(b)); } catch { }
+        _recordBoosterHistory('acquired', id, count);
+        return b[id];
+    }
+
+    function useBooster(id) {
+        const b = getBoosters();
+        if ((b[id] || 0) > 0) {
+            b[id] -= 1;
+            try { localStorage.setItem(_boostersKey(), JSON.stringify(b)); } catch { }
+            _recordBoosterHistory('used', id, 1);
+            return true;
+        }
+        return false;
+    }
+
+    /* -----------------------------------------------------------------------
+       SYSTÈME DE STREAK & COMBOS (Multiplicateurs de Score & XP)
+       ----------------------------------------------------------------------- */
+    function _streakKey() {
+        return 'eduquest_streak_' + _userScope();
+    }
+
+    function getStreakData() {
+        try {
+            const raw = localStorage.getItem(_streakKey());
+            if (raw) return JSON.parse(raw);
+        } catch { }
+        return { count: 0, best: 0, combo: 0, maxCombo: 0, lastPlayedDate: null };
+    }
+
+    function _saveStreakData(data) {
+        try { localStorage.setItem(_streakKey(), JSON.stringify(data)); } catch { }
+    }
+
+    function getStreak() {
+        return getStreakData().count || 0;
+    }
+
+    function getCombo() {
+        return getStreakData().combo || 0;
+    }
+
+    function getMultiplier(comboVal) {
+        const c = typeof comboVal === 'number' ? comboVal : getCombo();
+        if (c <= 1) return 1.0;
+        if (c === 2) return 1.2;
+        if (c === 3) return 1.4;
+        if (c === 4) return 1.6;
+        if (c < 10) return 2.0;
+        return 2.5;
+    }
+
+    function recordCorrectAnswer() {
+        const s = getStreakData();
+        s.combo = (s.combo || 0) + 1;
+        if (s.combo > (s.maxCombo || 0)) s.maxCombo = s.combo;
+        _saveStreakData(s);
+        return {
+            combo: s.combo,
+            multiplier: getMultiplier(s.combo),
+            maxCombo: s.maxCombo
+        };
+    }
+
+    function recordWrongAnswer(protectedByShield = false) {
+        const s = getStreakData();
+        if (protectedByShield) {
+            return {
+                combo: s.combo || 1,
+                multiplier: getMultiplier(s.combo || 1),
+                shieldSaved: true
+            };
+        }
+        s.combo = 0;
+        _saveStreakData(s);
+        return {
+            combo: 0,
+            multiplier: 1.0,
+            shieldSaved: false
+        };
+    }
+
+    function recordLevelVictory() {
+        const s = getStreakData();
+        s.count = (s.count || 0) + 1;
+        if (s.count > (s.best || 0)) s.best = s.count;
+        s.lastPlayedDate = new Date().toISOString().slice(0, 10);
+        _saveStreakData(s);
+        return {
+            streak: s.count,
+            best: s.best,
+            combo: s.combo || 0,
+            maxCombo: s.maxCombo || 0,
+            multiplier: getMultiplier(s.combo || 0)
+        };
+    }
+
+    function resetStreak() {
+        const s = getStreakData();
+        s.count = 0;
+        s.combo = 0;
+        _saveStreakData(s);
+        return s;
     }
 
     /* --- Helpers internes pour les comptes locaux (mode sans API) --- */
@@ -621,7 +801,7 @@ const DB = (() => {
 
     /** Sauvegarde la liste des comptes locaux. */
     function _setLocalUsers(users) {
-        try { localStorage.setItem('eduquest_local_users', JSON.stringify(users)); } catch {}
+        try { localStorage.setItem('eduquest_local_users', JSON.stringify(users)); } catch { }
     }
 
     /**
@@ -790,7 +970,7 @@ const DB = (() => {
     function getMusicState() {
         return {
             track: parseInt(localStorage.getItem(KEYS.TRACK) || '0'),
-            time:  parseFloat(localStorage.getItem(KEYS.MUSIC_TIME) || '0'),
+            time: parseFloat(localStorage.getItem(KEYS.MUSIC_TIME) || '0'),
         };
     }
 
@@ -824,6 +1004,7 @@ const DB = (() => {
         // --- Progression par matière ---
         loadProgress,           // Charge la progression (async, API ou local)
         saveProgress,           // Sauvegarde la progression (async, toujours local + API si activé)
+        getProgressSync,        // Lecture synchrone de la progression isolée par utilisateur
 
         // --- Niveau scolaire ---
         getNiveau,              // Lecture du niveau scolaire actuel
@@ -843,6 +1024,26 @@ const DB = (() => {
         // --- Badges (succès) ---
         getBadges,              // Liste des identifiants de badges débloqués
         unlockBadge,            // Débloque un badge (idempotent)
+        lockBadge,              // Retire un badge (panneau admin)
+        resetBadges,            // Réinitialise tous les badges
+        setBadges,              // Définit la liste exacte
+
+        // --- Potions et Boosters consommables ---
+        getBoosters,            // Inventaire des potions : { 'pot-boost': 2, 'pot-shield': 1 }
+        getBoostersHistory,     // Historique cumulé des potions acquises et consommées
+        hasBooster,             // Vérifie si au moins 1 potion est possédée
+        addBooster,             // Ajoute une ou plusieurs potions
+        useBooster,             // Consomme 1 potion (retourne true si consommée)
+
+        // --- Système de Streak & Combos (Multiplicateurs de Score & XP) ---
+        getStreakData,          // Données complètes de série et de combo
+        getStreak,              // Nombre de victoires consécutives actuelles
+        getCombo,               // Nombre de bonnes réponses consécutives actuelles
+        getMultiplier,          // Multiplicateur de score et d'XP en fonction du combo (ex: 1.5)
+        recordCorrectAnswer,    // Enregistre une bonne réponse (+1 combo)
+        recordWrongAnswer,      // Enregistre une erreur (reset combo sauf si protégé)
+        recordLevelVictory,     // Enregistre un niveau réussi (+1 streak)
+        resetStreak,            // Réinitialise série et combo
 
         // --- Quêtes (Phase 3.2) ---
         getDailyQuests: () => {
@@ -865,4 +1066,8 @@ const DB = (() => {
         get apiUrl() { return API_URL; },   // URL de l'API (ou null)
     };
 
-})(); // Le () à la fin exécute immédiatement la fonction et retourne l'objet DB
+})();
+
+if (typeof window !== 'undefined') {
+    window.DB = DB;
+}

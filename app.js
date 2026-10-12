@@ -644,7 +644,8 @@ function initConnexion() {
                 showNotification('✓ Bienvenue, ' + result.username + ' !');
                 setTimeout(() => { 
                     if(document.getElementById('modalLogin')) document.getElementById('modalLogin').hidden = true;
-                }, 1000);
+                    window.location.reload();
+                }, 800);
             } else {
                 // result.error contient le message d'erreur retourné par DB.login()
                 showNotification(result.error || 'Erreur de connexion.', 'error');
@@ -693,7 +694,8 @@ function initConnexion() {
                 showNotification('✓ Compte créé ! Bienvenue, ' + result.username + ' !');
                 setTimeout(() => { 
                     if(document.getElementById('modalLogin')) document.getElementById('modalLogin').hidden = true;
-                }, 1200);
+                    window.location.reload();
+                }, 800);
             } else {
                 showNotification(result.error || 'Erreur lors de l\'inscription.', 'error');
             }
@@ -703,7 +705,7 @@ function initConnexion() {
     /* --- Déconnexion --- */
     /**
      * Appelle DB.logout() pour effacer la session, puis met à jour l'affichage
-     * et redirige vers index.html après 800ms.
+     * et recharge la page pour basculer sur la session invité.
      */
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async () => {
@@ -712,7 +714,8 @@ function initConnexion() {
             updateUserDisplay(); // Cache le bloc userInfo immédiatement
             setTimeout(() => { 
                 if(document.getElementById('modalLogin')) document.getElementById('modalLogin').hidden = true;
-            }, 800);
+                window.location.reload();
+            }, 600);
         });
     }
 }
@@ -1014,6 +1017,13 @@ const Celebrate = (() => {
         canvas = document.createElement('canvas');
         canvas.className = 'confetti-canvas';
         canvas.setAttribute('aria-hidden', 'true');
+        canvas.style.position = 'fixed';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.width = '100vw';
+        canvas.style.height = '100vh';
+        canvas.style.pointerEvents = 'none';
+        canvas.style.zIndex = '999999';
         document.body.appendChild(canvas);
         ctx = canvas.getContext('2d');
         resize();
@@ -1300,6 +1310,9 @@ function initMap() {
         'Physique': 'physique',
         'Chimie': 'chimie',
         'Technologie': 'techno',
+        'Philosophie': 'philo',
+        'Philo': 'philo',
+        'EMC': 'emc',
     };
 
     /* --- Lecture des paramètres d'URL --- */
@@ -1349,6 +1362,34 @@ function initMap() {
 
     // Met à jour le titre de l'onglet du navigateur
     document.title = 'EDUQUEST - ' + subject;
+
+    function renderMapHeaderStreak() {
+        const headerRight = mapHeader.querySelector('div[style*="pointer-events: auto"]');
+        if (!headerRight) return;
+        let streakEl = document.getElementById('mapHeaderStreakPill');
+        const streakData = (typeof DB !== 'undefined' && DB.getStreakData) ? DB.getStreakData() : { count: 0, combo: 0 };
+        const streakCount = streakData.count || 0;
+        const comboCount = streakData.combo || 0;
+        const multiplier = (typeof DB !== 'undefined' && DB.getMultiplier) ? DB.getMultiplier(comboCount) : 1.0;
+        const isHot = streakCount >= 2 || comboCount >= 2;
+
+        const html = `<div class="dash-streak-pill ${isHot ? 'is-hot' : ''}" title="Série de victoires : ${streakCount} · Combo : x${comboCount}">
+            <span class="dash-streak-flame">${isHot ? '🔥' : '⚡'}</span>
+            <span class="dash-streak-count">${streakCount}</span>
+            <span class="dash-streak-label">SÉRIE</span>
+            ${multiplier > 1.0 ? `<span class="dash-combo-tag">x${multiplier}</span>` : ''}
+        </div>`;
+
+        if (!streakEl) {
+            streakEl = document.createElement('div');
+            streakEl.id = 'mapHeaderStreakPill';
+            streakEl.style.display = 'inline-flex';
+            streakEl.style.alignItems = 'center';
+            headerRight.insertBefore(streakEl, headerRight.firstChild);
+        }
+        streakEl.innerHTML = html;
+    }
+    renderMapHeaderStreak();
 
     /* --- Niveau scolaire actuel (ex: '6eme') --- */
     // Récupéré via db.js pour être cohérent avec le reste du jeu
@@ -1634,7 +1675,21 @@ function initMap() {
      */
     function starsFromAttempts(attempts) {
         if (attempts === 1) return 3;
-        if (attempts === 2) return 2;
+        if (attempts === 2) {
+            // Bouclier d'étoile : sauve la 3e étoile au 1er échec
+            if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster('boost-shield')) {
+                DB.useBooster('boost-shield');
+                window._lastUsedBoosterShield = true;
+                if (typeof showNotification === 'function') {
+                    showNotification('🛡️ Bouclier d\'Étoile consommé : 3 étoiles préservées !', 'info');
+                }
+                if (typeof window.checkBadges === 'function') {
+                    window.checkBadges({ usedShield: true, usedBooster: 'boost-shield', boosterId: 'boost-shield' });
+                }
+                return 3;
+            }
+            return 2;
+        }
         return 1;
     }
 
@@ -1649,8 +1704,14 @@ function initMap() {
             progress.levels[currentModalLevel + 1].unlocked = true;
         }
         
+        const streakRes = (typeof DB !== 'undefined' && DB.recordLevelVictory) ? DB.recordLevelVictory() : { streak: 1, combo: 0, multiplier: 1.0 };
+        const mult = (streakRes && streakRes.multiplier) || ((typeof DB !== 'undefined' && DB.getMultiplier) ? DB.getMultiplier() : 1.0);
+        renderMapHeaderStreak();
+
         let xpGained = 0;
         let coinsGained = 0;
+        let scoreGained = 0;
+        let usedDoubleXp = false;
 
         if (isFirstSuccess) {
             const rewards = (typeof AdminStore !== 'undefined' && typeof AdminStore.getRewardsConfig === 'function')
@@ -1663,8 +1724,24 @@ function initMap() {
                 : 0;
             const firstTryBonus = (starsEarned === 3) ? (rewards.firstTryBonusXp || 0) : 0;
 
-            xpGained = rewards.xpBase + chronoBonus + firstTryBonus;
+            let baseCalcXp = rewards.xpBase + chronoBonus + firstTryBonus;
+            // Potion Double XP
+            if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster('boost-xp')) {
+                DB.useBooster('boost-xp');
+                usedDoubleXp = true;
+                baseCalcXp *= 2;
+                if (typeof showNotification === 'function') {
+                    showNotification('🧪 Potion Double XP consommée : XP doublée !', 'success');
+                }
+            }
+
+            xpGained = Math.round(baseCalcXp * mult);
             coinsGained = rewards.coinsBase;
+
+            const baseScore = 100 * starsEarned;
+            scoreGained = Math.round(baseScore * mult);
+            const currentScore = parseInt(getOption('dash_total_score') || '0', 10);
+            saveOption('dash_total_score', String(currentScore + scoreGained));
 
             const currentXp = parseInt(getOption('dash_xp') || '0', 10);
             const currentCoins = parseInt(getOption('dash_coins') || '30', 10);
@@ -1684,8 +1761,25 @@ function initMap() {
                 perfect:  starsEarned === 3 ? 1 : 0,
                 firstTry: starsEarned === 3 ? 1 : 0,
             });
+            const usedShield = Boolean(window._lastUsedBoosterShield);
+            window._lastUsedBoosterShield = false;
+            if (typeof window.checkBadges === 'function') {
+                window.checkBadges({
+                    justCompletedLevel: true,
+                    starsEarned: starsEarned,
+                    justAnsweredFirstTry: starsEarned === 3,
+                    subjectId: carteSubject ? carteSubject.id : MATIERE_TO_SUBJECT_ID[subject],
+                    usedDoubleXp: usedDoubleXp,
+                    usedShield: usedShield,
+                    usedBooster: usedDoubleXp ? 'boost-xp' : (usedShield ? 'boost-shield' : null),
+                    boosterId: usedDoubleXp ? 'boost-xp' : (usedShield ? 'boost-shield' : null),
+                    streakCount: streakRes.streak,
+                    comboCount: streakRes.combo,
+                    maxCombo: streakRes.maxCombo
+                });
+            }
         }
-        return { isFirstSuccess, xpGained, coinsGained };
+        return { isFirstSuccess, xpGained, coinsGained, scoreGained, multiplier: mult, streak: streakRes.streak };
     }
 
     /** Rendu de la question courante dans #modal-quiz-zone (mode quiz réel). */
@@ -1703,6 +1797,8 @@ function initMap() {
         if (checking === 'loading' || !lesson) {
             if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
             if (chronoBarEl) chronoBarEl.remove();
+            const oldComboBar = document.getElementById('map-combo-bar-container');
+            if (oldComboBar) oldComboBar.remove();
             questionEl.textContent = 'Génération de la question…';
             body.innerHTML = `<div class="dash-feedback">⏳ Préparation de la question du niveau ${currentModalLevel}…</div>`;
             feedbackEl.innerHTML = '';
@@ -1730,6 +1826,30 @@ function initMap() {
         } else if (chronoBarEl) {
             chronoBarEl.remove();
         }
+
+        // Barre visuelle de combo et multiplicateur
+        const streakData = (typeof DB !== 'undefined' && DB.getStreakData) ? DB.getStreakData() : { count: 0, combo: 0 };
+        const comboCount = streakData.combo || 0;
+        const multiplier = (typeof DB !== 'undefined' && DB.getMultiplier) ? DB.getMultiplier(comboCount) : 1.0;
+        const tierName = (typeof window.comboTierName === 'function') ? window.comboTierName(comboCount) : '';
+
+        let comboBarEl = document.getElementById('map-combo-bar-container');
+        if (!comboBarEl) {
+            comboBarEl = document.createElement('div');
+            comboBarEl.id = 'map-combo-bar-container';
+            questionEl.parentNode.insertBefore(comboBarEl, questionEl);
+        }
+        comboBarEl.className = `dash-quiz-combo-bar ${comboCount >= 2 ? 'is-lit' : ''}`;
+        comboBarEl.innerHTML = `
+            <div class="dash-combo-left">
+                <span class="dash-streak-flame">${comboCount >= 2 ? '🔥' : '⚡'}</span>
+                <div>
+                    <div class="dash-combo-txt">Combo : <b>${comboCount}</b></div>
+                    <div class="dash-combo-subtitle">${tierName}</div>
+                </div>
+            </div>
+            <div class="dash-combo-mult-badge">Bonus <b>x${multiplier.toFixed(1)}</b></div>
+        `;
 
         questionEl.textContent = lesson.q;
         body.innerHTML = QuizEngine.renderBody(lesson);
@@ -1765,15 +1885,20 @@ function initMap() {
         } else {
             if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
             QuizEngine.reveal(body, lesson, submitted);
-            feedbackEl.innerHTML = `<div class="dash-feedback ${isCorrect ? 'ok' : 'ko'}">${isCorrect ? '✓ Bonne réponse ! ' : '✗ Pas tout à fait. '}${escapeHtml(currentAttempt.explanation || lesson.exp || '')}</div>`;
+            const multTag = multiplier > 1.0 ? `<span class="dash-combo-tag">x${multiplier.toFixed(1)}</span> ` : '';
+            feedbackEl.innerHTML = `<div class="dash-feedback ${isCorrect ? 'ok' : 'ko'}">${isCorrect ? '✓ Bonne réponse ! ' + multTag : '✗ Pas tout à fait. '}${escapeHtml(currentAttempt.explanation || lesson.exp || '')}</div>`;
 
             if (isCorrect) {
+                const starsNow = starsFromAttempts(currentAttempt.attempts);
+                if (starsNow === 3) {
+                    Celebrate.confetti();
+                }
                 actionsEl.innerHTML = `<button class="dash-btn-primary" id="modal-quiz-continue">Continuer</button>`;
                 document.getElementById('modal-quiz-continue').addEventListener('click', () => {
                     const stars = starsFromAttempts(currentAttempt.attempts);
                     const res = unlockNextAndSave(stars);
                     modal.hidden = true;
-                    showNotification(`✓ Niveau réussi — ${'⭐'.repeat(stars)}${res.isFirstSuccess ? ` (+${res.xpGained} XP, +${res.coinsGained} pièces)` : ''}`);
+                    showNotification(`✓ Niveau réussi — ${'⭐'.repeat(stars)}${res.isFirstSuccess ? ` (+${res.xpGained} XP ${res.multiplier > 1.0 ? `[x${res.multiplier}] ` : ''}, +${res.coinsGained} pièces, +${res.scoreGained} pts)` : ''}`);
                 });
             } else {
                 actionsEl.innerHTML = `
@@ -1824,6 +1949,26 @@ function initMap() {
             ? "Temps écoulé ! Tu as dépassé les 30 secondes accordées."
             : result.explanation;
         attempt.lesson = { ...attempt.lesson, ...result.answerKey };
+
+        if (result.isCorrect) {
+            if (typeof DB !== 'undefined' && DB.recordCorrectAnswer) {
+                DB.recordCorrectAnswer();
+            }
+        } else {
+            let shieldSaved = false;
+            if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster('boost-shield')) {
+                DB.useBooster('boost-shield');
+                shieldSaved = true;
+                window._lastUsedBoosterShield = true;
+                if (typeof showNotification === 'function') {
+                    showNotification('🛡️ Bouclier d\'Étoile consommé : Série et combo protégés !', 'info');
+                }
+            }
+            if (typeof DB !== 'undefined' && DB.recordWrongAnswer) {
+                DB.recordWrongAnswer(shieldSaved);
+            }
+        }
+        renderMapHeaderStreak();
         renderModalQuiz();
     }
 
@@ -1991,7 +2136,7 @@ const RAW_DASH_SUBJECTS = [
         { title: "L'argumentation", q: "Un connecteur logique d'opposition est :", opts: ["ainsi", "mais", "donc", "car"], correct: 1, exp: "« Mais » introduit une idée contraire à la précédente." },
         { type: "texte_a_trous", title: "Accord du participe passé", q: "Complète la règle.", textWithBlanks: "Avec l'auxiliaire être, le participe passé s'accorde avec le ___ ; avec avoir, il ne s'accorde en général pas avec le ___.", blanks: [["sujet"], ["sujet"]], exp: "Être → accord avec le sujet ; avoir → pas d'accord avec le sujet (sauf COD placé avant, hors programme ici)." },
     ]},
-    { id: "physique", name: "Physique-Chimie", icon: "⚛", lessons: [
+    { id: "physique", name: "Physique", icon: "⚛", lessons: [
         { title: "Les états de la matière", q: "Comment appelle-t-on le passage direct de l'état solide à l'état gazeux ?", opts: ["condensation", "fusion", "évaporation", "sublimation"], correct: 3, exp: "La sublimation évite l'étape liquide." },
         { title: "La tension électrique", q: "Quelle unité mesure la tension électrique ?", opts: ["le volt", "l'ohm", "le watt", "l'ampère"], correct: 0, exp: "Le volt (V) mesure la tension." },
         { title: "Les atomes", q: "Combien de protons possède un atome d'hydrogène ?", opts: ["0", "2", "1", "8"], correct: 2, exp: "L'hydrogène a le numéro atomique 1." },
@@ -2047,6 +2192,13 @@ const RAW_DASH_SUBJECTS = [
         { title: "La justice", q: "Le principe de présomption d'innocence signifie que :", opts: ["on est toujours coupable", "on est innocent tant que la culpabilité n'est pas prouvée", "la peine est automatique", "il n'y a pas de procès"], correct: 1, exp: "Ce principe protège tout accusé jusqu'au jugement." },
         { type: "drag_and_drop", title: "Les pouvoirs", q: "Associe chaque pouvoir à son rôle.", items: ["Pouvoir exécutif", "Pouvoir législatif", "Pouvoir judiciaire"], targets: ["Applique les lois", "Vote les lois", "Fait respecter les lois"], pairs: { "Pouvoir exécutif": "Applique les lois", "Pouvoir législatif": "Vote les lois", "Pouvoir judiciaire": "Fait respecter les lois" }, exp: "La séparation des pouvoirs structure les institutions démocratiques." },
     ]},
+    { id: "philo", name: "Philosophie", icon: "🏛️", lessons: [
+        { title: "L'allégorie de la caverne", q: "Qui a écrit l'allégorie de la caverne ?", opts: ["Socrate", "Platon", "Aristote", "Descartes"], correct: 1, exp: "Platon expose l'allégorie de la caverne dans La République (Livre VII)." },
+        { title: "Le doute méthodique", q: "Quelle célèbre formule résume la certitude première de René Descartes ?", opts: ["Je sais que je ne sais rien", "L'homme est un loup pour l'homme", "Cogito, ergo sum (Je pense, donc je suis)", "Connais-toi toi-même"], correct: 2, exp: "Dans le Discours de la méthode, Descartes découvre le « Cogito » au terme du doute méthodique." },
+        { title: "La conscience", q: "Pour Sigmund Freud, quelle partie de la psyché regroupe les pulsions refoulées ?", opts: ["Le Surmoi", "Le Moi", "L'Inconscient / Le Ça", "La conscience morale"], correct: 2, exp: "Le Ça représente le réservoir des pulsions inconscientes." },
+        { type: "vrai_faux", title: "L'éthique et la morale", q: "Pour Emmanuel Kant, un acte moral doit être guidé par le devoir et l'impératif catégorique, sans rechercher son propre intérêt.", correct: true, exp: "Vrai : la morale déontologique kantienne repose sur le devoir désintéressé." },
+        { type: "texte_a_trous", title: "Le contrat social", q: "Complète la citation de Jean-Jacques Rousseau.", textWithBlanks: "L'homme est né ___ et partout il est dans les ___.", blanks: [["libre"], ["fers"]], exp: "« L'homme est né libre et partout il est dans les fers » (Du contrat social, 1762)." },
+    ]},
 ];
 
 // Étend chaque matière de 5 leçons écrites à la main à 100 niveaux
@@ -2101,22 +2253,304 @@ const SUBJECT_TO_MATIERE = {
     physique: { name: 'Physique',      icon: 'physique.webp' },
     chimie:   { name: 'Chimie',        icon: 'chimie.svg' },
     techno:   { name: 'Technologie',   icon: 'technologie.webp' },
+    philo:    { name: 'Philosophie',   icon: 'philo.svg' },
 };
 
-const BADGES_CATALOG = [
-    { id: 'premier_quiz', icon: '🎯', name: 'Premier pas', desc: 'Réussis ta toute première question.',
-        test: (ctx) => ctx.totalCompleted >= 1 },
-    { id: 'sans_faute', icon: '✨', name: 'Sans-faute', desc: 'Réponds juste du premier coup, sans réessayer.',
-        test: (ctx) => ctx.justAnsweredFirstTry },
-    { id: 'toutes_matieres', icon: '🌐', name: 'Touche-à-tout', desc: 'Termine au moins une leçon dans chaque matière.',
-        test: (ctx) => DASH_SUBJECTS.every(s => (ctx.state.progress[s.id] || 0) >= 1) },
-    { id: 'matiere_complete', icon: '🏆', name: 'Expert(e)', desc: 'Termine toutes les leçons d\'une même matière.',
-        test: (ctx) => DASH_SUBJECTS.some(s => (ctx.state.progress[s.id] || 0) >= s.lessons.length) },
-    { id: 'collectionneur', icon: '🎨', name: 'Collectionneur', desc: 'Possède 3 skins différents.',
-        test: (ctx) => ctx.state.ownedSkins.length >= 3 },
-    { id: 'niveau_5', icon: '🚀', name: 'Étoile montante', desc: 'Atteins le niveau 5.',
-        test: (ctx) => Math.floor(ctx.state.xp / 100) + 1 >= 5 },
-];
+const BADGES_CATALOG = (typeof AdminStore !== 'undefined' && AdminStore.DEFAULT_BADGES)
+    ? AdminStore.DEFAULT_BADGES
+    : [
+        { id: 'premier_quiz', icon: '🎯', name: 'Premier pas', desc: 'Réussis ta toute première question.', category: 'progression', condition: 'totalCompleted >= 1' },
+        { id: 'sans_faute', icon: '✨', name: 'Sans-faute', desc: 'Réponds juste du premier coup, sans réessayer.', category: 'precision', condition: 'justAnsweredFirstTry' },
+        { id: 'toutes_matieres', icon: '🌐', name: 'Touche-à-tout', desc: 'Termine au moins une leçon dans chaque matière.', category: 'exploration', condition: 'allSubjectsStarted' },
+        { id: 'matiere_complete', icon: '🏆', name: 'Expert(e)', desc: 'Termine au moins 5 leçons d\'une même matière.', category: 'maitrise', condition: 'oneSubjectAdvanced' },
+        { id: 'collectionneur', icon: '🎨', name: 'Collectionneur', desc: 'Possède 3 skins ou articles différents.', category: 'boutique', condition: 'ownedSkins >= 3' },
+        { id: 'niveau_5', icon: '🚀', name: 'Étoile montante', desc: 'Atteins le niveau 5 (400+ XP).', category: 'niveau', condition: 'playerLevel >= 5' },
+        { id: 'niveau_10', icon: '👑', name: 'Grand Maître', desc: 'Atteins le niveau 10 (900+ XP).', category: 'niveau', condition: 'playerLevel >= 10' },
+        { id: 'riche', icon: '💰', name: 'Bourse pleine', desc: 'Accumule au moins 100 pièces d\'or.', category: 'economie', condition: 'coins >= 100' },
+        { id: 'magnat', icon: '🏦', name: 'Magnat d\'Eduquest', desc: 'Accumule au moins 250 pièces d\'or.', category: 'economie', condition: 'coins >= 250' },
+        { id: 'alchimiste', icon: '🧪', name: 'Alchimiste', desc: 'Achète ou possède une potion magique.', category: 'potions', condition: 'hasBooster' },
+        { id: 'potion_double_xp', icon: '⚡', name: 'Surtension', desc: 'Utilise une Potion Double XP.', category: 'potions', condition: 'usedDoubleXp' },
+        { id: 'bouclier_etoile', icon: '🛡️', name: 'Invulnérable', desc: 'Utilise un Bouclier d\'Étoile pour protéger un score parfait.', category: 'potions', condition: 'usedShield' },
+        { id: 'maths_fan', icon: '📐', name: 'Arithméticien', desc: 'Atteins le niveau 5 en Mathématiques.', category: 'matieres', condition: 'mathsLevel >= 5' },
+        { id: 'francais_fan', icon: '📚', name: 'Littéraire', desc: 'Atteins le niveau 5 en Français.', category: 'matieres', condition: 'francaisLevel >= 5' },
+        { id: 'histoire_fan', icon: '📜', name: 'Chroniqueur', desc: 'Atteins le niveau 5 en Histoire.', category: 'matieres', condition: 'histoireLevel >= 5' },
+        { id: 'sciences_fan', icon: '🔬', name: 'Scientifique', desc: 'Atteins le niveau 5 en SVT, Physique ou Chimie.', category: 'matieres', condition: 'scienceLevel >= 5' },
+        { id: 'philo_fan', icon: '🏛️', name: 'Penseur Antique', desc: 'Atteins le niveau 5 en Philosophie.', category: 'matieres', condition: 'philoLevel >= 5' },
+        { id: 'polyglotte', icon: '🇬🇧', name: 'Polyglotte', desc: 'Atteins le niveau 5 en Anglais.', category: 'matieres', condition: 'anglaisLevel >= 5' },
+        { id: 'citoyen', icon: '⚖️', name: 'Citoyen Éclairé', desc: 'Atteins le niveau 5 en EMC.', category: 'matieres', condition: 'emcLevel >= 5' },
+        { id: 'technophile', icon: '💻', name: 'Technophile', desc: 'Atteins le niveau 5 en Technologie.', category: 'matieres', condition: 'technoLevel >= 5' },
+        { id: 'fashion_victim', icon: '✨', name: 'Aura Éclatante', desc: 'Équipe une aura scintillante pour ton avatar.', category: 'personnalisation', condition: 'auraEquipped' },
+        { id: 'theme_custom', icon: '🎭', name: 'Nouveau Décor', desc: 'Applique un thème visuel personnalisé.', category: 'personnalisation', condition: 'themeEquipped' },
+        { id: 'streak_3', icon: '🔥', name: 'Série Ardente', desc: 'Réussis 3 leçons d\'affilée.', category: 'progression', condition: 'streakCount >= 3' },
+        { id: 'streak_5', icon: '⚡', name: 'Inarrêtable', desc: 'Atteins une série de 5 victoires d\'affilée.', category: 'progression', condition: 'streakCount >= 5' },
+        { id: 'combo_5', icon: '👑', name: 'Maître du Combo', desc: 'Enchaîne 5 bonnes réponses consécutives.', category: 'precision', condition: 'comboCount >= 5' },
+        { id: 'queteur', icon: '📋', name: 'Assidu', desc: 'Réclame une récompense de quête journalière.', category: 'quetes', condition: 'questClaimed' },
+        { id: 'coffre_ouvert', icon: '🎁', name: 'Chasseur de Trésor', desc: 'Ouvre le coffre quotidien bonus.', category: 'quetes', condition: 'dailyChestOpened' },
+    ];
+
+function comboTierName(combo) {
+    if (!combo || combo <= 1) return 'Standard (+0%)';
+    if (combo === 2) return 'En rythme (+20%)';
+    if (combo === 3) return 'En feu ! (+40%) 🔥';
+    if (combo === 4) return 'Surtension ! (+60%) ⚡';
+    if (combo < 10) return 'Inarrêtable ! (+100%) 👑';
+    return 'Légendaire ! (+150%) 🌌';
+}
+window.comboTierName = comboTierName;
+
+function getBadgesCatalog() {
+    return (typeof AdminStore !== 'undefined' && typeof AdminStore.getBadges === 'function')
+        ? AdminStore.getBadges()
+        : BADGES_CATALOG;
+}
+
+/**
+ * Système universel de validation des succès : fonctionne sur toutes les pages.
+ */
+function checkBadges(extra = {}) {
+    if (typeof DB === 'undefined' || !DB.getBadges || !DB.unlockBadge) return [];
+    const catalog = getBadgesCatalog();
+    const unlockedIds = DB.getBadges();
+    
+    const currentNiveau = (typeof DB.getNiveau === 'function' ? DB.getNiveau() : '6eme') || '6eme';
+    const xp = parseInt(DB.getOption('dash_xp') || '0', 10);
+    const coins = parseInt(DB.getOption('dash_coins') || '30', 10);
+    const playerLevel = Math.floor(xp / 100) + 1;
+    let ownedSkins = [];
+    try { ownedSkins = JSON.parse(DB.getOption('dash_ownedSkins') || '["aurore", "robot"]'); } catch(e) {}
+    const theme = DB.getOption('dash_equippedTheme') || 'default';
+    const equippedAura = DB.getOption('dash_equippedAura') || DB.getOption('dash_equippedSkin') || 'aurore';
+    const boosters = (typeof DB.getBoosters === 'function') ? DB.getBoosters() : {};
+    const boostersHistory = (typeof DB.getBoostersHistory === 'function') ? DB.getBoostersHistory() : { acquired: {}, used: {} };
+
+    const totalBoostersInStock = Object.values(boosters).reduce((sum, n) => sum + (parseInt(n, 10) || 0), 0);
+    const totalBoostersAcquired = Object.values(boostersHistory.acquired || {}).reduce((sum, n) => sum + (parseInt(n, 10) || 0), 0);
+    const totalBoostersUsed = Object.values(boostersHistory.used || {}).reduce((sum, n) => sum + (parseInt(n, 10) || 0), 0);
+    const hasAnyBooster = totalBoostersInStock > 0 || (boosters['boost-xp'] > 0) || (boosters['boost-shield'] > 0) || totalBoostersAcquired > 0 || !!extra.boughtBooster || !!extra.hasBooster || !!extra.boosterId;
+
+    let totalCompleted = 0;
+    let threeStarCount = 0;
+    const completedPerSubject = {};
+    const subjects = (typeof DASH_SUBJECTS !== 'undefined') ? DASH_SUBJECTS : [];
+    
+    subjects.forEach(s => {
+        let count = 0;
+        const prog = (typeof DB.getProgressSync === 'function')
+            ? (DB.getProgressSync(s.name, currentNiveau) || DB.getProgressSync(s.id, currentNiveau))
+            : null;
+        if (prog && prog.levels) {
+            for (let lvl in prog.levels) {
+                if (prog.levels[lvl].stars > 0) {
+                    count++;
+                    totalCompleted++;
+                    if (prog.levels[lvl].stars === 3) threeStarCount++;
+                }
+            }
+        }
+        if (count === 0 && typeof state !== 'undefined' && state.progress && state.progress[s.id]) {
+            count = state.progress[s.id];
+            totalCompleted += count;
+        }
+        completedPerSubject[s.id] = count;
+    });
+
+    if (extra.justCompletedLevel) totalCompleted = Math.max(totalCompleted, 1);
+    if (extra.starsEarned === 3) threeStarCount = Math.max(threeStarCount, 1);
+
+    const newlyUnlocked = [];
+
+    catalog.forEach(b => {
+        if (unlockedIds.includes(b.id)) return;
+        let pass = false;
+        switch (b.id) {
+            case 'premier_quiz':
+                pass = totalCompleted >= 1 || !!extra.justAnsweredFirstTry || !!extra.justCompletedLevel;
+                break;
+            case 'sans_faute':
+                pass = !!extra.justAnsweredFirstTry || extra.starsEarned === 3;
+                break;
+            case 'trois_etoiles':
+                pass = threeStarCount >= 1 || extra.starsEarned === 3;
+                break;
+            case 'streak_3':
+                pass = (extra.streakCount >= 3) || (typeof DB !== 'undefined' && DB.getStreak && DB.getStreak() >= 3) || totalCompleted >= 3;
+                break;
+            case 'streak_5':
+                pass = (extra.streakCount >= 5) || (typeof DB !== 'undefined' && DB.getStreak && DB.getStreak() >= 5);
+                break;
+            case 'combo_5':
+                pass = (extra.comboCount >= 5) || (extra.maxCombo >= 5) || (typeof DB !== 'undefined' && DB.getStreakData && DB.getStreakData().maxCombo >= 5);
+                break;
+            case 'toutes_matieres':
+                pass = (subjects.length > 0 && subjects.every(s => (completedPerSubject[s.id] || 0) >= 1)) || !!extra.allSubjectsStarted;
+                break;
+            case 'cinq_niveaux':
+                pass = totalCompleted >= 5;
+                break;
+            case 'dix_niveaux':
+                pass = totalCompleted >= 10;
+                break;
+            case 'matiere_complete':
+                pass = Object.values(completedPerSubject).some(c => c >= 5) || !!extra.oneSubjectAdvanced;
+                break;
+            case 'cent_niveaux':
+                pass = totalCompleted >= 100;
+                break;
+            case 'grand_maitre':
+                pass = threeStarCount >= 10;
+                break;
+            case 'premier_achat':
+                pass = ownedSkins.length > 2 || !!extra.boughtSkin || !!extra.boughtBooster || totalBoostersAcquired > 0;
+                break;
+            case 'collectionneur':
+                pass = ownedSkins.length >= 3;
+                break;
+            case 'fashion_victim':
+                pass = (equippedAura && equippedAura !== 'aurore') || ownedSkins.length >= 3 || !!extra.auraEquipped || !!extra.boughtSkin;
+                break;
+            case 'theme_custom':
+                pass = (theme && theme !== 'default') || (extra.theme && extra.theme !== 'default') || !!extra.themeEquipped;
+                break;
+            case 'niveau_5':
+                pass = playerLevel >= 5;
+                break;
+            case 'niveau_10':
+                pass = playerLevel >= 10;
+                break;
+            case 'niveau_20':
+                pass = playerLevel >= 20;
+                break;
+            case 'premier_sou':
+                pass = coins >= 50;
+                break;
+            case 'riche':
+                pass = coins >= 100;
+                break;
+            case 'magnat':
+                pass = coins >= 250;
+                break;
+            case 'alchimiste':
+            case 'potion_xp':
+                pass = hasAnyBooster;
+                break;
+            case 'potion_double_xp':
+                pass = !!extra.usedDoubleXp || extra.usedBooster === 'boost-xp' || extra.boosterId === 'boost-xp' || ((boostersHistory.used && boostersHistory.used['boost-xp']) > 0) || (boosters['boost-xp'] > 0);
+                break;
+            case 'bouclier_etoile':
+            case 'potion_shield':
+                pass = !!extra.usedShield || extra.usedBooster === 'boost-shield' || extra.boosterId === 'boost-shield' || ((boostersHistory.used && boostersHistory.used['boost-shield']) > 0) || (boosters['boost-shield'] > 0);
+                break;
+            case 'maths_fan':
+                pass = (completedPerSubject['maths'] || 0) >= 5;
+                break;
+            case 'francais_fan':
+                pass = (completedPerSubject['francais'] || 0) >= 5;
+                break;
+            case 'histoire_fan':
+                pass = (completedPerSubject['histoire'] || 0) >= 5;
+                break;
+            case 'sciences_fan':
+            case 'maitre_chimie':
+                pass = (completedPerSubject['svt'] || 0) >= 5 || (completedPerSubject['physique'] || 0) >= 5 || (completedPerSubject['chimie'] || 0) >= 5 || (extra.subjectId === 'chimie' && extra.justCompletedLevel);
+                break;
+            case 'philo_fan':
+            case 'maitre_philo':
+                pass = (completedPerSubject['philo'] || 0) >= 1 || (extra.subjectId === 'philo' && extra.justCompletedLevel);
+                break;
+            case 'polyglotte':
+                pass = (completedPerSubject['anglais'] || 0) >= 5;
+                break;
+            case 'citoyen':
+                pass = (completedPerSubject['emc'] || 0) >= 5;
+                break;
+            case 'technophile':
+                pass = (completedPerSubject['techno'] || 0) >= 5;
+                break;
+            case 'queteur':
+                pass = !!extra.questClaimed;
+                break;
+            case 'coffre_ouvert':
+                pass = !!extra.dailyChestOpened;
+                break;
+            default:
+                if (typeof b.test === 'function') {
+                    pass = b.test({ totalCompleted, xp, coins, playerLevel, ownedSkins, theme, completedPerSubject, ...extra });
+                }
+                break;
+        }
+
+        // Évaluation générique des conditions techniques (éditables dans le panneau admin)
+        if (!pass && b.condition) {
+            const cond = String(b.condition).trim();
+            if (cond === 'hasBooster' && hasAnyBooster) pass = true;
+            else if (cond === 'usedDoubleXp' && (!!extra.usedDoubleXp || extra.usedBooster === 'boost-xp' || (boostersHistory.used && boostersHistory.used['boost-xp'] > 0) || boosters['boost-xp'] > 0)) pass = true;
+            else if (cond === 'usedShield' && (!!extra.usedShield || extra.usedBooster === 'boost-shield' || (boostersHistory.used && boostersHistory.used['boost-shield'] > 0) || boosters['boost-shield'] > 0)) pass = true;
+            else if (cond === 'questClaimed' && !!extra.questClaimed) pass = true;
+            else if (cond === 'dailyChestOpened' && !!extra.dailyChestOpened) pass = true;
+            else if (cond === 'justAnsweredFirstTry' && (!!extra.justAnsweredFirstTry || extra.starsEarned === 3)) pass = true;
+            else if (cond === 'auraEquipped' && ((equippedAura && equippedAura !== 'aurore') || !!extra.auraEquipped || !!extra.boughtSkin)) pass = true;
+            else if (cond === 'themeEquipped' && ((theme && theme !== 'default') || (extra.theme && extra.theme !== 'default') || !!extra.themeEquipped)) pass = true;
+            else if (cond === 'allSubjectsStarted' && subjects.length > 0 && subjects.every(s => (completedPerSubject[s.id] || 0) >= 1)) pass = true;
+            else if (cond === 'oneSubjectAdvanced' && Object.values(completedPerSubject).some(c => c >= 5)) pass = true;
+            else {
+                const ctx = {
+                    totalCompleted,
+                    threeStarCount,
+                    xp,
+                    coins,
+                    playerLevel,
+                    ownedSkins: ownedSkins.length,
+                    mathsLevel: completedPerSubject['maths'] || 0,
+                    francaisLevel: completedPerSubject['francais'] || 0,
+                    histoireLevel: completedPerSubject['histoire'] || 0,
+                    scienceLevel: Math.max(completedPerSubject['svt'] || 0, completedPerSubject['physique'] || 0, completedPerSubject['chimie'] || 0),
+                    philoLevel: completedPerSubject['philo'] || 0,
+                    anglaisLevel: completedPerSubject['anglais'] || 0,
+                    emcLevel: completedPerSubject['emc'] || 0,
+                    technoLevel: completedPerSubject['techno'] || 0,
+                    hasBooster: hasAnyBooster ? 1 : 0,
+                    usedDoubleXp: (extra.usedDoubleXp || extra.usedBooster === 'boost-xp') ? 1 : 0,
+                    usedShield: (extra.usedShield || extra.usedBooster === 'boost-shield') ? 1 : 0,
+                    streakCount: (typeof extra.streakCount === 'number') ? extra.streakCount : ((typeof DB !== 'undefined' && DB.getStreak) ? DB.getStreak() : 0),
+                    comboCount: (typeof extra.comboCount === 'number') ? extra.comboCount : ((typeof DB !== 'undefined' && DB.getCombo) ? DB.getCombo() : 0),
+                    maxCombo: (typeof extra.maxCombo === 'number') ? extra.maxCombo : ((typeof DB !== 'undefined' && DB.getStreakData) ? DB.getStreakData().maxCombo : 0),
+                    totalScore: (typeof extra.totalScore === 'number') ? extra.totalScore : parseInt((typeof DB !== 'undefined' && DB.getOption) ? (DB.getOption('dash_total_score') || '0') : '0', 10)
+                };
+                const m = cond.match(/^([a-zA-Z0-9_]+)\s*(>=|<=|>|<|===|==)\s*([0-9]+)$/);
+                if (m) {
+                    const varVal = ctx[m[1]] ?? 0;
+                    const op = m[2];
+                    const num = parseInt(m[3], 10);
+                    if (op === '>=' && varVal >= num) pass = true;
+                    else if (op === '<=' && varVal <= num) pass = true;
+                    else if (op === '>' && varVal > num) pass = true;
+                    else if (op === '<' && varVal < num) pass = true;
+                    else if ((op === '==' || op === '===') && varVal === num) pass = true;
+                }
+            }
+        }
+
+        if (pass) {
+            DB.unlockBadge(b.id);
+            unlockedIds.push(b.id);
+            newlyUnlocked.push(b);
+        }
+    });
+
+    if (newlyUnlocked.length > 0) {
+        newlyUnlocked.forEach(badge => {
+            if (typeof showNotification === 'function') {
+                showNotification(`${badge.icon} Succès débloqué : ${badge.name} !`);
+            }
+        });
+        if (typeof Celebrate !== 'undefined' && Celebrate.confetti) {
+            Celebrate.confetti();
+        }
+    }
+
+    return newlyUnlocked;
+}
+window.checkBadges = checkBadges;
 
 function initDashboard() {
     const dashApp = document.getElementById('dashboard-app');
@@ -2135,12 +2569,26 @@ function initDashboard() {
      * Toutes les valeurs sont des strings dans DB, on les parse ici.
      */
     function loadState() {
+        const savedSkin = getOption('dash_equippedSkin') || 'aurore';
+        const savedAura = getOption('dash_equippedAura');
+        const savedAvatar = getOption('dash_equippedAvatar');
+        const catalog = getShopCatalog();
+        const curItem = catalog.find(s => s.id === savedSkin);
+        const curCat = curItem ? (curItem.category || 'aura') : 'aura';
+
+        const equippedAura = savedAura || (curCat === 'aura' ? savedSkin : 'aurore');
+        const equippedAvatar = savedAvatar || (curCat === 'avatar' ? savedSkin : 'robot');
+        const equippedTheme = getOption('dash_equippedTheme') || 'default';
+        document.documentElement.setAttribute('data-theme', equippedTheme);
+
         return {
             coins:          parseInt(getOption('dash_coins') || '30', 10),
             xp:             parseInt(getOption('dash_xp') || '0', 10),
-            equippedSkin:   getOption('dash_equippedSkin') || 'aurore',
+            equippedSkin:   savedSkin,
+            equippedAura:   equippedAura,
+            equippedAvatar: equippedAvatar,
             equippedTitle:  getOption('dash_equippedTitle') || '',
-            equippedTheme:  getOption('dash_equippedTheme') || 'default',
+            equippedTheme:  equippedTheme,
             ownedSkins:     JSON.parse(getOption('dash_ownedSkins') || '["aurore", "robot"]'),
             shopCategory:   'all',
             view:           'dashboard', // Toujours revenir au dashboard au chargement
@@ -2153,13 +2601,15 @@ function initDashboard() {
 
     /** Sauvegarde l'état modifiable dans localStorage via DB. */
     function persistState() {
-        saveOption('dash_coins',         String(state.coins));
-        saveOption('dash_xp',            String(state.xp));
-        saveOption('dash_equippedSkin',  state.equippedSkin);
-        saveOption('dash_equippedTitle', state.equippedTitle);
-        saveOption('dash_equippedTheme', state.equippedTheme);
-        saveOption('dash_ownedSkins',    JSON.stringify(state.ownedSkins));
-        saveOption('dash_progress',      JSON.stringify(state.progress));
+        saveOption('dash_coins',          String(state.coins));
+        saveOption('dash_xp',             String(state.xp));
+        saveOption('dash_equippedSkin',   state.equippedSkin || 'aurore');
+        saveOption('dash_equippedAura',   state.equippedAura || 'aurore');
+        saveOption('dash_equippedAvatar', state.equippedAvatar || 'robot');
+        saveOption('dash_equippedTitle',  state.equippedTitle || '');
+        saveOption('dash_equippedTheme',  state.equippedTheme || 'default');
+        saveOption('dash_ownedSkins',     JSON.stringify(state.ownedSkins));
+        saveOption('dash_progress',       JSON.stringify(state.progress));
     }
 
     let state = loadState();
@@ -2170,46 +2620,33 @@ function initDashboard() {
 
     /* ============ HELPERS ============ */
     function skinColor(id) {
-        const item = getShopCatalog().find(s => s.id === id);
+        const targetId = id || state.equippedAura || 'aurore';
+        const item = getShopCatalog().find(s => s.id === targetId);
         return item ? (item.color || '#4fd8c4') : '#4fd8c4';
     }
     /** Chemin de l'image de portrait d'un skin, ou null pour les skins "halo de couleur" pure. */
     function skinImage(id) {
-        const item = getShopCatalog().find(s => s.id === id);
+        const targetId = id || state.equippedAvatar || 'robot';
+        const item = getShopCatalog().find(s => s.id === targetId);
         return (item && item.img) ? item.img : null;
     }
     function level() { return Math.floor(state.xp / 100) + 1; }
     function xpInLevel() { return state.xp % 100; }
 
-    /**
-     * Vérifie tous les badges du catalogue et débloque ceux dont la
-     * condition est remplie. Affiche une notification pour chaque nouveau
-     * badge. Retourne la liste des badges nouvellement débloqués.
-     *
-     * @param {object} extra - contexte ponctuel ajouté au ctx passé aux tests
-     *   (ex: { justAnsweredFirstTry: true } juste après une bonne réponse)
-     */
-    function checkBadges(extra = {}) {
-        const totalCompleted = Object.values(state.progress).reduce((a, b) => a + b, 0);
-        const ctx = { state, totalCompleted, justAnsweredFirstTry: false, ...extra };
-        const unlocked = [];
-        BADGES_CATALOG.forEach(badge => {
-            if (state.badges.includes(badge.id)) return;
-            if (badge.test(ctx)) {
-                DB.unlockBadge(badge.id);
-                state.badges.push(badge.id);
-                unlocked.push(badge);
-            }
-        });
-        unlocked.forEach(badge => showNotification(`${badge.icon} Succès débloqué : ${badge.name} !`));
+    function triggerBadgesCheck(extra = {}) {
+        const unlocked = checkBadges({ ...extra });
+        state.badges = DB.getBadges();
         return unlocked;
     }
+    // Validation passive immédiate de tous les succès existants au démarrage
+    triggerBadgesCheck();
 
     /* ============ RENDU ============ */
 
     /** Point d'entrée du rendu — reconstruit tout le contenu de #dashboard-app */
     function render() {
-        document.documentElement.style.setProperty('--dash-skin', skinColor(state.equippedSkin));
+        document.documentElement.style.setProperty('--dash-skin', skinColor(state.equippedAura));
+        document.documentElement.setAttribute('data-theme', state.equippedTheme || 'default');
         dashApp.innerHTML = `
             ${renderHeader()}
             ${renderHud()}
@@ -2269,37 +2706,59 @@ function initDashboard() {
             ? `<span class="dash-hud-title-badge" style="color:${equippedTitleObj.color}; border: 1px solid ${equippedTitleObj.color}44; background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 6px;">${escapeHtml(equippedTitleObj.name)}</span>`
             : '';
 
+        const streakData = (typeof DB !== 'undefined' && DB.getStreakData) ? DB.getStreakData() : { count: 0, combo: 0 };
+        const streakCount = streakData.count || 0;
+        const comboCount = streakData.combo || 0;
+        const multiplier = (typeof DB !== 'undefined' && DB.getMultiplier) ? DB.getMultiplier(comboCount) : 1.0;
+        const isHot = streakCount >= 2 || comboCount >= 2;
+
+        const streakPill = `<div class="dash-streak-pill ${isHot ? 'is-hot' : ''}" title="Série de victoires : ${streakCount} d'affilée · Combo : x${comboCount}">
+            <span class="dash-streak-flame">${isHot ? '🔥' : '⚡'}</span>
+            <span class="dash-streak-count">${streakCount}</span>
+            <span class="dash-streak-label">SÉRIE</span>
+            ${multiplier > 1.0 ? `<span class="dash-combo-tag">x${multiplier}</span>` : ''}
+        </div>`;
+
         return `<div class="dash-hud">
-            <div class="dash-avatar" style="--dash-skin:${skinColor(state.equippedSkin)}">${skinImage(state.equippedSkin) ? `<img src="${skinImage(state.equippedSkin)}" alt="Avatar">` : `N${level()}`}</div>
+            <div class="dash-avatar" style="--dash-skin:${skinColor(state.equippedAura)}">${skinImage(state.equippedAvatar) ? `<img src="${skinImage(state.equippedAvatar)}" alt="Avatar">` : `N${level()}`}</div>
             <div class="dash-hud-mid">
                 <div class="dash-hud-level">Niveau ${level()} <span class="mono">· ${pct}/100 XP</span> ${titleBadge}</div>
                 <div class="dash-xp-track"><div class="dash-xp-fill" style="width:${pct}%"></div></div>
             </div>
+            ${streakPill}
             <div class="dash-coins"><span class="dash-coin-dot"></span>${state.coins}</div>
         </div>`;
     }
 
     function renderTabs() {
+        const badgesTotal = getBadgesCatalog().length;
+        const unlockedCount = (typeof DB !== 'undefined' && DB.getBadges) ? DB.getBadges().length : state.badges.length;
         return `<nav class="dash-tabs">
             <button class="dash-tab ${state.view === 'dashboard' || state.view === 'map' ? 'active' : ''}" onclick="window._dashGoDashboard()">Matières</button>
             <button class="dash-tab ${state.view === 'shop' ? 'active' : ''}" onclick="window._dashGoShop()">Boutique</button>
-            <button class="dash-tab ${state.view === 'badges' ? 'active' : ''}" onclick="window._dashGoBadges()">Succès (${state.badges.length}/${BADGES_CATALOG.length})</button>
+            <button class="dash-tab ${state.view === 'badges' ? 'active' : ''}" onclick="window._dashGoBadges()">Succès (${unlockedCount}/${badgesTotal})</button>
         </nav>`;
     }
 
     /** Vue "Succès" : catalogue complet des badges, débloqués ou non. */
     function renderBadges() {
-        const cards = BADGES_CATALOG.map(badge => {
-            const unlocked = state.badges.includes(badge.id);
-            return `<div class="dash-skin-card dash-badge-card ${unlocked ? '' : 'locked'}">
+        const unlockedIds = (typeof DB !== 'undefined' && DB.getBadges) ? DB.getBadges() : state.badges;
+        state.badges = unlockedIds;
+        const catalog = getBadgesCatalog();
+        const cards = catalog.map(badge => {
+            const unlocked = unlockedIds.includes(badge.id);
+            return `<div class="dash-skin-card dash-badge-card ${unlocked ? 'is-unlocked' : 'locked'}">
                 <div class="dash-badge-icon">${unlocked ? badge.icon : '🔒'}</div>
                 <div class="dash-skin-name">${escapeHtml(badge.name)}</div>
                 <div class="dash-badge-desc">${escapeHtml(badge.desc)}</div>
+                <div class="dash-badge-status" style="margin-top:8px; font-size:0.75rem; font-weight:700; color:${unlocked ? '#4ade80' : '#8fa1d0'};">
+                    ${unlocked ? '✓ DÉBLOQUÉ' : '🔒 VERROUILLÉ'}
+                </div>
             </div>`;
         }).join('');
         return `<section>
             <div class="dash-eyebrow">Succès</div>
-            <h2 style="font-family:'Cinzel',serif; font-size:22px; color:#fff; text-shadow:0 0 10px rgba(200,168,75,0.4), 2px 2px 6px rgba(0,0,0,0.7); letter-spacing:1px;">Tes accomplissements</h2>
+            <h2 style="font-family:'Cinzel',serif; font-size:22px; color:#fff; text-shadow:0 0 10px rgba(200,168,75,0.4), 2px 2px 6px rgba(0,0,0,0.7); letter-spacing:1px;">Tes accomplissements (${unlockedIds.length}/${catalog.length})</h2>
             <div class="dash-skins-grid">${cards}</div>
         </section>`;
     }
@@ -2308,19 +2767,15 @@ function initDashboard() {
         const currentNiveau = (typeof DB !== 'undefined' && DB.getNiveau) ? (DB.getNiveau() || '6eme') : '6eme';
         const cards = DASH_SUBJECTS.map(s => {
             let done = 0;
-            const progressKey = 'eduquest_' + s.name.toLowerCase() + '_' + currentNiveau + '_progress';
-            const savedData = localStorage.getItem(progressKey);
-            if (savedData) {
-                try {
-                    const data = JSON.parse(savedData);
-                    if (data && data.levels) {
-                        for (let key in data.levels) {
-                            if (data.levels[key].stars > 0) {
-                                done++;
-                            }
-                        }
+            const data = (typeof DB !== 'undefined' && DB.getProgressSync)
+                ? DB.getProgressSync(s.name, currentNiveau)
+                : null;
+            if (data && data.levels) {
+                for (let key in data.levels) {
+                    if (data.levels[key].stars > 0) {
+                        done++;
                     }
-                } catch(e) {}
+                }
             }
             if (done === 0) {
                 done = state.progress[s.id] || 0;
@@ -2488,19 +2943,23 @@ function initDashboard() {
 
         const cards = filtered.map(s => {
             const cat = s.category || 'aura';
-            const isAuraOrAvatar = (cat === 'aura' || cat === 'avatar');
+            const isAura = cat === 'aura';
+            const isAvatar = cat === 'avatar';
             const isTitle = cat === 'title';
             const isTheme = cat === 'theme';
             const isBooster = cat === 'booster';
 
-            const owned = state.ownedSkins.includes(s.id);
-            const isEquipped = isAuraOrAvatar
-                ? (state.equippedSkin === s.id)
-                : isTitle
-                    ? (state.equippedTitle === s.id)
-                    : isTheme
-                        ? (state.equippedTheme === s.id)
-                        : false;
+            const boosterStock = (typeof DB !== 'undefined' && DB.getBoosters) ? (DB.getBoosters()[s.id] || 0) : 0;
+            const owned = isBooster ? (boosterStock > 0) : state.ownedSkins.includes(s.id);
+            const isEquipped = isAura
+                ? (state.equippedAura === s.id)
+                : isAvatar
+                    ? (state.equippedAvatar === s.id)
+                    : isTitle
+                        ? (state.equippedTitle === s.id)
+                        : isTheme
+                            ? (state.equippedTheme === s.id)
+                            : false;
 
             let visualHtml = '';
             if (s.img) {
@@ -2520,10 +2979,14 @@ function initDashboard() {
             }
 
             let btn = '';
-            if (isEquipped) {
+            if (isBooster) {
+                const affordable = state.coins >= s.cost;
+                btn = `<div style="font-size:12px; margin-bottom:8px; color:#ffd166; font-weight:700;">En réserve : ${boosterStock}</div>
+                       <button class="dash-skin-btn buy" ${affordable ? '' : 'disabled'} onclick="window._dashBuySkin('${s.id}')">Acheter (+1) · ${s.cost} pièces</button>`;
+            } else if (isEquipped) {
                 btn = `<button class="dash-skin-btn equipped" disabled>✓ Équipé</button>`;
             } else if (owned) {
-                const actionLabel = isTitle ? 'Porter ce titre' : isTheme ? 'Appliquer' : isBooster ? 'Possédé' : 'Équiper';
+                const actionLabel = isTitle ? 'Porter ce titre' : isTheme ? 'Appliquer' : isAvatar ? 'Incarner' : 'Équiper';
                 btn = `<button class="dash-skin-btn equip" onclick="window._dashEquipSkin('${s.id}')">${actionLabel}</button>`;
             } else {
                 const affordable = state.coins >= s.cost;
@@ -2563,13 +3026,29 @@ function initDashboard() {
             return;
         }
 
+        const streakData = (typeof DB !== 'undefined' && DB.getStreakData) ? DB.getStreakData() : { count: 0, combo: 0 };
+        const comboCount = streakData.combo || 0;
+        const multiplier = (typeof DB !== 'undefined' && DB.getMultiplier) ? DB.getMultiplier(comboCount) : 1.0;
+        const tierName = (typeof window.comboTierName === 'function') ? window.comboTierName(comboCount) : '';
+        const comboBarHtml = `<div class="dash-quiz-combo-bar ${comboCount >= 2 ? 'is-lit' : ''}">
+            <div class="dash-combo-left">
+                <span class="dash-streak-flame">${comboCount >= 2 ? '🔥' : '⚡'}</span>
+                <div>
+                    <div class="dash-combo-txt">Combo : <b>${comboCount}</b></div>
+                    <div class="dash-combo-subtitle">${tierName}</div>
+                </div>
+            </div>
+            <div class="dash-combo-mult-badge">Bonus <b>x${multiplier.toFixed(1)}</b></div>
+        </div>`;
+
         const lesson = state.quiz.lesson;
 
         let feedback = '';
         if (checking) {
             feedback = `<div class="dash-feedback" role="status" aria-live="polite">Correction en cours…</div>`;
         } else if (answered) {
-            feedback = `<div class="dash-feedback ${isCorrect ? 'ok' : 'ko'}">${isCorrect ? '✓ Bonne réponse ! ' : '✗ Pas tout à fait. '}${escapeHtml(explanation)}</div>`;
+            const multTag = multiplier > 1.0 ? `<span class="dash-combo-tag">x${multiplier.toFixed(1)}</span> ` : '';
+            feedback = `<div class="dash-feedback ${isCorrect ? 'ok' : 'ko'}">${isCorrect ? '✓ Bonne réponse ! ' + multTag : '✗ Pas tout à fait. '}${escapeHtml(explanation)}</div>`;
             if (isCorrect) {
                 const rewards = (typeof AdminStore !== 'undefined' && typeof AdminStore.getRewardsConfig === 'function')
                     ? AdminStore.getRewardsConfig()
@@ -2578,8 +3057,11 @@ function initDashboard() {
                 const chronoBonus = (chronoEnabled && (window.quizTimeRemaining || 0) > 0)
                     ? Math.floor(rewards.chronoBonusMaxXp * (window.quizTimeRemaining / 30))
                     : 0;
-                const totalXp = rewards.xpBase + chronoBonus + (state.quiz.attempts === 1 ? (rewards.firstTryBonusXp || 0) : 0);
-                feedback += `<div class="dash-reward-line"><span>+${totalXp} XP</span><span>+${rewards.coinsBase} <span class="dash-coin-dot" style="display:inline-block; width:10px;height:10px; vertical-align:middle;"></span></span></div>`;
+                const baseTotalXp = rewards.xpBase + chronoBonus + (state.quiz.attempts === 1 ? (rewards.firstTryBonusXp || 0) : 0);
+                const totalXp = Math.round(baseTotalXp * multiplier);
+                const baseScore = 100 * (state.quiz.attempts === 1 ? 3 : (state.quiz.attempts === 2 ? 2 : 1));
+                const earnedScore = Math.round(baseScore * multiplier);
+                feedback += `<div class="dash-reward-line"><span>+${totalXp} XP ${multiplier > 1.0 ? `<b style="color:#ffa502;">(x${multiplier.toFixed(1)})</b>` : ''}</span><span>+${rewards.coinsBase} <span class="dash-coin-dot" style="display:inline-block; width:10px;height:10px; vertical-align:middle;"></span></span><span style="color:#ffbe0b; font-weight:700;">+${earnedScore} pts</span></div>`;
             }
         }
 
@@ -2603,6 +3085,7 @@ function initDashboard() {
         overlay.innerHTML = `<div class="dash-modal">
             <div class="dash-eyebrow">${escapeHtml(subject ? subject.name : '')} · ${escapeHtml(lesson ? lesson.title : '')}</div>
             ${chronoHtml}
+            ${comboBarHtml}
             <h3>${escapeHtml(lesson ? lesson.q : '')}</h3>
             <div class="dash-quiz-body">${lesson ? QuizEngine.renderBody(lesson) : ''}</div>
             ${feedback}
@@ -2651,6 +3134,8 @@ function initDashboard() {
     };
 
     window._dashGoBadges = function () {
+        triggerBadgesCheck();
+        state.badges = DB.getBadges();
         state.view = 'badges';
         render();
     };
@@ -2722,14 +3207,34 @@ function initDashboard() {
             ? "Temps écoulé ! Tu as dépassé les 30 secondes accordées."
             : result.explanation;
         quiz.lesson = { ...quiz.lesson, ...result.answerKey };
+
+        if (result.isCorrect) {
+            if (typeof DB !== 'undefined' && DB.recordCorrectAnswer) {
+                DB.recordCorrectAnswer();
+            }
+        } else {
+            let shieldSaved = false;
+            if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster('boost-shield')) {
+                DB.useBooster('boost-shield');
+                shieldSaved = true;
+                window._lastUsedBoosterShield = true;
+                showNotification('🛡️ Bouclier d\'Étoile consommé : Série et combo protégés !', 'info');
+            }
+            if (typeof DB !== 'undefined' && DB.recordWrongAnswer) {
+                DB.recordWrongAnswer(shieldSaved);
+            }
+        }
         render();
     };
 
     window._dashFinishQuiz = function () {
         if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
         const { subjectId, lessonIndex, attempts } = state.quiz;
+        const streakRes = (typeof DB !== 'undefined' && DB.recordLevelVictory) ? DB.recordLevelVictory() : { streak: 1, combo: 0, multiplier: 1.0 };
+        const mult = (streakRes && streakRes.multiplier) || ((typeof DB !== 'undefined' && DB.getMultiplier) ? DB.getMultiplier() : 1.0);
         let xpGained = 0;
         let coinsGained = 0;
+        let scoreGained = 0;
         
         if (lessonIndex === (state.progress[subjectId] || 0)) {
             state.progress[subjectId] = (state.progress[subjectId] || 0) + 1;
@@ -2742,14 +3247,47 @@ function initDashboard() {
             const chronoBonus = (chronoEnabled && (window.quizTimeRemaining || 0) > 0)
                 ? Math.floor(rewards.chronoBonusMaxXp * (window.quizTimeRemaining / 30))
                 : 0;
-            const firstTryBonus = (attempts === 1) ? (rewards.firstTryBonusXp || 0) : 0;
+            let usedDoubleXp = false;
+            let usedShield = false;
+            if (attempts === 2 && typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster('boost-shield')) {
+                DB.useBooster('boost-shield');
+                usedShield = true;
+                showNotification('🛡️ Bouclier d\'Étoile consommé : 3 étoiles préservées !', 'info');
+            }
+            const firstTryBonus = (attempts === 1 || usedShield) ? (rewards.firstTryBonusXp || 0) : 0;
             
-            xpGained = rewards.xpBase + chronoBonus + firstTryBonus;
+            let baseCalcXp = rewards.xpBase + chronoBonus + firstTryBonus;
+            // Potion Double XP
+            if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster('boost-xp')) {
+                DB.useBooster('boost-xp');
+                usedDoubleXp = true;
+                baseCalcXp *= 2;
+                showNotification('🧪 Potion Double XP consommée : XP doublée !', 'success');
+            }
+
+            xpGained = Math.round(baseCalcXp * mult);
             coinsGained = rewards.coinsBase;
-            
+
+            const baseScore = 100 * (attempts === 1 ? 3 : (attempts === 2 ? 2 : 1));
+            scoreGained = Math.round(baseScore * mult);
+            const currentScore = parseInt(getOption('dash_total_score') || '0', 10);
+            saveOption('dash_total_score', String(currentScore + scoreGained));
+
             state.xp += xpGained;
             state.coins += coinsGained;
-            checkBadges({ justAnsweredFirstTry: attempts === 1 });
+            triggerBadgesCheck({
+                justAnsweredFirstTry: (attempts === 1 || usedShield),
+                justCompletedLevel: true,
+                subjectId,
+                usedDoubleXp,
+                usedShield,
+                usedBooster: usedDoubleXp ? 'boost-xp' : (usedShield ? 'boost-shield' : null),
+                boosterId: usedDoubleXp ? 'boost-xp' : (usedShield ? 'boost-shield' : null),
+                streakCount: streakRes.streak,
+                comboCount: streakRes.combo,
+                maxCombo: streakRes.maxCombo,
+                totalScore: currentScore + scoreGained
+            });
         }
         state.quiz = null;
         persistState();
@@ -2764,7 +3302,7 @@ function initDashboard() {
 
         render();
         if (xpGained > 0) {
-            showNotification(`✓ +${xpGained} XP et +${coinsGained} pièces !`);
+            showNotification(`✓ +${xpGained} XP ${mult > 1.0 ? `[x${mult.toFixed(1)}] ` : ''}, +${coinsGained} pièces, +${scoreGained} pts !`);
         }
     };
 
@@ -2778,7 +3316,7 @@ function initDashboard() {
         if (!q) return;
         if (btn) Celebrate.burst(btn);
         syncWallet();
-        checkBadges();
+        triggerBadgesCheck({ questClaimed: true });
         render();
         showNotification(`${q.icon} Récompense : +${q.xp} XP et +${q.coins} pièces !`);
     };
@@ -2789,6 +3327,7 @@ function initDashboard() {
         if (btn) Celebrate.burst(btn);
         Celebrate.confetti();
         syncWallet();
+        triggerBadgesCheck({ dailyChestOpened: true });
         render();
         showNotification(`🎁 Coffre du jour ouvert : +${coins} pièces !`);
     };
@@ -2806,17 +3345,35 @@ function initDashboard() {
             return;
         }
         state.coins -= item.cost;
+        const cat = item.category || 'aura';
+
+        if (cat === 'booster') {
+            if (typeof DB !== 'undefined' && DB.addBooster) {
+                DB.addBooster(id, 1);
+            }
+            triggerBadgesCheck({ boughtBooster: true, boosterId: id, hasBooster: true });
+            persistState();
+            render();
+            showNotification(`⚡ Potion « ${item.name} » ajoutée à ta réserve (+1) !`);
+            return;
+        }
+
         if (!state.ownedSkins.includes(id)) {
             state.ownedSkins.push(id);
         }
-        if (item.category === 'title') {
+        if (cat === 'title') {
             state.equippedTitle = id;
-        } else if (item.category === 'theme') {
+        } else if (cat === 'theme') {
             state.equippedTheme = id;
+            document.documentElement.setAttribute('data-theme', id);
+        } else if (cat === 'avatar') {
+            state.equippedAvatar = id;
         } else {
+            // aura
+            state.equippedAura = id;
             state.equippedSkin = id;
         }
-        checkBadges();
+        triggerBadgesCheck({ boughtSkin: true, skinId: id });
         persistState();
         render();
         showNotification(`✓ « ${item.name} » débloqué et équipé !`);
@@ -2825,12 +3382,22 @@ function initDashboard() {
     window._dashEquipSkin = function (id) {
         const item = getShopCatalog().find(s => s.id === id);
         if (!item) return;
-        if (item.category === 'title') {
+        const cat = item.category || 'aura';
+        if (cat === 'title') {
             state.equippedTitle = (state.equippedTitle === id ? '' : id);
             showNotification(state.equippedTitle ? `🏷️ Titre « ${item.name} » activé !` : 'Titre retiré.');
-        } else if (item.category === 'theme') {
+        } else if (cat === 'theme') {
             state.equippedTheme = (state.equippedTheme === id ? 'default' : id);
+            document.documentElement.setAttribute('data-theme', state.equippedTheme);
+            triggerBadgesCheck({ theme: state.equippedTheme });
             showNotification(`🎨 Thème « ${item.name} » appliqué !`);
+        } else if (cat === 'avatar') {
+            state.equippedAvatar = id;
+            showNotification(`👤 Avatar « ${item.name} » équipé !`);
+        } else if (cat === 'aura') {
+            state.equippedAura = id;
+            state.equippedSkin = id;
+            showNotification(`✨ Aura « ${item.name} » équipée !`);
         } else {
             state.equippedSkin = id;
             showNotification(`✓ « ${item.name} » équipé !`);
@@ -2915,7 +3482,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 6. Enregistrement du Service Worker (PWA) pour le mode 100% hors-ligne
-    if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator && (window.location.protocol === 'http:' || window.location.protocol === 'https:')) {
         navigator.serviceWorker.register('service-worker.js')
             .then(reg => console.log('Service Worker enregistré', reg.scope))
             .catch(err => console.error('Erreur Service Worker', err));

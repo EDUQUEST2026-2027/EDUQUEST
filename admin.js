@@ -136,8 +136,8 @@
                 <div class="adm-card">
                     <h2>${isSetup ? '🛡️ Créer le premier administrateur' : '🛡️ Accès administrateur'}</h2>
                     <p class="adm-gate-sub">${isSetup
-                        ? 'Aucun compte administrateur n\'existe encore. Créez-le pour ouvrir le panneau.'
-                        : 'Connectez-vous avec un compte dont le rôle est « admin ».'}</p>
+                ? 'Aucun compte administrateur n\'existe encore. Créez-le pour ouvrir le panneau.'
+                : 'Connectez-vous avec un compte dont le rôle est « admin ».'}</p>
 
                     ${isSetup ? `
                         <div class="adm-form">
@@ -178,6 +178,7 @@
     const TABS = [
         { id: 'levels', icon: '🎓', label: 'Niveaux scolaires' },
         { id: 'subjects', icon: '📚', label: 'Matières & leçons' },
+        { id: 'badges', icon: '🏆', label: 'Succès' },
         { id: 'shop', icon: '🛍️', label: 'Boutique' },
         { id: 'rewards', icon: '🎁', label: 'Récompenses' },
         { id: 'members', icon: '👥', label: 'Membres' },
@@ -192,6 +193,7 @@
                 <div class="adm-stat"><b>…</b><span>Admins</span></div>
                 <div class="adm-stat"><b>…</b><span>Matières</span></div>
                 <div class="adm-stat"><b>…</b><span>Articles Boutique</span></div>
+                <div class="adm-stat"><b>…</b><span>Succès</span></div>
             </div>
             <div class="adm-tabs">
                 ${TABS.map(t => `
@@ -208,6 +210,7 @@
     function renderTab() {
         if (S.tab === 'levels') return renderLevels();
         if (S.tab === 'subjects') return renderSubjects();
+        if (S.tab === 'badges') return renderBadges();
         if (S.tab === 'shop') return renderShop();
         if (S.tab === 'rewards') return renderRewards();
         if (S.tab === 'members') return renderMembers();
@@ -226,13 +229,15 @@
         } catch { /* stats optionnelles */ }
         const subs = typeof AdminStore !== 'undefined' ? AdminStore.listEditable(AdminStore.getDefaultSubjects()) : [];
         const shopItems = typeof AdminStore !== 'undefined' ? AdminStore.getShopItems() : [];
+        const badges = typeof AdminStore !== 'undefined' ? AdminStore.getBadges() : [];
         if (!wrap) return;
         const cells = wrap.querySelectorAll('.adm-stat b');
-        if (cells.length >= 4) {
+        if (cells.length >= 5) {
             cells[0].textContent = String(members.length);
             cells[1].textContent = String(admins);
             cells[2].textContent = String(subs.length);
             cells[3].textContent = String(shopItems.length);
+            cells[4].textContent = String(badges.length);
         }
     }
 
@@ -369,8 +374,8 @@
                 </div>
                 <div class="adm-note">
                     ${isCustom
-                        ? `Matière créée dans le panneau : seuls vos niveaux existent (${lessons.length} leçon(s)). Ajoutez des leçons pour créer de nouveaux niveaux.`
-                        : `Les niveaux 1 à ${lessons.length} (écrits à la main${customized ? ', partiellement modifiés' : ''}) sont modifiables ici ; au-delà, le contenu est généré automatiquement (100 niveaux au total).`}
+                ? `Matière créée dans le panneau : seuls vos niveaux existent (${lessons.length} leçon(s)). Ajoutez des leçons pour créer de nouveaux niveaux.`
+                : `Les niveaux 1 à ${lessons.length} (écrits à la main${customized ? ', partiellement modifiés' : ''}) sont modifiables ici ; au-delà, le contenu est généré automatiquement (100 niveaux au total).`}
                 </div>
 
                 <div class="adm-form-row" style="margin-bottom:14px;">
@@ -380,8 +385,8 @@
                         <input class="adm-input" id="admMetaIcon" value="${esc(fresh.icon)}" style="max-width:120px;"></div>
                     <button class="adm-btn" onclick="ADM.saveMeta()">💾 Renommer</button>
                     ${isCustom
-                        ? `<button class="adm-btn adm-btn-danger" onclick="ADM.deleteSubject()">Supprimer la matière</button>`
-                        : `<button class="adm-btn adm-btn-ghost" onclick="ADM.resetSubject()" title="Retirer toutes les modifications de cette matière">Rétablir l'original</button>`}
+                ? `<button class="adm-btn adm-btn-danger" onclick="ADM.deleteSubject()">Supprimer la matière</button>`
+                : `<button class="adm-btn adm-btn-ghost" onclick="ADM.resetSubject()" title="Retirer toutes les modifications de cette matière">Rétablir l'original</button>`}
                 </div>
 
                 ${editor}
@@ -523,6 +528,142 @@
             lesson.exp = val('admF_exp').trim();
         }
         return lesson;
+    }
+
+    /* ============================== ONGLET : SUCCÈS ============================== */
+
+    const BADGE_CATEGORY_LABELS = {
+        all: '🌟 Tous',
+        progression: '🎯 Progression',
+        precision: '✨ Précision',
+        exploration: '🌐 Exploration',
+        maitrise: '🏆 Maîtrise',
+        boutique: '🎨 Boutique',
+        niveau: '🚀 Niveau & XP',
+        economie: '💰 Économie',
+        potions: '🧪 Potions',
+        matieres: '📚 Matières',
+        personnalisation: '✨ Personnalisation',
+        quetes: '📋 Quêtes',
+    };
+
+    function renderBadges() {
+        const cat = S.badgeCategory || 'all';
+        const allBadges = (typeof AdminStore !== 'undefined') ? AdminStore.getBadges() : [];
+        const filtered = cat === 'all' ? allBadges : allBadges.filter(b => (b.category || 'progression') === cat);
+        const unlockedList = (typeof DB !== 'undefined') ? DB.getBadges() : [];
+
+        const editor = S.editingBadge ? renderBadgeEditor(S.editingBadge) : '';
+
+        const badgeCards = filtered.map(b => {
+            const isUnlocked = unlockedList.includes(b.id);
+            return `
+                <div class="adm-shop-card ${b.disabled ? 'disabled' : ''}">
+                    <div class="adm-shop-card-head">
+                        <div class="adm-shop-orb" style="font-size: 2rem; background: rgba(200,168,75,0.15);">
+                            ${esc(b.icon || '🏆')}
+                        </div>
+                        <div class="adm-shop-meta">
+                            <div class="adm-shop-title">
+                                <b>${esc(b.name)}</b>
+                                <span class="adm-badge adm-badge-type">${esc(BADGE_CATEGORY_LABELS[b.category] || b.category)}</span>
+                            </div>
+                            <div class="adm-shop-cost" style="font-size:0.85rem; color:#8fa1d0;">ID: <code>${esc(b.id)}</code></div>
+                        </div>
+                    </div>
+                    <p class="adm-shop-desc">${esc(b.desc || 'Aucune description')}</p>
+                    <div class="adm-shop-actions">
+                        <button class="adm-btn ${isUnlocked ? 'adm-btn-ok' : 'adm-btn-ghost'}" style="padding:4px 10px; font-size:0.85rem;" onclick="ADM.toggleBadgeUnlock('${esc(b.id)}')">
+                            ${isUnlocked ? '✓ Débloqué (Test)' : '🔒 Verrouillé'}
+                        </button>
+                        <div class="adm-row-actions">
+                            <button class="adm-ico-btn" title="Modifier" onclick="ADM.editBadge('${esc(b.id)}')">✏️ Modifier</button>
+                            <button class="adm-ico-btn danger" title="Supprimer" onclick="ADM.deleteBadge('${esc(b.id)}')">🗑️</button>
+                        </div>
+                    </div>
+                </div>`;
+        }).join('');
+
+        return `
+            <div class="adm-card">
+                <div class="adm-toolbar">
+                    <h2 style="margin:0;">🏆 Gestion des Succès &amp; Badges <small>${allBadges.length} succès</small></h2>
+                    <div class="adm-right" style="display:flex; gap:8px;">
+                        <button class="adm-btn adm-btn-ok" onclick="ADM.newBadge()">+ Ajouter un succès</button>
+                    </div>
+                </div>
+                <p class="adm-hint">Consultez, modifiez ou ajoutez des succès pour récompenser les élèves. Vous pouvez également tester leur déblocage en direct pour votre compte.</p>
+
+                <div class="adm-shop-filter-tabs">
+                    ${Object.keys(BADGE_CATEGORY_LABELS).map(k => `
+                        <button class="adm-shop-filter-btn ${cat === k ? 'active' : ''}" onclick="ADM.setBadgeCategory('${k}')">
+                            ${BADGE_CATEGORY_LABELS[k]} (${k === 'all' ? allBadges.length : allBadges.filter(i => (i.category || 'progression') === k).length})
+                        </button>
+                    `).join('')}
+                </div>
+
+                ${editor}
+
+                <div class="adm-shop-grid">
+                    ${badgeCards || '<div class="adm-empty" style="grid-column: 1/-1;">Aucun succès dans cette catégorie.</div>'}
+                </div>
+
+                <div class="adm-toolbar" style="margin-top:20px; border-top: 1px dashed rgba(154,167,216,0.2); padding-top: 14px; display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="adm-btn adm-btn-ghost" onclick="ADM.unlockAllBadges()">✨ Tout débloquer (test compte)</button>
+                    <button class="adm-btn adm-btn-ghost" onclick="ADM.resetUserBadges()">🔒 Réinitialiser mes succès</button>
+                    <button class="adm-btn adm-btn-danger adm-right" onclick="ADM.resetBadgesCatalog()">🔄 Rétablir le catalogue de succès par défaut</button>
+                </div>
+            </div>`;
+    }
+
+    function renderBadgeEditor(badge) {
+        const isNew = Boolean(badge._isNew);
+        return `
+            <div class="adm-editor" style="margin: 16px 0;">
+                <h3>${isNew ? '➕ Nouveau succès' : '✏️ Modifier le succès « ' + esc(badge.name) + ' »'}</h3>
+                <div class="adm-form">
+                    <div class="adm-grid-2">
+                        <div class="adm-field">
+                            <label>Identifiant unique (slug)</label>
+                            <input class="adm-input" id="admBadgeId" value="${esc(badge.id || '')}" ${isNew ? '' : 'readonly'} placeholder="ex: mon_succes">
+                        </div>
+                        <div class="adm-field">
+                            <label>Nom du succès</label>
+                            <input class="adm-input" id="admBadgeName" value="${esc(badge.name || '')}" placeholder="ex: Maître des Quiz">
+                        </div>
+                    </div>
+
+                    <div class="adm-grid-2">
+                        <div class="adm-field">
+                            <label>Icône / Émoji</label>
+                            <input class="adm-input" id="admBadgeIcon" value="${esc(badge.icon || '🏆')}" placeholder="ex: 🏆 ou 🎯" style="max-width:120px;">
+                        </div>
+                        <div class="adm-field">
+                            <label>Catégorie</label>
+                            <select class="adm-select" id="admBadgeCat">
+                                ${Object.keys(BADGE_CATEGORY_LABELS).filter(k => k !== 'all').map(k => `
+                                    <option value="${k}" ${(badge.category || 'progression') === k ? 'selected' : ''}>${BADGE_CATEGORY_LABELS[k]}</option>
+                                `).join('')}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="adm-field">
+                        <label>Description (condition montrée au joueur)</label>
+                        <input class="adm-input" id="admBadgeDesc" value="${esc(badge.desc || '')}" placeholder="ex: Réussis 10 quiz sans faire d'erreur.">
+                    </div>
+
+                    <div class="adm-field">
+                        <label>Condition technique (optionnelle)</label>
+                        <input class="adm-input" id="admBadgeCond" value="${esc(badge.condition || '')}" placeholder="ex: totalCompleted >= 10">
+                    </div>
+
+                    <div class="adm-form-actions" style="margin-top:14px; display:flex; gap:10px;">
+                        <button class="adm-btn adm-btn-ok" onclick="ADM.saveBadge()">💾 Enregistrer le succès</button>
+                        <button class="adm-btn adm-btn-ghost" onclick="ADM.cancelBadgeEdit()">Annuler</button>
+                    </div>
+                </div>
+            </div>`;
     }
 
     /* ============================== ONGLET : BOUTIQUE ============================== */
@@ -1396,6 +1537,77 @@
             if (window.EduCookies) EduCookies.showBanner();
             else toast('cookies.js n\'est pas chargé sur cette page.', 'err');
         },
+
+        // Succès / Badges
+        setBadgeCategory(cat) {
+            S.badgeCategory = cat;
+            renderTabContent();
+        },
+        newBadge() {
+            S.editingBadge = { id: 'succes_' + Date.now(), name: '', desc: '', icon: '🏆', category: 'progression', condition: '', _isNew: true };
+            renderTabContent();
+        },
+        editBadge(id) {
+            const b = AdminStore.getBadge(id);
+            if (!b) return;
+            S.editingBadge = { ...b, _isNew: false };
+            renderTabContent();
+        },
+        cancelBadgeEdit() {
+            S.editingBadge = null;
+            renderTabContent();
+        },
+        saveBadge() {
+            const id = (document.getElementById('admBadgeId')?.value || '').trim();
+            const name = (document.getElementById('admBadgeName')?.value || '').trim();
+            const icon = (document.getElementById('admBadgeIcon')?.value || '').trim() || '🏆';
+            const cat = document.getElementById('admBadgeCat')?.value || 'progression';
+            const desc = (document.getElementById('admBadgeDesc')?.value || '').trim();
+            const condition = (document.getElementById('admBadgeCond')?.value || '').trim();
+            if (!id || !name) {
+                toast('Identifiant et nom requis.', 'err');
+                return;
+            }
+            AdminStore.saveBadge({ id, name, icon, category: cat, desc, condition });
+            S.editingBadge = null;
+            renderTabContent();
+            toast('Succès enregistré avec succès !', 'ok');
+        },
+        deleteBadge(id) {
+            if (!confirm(`Supprimer le succès « ${id} » ?`)) return;
+            AdminStore.deleteBadge(id);
+            renderTabContent();
+            toast('Succès supprimé.', 'ok');
+        },
+        toggleBadgeUnlock(id) {
+            const unlocked = DB.getBadges();
+            if (unlocked.includes(id)) {
+                DB.lockBadge(id);
+                toast(`Succès « ${id} » verrouillé.`, 'ok');
+            } else {
+                DB.unlockBadge(id);
+                toast(`Succès « ${id} » débloqué !`, 'ok');
+            }
+            renderTabContent();
+        },
+        unlockAllBadges() {
+            const all = AdminStore.getBadges().map(b => b.id);
+            DB.setBadges(all);
+            renderTabContent();
+            toast('Tous les succès ont été débloqués pour ce compte !', 'ok');
+        },
+        resetUserBadges() {
+            if (!confirm('Réinitialiser tous les succès de votre compte ?')) return;
+            DB.resetBadges();
+            renderTabContent();
+            toast('Succès de votre compte réinitialisés.', 'ok');
+        },
+        resetBadgesCatalog() {
+            if (!confirm('Rétablir la liste des succès par défaut ?')) return;
+            AdminStore.resetBadges();
+            renderTabContent();
+            toast('Catalogue de succès réinitialisé par défaut.', 'ok');
+        },
     };
 
     window.ADM = ADM;
@@ -1423,7 +1635,7 @@
             try {
                 const res = await DB.listLocalMembers();
                 admins = (res.ok && res.data) ? res.data.filter(u => u.role === 'admin') : [];
-            } catch {}
+            } catch { }
             S.gate = admins.length === 0 ? 'setup' : 'login';
             S.authed = false;
             render();

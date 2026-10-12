@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eduquest-cache-v1.23.0';
+const CACHE_NAME = 'eduquest-cache-v1.24.0';
 
 const PRECACHE_URLS = [
   './',

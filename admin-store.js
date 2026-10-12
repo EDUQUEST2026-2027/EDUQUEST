@@ -37,12 +37,12 @@ const AdminStore = (() => {
     // (utilisé dans DB.setNiveau et les clés de progression), label affiché,
     // bande de contenu collège/lycée (voir QuestionBank.bandForNiveau).
     const DEFAULT_LEVELS = [
-        { id: '6eme',      label: '6ème',      band: 'college' },
-        { id: '5eme',      label: '5ème',      band: 'college' },
-        { id: '4eme',      label: '4ème',      band: 'college' },
-        { id: '3eme',      label: '3ème',      band: 'college' },
-        { id: '2nde',      label: '2nde',      band: 'lycee' },
-        { id: '1ere',      label: '1ère',      band: 'lycee' },
+        { id: '6eme', label: '6ème', band: 'college' },
+        { id: '5eme', label: '5ème', band: 'college' },
+        { id: '4eme', label: '4ème', band: 'college' },
+        { id: '3eme', label: '3ème', band: 'college' },
+        { id: '2nde', label: '2nde', band: 'lycee' },
+        { id: '1ere', label: '1ère', band: 'lycee' },
         { id: 'terminale', label: 'Terminale', band: 'lycee' },
     ];
 
@@ -101,6 +101,37 @@ const AdminStore = (() => {
         questRewardMultiplier: 1,// Multiplicateur récompenses des quêtes
     };
 
+    // Catalogue des 24 succès / badges par défaut d'EDUQUEST
+    const DEFAULT_BADGES = [
+        { id: 'premier_quiz', icon: '🎯', name: 'Premier pas', desc: 'Réussis ta toute première question.', category: 'progression', condition: 'totalCompleted >= 1' },
+        { id: 'sans_faute', icon: '✨', name: 'Sans-faute', desc: 'Réponds juste du premier coup, sans réessayer.', category: 'precision', condition: 'justAnsweredFirstTry' },
+        { id: 'toutes_matieres', icon: '🌐', name: 'Touche-à-tout', desc: 'Termine au moins une leçon dans chaque matière.', category: 'exploration', condition: 'allSubjectsStarted' },
+        { id: 'matiere_complete', icon: '🏆', name: 'Expert(e)', desc: 'Termine au moins 5 leçons d\'une même matière.', category: 'maitrise', condition: 'oneSubjectAdvanced' },
+        { id: 'collectionneur', icon: '🎨', name: 'Collectionneur', desc: 'Possède 3 skins ou articles différents.', category: 'boutique', condition: 'ownedSkins >= 3' },
+        { id: 'niveau_5', icon: '🚀', name: 'Étoile montante', desc: 'Atteins le niveau 5 (400+ XP).', category: 'niveau', condition: 'playerLevel >= 5' },
+        { id: 'niveau_10', icon: '👑', name: 'Grand Maître', desc: 'Atteins le niveau 10 (900+ XP).', category: 'niveau', condition: 'playerLevel >= 10' },
+        { id: 'riche', icon: '💰', name: 'Bourse pleine', desc: 'Accumule au moins 100 pièces d\'or.', category: 'economie', condition: 'coins >= 100' },
+        { id: 'magnat', icon: '🏦', name: 'Magnat d\'Eduquest', desc: 'Accumule au moins 250 pièces d\'or.', category: 'economie', condition: 'coins >= 250' },
+        { id: 'alchimiste', icon: '🧪', name: 'Alchimiste', desc: 'Achète ou possède une potion magique.', category: 'potions', condition: 'hasBooster' },
+        { id: 'potion_double_xp', icon: '⚡', name: 'Surtension', desc: 'Utilise une Potion Double XP.', category: 'potions', condition: 'usedDoubleXp' },
+        { id: 'bouclier_etoile', icon: '🛡️', name: 'Invulnérable', desc: 'Utilise un Bouclier d\'Étoile pour protéger un score parfait.', category: 'potions', condition: 'usedShield' },
+        { id: 'maths_fan', icon: '📐', name: 'Arithméticien', desc: 'Atteins le niveau 5 en Mathématiques.', category: 'matieres', condition: 'mathsLevel >= 5' },
+        { id: 'francais_fan', icon: '📚', name: 'Littéraire', desc: 'Atteins le niveau 5 en Français.', category: 'matieres', condition: 'francaisLevel >= 5' },
+        { id: 'histoire_fan', icon: '📜', name: 'Chroniqueur', desc: 'Atteins le niveau 5 en Histoire.', category: 'matieres', condition: 'histoireLevel >= 5' },
+        { id: 'sciences_fan', icon: '🔬', name: 'Scientifique', desc: 'Atteins le niveau 5 en SVT, Physique ou Chimie.', category: 'matieres', condition: 'scienceLevel >= 5' },
+        { id: 'philo_fan', icon: '🏛️', name: 'Penseur Antique', desc: 'Atteins le niveau 5 en Philosophie.', category: 'matieres', condition: 'philoLevel >= 5' },
+        { id: 'polyglotte', icon: '🇬🇧', name: 'Polyglotte', desc: 'Atteins le niveau 5 en Anglais.', category: 'matieres', condition: 'anglaisLevel >= 5' },
+        { id: 'citoyen', icon: '⚖️', name: 'Citoyen Éclairé', desc: 'Atteins le niveau 5 en EMC.', category: 'matieres', condition: 'emcLevel >= 5' },
+        { id: 'technophile', icon: '💻', name: 'Technophile', desc: 'Atteins le niveau 5 en Technologie.', category: 'matieres', condition: 'technoLevel >= 5' },
+        { id: 'fashion_victim', icon: '✨', name: 'Aura Éclatante', desc: 'Équipe une aura scintillante pour ton avatar.', category: 'personnalisation', condition: 'auraEquipped' },
+        { id: 'theme_custom', icon: '🎭', name: 'Nouveau Décor', desc: 'Applique un thème visuel personnalisé.', category: 'personnalisation', condition: 'themeEquipped' },
+        { id: 'streak_3', icon: '🔥', name: 'Série Ardente', desc: 'Réussis 3 leçons d\'affilée.', category: 'progression', condition: 'streakCount >= 3' },
+        { id: 'streak_5', icon: '⚡', name: 'Inarrêtable', desc: 'Atteins une série de 5 victoires d\'affilée.', category: 'progression', condition: 'streakCount >= 5' },
+        { id: 'combo_5', icon: '👑', name: 'Maître du Combo', desc: 'Enchaîne 5 bonnes réponses consécutives.', category: 'precision', condition: 'comboCount >= 5' },
+        { id: 'queteur', icon: '📋', name: 'Assidu', desc: 'Réclame une récompense de quête journalière.', category: 'quetes', condition: 'questClaimed' },
+        { id: 'coffre_ouvert', icon: '🎁', name: 'Chasseur de Trésor', desc: 'Ouvre le coffre quotidien bonus.', category: 'quetes', condition: 'dailyChestOpened' },
+    ];
+
     /* -----------------------------------------------------------------------
        ÉTAT INTERNE
        ----------------------------------------------------------------------- */
@@ -128,6 +159,7 @@ const AdminStore = (() => {
         if (d && d.v === 1 && d.subjects && Array.isArray(d.subjects.customs)) {
             if (!d.shop) d.shop = { overrides: {}, customs: [] };
             if (!d.rewards) d.rewards = null;
+            if (!d.badges) d.badges = { overrides: {}, customs: [] };
             cache = d;
         } else {
             cache = {
@@ -137,6 +169,7 @@ const AdminStore = (() => {
                 credits: {},
                 shop: { overrides: {}, customs: [] },
                 rewards: null,
+                badges: { overrides: {}, customs: [] },
             };
         }
         return cache;
@@ -699,6 +732,84 @@ const AdminStore = (() => {
     }
 
     /* -----------------------------------------------------------------------
+       GESTION DES SUCCÈS (BADGES)
+       ----------------------------------------------------------------------- */
+
+    function getBadges() {
+        const data = _data();
+        const store = data.badges || { overrides: {}, customs: [] };
+        const list = DEFAULT_BADGES.map(b => {
+            const ov = store.overrides ? store.overrides[b.id] : null;
+            return ov ? { ..._clone(b), ...ov } : _clone(b);
+        }).filter(b => !b._deleted);
+
+        if (Array.isArray(store.customs)) {
+            store.customs.forEach(c => {
+                if (!c._deleted) list.push(_clone(c));
+            });
+        }
+        return list;
+    }
+
+    function getBadge(id) {
+        return getBadges().find(b => b.id === id) || null;
+    }
+
+    function saveBadge(badge) {
+        if (!badge || !badge.id) return { ok: false, error: 'Identifiant requis.' };
+        const data = _data();
+        if (!data.badges) data.badges = { overrides: {}, customs: [] };
+
+        const isDef = DEFAULT_BADGES.some(b => b.id === badge.id);
+        if (isDef) {
+            data.badges.overrides[badge.id] = {
+                name: badge.name,
+                desc: badge.desc,
+                icon: badge.icon,
+                category: badge.category || 'progression',
+                condition: badge.condition || '',
+                _deleted: false,
+            };
+        } else {
+            const idx = data.badges.customs.findIndex(c => c.id === badge.id);
+            const item = {
+                id: badge.id,
+                name: badge.name || 'Succès',
+                desc: badge.desc || '',
+                icon: badge.icon || '🏆',
+                category: badge.category || 'personnalise',
+                condition: badge.condition || '',
+                _custom: true,
+                _deleted: false,
+            };
+            if (idx >= 0) data.badges.customs[idx] = item;
+            else data.badges.customs.push(item);
+        }
+        _save();
+        return { ok: true, badge: getBadge(badge.id) };
+    }
+
+    function deleteBadge(id) {
+        const data = _data();
+        if (!data.badges) data.badges = { overrides: {}, customs: [] };
+        const isDef = DEFAULT_BADGES.some(b => b.id === id);
+        if (isDef) {
+            data.badges.overrides[id] = { _deleted: true };
+        } else {
+            data.badges.customs = data.badges.customs.filter(c => c.id !== id);
+        }
+        _save();
+        return { ok: true };
+    }
+
+    function resetBadges() {
+        const data = _data();
+        data.badges = { overrides: {}, customs: [] };
+        _save();
+        return { ok: true };
+    }
+
+    /* -----------------------------------------------------------------------
        EXPORT / IMPORT / RÉINITIALISATION
        ----------------------------------------------------------------------- */
 
@@ -758,7 +869,7 @@ const AdminStore = (() => {
     /** Supprime toute la configuration administrateur (niveaux + matières + boutique + récompenses). */
     function resetAll() {
         cache = null;
-        try { localStorage.removeItem(LS_KEY); } catch {}
+        try { localStorage.removeItem(LS_KEY); } catch { }
     }
 
     /**
@@ -777,7 +888,7 @@ const AdminStore = (() => {
                 }
             }
             remove.forEach(k => localStorage.removeItem(k));
-        } catch {}
+        } catch { }
         return remove.length;
     }
 
@@ -840,6 +951,14 @@ const AdminStore = (() => {
         getRewardsConfig,
         saveRewardsConfig,
         resetRewardsConfig,
+
+        // Succès / Badges
+        DEFAULT_BADGES,
+        getBadges,
+        getBadge,
+        saveBadge,
+        deleteBadge,
+        resetBadges,
 
         // Export / import / réinitialisation
         exportJson,

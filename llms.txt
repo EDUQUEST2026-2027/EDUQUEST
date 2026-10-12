@@ -1,7 +1,7 @@
 # EDUQUEST — llms.txt
 # Documentation destinée aux agents IA et assistants conversationnels.
 # Standard : https://llmstxt.org/
-# Dernière mise à jour : 2026-10-10
+# Dernière mise à jour : 2026-10-12
 
 > EDUQUEST est une application web éducative française de révision gamifiée
 > pour les élèves du collège et du lycée (6e → Terminale). 100 % front-end,
@@ -10,7 +10,7 @@
 ## Identité
 
 - **Nom** : EDUQUEST
-- **Version** : 1.23.0
+- **Version** : 1.24.0
 - **Type** : Application web éducative (jeu de révision gamifié)
 - **Langue** : français (fr-FR)
 - **Public** : élèves (6e → Terminale), enseignants, établissements scolaires, familles
@@ -25,17 +25,19 @@
 **Complet** : EDUQUEST transforme les révisions en aventure : l'élève choisit
 sa matière, son niveau scolaire (6e → Terminale ou classe personnalisée), puis
 gravit des îles en répondant à des quiz variés (QCM, vrai/faux, réponse courte,
-texte à trous, association). XP, pièces, quêtes quotidiennes, succès, boutique
+texte à trous, association). Séries de victoires (streak), combos en chaîne avec
+multiplicateur de score et d'XP dynamique (x1.0 à x2.5), potions consommables
+(Double XP, Bouclier d'Étoile), quêtes quotidiennes, succès, boutique
 de personnalisation (halos, avatars historiques, titres, boosters) et mode
-chronométré maintiennent une motivation constante. 10 matières, 100 niveaux
-par matière, contenus, boutique et récompenses ajustables via un panneau
-d'administration complet et autonome.
+chronométré maintiennent une motivation constante. 11 matières (incluant
+la Philosophie et la Chimie dédiée), 100 niveaux par matière, contenus,
+boutique, succès et récompenses ajustables via un panneau d'administration autonome.
 
 ## Mots-clés
 
 révision, jeu éducatif, quiz, collège, lycée, mathématiques, français, SVT,
-histoire, anglais, physique-chimie, apprentissage gamifié, éducation nationale,
-gratuit, pwa, offline
+histoire, anglais, physique, chimie, philosophie, apprentissage gamifié, streak, combo,
+éducation nationale, gratuit, pwa, offline
 
 ## Pages publiques
 
@@ -66,7 +68,7 @@ gratuit, pwa, offline
 | `admin.css` | Styles du panneau d'administration |
 | `quests.css` | Styles pour le tableau de quêtes journalières et le moteur de confettis Canvas |
 | `global.css` / `style.css` | Tokens graphiques, univers spatial animé, cartes et responsive mobile |
-| `service-worker.js` | Mise en cache et fonctionnement hors-ligne (PWA v1.23.0) |
+| `service-worker.js` | Mise en cache et fonctionnement hors-ligne (PWA v1.24.0) |
 | `cookies.js` | Bandeau de consentement RGPD/CNIL (durée de validité 12 mois) |
 
 ## Données personnelles & Confidentialité
