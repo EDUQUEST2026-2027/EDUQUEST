@@ -24,9 +24,20 @@ Puis ouvrez l'URL affichée (ex. `http://localhost:8080`).
 ## ✨ Fonctionnalités clés
 
 - **🔥 Système de Séries (Streaks) & Combos dynamiques :**
-  - **Séries de victoires (`streak`) :** Suivi des victoires consécutives avec badge animé dans le HUD du tableau de bord et l'en-tête de carte.
+  - **Séries de victoires (`streak`) :** Suivi des victoires consécutives avec badge animé dans le HUD du tableau de bord et l'en-tête de carte. Réinitialisation à zéro en cas d'erreur non protégée par un bouclier.
   - **Combos en chaîne (`combo`) :** Enchaînement de bonnes réponses consécutives avec 6 paliers visuels (Standard, En rythme, En feu, Surtension, Inarrêtable, Légendaire).
   - **Multiplicateur de score & XP :** Bonus progressif de **x1.0** à **x2.5** appliqué au score total et aux points d'expérience.
+- **🎲 3 variantes de questions par niveau & renouvellement en cas d'échec :**
+  - Chaque niveau dispose de 3 variantes de questions distinctes choisies aléatoirement.
+  - En cas d'erreur, le bouton **Réessayer** génère et charge une nouvelle question aléatoire parmi les variantes.
+  - L'ordre des choix des QCM est réorganisé aléatoirement entre chaque essai.
+- **📝 Nouveaux formats de questions & saisie assistée :**
+  - **Texte à choix avec menu déroulant (`texte_a_choix`) :** Menus `<select>` intégrés directement dans le texte.
+  - **Banque de mots proposés (`texte_a_trous`) :** Mots suggérés sous forme de badges cliquables pour insérer facilement les réponses.
+  - **Tolérance aux fautes d'orthographe :** Algorithme de distance de Levenshtein acceptant les fautes de frappe légères dans les réponses textuelles et textes à trous.
+- **🎨 Thème de base dans la boutique & Thèmes personnalisables :** Ré-équipement direct du thème Astral d'origine (offert) à tout moment dans la boutique.
+- **📜 Ergonomie & Affichage responsive :** Hauteur maximale et barre de défilement dorée intégrée dans les modales pour éviter tout débordement d'affichage sur smartphone et questions longues.
+- **🔄 Navigation fluide :** Navigation entre onglets et retour de carte sans rechargement complet de la page via l'API History (`popstate`) et synchronisation `pageshow`.
 - **🧪 Potions & Boosters consommables (Boutique) :**
   - **Potion Double XP :** Multiplie par 2 l'XP gagnée au prochain niveau réussi.
   - **Bouclier d'Étoile :** Préserve le score 3 étoiles ainsi que la série de combos en cas de première erreur.
@@ -36,7 +47,7 @@ Puis ouvrez l'URL affichée (ex. `http://localhost:8080`).
   - Scission et correction définitive de la **Chimie** avec ses propres leçons et visuel.
 - **🗺️ Carte des îles & progression dynamique :** Chaque matière propose un parcours d'îles avec niveaux interactifs (de 1 à 100), hitbox étendue pour un confort tactile optimal, étoiles de maîtrise et déplacement animé du personnage.
 - **🎓 Sélecteur de niveau d'étude intégré :** Choix direct et persistant de la classe (6ème, 5ème, 4ème, 3ème, 2nde, 1ère, Terminale ou classes personnalisées) dans l'en-tête du tableau de bord (`dashboard.html`).
-- **🎯 5 types de questions interactives :** QCM classique, Vrai/Faux, Réponse courte, Texte à trous et Association de paires (propulsé par `quiz-engine.js`).
+- **🎯 Types de questions interactives :** QCM classique, Vrai/Faux, Réponse courte, Texte à trous, Texte à choix déroulant et Association de paires (propulsé par `quiz-engine.js`).
 - **⏱️ Mode Défi Chronométré :** Compte à rebours dynamique réglable dans les options de jeu avec multiplicateur d'XP bonus récompensant la vivacité d'esprit.
 - **📜 Quêtes journalières & Coffre mystère quotidien :**
   - Renouvellement automatique chaque jour à minuit (heure locale).

@@ -1909,15 +1909,35 @@ function initMap() {
                     modal.hidden = true;
                     positionCharacter(findCurrentLevel(progress), true);
                 });
-                document.getElementById('modal-quiz-retry').addEventListener('click', () => {
+                document.getElementById('modal-quiz-retry').addEventListener('click', async () => {
                     if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
                     window.mapQuizTimeRemaining = 30;
+                    const nextVariant = ((currentAttempt.variant || 0) + 1 + Math.floor(Math.random() * 2)) % 3;
+                    currentAttempt.variant = nextVariant;
                     currentAttempt.submitted = null;
                     currentAttempt.answered = false;
                     currentAttempt.isCorrect = false;
-                    currentAttempt.checking = false;
+                    currentAttempt.checking = 'loading';
                     currentAttempt.explanation = '';
                     renderModalQuiz();
+
+                    try {
+                        const { lesson, questionId } = await AiProvider.fetchQuestion(
+                            carteSubject.id, currentModalLevel - 1, currentNiveauBand(), {
+                                variant: nextVariant,
+                                subject: carteSubject
+                            }
+                        );
+                        if (currentAttempt.variant !== nextVariant || modal.hidden) return;
+                        currentAttempt.lesson = lesson;
+                        currentAttempt.questionId = questionId;
+                        currentAttempt.checking = false;
+                        renderModalQuiz();
+                    } catch (err) {
+                        console.warn('[map retry] Erreur chargement variante', err);
+                        currentAttempt.checking = false;
+                        renderModalQuiz();
+                    }
                 });
             }
         }
@@ -1994,16 +2014,26 @@ function initMap() {
                 quizZone.hidden = false;
                 starsZone.hidden = true;
                 const requestedLevel = currentModalLevel;
-                currentAttempt = { attempts: 0, submitted: null, answered: false, isCorrect: false, checking: 'loading', lesson: null, questionId: null, explanation: '' };
+                const initialVariant = Math.floor(Math.random() * 3);
+                currentAttempt = {
+                    attempts: 0,
+                    variant: initialVariant,
+                    submitted: null,
+                    answered: false,
+                    isCorrect: false,
+                    checking: 'loading',
+                    lesson: null,
+                    questionId: null,
+                    explanation: ''
+                };
                 const attempt = currentAttempt; // identité figée pour le garde anti-course
                 renderModalQuiz(); // Affiche d'abord l'état « génération… »
 
-                /* Question via AiProvider : serveur (Make) si configuré, sinon
-                   repli local — en local, on sert la leçon existante du niveau
-                   (leçons 1 à 5 écrites à la main, puis génération déterministe
-                   identique à QuestionBank.generateOne pour les suivantes). */
-                const localLesson = carteSubject.lessons[requestedLevel - 1];
-                AiProvider.fetchQuestion(carteSubject.id, requestedLevel - 1, currentNiveauBand(), { localLesson })
+                /* Question via AiProvider : variante aléatoire parmi 3 */
+                AiProvider.fetchQuestion(carteSubject.id, requestedLevel - 1, currentNiveauBand(), {
+                    variant: initialVariant,
+                    subject: carteSubject
+                })
                     .then(({ lesson, questionId }) => {
                         // Garde anti-course : la modale a pu être fermée, un autre
                         // niveau ouvert, ou la tentative remplacée pendant l'attente.
@@ -2018,7 +2048,8 @@ function initMap() {
                         console.warn('[map] Récupération de question échouée, repli local.', err);
                         if (currentAttempt !== attempt) return;
                         if (currentModalLevel !== requestedLevel || modal.hidden) return;
-                        attempt.lesson = localLesson;
+                        const fallbackLesson = carteSubject.lessons[requestedLevel - 1];
+                        attempt.lesson = fallbackLesson;
                         attempt.questionId = null;
                         attempt.checking = false;
                         renderModalQuiz();
@@ -2076,6 +2107,16 @@ function initMap() {
         modal.hidden = true;
         renderLevels(progress);          // Met à jour l'affichage
     });
+
+    const backBtn = document.querySelector('.back-button');
+    if (backBtn) {
+        backBtn.addEventListener('click', (e) => {
+            if (window.history.length > 1) {
+                e.preventDefault();
+                window.history.back();
+            }
+        });
+    }
 }
 
 /* ==========================================================================
@@ -2133,8 +2174,8 @@ const RAW_DASH_SUBJECTS = [
         { title: "Les classes grammaticales", q: "Dans « Le chat noir dort », quel mot est un adjectif ?", opts: ["noir", "le", "chat", "dort"], correct: 0, exp: "« Noir » qualifie le nom « chat »." },
         { title: "Le conditionnel", q: "Quelle est la terminaison du conditionnel présent à la 1ère personne du singulier pour « aimer » ?", opts: ["aimerais", "aimais", "aimerai", "aime"], correct: 0, exp: "Radical du futur + terminaisons de l'imparfait : j'aimerais." },
         { title: "Les figures de style", q: "« Il pleut des cordes » est une :", opts: ["comparaison", "anaphore", "métaphore", "litote"], correct: 2, exp: "L'image remplace directement la réalité, sans outil de comparaison : c'est une métaphore." },
-        { title: "L'argumentation", q: "Un connecteur logique d'opposition est :", opts: ["ainsi", "mais", "donc", "car"], correct: 1, exp: "« Mais » introduit une idée contraire à la précédente." },
-        { type: "texte_a_trous", title: "Accord du participe passé", q: "Complète la règle.", textWithBlanks: "Avec l'auxiliaire être, le participe passé s'accorde avec le ___ ; avec avoir, il ne s'accorde en général pas avec le ___.", blanks: [["sujet"], ["sujet"]], exp: "Être → accord avec le sujet ; avoir → pas d'accord avec le sujet (sauf COD placé avant, hors programme ici)." },
+        { type: "texte_a_choix", title: "L'argumentation", q: "Complète la phrase avec les connecteurs logiques appropriés.", textWithBlanks: "Il pleuvait des cordes, ___ nous sommes sortis ___ nous avions promis d'aider Marc.", choices: [["mais", "donc", "ainsi", "alors"], ["car", "pourtant", "cependant", "en effet"]], blanks: [["mais"], ["car"]], exp: "« Mais » marque l'opposition et « car » introduit la cause." },
+        { type: "texte_a_trous", title: "Accord du participe passé", q: "Complète la règle.", textWithBlanks: "Avec l'auxiliaire être, le participe passé s'accorde avec le ___ ; avec avoir, il ne s'accorde en général pas avec le ___.", blanks: [["sujet"], ["sujet"]], distractors: ["verbe", "complément", "adjectif"], exp: "Être → accord avec le sujet ; avoir → pas d'accord avec le sujet (sauf COD placé avant, hors programme ici)." },
     ]},
     { id: "physique", name: "Physique", icon: "⚛", lessons: [
         { title: "Les états de la matière", q: "Comment appelle-t-on le passage direct de l'état solide à l'état gazeux ?", opts: ["condensation", "fusion", "évaporation", "sublimation"], correct: 3, exp: "La sublimation évite l'étape liquide." },
@@ -2147,8 +2188,8 @@ const RAW_DASH_SUBJECTS = [
         { title: "Les états de l'eau", q: "Comment appelle-t-on le passage direct de l'état solide à l'état gazeux ?", opts: ["la sublimation", "la fusion", "la condensation", "la liquéfaction"], correct: 0, exp: "La sublimation transforme la glace directement en vapeur, sans passer par l'état liquide." },
         { title: "Les atomes", q: "Que représente le numéro atomique Z d'un élément ?", opts: ["le nombre de protons du noyau", "le nombre de neutrons", "la masse totale de l'atome", "le nombre d'électrons perdus"], correct: 0, exp: "Z compte les protons : c'est lui qui définit l'élément chimique." },
         { type: "vrai_faux", title: "Les acides", q: "Une solution acide a un pH inférieur à 7.", correct: true, exp: "Vrai : à 25 °C, pH < 7 = acide, pH = 7 = neutre, pH > 7 = basique." },
-        { title: "La neutralisation", q: "Que produit la réaction entre un acide et une base ?", opts: ["un sel et de l'eau", "un gaz toxique uniquement", "un métal", "rien : ils se neutralisent sans réaction"], correct: 0, exp: "Acide + base → sel + eau : c'est la réaction de neutralisation." },
-        { type: "texte_a_trous", title: "La molécule d'eau", q: "Complète la formule de la molécule d'eau.", textWithBlanks: "La formule de l'eau est ___₂___ : deux atomes d'hydrogène pour un atome d'oxygène.", blanks: [["H"], ["O"]], exp: "H₂O : deux hydrogènes (H) et un oxygène (O)." },
+        { type: "texte_a_choix", title: "La neutralisation", q: "Complète le bilan de la réaction.", textWithBlanks: "La réaction entre un acide et une base produit un ___ et de l'___.", choices: [["sel", "gaz", "métal", "précipité"], ["eau", "alcool", "huile", "air"]], blanks: [["sel"], ["eau"]], exp: "Acide + Base → Sel + Eau : c'est la réaction de neutralisation acido-basique." },
+        { type: "texte_a_trous", title: "La molécule d'eau", q: "Complète la formule de la molécule d'eau.", textWithBlanks: "La formule de l'eau est ___₂___ : deux atomes d'hydrogène pour un atome d'oxygène.", blanks: [["H"], ["O"]], distractors: ["C", "N", "Fe"], exp: "H₂O : deux hydrogènes (H) et un oxygène (O)." },
     ]},
     { id: "svt", name: "SVT", icon: "❦", lessons: [
         { title: "La photosynthèse", q: "Quel gaz les plantes absorbent-elles lors de la photosynthèse ?", opts: ["le CO₂", "l'O₂", "l'hydrogène", "l'azote"], correct: 0, exp: "Le CO₂ est transformé en matière organique grâce à la lumière." },
@@ -2158,7 +2199,7 @@ const RAW_DASH_SUBJECTS = [
         { type: "reponse_courte", title: "Le cœur", q: "Combien de cavités possède le cœur humain ?", accepted: ["4", "quatre"], exp: "Le cœur a 4 cavités : 2 oreillettes et 2 ventricules." },
     ]},
     { id: "techno", name: "Technologie", icon: "⚙", lessons: [
-        { title: "Les algorithmes", q: "Une boucle qui répète des instructions tant qu'une condition est vraie s'appelle :", opts: ["une fonction", "une condition « si »", "une boucle « pour »", "une boucle « tant que »"], correct: 3, exp: "« Tant que » (while) répète tant que la condition reste vraie." },
+        { type: "texte_a_choix", title: "Les algorithmes", q: "Choisis les bons termes pour compléter la définition.", textWithBlanks: "Pour répéter des instructions tant qu'une condition est vraie, on utilise une boucle ___, et pour faire un choix, une condition ___.", choices: [["tant que", "pour", "infinie"], ["si", "sinon", "alors"]], blanks: [["tant que"], ["si"]], exp: "« Tant que » (while) et « si » (if) sont des structures fondamentales en programmation." },
         { title: "Les capteurs", q: "Un capteur de température mesure :", opts: ["la pression", "la chaleur ambiante", "le son", "la lumière"], correct: 1, exp: "C'est sa fonction première : convertir une température en signal exploitable." },
         { title: "Les matériaux", q: "Le PLA est un matériau souvent utilisé en :", opts: ["chauffage", "soudure", "impression 3D", "isolation électrique"], correct: 2, exp: "Le PLA est un plastique biodégradable très utilisé en fabrication additive." },
         { title: "Les réseaux", q: "Le Wi-Fi fait référence à :", opts: ["un câble réseau", "un type de processeur", "une connexion sans fil", "un logiciel"], correct: 2, exp: "Le Wi-Fi permet une connexion réseau sans câble." },
@@ -2169,7 +2210,7 @@ const RAW_DASH_SUBJECTS = [
         { title: "Vocabulaire du quotidien", q: "What does 'to look forward to' mean?", opts: ["chercher quelque chose", "attendre avec impatience", "regarder devant soi", "avancer"], correct: 1, exp: "Cette expression exprime une attente positive d'un événement." },
         { title: "Comparatives", q: "'This book is ___ than the other one.'", opts: ["interesting", "more interesting", "most interesting", "interestinger"], correct: 1, exp: "Les adjectifs longs forment leur comparatif avec 'more'." },
         { title: "Modal verbs", q: "Which modal expresses obligation?", opts: ["must", "could", "would", "might"], correct: 0, exp: "'Must' exprime une obligation forte." },
-        { type: "texte_a_trous", title: "Simple past", q: "Complète la phrase.", textWithBlanks: "Yesterday, she ___ (go) to the cinema and ___ (watch) a great film.", blanks: [["went"], ["watched"]], exp: "'Go' est irrégulier (went) ; 'watch' est régulier (+ed)." },
+        { type: "texte_a_trous", title: "Simple past", q: "Complète la phrase.", textWithBlanks: "Yesterday, she ___ (go) to the cinema and ___ (watch) a great film.", blanks: [["went"], ["watched"]], distractors: ["gone", "goes", "watches", "watching"], exp: "'Go' est irrégulier (went) ; 'watch' est régulier (+ed)." },
     ]},
     { id: "histoire", name: "Histoire", icon: "⌂", lessons: [
         { title: "La Révolution française", q: "En quelle année la Révolution française a-t-elle débuté ?", opts: ["1804", "1715", "1848", "1789"], correct: 3, exp: "La prise de la Bastille a lieu le 14 juillet 1789." },
@@ -2197,7 +2238,7 @@ const RAW_DASH_SUBJECTS = [
         { title: "Le doute méthodique", q: "Quelle célèbre formule résume la certitude première de René Descartes ?", opts: ["Je sais que je ne sais rien", "L'homme est un loup pour l'homme", "Cogito, ergo sum (Je pense, donc je suis)", "Connais-toi toi-même"], correct: 2, exp: "Dans le Discours de la méthode, Descartes découvre le « Cogito » au terme du doute méthodique." },
         { title: "La conscience", q: "Pour Sigmund Freud, quelle partie de la psyché regroupe les pulsions refoulées ?", opts: ["Le Surmoi", "Le Moi", "L'Inconscient / Le Ça", "La conscience morale"], correct: 2, exp: "Le Ça représente le réservoir des pulsions inconscientes." },
         { type: "vrai_faux", title: "L'éthique et la morale", q: "Pour Emmanuel Kant, un acte moral doit être guidé par le devoir et l'impératif catégorique, sans rechercher son propre intérêt.", correct: true, exp: "Vrai : la morale déontologique kantienne repose sur le devoir désintéressé." },
-        { type: "texte_a_trous", title: "Le contrat social", q: "Complète la citation de Jean-Jacques Rousseau.", textWithBlanks: "L'homme est né ___ et partout il est dans les ___.", blanks: [["libre"], ["fers"]], exp: "« L'homme est né libre et partout il est dans les fers » (Du contrat social, 1762)." },
+        { type: "texte_a_trous", title: "Le contrat social", q: "Complète la citation de Jean-Jacques Rousseau.", textWithBlanks: "L'homme est né ___ et partout il est dans les ___.", blanks: [["libre"], ["fers"]], distractors: ["seul", "sage", "liens", "chaînes"], exp: "« L'homme est né libre et partout il est dans les fers » (Du contrat social, 1762)." },
     ]},
 ];
 
@@ -2950,7 +2991,7 @@ function initDashboard() {
             const isBooster = cat === 'booster';
 
             const boosterStock = (typeof DB !== 'undefined' && DB.getBoosters) ? (DB.getBoosters()[s.id] || 0) : 0;
-            const owned = isBooster ? (boosterStock > 0) : state.ownedSkins.includes(s.id);
+            const owned = isBooster ? (boosterStock > 0) : (s.id === 'default' || state.ownedSkins.includes(s.id));
             const isEquipped = isAura
                 ? (state.equippedAura === s.id)
                 : isAvatar
@@ -2958,7 +2999,7 @@ function initDashboard() {
                     : isTitle
                         ? (state.equippedTitle === s.id)
                         : isTheme
-                            ? (state.equippedTheme === s.id)
+                            ? ((state.equippedTheme || 'default') === s.id)
                             : false;
 
             let visualHtml = '';
@@ -3122,22 +3163,29 @@ function initDashboard() {
         render();
     };
 
-    window._dashGoDashboard = function () {
-        state.view = 'dashboard';
-        state.currentSubject = null;
+    function navigateToView(viewName, subjectId = null, push = true) {
+        state.view = viewName;
+        state.currentSubject = subjectId;
+        if (viewName === 'badges') {
+            triggerBadgesCheck();
+            state.badges = DB.getBadges();
+        }
+        if (push && window.history && window.history.pushState) {
+            window.history.pushState({ view: viewName, currentSubject: subjectId }, '', `#${viewName}${subjectId ? '-' + subjectId : ''}`);
+        }
         render();
+    }
+
+    window._dashGoDashboard = function () {
+        navigateToView('dashboard');
     };
 
     window._dashGoShop = function () {
-        state.view = 'shop';
-        render();
+        navigateToView('shop');
     };
 
     window._dashGoBadges = function () {
-        triggerBadgesCheck();
-        state.badges = DB.getBadges();
-        state.view = 'badges';
-        render();
+        navigateToView('badges');
     };
 
     window._dashOpenMap = function (id) {
@@ -3148,22 +3196,32 @@ function initDashboard() {
             window.location.href = 'map.html?matiere=' + encodeURIComponent(matiere.name) + '&icon=' + encodeURIComponent(matiere.icon);
             return;
         }
-        state.currentSubject = id;
-        state.view = 'map';
-        render();
+        navigateToView('map', id);
     };
 
     window._dashOpenQuiz = async function (subjectId, lessonIndex) {
         window.quizTimeRemaining = 30;
         if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
-        state.quiz = { subjectId, lessonIndex, loading: true, lesson: null, questionId: null, submitted: null, answered: false, isCorrect: false, attempts: 0, explanation: '' };
+        const initialVariant = Math.floor(Math.random() * 3);
+        state.quiz = {
+            subjectId,
+            lessonIndex,
+            variant: initialVariant,
+            loading: true,
+            lesson: null,
+            questionId: null,
+            submitted: null,
+            answered: false,
+            isCorrect: false,
+            attempts: 0,
+            explanation: ''
+        };
         render();
 
         const niveauBand = currentNiveauBand();
         const dashSubj = DASH_SUBJECTS.find(s => s.id === subjectId);
-        const localLesson = dashSubj && dashSubj.lessons[lessonIndex] ? dashSubj.lessons[lessonIndex] : null;
         const { lesson, questionId } = await AiProvider.fetchQuestion(
-            subjectId, lessonIndex, niveauBand, localLesson ? { localLesson } : {}
+            subjectId, lessonIndex, niveauBand, { variant: initialVariant, subject: dashSubj }
         );
 
         if (!state.quiz || state.quiz.subjectId !== subjectId || state.quiz.lessonIndex !== lessonIndex) return;
@@ -3179,13 +3237,29 @@ function initDashboard() {
         render();
     };
 
-    window._dashRetryQuiz = function () {
+    window._dashRetryQuiz = async function () {
         if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
         window.quizTimeRemaining = 30;
+        const { subjectId, lessonIndex } = state.quiz;
+        const nextVariant = ((state.quiz.variant || 0) + 1 + Math.floor(Math.random() * 2)) % 3;
+        state.quiz.variant = nextVariant;
         state.quiz.submitted = null;
         state.quiz.answered = false;
         state.quiz.isCorrect = false;
+        state.quiz.checking = false;
+        state.quiz.loading = true;
         state.quiz.explanation = '';
+        render();
+
+        const niveauBand = currentNiveauBand();
+        const dashSubj = DASH_SUBJECTS.find(s => s.id === subjectId);
+        const { lesson, questionId } = await AiProvider.fetchQuestion(
+            subjectId, lessonIndex, niveauBand, { variant: nextVariant, subject: dashSubj }
+        );
+        if (!state.quiz || state.quiz.subjectId !== subjectId || state.quiz.lessonIndex !== lessonIndex) return;
+        state.quiz.lesson = lesson;
+        state.quiz.questionId = questionId;
+        state.quiz.loading = false;
         render();
     };
 
@@ -3387,10 +3461,16 @@ function initDashboard() {
             state.equippedTitle = (state.equippedTitle === id ? '' : id);
             showNotification(state.equippedTitle ? `🏷️ Titre « ${item.name} » activé !` : 'Titre retiré.');
         } else if (cat === 'theme') {
-            state.equippedTheme = (state.equippedTheme === id ? 'default' : id);
-            document.documentElement.setAttribute('data-theme', state.equippedTheme);
-            triggerBadgesCheck({ theme: state.equippedTheme });
-            showNotification(`🎨 Thème « ${item.name} » appliqué !`);
+            if (id === 'default') {
+                state.equippedTheme = 'default';
+                document.documentElement.setAttribute('data-theme', 'default');
+                showNotification(`🎨 Thème d'origine Astral rétabli !`);
+            } else {
+                state.equippedTheme = (state.equippedTheme === id ? 'default' : id);
+                document.documentElement.setAttribute('data-theme', state.equippedTheme);
+                triggerBadgesCheck({ theme: state.equippedTheme });
+                showNotification(`🎨 Thème « ${item.name} » appliqué !`);
+            }
         } else if (cat === 'avatar') {
             state.equippedAvatar = id;
             showNotification(`👤 Avatar « ${item.name} » équipé !`);
@@ -3405,6 +3485,26 @@ function initDashboard() {
         persistState();
         render();
     };
+
+    /* ============ NAVIGATION RETOUR & SYNCHRONISATION SANS RECHARGEMENT ============ */
+    window.addEventListener('popstate', (e) => {
+        if (state.quiz) {
+            window._dashCloseQuiz();
+            return;
+        }
+        if (e.state && e.state.view) {
+            navigateToView(e.state.view, e.state.currentSubject || null, false);
+        } else {
+            navigateToView('dashboard', null, false);
+        }
+    });
+
+    window.addEventListener('pageshow', () => {
+        // En cas de retour (BFCache ou retour arrière du navigateur),
+        // resynchronise silencieusement l'état sans rechargement de page
+        state = loadState();
+        render();
+    });
 
     /* ============ PREMIER RENDU ============ */
     persistState();

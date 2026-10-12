@@ -753,14 +753,17 @@ const DB = (() => {
         if (protectedByShield) {
             return {
                 combo: s.combo || 1,
+                streak: s.count || 0,
                 multiplier: getMultiplier(s.combo || 1),
                 shieldSaved: true
             };
         }
         s.combo = 0;
+        s.count = 0; // Remise à zéro de la série de victoires en cas d'erreur
         _saveStreakData(s);
         return {
             combo: 0,
+            streak: 0,
             multiplier: 1.0,
             shieldSaved: false
         };

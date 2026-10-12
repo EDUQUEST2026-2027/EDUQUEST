@@ -106,12 +106,12 @@ const QuestionBank = (() => {
         return result;
     }
 
-    function generateMathLesson(index, band) {
-        const rng = seededRng(hashSeed('maths:' + band + ':' + index));
+    function generateMathLesson(index, band, variant = 0) {
+        const rng = seededRng(hashSeed('maths:' + band + ':' + index + ':v' + variant));
         const kindsCollege = ['add', 'sub', 'mul', 'div', 'pct', 'square'];
         const kindsLycee = ['equation', 'cube', 'sqrt', 'mul_large', 'pct_hard', 'neg_sub'];
         const kinds = band === 'lycee' ? kindsLycee : kindsCollege;
-        const kind = kinds[index % kinds.length];
+        const kind = kinds[(index * 3 + variant) % kinds.length];
         let q, correct, wrongCandidates, allowNegative = false;
 
         switch (kind) {
@@ -456,15 +456,23 @@ const QuestionBank = (() => {
         ],
     };
 
-    function generateBankLesson(subjectId, index, band) {
-        const fullBank = FACT_BANKS[subjectId];
+    function generateBankLesson(subjectId, index, band, variant = 0) {
+        const fullBank = FACT_BANKS[subjectId] || [];
         const filtered = fullBank.filter(f => f.level === band);
         // Repli sur la banque complète si le filtre est trop restrictif
-        // (ne devrait pas arriver ici vu la taille des banques, mais évite
-        // un crash si jamais une matière avait très peu de contenu lycée).
         const bank = filtered.length >= 5 ? filtered : fullBank;
-        const rng = seededRng(hashSeed(subjectId + ':' + band + ':' + index));
-        const fact = bank[index % bank.length];
+        if (!bank || bank.length === 0) {
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: 'Question générale',
+                opts: ['A', 'B', 'C', 'D'],
+                correct: 0,
+                exp: '',
+            };
+        }
+        const rng = seededRng(hashSeed(subjectId + ':' + band + ':' + index + ':v' + variant));
+        const fact = bank[(index * 3 + variant) % bank.length];
         const opts0 = [fact.correct, ...fact.wrongs];
         const { opts, correct } = shuffleOptions(opts0, 0, rng);
         return {
@@ -484,26 +492,56 @@ const QuestionBank = (() => {
         /**
          * Étend une matière (objet DASH_SUBJECTS) jusqu'à `totalCount` niveaux,
          * avec un contenu adapté à `niveauBand` ('college' ou 'lycee') pour
-         * les niveaux générés (6 à `totalCount`). Les leçons déjà présentes
-         * (écrites à la main) sont conservées et ré-ordonnées (QCM uniquement).
+         * les niveaux générés (6 à `totalCount`). Chaque niveau propose 3
+         * variantes aléatoires distinctes (.variants = [v0, v1, v2]).
          */
         extend(subject, totalCount, niveauBand) {
             const band = niveauBand === 'lycee' ? 'lycee' : 'college';
-            const handWritten = subject.lessons.map((lesson, i) => reshuffleHandWritten(lesson, subject.id, i));
+            const handWritten = subject.lessons.map((lesson, i) => {
+                const l0 = reshuffleHandWritten(lesson, subject.id, i);
+                if (!l0.variants || l0.variants.length === 0) {
+                    const l1 = subject.id === 'maths' ? generateMathLesson(i, band, 1) : generateBankLesson(subject.id, i, band, 1);
+                    const l2 = subject.id === 'maths' ? generateMathLesson(i, band, 2) : generateBankLesson(subject.id, i, band, 2);
+                    l0.variants = [l0, l1, l2];
+                }
+                return l0;
+            });
             const lessons = handWritten.slice();
             for (let i = lessons.length; i < totalCount; i++) {
-                lessons.push(subject.id === 'maths' ? generateMathLesson(i, band) : generateBankLesson(subject.id, i, band));
+                const l0 = subject.id === 'maths' ? generateMathLesson(i, band, 0) : generateBankLesson(subject.id, i, band, 0);
+                const l1 = subject.id === 'maths' ? generateMathLesson(i, band, 1) : generateBankLesson(subject.id, i, band, 1);
+                const l2 = subject.id === 'maths' ? generateMathLesson(i, band, 2) : generateBankLesson(subject.id, i, band, 2);
+                l0.variants = [l0, l1, l2];
+                lessons.push(l0);
             }
             return { ...subject, lessons };
         },
         /**
-         * Génère UNE seule leçon (pas toute la matière) pour `index` donné.
-         * Utilisé comme repli hors-ligne par ai-provider.js quand l'agent IA
-         * (Make) est injoignable — voir MAKE_BLUEPRINT.md.
+         * Récupère une leçon / variante spécifique (0, 1 ou 2) parmi les 3 du niveau.
          */
-        generateOne(subjectId, index, niveauBand) {
+        getLesson(subjectOrId, index, niveauBand, variant = 0) {
+            const band = (niveauBand === 'lycee') ? 'lycee' : 'college';
+            const subjectId = (typeof subjectOrId === 'string') ? subjectOrId : (subjectOrId ? subjectOrId.id : '');
+            const subjectObj = (typeof subjectOrId === 'object' && subjectOrId !== null) ? subjectOrId : null;
+
+            if (subjectObj && subjectObj.lessons && subjectObj.lessons[index]) {
+                const lesson = subjectObj.lessons[index];
+                if (lesson.variants && Array.isArray(lesson.variants) && lesson.variants.length > 0) {
+                    return lesson.variants[variant % lesson.variants.length];
+                }
+                if (variant === 0) return lesson;
+            }
+
+            return subjectId === 'maths'
+                ? generateMathLesson(index, band, variant)
+                : generateBankLesson(subjectId, index, band, variant);
+        },
+        /**
+         * Génère UNE seule leçon pour `index` et `variant` donnés.
+         */
+        generateOne(subjectId, index, niveauBand, variant = 0) {
             const band = niveauBand === 'lycee' ? 'lycee' : 'college';
-            return subjectId === 'maths' ? generateMathLesson(index, band) : generateBankLesson(subjectId, index, band);
+            return subjectId === 'maths' ? generateMathLesson(index, band, variant) : generateBankLesson(subjectId, index, band, variant);
         },
     };
 })();

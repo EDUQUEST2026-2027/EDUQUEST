@@ -56,11 +56,54 @@ const QuizEngine = (() => {
             .replace(/\s+/g, ' '); // tolère les espaces doubles/irréguliers
     }
 
+    /** Calcule la distance de Levenshtein pour tolérer les fautes de frappe légères. */
+    function levenshtein(a, b) {
+        if (a === b) return 0;
+        if (!a.length) return b.length;
+        if (!b.length) return a.length;
+        const v0 = new Array(b.length + 1);
+        const v1 = new Array(b.length + 1);
+        for (let i = 0; i <= b.length; i++) v0[i] = i;
+        for (let i = 0; i < a.length; i++) {
+            v1[0] = i + 1;
+            for (let j = 0; j < b.length; j++) {
+                const cost = a[i] === b[j] ? 0 : 1;
+                v1[j + 1] = Math.min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost);
+            }
+            for (let j = 0; j <= b.length; j++) v0[j] = v1[j];
+        }
+        return v0[b.length];
+    }
+
+    /** Comparaison tolérante : normalisation accents/casse + distance de Levenshtein. */
+    function isFuzzyMatch(expected, given) {
+        const e = normalize(expected);
+        const g = normalize(given);
+        if (e === g) return true;
+        if (!g || !e) return false;
+        // Permissivité : 1 faute acceptée pour 4 à 6 lettres, 2 pour 7 lettres et plus
+        const maxDist = e.length >= 7 ? 2 : (e.length >= 4 ? 1 : 0);
+        return levenshtein(e, g) <= maxDist;
+    }
+
+    /** Mélange aléatoire d'un tableau (Fisher-Yates). */
+    function shuffleArray(arr) {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
     /* ================= QCM ================= */
 
     function renderQCM(question) {
-        return question.opts.map((opt, i) =>
-            `<button class="dash-option-btn" data-choice="${i}">${esc(opt)}</button>`
+        // Mélange les choix entre chaque essai tout en gardant l'index d'origine (data-choice)
+        const choices = (question.opts || []).map((opt, origIndex) => ({ opt, origIndex }));
+        const shuffled = shuffleArray(choices);
+        return shuffled.map(c =>
+            `<button class="dash-option-btn" data-choice="${c.origIndex}">${esc(c.opt)}</button>`
         ).join('');
     }
     function bindQCM(container, question, quizState, onSubmit) {
@@ -121,7 +164,7 @@ const QuizEngine = (() => {
         input.focus();
     }
     function gradeReponseCourte(question, submitted) {
-        return question.accepted.some(a => normalize(a) === normalize(submitted));
+        return question.accepted.some(a => isFuzzyMatch(a, submitted));
     }
     function revealReponseCourte(container, question, submitted) {
         const input = container.querySelector('.dash-short-input');
@@ -130,39 +173,98 @@ const QuizEngine = (() => {
         if (submitBtn) submitBtn.disabled = true;
     }
 
-    /* ================= TEXTE À TROUS ================= */
+    /* ================= TEXTE À TROUS & TEXTE À CHOIX (MENU DÉROULANT) ================= */
 
     function renderTexteATrous(question) {
         let blankIndex = 0;
-        // On échappe d'abord la phrase (le contenu peut venir de l'IA), puis
-        // on remplace les ___ par les champs — les balises insérées ensuite
-        // sont donc les seules présentes dans le HTML final.
-        const sentence = esc(question.textWithBlanks).replace(/___/g, () =>
-            `<input type="text" class="dash-blank-input" data-blank="${blankIndex++}" autocomplete="off">`
-        );
+        const isDropdown = question.type === 'texte_a_choix' || question.type === 'texte_menu_deroulant' || Boolean(question.useSelect || question.choices);
+
+        const sentence = esc(question.textWithBlanks).replace(/___/g, () => {
+            const bIdx = blankIndex++;
+            if (isDropdown) {
+                const candidates = (question.choices && question.choices[bIdx])
+                    ? question.choices[bIdx]
+                    : (question.blanks ? Array.from(new Set(question.blanks.flat())) : []);
+                const shuffled = shuffleArray(candidates);
+                const optsHtml = shuffled.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+                return `<select class="dash-blank-input dash-blank-select" data-blank="${bIdx}"><option value="">— Choisir —</option>${optsHtml}</select>`;
+            }
+            return `<input type="text" class="dash-blank-input" data-blank="${bIdx}" autocomplete="off" placeholder="…">`;
+        });
+
+        // Boîte de mots proposés pour le texte à trous textuel
+        let wordBankHtml = '';
+        if (!isDropdown && question.blanks) {
+            const rawWords = Array.from(new Set(
+                question.blanks.flat().concat(question.distractors || [])
+            )).filter(Boolean);
+            if (rawWords.length > 0) {
+                const shuffledWords = shuffleArray(rawWords);
+                wordBankHtml = `
+                    <div class="dash-wordbank-container">
+                        <span class="dash-wordbank-label">💡 Mots proposés (clique pour insérer) :</span>
+                        <div class="dash-wordbank-chips">
+                            ${shuffledWords.map(w => `<button type="button" class="dash-word-chip" data-word="${esc(w)}">${esc(w)}</button>`).join('')}
+                        </div>
+                    </div>`;
+            }
+        }
+
         return `
             <p class="dash-blanks-sentence">${sentence}</p>
+            ${wordBankHtml}
             <button class="dash-btn-primary dash-blanks-submit" type="button">Valider</button>`;
     }
+
     function bindTexteATrous(container, question, quizState, onSubmit) {
         const inputs = [...container.querySelectorAll('.dash-blank-input')];
+        let lastFocusedInput = inputs[0] || null;
+
+        inputs.forEach(inp => {
+            inp.addEventListener('focus', () => { lastFocusedInput = inp; });
+        });
+
+        // Clic sur un mot proposé : insère dans le champ actif ou le prochain vide
+        container.querySelectorAll('.dash-word-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const word = chip.dataset.word;
+                let targetInput = lastFocusedInput;
+                if (!targetInput || targetInput.value) {
+                    targetInput = inputs.find(i => !i.value) || targetInput;
+                }
+                if (targetInput) {
+                    targetInput.value = word;
+                    const nextInput = inputs.find(i => !i.value);
+                    if (nextInput) {
+                        nextInput.focus();
+                        lastFocusedInput = nextInput;
+                    }
+                }
+            });
+        });
+
         const submit = () => onSubmit(inputs.map(i => i.value.trim()));
         container.querySelector('.dash-blanks-submit').addEventListener('click', submit);
         inputs.forEach(i => i.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); }));
         if (inputs[0]) inputs[0].focus();
     }
+
     function gradeTexteATrous(question, submitted) {
         const given = Array.isArray(submitted) ? submitted : [];
-        return question.blanks.every((accepted, i) => accepted.some(a => normalize(a) === normalize(given[i])));
+        return question.blanks.every((accepted, i) =>
+            accepted.some(a => isFuzzyMatch(a, given[i]))
+        );
     }
+
     function revealTexteATrous(container, question, submitted) {
         const given = Array.isArray(submitted) ? submitted : [];
         container.querySelectorAll('.dash-blank-input').forEach((input, i) => {
             input.disabled = true;
-            const isCorrect = question.blanks[i].some(a => normalize(a) === normalize(given[i]));
+            const isCorrect = question.blanks[i].some(a => isFuzzyMatch(a, given[i]));
             input.classList.add(isCorrect ? 'correct' : 'wrong');
             if (!isCorrect) input.title = 'Attendu : ' + question.blanks[i][0];
         });
+        container.querySelectorAll('.dash-word-chip').forEach(btn => btn.disabled = true);
         const submitBtn = container.querySelector('.dash-blanks-submit');
         if (submitBtn) submitBtn.disabled = true;
     }

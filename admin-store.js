@@ -82,6 +82,7 @@ const AdminStore = (() => {
         { id: 'titre-erudit', name: '👑 Érudit Suprême', category: 'title', color: '#f72585', cost: 500, desc: 'La plus haute distinction académique d\'EDUQUEST.' },
 
         // --- THÈMES & EFFETS ---
+        { id: 'default', name: '🌌 Thème Astral (Origine)', category: 'theme', color: '#c8a84b', cost: 0, desc: 'Le décor cosmique classique d\'EDUQUEST, offert par défaut.' },
         { id: 'theme-cyber', name: '🌐 Thème Cyber Néon', category: 'theme', color: '#00f5d4', cost: 180, desc: 'Ambiance futuriste aux teintes cyan et magenta.' },
         { id: 'theme-galaxie', name: '🌌 Thème Abysses Stellaires', category: 'theme', color: '#7b2cbf', cost: 220, desc: 'Fond spatial étoilé et nébuleuses profondes.' },
         { id: 'theme-or', name: '✨ Thème Palais Doré', category: 'theme', color: '#e0a96d', cost: 300, desc: 'Cadre impérial et dorures antiques.' },

@@ -69,9 +69,10 @@ const AiProvider = (() => {
                 console.warn('[AiProvider] Agent IA injoignable, repli sur le générateur local.', err);
             }
         }
-        const lesson = (opts && opts.localLesson)
+        const variant = (opts && typeof opts.variant === 'number') ? opts.variant : 0;
+        let lesson = (opts && opts.localLesson && variant === 0)
             ? opts.localLesson
-            : QuestionBank.generateOne(subjectId, index, niveauBand);
+            : QuestionBank.getLesson(opts.subject || subjectId, index, niveauBand, variant);
         return { lesson, questionId: null, source: 'local' };
     }
 
