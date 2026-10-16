@@ -2217,7 +2217,7 @@ const RAW_DASH_SUBJECTS = [
         { title: "La Première Guerre mondiale", q: "La Première Guerre mondiale se termine en :", opts: ["1920", "1918", "1945", "1914"], correct: 1, exp: "L'armistice est signé le 11 novembre 1918." },
         { title: "L'Empire romain", q: "Quelle ville était la capitale de l'Empire romain ?", opts: ["Carthage", "Byzance", "Rome", "Athènes"], correct: 2, exp: "Rome est le centre politique de l'Empire jusqu'à sa scission." },
         { title: "La décolonisation", q: "L'indépendance de l'Algérie a eu lieu en :", opts: ["1970", "1962", "1958", "1954"], correct: 1, exp: "Les accords d'Évian entérinent l'indépendance en 1962." },
-        { type: "vrai_faux", title: "Napoléon", q: "Napoléon Bonaparte est devenu empereur des Français en 1804.", correct: false, exp: "Vrai : il est sacré empereur le 2 décembre 1804." },
+        { type: "vrai_faux", title: "Napoléon", q: "Napoléon Bonaparte est devenu empereur des Français en 1804.", correct: true, exp: "Vrai : il est sacré empereur le 2 décembre 1804." },
     ]},
     { id: "geo", name: "Géographie", icon: "⊕", lessons: [
         { title: "Les fuseaux horaires", q: "Combien de fuseaux horaires existe-t-il sur Terre ?", opts: ["12", "20", "24", "30"], correct: 2, exp: "La Terre est divisée en 24 fuseaux d'environ 15° chacun." },
@@ -2246,28 +2246,24 @@ const RAW_DASH_SUBJECTS = [
 // (voir question-bank.js — QuestionBank.extend). Les 5 premières restent
 // inchangées (et sont les seules à utiliser les types autres que QCM) ;
 // les niveaux 6 à 100 sont générés depuis une banque de vraies questions
-// (9 matières) ou procéduralement (Mathématiques).
-// Le niveau scolaire choisi sur jouer.html (DB.setNiveau) est stocké
-// globalement — dashboard.html et map.html le relisent tous les deux ici,
-// même si seul jouer.html propose un sélecteur. Sans niveau enregistré
-// (première visite, ou visite directe du dashboard), on suppose un niveau
-// collège par défaut plutôt que de deviner.
-// v1.19 — Fournit les matières par défaut au panneau d'administration
-// (admin.html les affiche et les édite sans les dupliquer).
+// adaptée au niveau scolaire choisi (6ème → Terminale).
 if (typeof AdminStore !== 'undefined' && AdminStore.registerDefaults) {
     AdminStore.registerDefaults(RAW_DASH_SUBJECTS);
 }
 
 const NIVEAU_BAND = currentNiveauBand();
 
-// v1.19 — Matières et leçons personnalisées via le panneau d'administration
-// (admin.html). AdminStore applique les surcharges nom/icône/leçons sur les
-// matières par défaut et ajoute les matières créées dans le panneau. Les
-// matières personnalisées (_custom) gardent EXACTEMENT les leçons écrites par
-// l'administrateur (pas de génération automatique) ; les autres sont étendues
-// à 100 niveaux par QuestionBank comme avant.
-const DASH_SUBJECTS = (typeof AdminStore !== 'undefined' ? AdminStore.applyOverrides(RAW_DASH_SUBJECTS) : RAW_DASH_SUBJECTS)
-    .map(s => s._custom ? s : QuestionBank.extend(s, 100, NIVEAU_BAND));
+/**
+ * Retourne les matières effectives avec 100 niveaux générés selon le niveau scolaire courant.
+ * Permet d'adapter instantanément les questions quand l'élève change de classe dans le sélecteur.
+ */
+function getEffectiveSubjects(niveau) {
+    const currentNiv = niveau || (typeof DB !== 'undefined' && DB.getNiveau ? DB.getNiveau() : '6eme') || '6eme';
+    const raw = (typeof AdminStore !== 'undefined' ? AdminStore.applyOverrides(RAW_DASH_SUBJECTS) : RAW_DASH_SUBJECTS);
+    return raw.map(s => s._custom ? s : QuestionBank.extend(s, 100, currentNiv));
+}
+
+let DASH_SUBJECTS = getEffectiveSubjects();
 
 /**
  * Catalogue des badges (succès) disponibles.

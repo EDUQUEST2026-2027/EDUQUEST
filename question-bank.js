@@ -1,35 +1,20 @@
 /* =============================================================================
-   QUESTION-BANK.JS — EDUQUEST v2.4
-   Génère jusqu'à 100 niveaux par matière (au lieu des 5 écrits à la main),
-   et corrige un vrai problème du prototype précédent : la bonne réponse
-   était presque toujours en 1ère position dans les QCM.
+   QUESTION-BANK.JS — EDUQUEST v2.8
+   Banque de questions et générateur procédural adaptés par NIVEAU SCOLAIRE :
+   - 6ème, 5ème, 4ème, 3ème (Collège)
+   - 2nde, 1ère, Terminale (Lycée)
 
-   COMMENT ÇA MARCHE :
-   - Les 5 leçons écrites à la main (dans DASH_SUBJECTS, app.js) sont
-     conservées telles quelles pour les niveaux 1 à 5 — elles restent les
-     seules à utiliser les types Vrai/Faux, réponse courte, texte à trous
-     et association.
-   - Les niveaux 6 à 100 sont générés :
-       - Mathématiques : calcul procédural (opérandes aléatoires, jamais
-         deux fois le même problème) — variété quasi illimitée.        - Les 9 autres matières : tirées d'une banque d'environ 20 questions
-         réelles par matière, avec distracteurs et position de la bonne
-         réponse mélangés à chaque cycle — un même fait peut donc revenir
-         plus tard avec un ordre de réponses différent (comme beaucoup
-         d'applications de révision par répétition espacée).
-   - TOUS les QCM (y compris les 5 écrits à la main) passent par un mélange
-     déterministe (seeded) des choix : rouvrir un niveau redonne toujours
-     le même ordre, mais cet ordre n'est presque jamais [bonne réponse en 1er].
-
-   Ce fichier n'a pas de dépendance : il expose window.QuestionBank.
+   CORRECTIONS & AMÉLIORATIONS :
+   - Différenciation fine par niveau scolaire (chaque classe dispose de ses
+     questions et calculs adaptés au programme officiel).
+   - Résolution du manque de questions : enrichissement massif de la banque
+     pour toutes les matières et tous les niveaux (plus de repli vide en Lycée).
+   - Ordre déterministe et stable par niveau, numéro et variante.
    ============================================================================= */
 
 const QuestionBank = (() => {
 
     /* ================= PRNG déterministe (mulberry32) ================= */
-    /* Même principe qu'un vrai générateur de contenu IA : chaque niveau a
-       un identifiant stable (matière + numéro), donc rouvrir un niveau
-       donne toujours la même question — indispensable pour que la
-       progression ait un sens. */
 
     function hashSeed(str) {
         let h = 0;
@@ -49,6 +34,27 @@ const QuestionBank = (() => {
         };
     }
 
+    /** Normalise l'identifiant du niveau scolaire. */
+    function normalizeNiveau(n) {
+        const str = String(n || '').toLowerCase().trim();
+        if (str === '6' || str.startsWith('6')) return '6eme';
+        if (str === '5' || str.startsWith('5')) return '5eme';
+        if (str === '4' || str.startsWith('4')) return '4eme';
+        if (str === '3' || str.startsWith('3')) return '3eme';
+        if (str === '2' || str.startsWith('2') || str.includes('sec')) return '2nde';
+        if (str === '1' || str.startsWith('1') || str.includes('prem')) return '1ere';
+        if (str.includes('term') || str === 'tle') return 'terminale';
+        if (str === 'lycee') return '2nde';
+        return '6eme';
+    }
+
+    /** Détermine la bande générale (collège / lycée). */
+    function bandForNiveau(niveau) {
+        const norm = normalizeNiveau(niveau);
+        const lyceeGrades = ['2nde', '1ere', 'terminale'];
+        return lyceeGrades.includes(norm) ? 'lycee' : 'college';
+    }
+
     /** Mélange les options d'un QCM et recalcule l'index de la bonne réponse. */
     function shuffleOptions(opts, correctIndex, rng) {
         const order = opts.map((_, i) => i);
@@ -62,31 +68,13 @@ const QuestionBank = (() => {
         };
     }
 
-    /**
-     * Ré-ordonne les choix d'une leçon QCM déjà écrite (hand-written),
-     * de façon déterministe selon son identifiant. Ne change rien aux
-     * leçons d'un autre type (vrai_faux, reponse_courte, etc.).
-     */
+    /** Ré-ordonne de façon déterministe les options des leçons écrites en dur. */
     function reshuffleHandWritten(lesson, subjectId, index) {
-        if (lesson.type !== 'qcm' && lesson.type) return lesson; // qcm par défaut si type absent
+        if (lesson.type !== 'qcm' && lesson.type) return lesson;
         if (!lesson.opts) return lesson;
         const rng = seededRng(hashSeed(subjectId + ':fixed:' + index));
         const { opts, correct } = shuffleOptions(lesson.opts, lesson.correct, rng);
         return { ...lesson, opts, correct };
-    }
-
-    /* ================= Génération procédurale — Mathématiques ================= */
-
-    /**
-     * Convertit un niveau scolaire précis (paramètre stocké par DB.setNiveau,
-     * ex. '6eme', '2nde') en une bande de difficulté à deux crans. On ne
-     * cherche pas à distinguer les 7 niveaux un par un — trop de contenu à
-     * garantir factuellement juste — mais au moins collège / lycée doivent
-     * donner une expérience visiblement différente.
-     */
-    function bandForNiveau(niveau) {
-        const lyceeGrades = ['2nde', '1ere', 'terminale'];
-        return lyceeGrades.includes(niveau) ? 'lycee' : 'college';
     }
 
     function uniqueWrongs(correct, candidates, allowNegative) {
@@ -106,110 +94,389 @@ const QuestionBank = (() => {
         return result;
     }
 
-    function generateMathLesson(index, band, variant = 0) {
-        const rng = seededRng(hashSeed('maths:' + band + ':' + index + ':v' + variant));
-        const kindsCollege = ['add', 'sub', 'mul', 'div', 'pct', 'square'];
-        const kindsLycee = ['equation', 'cube', 'sqrt', 'mul_large', 'pct_hard', 'neg_sub'];
-        const kinds = band === 'lycee' ? kindsLycee : kindsCollege;
-        const kind = kinds[(index * 3 + variant) % kinds.length];
-        let q, correct, wrongCandidates, allowNegative = false;
+    /* ================= Générateur procédural — Mathématiques ================= */
 
-        switch (kind) {
-            case 'add': {
-                const a = 10 + Math.floor(rng() * 90), b = 10 + Math.floor(rng() * 90);
-                correct = a + b;
-                q = `Combien font ${a} + ${b} ?`;
-                wrongCandidates = [correct + 1, correct - 1, correct + 10, correct - 10];
-                break;
-            }
-            case 'sub': {
-                const a = 20 + Math.floor(rng() * 80);
-                const b = 1 + Math.floor(rng() * (a - 1));
-                correct = a - b;
-                q = `Combien font ${a} - ${b} ?`;
-                wrongCandidates = [correct + 1, correct - 1, correct + 5, correct - 5];
-                break;
-            }
-            case 'mul': {
-                const a = 2 + Math.floor(rng() * 11), b = 2 + Math.floor(rng() * 11);
-                correct = a * b;
-                q = `Combien font ${a} × ${b} ?`;
-                wrongCandidates = [correct + a, correct - b, correct + 1, correct - 1];
-                break;
-            }
-            case 'div': {
-                const b = 2 + Math.floor(rng() * 9);
-                correct = 2 + Math.floor(rng() * 12);
-                const a = b * correct;
-                q = `Combien font ${a} ÷ ${b} ?`;
-                wrongCandidates = [correct + 1, correct - 1, correct + 2, correct - 2];
-                break;
-            }
-            case 'pct': {
-                const pct = [10, 20, 25, 50, 75][Math.floor(rng() * 5)];
-                const base = (2 + Math.floor(rng() * 20)) * 4; // multiple de 4 → résultat entier
-                correct = Math.round(base * pct / 100);
-                q = `Combien font ${pct}% de ${base} ?`;
-                wrongCandidates = [correct + base * 0.1, correct - base * 0.1, correct + 5, correct - 5];
-                break;
-            }
-            case 'square': {
-                const n = 2 + Math.floor(rng() * 14);
-                correct = n * n;
-                q = `Combien font ${n}² ?`;
-                wrongCandidates = [correct + n, correct - n, correct + 2, correct - 2];
-                break;
-            }
+    function generateMathLesson(index, niveau, variant = 0) {
+        const norm = normalizeNiveau(niveau);
+        const rng = seededRng(hashSeed('maths:' + norm + ':' + index + ':v' + variant));
+        let q = '', correct = 0, wrongCandidates = [], allowNegative = false, exp = '';
 
-            /* --- Niveau lycée : opérations plus avancées --- */
-            case 'equation': {
-                const a = 2 + Math.floor(rng() * 8);
-                const xTrue = 1 + Math.floor(rng() * 20);
-                const b = 1 + Math.floor(rng() * 50);
-                const c = a * xTrue + b;
-                correct = xTrue;
-                q = `Résous : ${a}x + ${b} = ${c}. Que vaut x ?`;
-                wrongCandidates = [correct + 1, correct - 1, correct + 2, correct - 2];
-                break;
+        if (norm === '6eme') {
+            const kinds = ['add', 'sub', 'mul', 'div', 'fraction_part', 'perimetre'];
+            const kind = kinds[(index * 3 + variant) % kinds.length];
+            switch (kind) {
+                case 'add': {
+                    const a = 15 + Math.floor(rng() * 75), b = 15 + Math.floor(rng() * 75);
+                    correct = a + b;
+                    q = `Combien font ${a} + ${b} ?`;
+                    wrongCandidates = [correct + 10, correct - 10, correct + 1, correct - 1];
+                    exp = `${a} + ${b} = ${correct}.`;
+                    break;
+                }
+                case 'sub': {
+                    const a = 30 + Math.floor(rng() * 70), b = 10 + Math.floor(rng() * (a - 15));
+                    correct = a - b;
+                    q = `Combien font ${a} - ${b} ?`;
+                    wrongCandidates = [correct + 10, correct - 10, correct + 2, correct - 2];
+                    exp = `${a} - ${b} = ${correct}.`;
+                    break;
+                }
+                case 'mul': {
+                    const a = 3 + Math.floor(rng() * 8), b = 4 + Math.floor(rng() * 7);
+                    correct = a * b;
+                    q = `Combien font ${a} × ${b} ?`;
+                    wrongCandidates = [correct + a, correct - b, correct + 1, correct + 4];
+                    exp = `${a} × ${b} = ${correct}.`;
+                    break;
+                }
+                case 'div': {
+                    const b = 3 + Math.floor(rng() * 7);
+                    correct = 3 + Math.floor(rng() * 8);
+                    const a = b * correct;
+                    q = `Combien font ${a} ÷ ${b} ?`;
+                    wrongCandidates = [correct + 1, correct - 1, correct + 2, correct - 2];
+                    exp = `${a} ÷ ${b} = ${correct}.`;
+                    break;
+                }
+                case 'fraction_part': {
+                    const base = (2 + Math.floor(rng() * 10)) * 4;
+                    correct = base / 4;
+                    q = `Combien vaut le quart de ${base} (1/4 de ${base}) ?`;
+                    wrongCandidates = [correct * 2, correct + 2, correct - 1, correct + 4];
+                    exp = `Le quart de ${base} est ${base} ÷ 4 = ${correct}.`;
+                    break;
+                }
+                case 'perimetre': {
+                    const l = 4 + Math.floor(rng() * 8), L = l + 2 + Math.floor(rng() * 6);
+                    correct = 2 * (L + l);
+                    q = `Quel est le périmètre d'un rectangle de longueur ${L} cm et de largeur ${l} cm ?`;
+                    wrongCandidates = [L * l, L + l, correct + 2, correct - 4];
+                    exp = `Périmètre = 2 × (${L} + ${l}) = 2 × ${L + l} = ${correct} cm.`;
+                    break;
+                }
             }
-            case 'cube': {
-                const n = 2 + Math.floor(rng() * 8);
-                correct = n * n * n;
-                q = `Combien font ${n}³ ?`;
-                wrongCandidates = [correct + n * n, correct - n, correct + n, correct - n * n];
-                break;
+        } else if (norm === '5eme') {
+            const kinds = ['relatifs_add', 'relatifs_sub', 'priorites', 'fraction_same', 'aire', 'angle_triangle'];
+            const kind = kinds[(index * 3 + variant) % kinds.length];
+            allowNegative = true;
+            switch (kind) {
+                case 'relatifs_add': {
+                    const a = -12 + Math.floor(rng() * 10);
+                    const b = 4 + Math.floor(rng() * 14);
+                    correct = a + b;
+                    q = `Calcule : (${a}) + (${b})`;
+                    wrongCandidates = [-(a + b), a - b, correct + 1, correct - 2];
+                    exp = `(${a}) + (${b}) = ${correct}.`;
+                    break;
+                }
+                case 'relatifs_sub': {
+                    const a = 2 + Math.floor(rng() * 10);
+                    const b = 5 + Math.floor(rng() * 12);
+                    correct = a - b;
+                    q = `Calcule : ${a} - ${b}`;
+                    wrongCandidates = [b - a, -(a + b), correct + 1, correct - 1];
+                    exp = `${a} - ${b} = ${correct}.`;
+                    break;
+                }
+                case 'priorites': {
+                    const a = 3 + Math.floor(rng() * 6), b = 2 + Math.floor(rng() * 5), c = 3 + Math.floor(rng() * 6);
+                    correct = a + b * c;
+                    q = `Calcule avec les priorités : ${a} + ${b} × ${c}`;
+                    wrongCandidates = [(a + b) * c, a + b + c, correct - b, correct + 2];
+                    exp = `La multiplication est prioritaire : ${b} × ${c} = ${b * c}, puis ${a} + ${b * c} = ${correct}.`;
+                    break;
+                }
+                case 'fraction_same': {
+                    const denom = 7 + Math.floor(rng() * 6);
+                    const a = 1 + Math.floor(rng() * 3), b = 2 + Math.floor(rng() * 3);
+                    correct = a + b;
+                    q = `Calcule le numérateur de : ${a}/${denom} + ${b}/${denom} = ?/${denom}`;
+                    wrongCandidates = [a * b, correct + 1, correct - 1, denom];
+                    exp = `Même dénominateur : on additionne les numérateurs ${a} + ${b} = ${correct}/${denom}.`;
+                    break;
+                }
+                case 'aire': {
+                    const b = (2 + Math.floor(rng() * 5)) * 2, h = 3 + Math.floor(rng() * 6);
+                    correct = (b * h) / 2;
+                    q = `Quelle est l'aire d'un triangle de base ${b} cm et de hauteur ${h} cm ?`;
+                    wrongCandidates = [b * h, b + h, correct + 4, correct - 2];
+                    exp = `Aire du triangle = (base × hauteur) ÷ 2 = (${b} × ${h}) ÷ 2 = ${correct} cm².`;
+                    break;
+                }
+                case 'angle_triangle': {
+                    const a1 = 35 + Math.floor(rng() * 35), a2 = 40 + Math.floor(rng() * 35);
+                    correct = 180 - a1 - a2;
+                    q = `Dans un triangle, deux angles mesurent ${a1}° et ${a2}°. Combien mesure le troisième angle ?`;
+                    wrongCandidates = [correct + 10, correct - 10, 90, 180 - a1];
+                    exp = `La somme des angles d'un triangle vaut 180° : 180 - ${a1} - ${a2} = ${correct}°.`;
+                    break;
+                }
             }
-            case 'sqrt': {
-                const n = 4 + Math.floor(rng() * 17);
-                const square = n * n;
-                correct = n;
-                q = `Quelle est la racine carrée de ${square} ?`;
-                wrongCandidates = [correct + 1, correct - 1, correct + 2, correct - 2];
-                break;
+        } else if (norm === '4eme') {
+            const kinds = ['puissances', 'relatifs_mul', 'pythagore', 'distributivite', 'racine_carree', 'vitesse'];
+            const kind = kinds[(index * 3 + variant) % kinds.length];
+            allowNegative = true;
+            switch (kind) {
+                case 'puissances': {
+                    const b = 2 + Math.floor(rng() * 3), expVal = 3 + Math.floor(rng() * 2);
+                    correct = Math.pow(b, expVal);
+                    q = `Combien font ${b}^${expVal} (${b} puissance ${expVal}) ?`;
+                    wrongCandidates = [b * expVal, correct + b, correct - b, Math.pow(expVal, b)];
+                    exp = `${b}^${expVal} = ${correct}.`;
+                    break;
+                }
+                case 'relatifs_mul': {
+                    const a = -(3 + Math.floor(rng() * 6)), b = -(4 + Math.floor(rng() * 6));
+                    correct = a * b; // positif
+                    q = `Calcule le produit : (${a}) × (${b})`;
+                    wrongCandidates = [-correct, correct + 5, -correct - 5, a + b];
+                    exp = `Moins par moins donne plus : (${a}) × (${b}) = ${correct}.`;
+                    break;
+                }
+                case 'pythagore': {
+                    const triplets = [[3, 4, 5], [6, 8, 10], [5, 12, 13], [8, 15, 17]];
+                    const trip = triplets[Math.floor(rng() * triplets.length)];
+                    correct = trip[2];
+                    q = `Dans un triangle rectangle dont les côtés de l'angle droit mesurent ${trip[0]} cm et ${trip[1]} cm, que vaut l'hypoténuse ?`;
+                    wrongCandidates = [trip[0] + trip[1], correct + 1, correct - 1, correct + 3];
+                    exp = `D'après Pythagore : hypoténuse² = ${trip[0]}² + ${trip[1]}² = ${trip[2] * trip[2]}, donc hypoténuse = ${correct} cm.`;
+                    break;
+                }
+                case 'distributivite': {
+                    const k = 3 + Math.floor(rng() * 6), b = 2 + Math.floor(rng() * 7);
+                    correct = k * b;
+                    q = `Développe : ${k}(x + ${b}). Quel est le terme constant (le nombre seul) ?`;
+                    wrongCandidates = [b, k + b, correct + k, correct - 1];
+                    exp = `${k}(x + ${b}) = ${k}x + ${correct}.`;
+                    break;
+                }
+                case 'racine_carree': {
+                    const n = 6 + Math.floor(rng() * 9);
+                    correct = n;
+                    q = `Quelle est la racine carrée de ${n * n} (√${n * n}) ?`;
+                    wrongCandidates = [correct + 1, correct - 1, correct + 2, Math.floor((n * n) / 2)];
+                    exp = `√${n * n} = ${correct} car ${correct}² = ${n * n}.`;
+                    break;
+                }
+                case 'vitesse': {
+                    const v = (5 + Math.floor(rng() * 6)) * 10, t = 2 + Math.floor(rng() * 3);
+                    correct = v * t;
+                    q = `Une voiture roule à ${v} km/h pendant ${t} heures. Quelle distance parcourt-elle en km ?`;
+                    wrongCandidates = [correct + v, correct - v, v + t, Math.round(v / t)];
+                    exp = `Distance = vitesse × temps = ${v} × ${t} = ${correct} km.`;
+                    break;
+                }
             }
-            case 'mul_large': {
-                const a = 12 + Math.floor(rng() * 18), b = 11 + Math.floor(rng() * 15);
-                correct = a * b;
-                q = `Combien font ${a} × ${b} ?`;
-                wrongCandidates = [correct + a, correct - b, correct + 10, correct - 10];
-                break;
+        } else if (norm === '3eme') {
+            const kinds = ['equation', 'pourcentage', 'probabilites', 'developpement', 'thales', 'fonction_affine'];
+            const kind = kinds[(index * 3 + variant) % kinds.length];
+            allowNegative = true;
+            switch (kind) {
+                case 'equation': {
+                    const a = 2 + Math.floor(rng() * 5), sol = 2 + Math.floor(rng() * 9), b = 3 + Math.floor(rng() * 15);
+                    const c = a * sol + b;
+                    correct = sol;
+                    q = `Résous l'équation : ${a}x + ${b} = ${c}. Que vaut x ?`;
+                    wrongCandidates = [sol + 1, sol - 1, sol + 2, sol * 2];
+                    exp = `${a}x = ${c} - ${b} = ${a * sol}, donc x = ${sol}.`;
+                    break;
+                }
+                case 'pourcentage': {
+                    const prix = (4 + Math.floor(rng() * 12)) * 10;
+                    const remisePct = 20;
+                    correct = prix * (100 - remisePct) / 100;
+                    q = `Un article coûte ${prix} €. Avec une remise de ${remisePct} %, quel est son nouveau prix ?`;
+                    wrongCandidates = [prix - remisePct, correct + 10, correct - 10, prix * 0.2];
+                    exp = `Remise de 20% = ${prix * 0.2} €. Prix final = ${prix} - ${prix * 0.2} = ${correct} €.`;
+                    break;
+                }
+                case 'probabilites': {
+                    correct = 3;
+                    q = `On lance un dé équilibré à 6 faces. Combien y a-t-il d'issues pour l'événement « obtenir un nombre pair » ?`;
+                    wrongCandidates = [2, 4, 1, 6];
+                    exp = `Les nombres pairs sont 2, 4 et 6, soit 3 issues favorables sur 6.`;
+                    break;
+                }
+                case 'developpement': {
+                    const a = 2 + Math.floor(rng() * 4);
+                    correct = a * a;
+                    q = `Dans le développement de (x + ${a})² = x² + 2ax + a², quel est le terme constant (a²) ?`;
+                    wrongCandidates = [a * 2, correct + 1, correct - 2, a];
+                    exp = `(x + ${a})² = x² + ${2 * a}x + ${correct}.`;
+                    break;
+                }
+                case 'thales': {
+                    const ab = 4, am = 2, ac = 6;
+                    correct = 3;
+                    q = `Configuration de Thalès : AM/AB = AN/AC. Si AM = 2, AB = 4 et AC = 6, que vaut AN ?`;
+                    wrongCandidates = [4, 2, 5, 1];
+                    exp = `AN = (AM × AC) ÷ AB = (2 × 6) ÷ 4 = 12 ÷ 4 = 3.`;
+                    break;
+                }
+                case 'fonction_affine': {
+                    const a = 2 + Math.floor(rng() * 4), b = 1 + Math.floor(rng() * 6), xVal = 2 + Math.floor(rng() * 4);
+                    correct = a * xVal + b;
+                    q = `Soit la fonction f(x) = ${a}x + ${b}. Calcule l'image f(${xVal}).`;
+                    wrongCandidates = [correct + a, correct - a, a + b + xVal, correct + 1];
+                    exp = `f(${xVal}) = ${a} × ${xVal} + ${b} = ${correct}.`;
+                    break;
+                }
             }
-            case 'pct_hard': {
-                const pct = [12, 15, 35, 60, 80][Math.floor(rng() * 5)];
-                const base = 20 + Math.floor(rng() * 180);
-                correct = Math.round(base * pct / 100);
-                q = `Combien font ${pct}% de ${base} ? (arrondis à l'entier)`;
-                wrongCandidates = [correct + 1, correct - 1, correct + 5, correct - 5];
-                break;
+        } else if (norm === '2nde') {
+            const kinds = ['fonction_image', 'evolution_taux', 'equation_produit', 'milieu_coord', 'simplif_racine', 'vecteur_coord'];
+            const kind = kinds[(index * 3 + variant) % kinds.length];
+            allowNegative = true;
+            switch (kind) {
+                case 'fonction_image': {
+                    const a = 2, xVal = 3, c = 5;
+                    correct = a * xVal * xVal - c;
+                    q = `Soit f(x) = ${a}x² - ${c}. Quelle est l'image de ${xVal} par f ?`;
+                    wrongCandidates = [correct + 2, correct - 2, a * xVal - c, correct + 6];
+                    exp = `f(${xVal}) = ${a} × (${xVal})² - ${c} = ${a} × 9 - ${c} = 18 - ${c} = ${correct}.`;
+                    break;
+                }
+                case 'evolution_taux': {
+                    const pct = [15, 20, 25, 30][Math.floor(rng() * 4)];
+                    correct = 100 + pct;
+                    q = `Une grandeur augmente de ${pct} %. Quel pourcentage de la valeur initiale représente-t-elle désormais ?`;
+                    wrongCandidates = [100 - pct, pct, correct + 10, correct - 5];
+                    exp = `Une hausse de ${pct}% correspond à un coefficient multiplicateur de 1 + ${pct}/100, soit ${correct}%.`;
+                    break;
+                }
+                case 'equation_produit': {
+                    const x1 = 3 + Math.floor(rng() * 4);
+                    correct = x1;
+                    q = `Résous l'équation produit-nul : (x - ${x1})(2x + 6) = 0. Quelle est la solution positive ?`;
+                    wrongCandidates = [-x1, x1 + 1, x1 - 1, x1 * 2];
+                    exp = `Un produit de facteurs est nul si l'un des facteurs est nul : x - ${x1} = 0 donne x = ${x1}.`;
+                    break;
+                }
+                case 'milieu_coord': {
+                    const xA = 2, xB = 8;
+                    correct = (xA + xB) / 2;
+                    q = `Dans un repère, si le point A a pour abscisse ${xA} et B a pour abscisse ${xB}, quelle est l'abscisse du milieu de [AB] ?`;
+                    wrongCandidates = [xB - xA, correct + 1, correct - 1, xA + xB];
+                    exp = `Abscisse du milieu = (${xA} + ${xB}) ÷ 2 = ${correct}.`;
+                    break;
+                }
+                case 'simplif_racine': {
+                    correct = 5;
+                    q = `Simplifie √50 sous la forme a√2. Que vaut l'entier a ?`;
+                    wrongCandidates = [2, 25, 10, 4];
+                    exp = `√50 = √(25 × 2) = √25 × √2 = 5√2, donc a = 5.`;
+                    break;
+                }
+                case 'vecteur_coord': {
+                    const xA = 1 + Math.floor(rng() * 4), xB = 6 + Math.floor(rng() * 5);
+                    correct = xB - xA;
+                    q = `Si A a pour abscisse ${xA} et B a pour abscisse ${xB}, quelle est la composante x du vecteur AB (xB - xA) ?`;
+                    wrongCandidates = [xA - xB, xA + xB, correct + 1, correct - 1];
+                    exp = `Composante x = xB - xA = ${xB} - ${xA} = ${correct}.`;
+                    break;
+                }
             }
-            case 'neg_sub': {
-                const a = 1 + Math.floor(rng() * 15);
-                const b = a + 1 + Math.floor(rng() * 30);
-                correct = a - b; // négatif
-                q = `Combien font ${a} - ${b} ?`;
-                wrongCandidates = [correct + 1, correct - 1, -correct, correct + 5];
-                allowNegative = true;
-                break;
+        } else if (norm === '1ere') {
+            const kinds = ['discriminant', 'nombre_racines', 'derivee_poly', 'suite_arith', 'suite_geom', 'produit_scalaire'];
+            const kind = kinds[(index * 3 + variant) % kinds.length];
+            allowNegative = true;
+            switch (kind) {
+                case 'discriminant': {
+                    const a = 1, b = 6, c = 5;
+                    correct = b * b - 4 * a * c; // 36 - 20 = 16
+                    q = `Pour le trinôme x² + ${b}x + ${c}, calcule le discriminant Δ = b² - 4ac.`;
+                    wrongCandidates = [correct + 4, correct - 4, b * b + 4 * a * c, 20];
+                    exp = `Δ = ${b}² - 4 × 1 × ${c} = 36 - 20 = 16.`;
+                    break;
+                }
+                case 'nombre_racines': {
+                    correct = 2;
+                    q = `Si le discriminant Δ d'un trinôme du second degré est strictement positif (Δ > 0), combien a-t-il de racines réelles ?`;
+                    wrongCandidates = [1, 0, 3];
+                    exp = `Si Δ > 0, le trinôme admet exactement 2 racines réelles distinctes.`;
+                    break;
+                }
+                case 'derivee_poly': {
+                    const a = 3, b = 4;
+                    correct = 2 * a;
+                    q = `Soit f(x) = ${a}x² - ${b}x + 1. Quel est le coefficient de x dans la dérivée f'(x) ?`;
+                    wrongCandidates = [a, correct + 2, correct - 1, b];
+                    exp = `(ax²)' = 2ax, donc la dérivée de ${a}x² est 2 × ${a}x = ${correct}x.`;
+                    break;
+                }
+                case 'suite_arith': {
+                    const u0 = 4, r = 3, n = 5;
+                    correct = u0 + n * r;
+                    q = `Soit une suite arithmétique de premier terme u₀ = ${u0} et de raison r = ${r}. Que vaut u₅ ?`;
+                    wrongCandidates = [correct + r, correct - r, u0 * Math.pow(r, 2), correct + 2];
+                    exp = `u_n = u₀ + n × r. Ici u₅ = ${u0} + 5 × ${r} = ${u0} + 15 = ${correct}.`;
+                    break;
+                }
+                case 'suite_geom': {
+                    const u0 = 2, qVal = 3;
+                    correct = u0 * qVal * qVal;
+                    q = `Soit une suite géométrique de premier terme u₀ = ${u0} et de raison q = ${qVal}. Que vaut u₂ ?`;
+                    wrongCandidates = [u0 + 2 * qVal, correct * 2, correct - 2, 12];
+                    exp = `u_n = u₀ × qⁿ. Ici u₂ = ${u0} × ${qVal}² = 2 × 9 = ${correct}.`;
+                    break;
+                }
+                case 'produit_scalaire': {
+                    const x1 = 2, y1 = 3, x2 = 4, y2 = 1;
+                    correct = x1 * x2 + y1 * y2;
+                    q = `Dans un repère orthonormé, soit u(2; 3) et v(4; 1). Calcule le produit scalaire u · v = x x' + y y'.`;
+                    wrongCandidates = [x1 * y2 - y1 * x2, correct + 2, correct - 2, 8];
+                    exp = `u · v = 2 × 4 + 3 × 1 = 8 + 3 = ${correct}.`;
+                    break;
+                }
+            }
+        } else {
+            // Terminale
+            const kinds = ['exponentielle', 'logarithme', 'derivee_exp_ln', 'primitive', 'limite_ref', 'proba_cond'];
+            const kind = kinds[(index * 3 + variant) % kinds.length];
+            allowNegative = true;
+            switch (kind) {
+                case 'exponentielle': {
+                    correct = 1;
+                    q = `Dans l'ensemble des réels, quelle est la valeur exacte de exp(0) (ou e⁰) ?`;
+                    wrongCandidates = [0, 2, -1];
+                    exp = `Pour tout réel, l'exponentielle de 0 vaut exactement 1 (e⁰ = 1).`;
+                    break;
+                }
+                case 'logarithme': {
+                    correct = 0;
+                    q = `Que vaut le logarithme népérien de 1 : ln(1) ?`;
+                    wrongCandidates = [1, -1, 2];
+                    exp = `ln(1) = 0 car e⁰ = 1.`;
+                    break;
+                }
+                case 'derivee_exp_ln': {
+                    const k = 3;
+                    correct = k;
+                    q = `Quelle est la dérivée de la fonction f(x) = e^(${k}x) ? Quel est le facteur multiplicatif devant l'exponentielle ?`;
+                    wrongCandidates = [1, k * 2, k - 1, 0];
+                    exp = `La formule est (e^(kx))' = k e^(kx). Le coefficient devant l'exponentielle est ${correct}.`;
+                    break;
+                }
+                case 'primitive': {
+                    correct = 3;
+                    q = `Soit f(x) = 3x². Quel est l'exposant de x dans sa primitive F(x) = x³ + C ?`;
+                    wrongCandidates = [2, 4, 1, 6];
+                    exp = `Une primitive de 3x² est x³ (exposant 3) car la dérivée de x³ est 3x².`;
+                    break;
+                }
+                case 'limite_ref': {
+                    correct = 0;
+                    q = `Quelle est la limite de 1/x lorsque x tend vers +∞ ?`;
+                    wrongCandidates = [1, -1, 2];
+                    exp = `Lorsque le dénominateur devient infiniment grand, 1/x tend vers 0.`;
+                    break;
+                }
+                case 'proba_cond': {
+                    correct = 50;
+                    q = `Si P(A) = 0,4 et P(A ∩ B) = 0,2, que vaut la probabilité conditionnelle P_A(B) en pourcentage ?`;
+                    wrongCandidates = [20, 40, 80, 25];
+                    exp = `P_A(B) = P(A ∩ B) ÷ P(A) = 0,2 ÷ 0,4 = 0,5, soit 50 %.`;
+                    break;
+                }
             }
         }
 
@@ -223,244 +490,344 @@ const QuestionBank = (() => {
             q,
             opts,
             correct: correctIndex,
-            exp: `La bonne réponse est ${correct}.`,
+            exp: exp || `La bonne réponse est ${correct}.`,
         };
     }
 
-    /* ================= Banques de questions — 9 autres matières ================= */
-    /* Chaque entrée : { q, correct, wrongs: [3 distracteurs] }. Les banques
-       font ~20 questions réelles ; au-delà du niveau 24 (5 leçons + 20
-       banque - 1), les questions reviennent avec un ordre de réponses
-       différent plutôt que de se répéter à l'identique. */
+    /* ================= Banques de questions — 10 autres matières ================= */
 
     const FACT_BANKS = {
         francais: [
-            { q: "Quel est le synonyme de « joyeux » ?", correct: "content", wrongs: ["triste", "fatigué", "en colère"], level: 'college' },
-            { q: "Quel est l'antonyme de « grand » ?", correct: "petit", wrongs: ["large", "haut", "fort"], level: 'college' },
-            { q: "Quelle est la nature du mot « rapidement » ?", correct: "adverbe", wrongs: ["adjectif", "nom", "verbe"], level: 'college' },
-            { q: "Quel est le pluriel de « cheval » ?", correct: "chevaux", wrongs: ["chevals", "chevaus", "chevaux s"], level: 'college' },
-            { q: "Conjugue « finir » à la 3e personne du singulier au présent.", correct: "il finit", wrongs: ["il finis", "il finissait", "il finira"], level: 'college' },
-            { q: "Quel est le synonyme de « rapide » ?", correct: "prompt", wrongs: ["lent", "calme", "lourd"], level: 'lycee' },
-            { q: "Quel est l'antonyme de « commencer » ?", correct: "finir", wrongs: ["débuter", "continuer", "ouvrir"], level: 'college' },
-            { q: "Quelle est la nature du mot « le » dans « le chat » ?", correct: "déterminant", wrongs: ["pronom", "adjectif", "nom"], level: 'college' },
-            { q: "Quel est le féminin de « acteur » ?", correct: "actrice", wrongs: ["acteure", "actriz", "actoresse"], level: 'college' },
-            { q: "Quel est le participe passé du verbe « prendre » ?", correct: "pris", wrongs: ["prendu", "pri", "prenu"], level: 'college' },
-            { q: "Quel est le synonyme de « maison » ?", correct: "demeure", wrongs: ["jardin", "route", "forêt"], level: 'lycee' },
-            { q: "Quelle est la nature du mot « et » ?", correct: "conjonction de coordination", wrongs: ["préposition", "adverbe", "interjection"], level: 'college' },
-            { q: "Quel est l'antonyme de « lumière » ?", correct: "obscurité", wrongs: ["chaleur", "silence", "vide"], level: 'college' },
-            { q: "Comment conjugue-t-on « être » à la 1ère personne du pluriel au présent ?", correct: "nous sommes", wrongs: ["nous êtes", "nous sont", "nous étions"], level: 'college' },
-            { q: "Quel est le pluriel de « journal » ?", correct: "journaux", wrongs: ["journals", "journaus", "journales"], level: 'college' },
-            { q: "Quel est le synonyme de « regarder » ?", correct: "observer", wrongs: ["écouter", "sentir", "toucher"], level: 'college' },
-            { q: "Quelle est la nature du mot « bleu » dans « le ciel bleu » ?", correct: "adjectif", wrongs: ["nom", "adverbe", "verbe"], level: 'college' },
-            { q: "Quel est l'antonyme de « facile » ?", correct: "difficile", wrongs: ["simple", "rapide", "clair"], level: 'college' },
-            { q: "Quel est le participe passé du verbe « voir » ?", correct: "vu", wrongs: ["vis", "voyé", "veu"], level: 'college' },
-            { q: "Comment écrit-on « ils mangent » au futur simple ?", correct: "ils mangeront", wrongs: ["ils mangerent", "ils mangaient", "ils mangeraient"], level: 'lycee' },
+            // 6ème
+            { q: "Quelle est la classe grammaticale du mot « gentiment » ?", correct: "adverbe", wrongs: ["adjectif", "nom", "verbe"], levels: ['6eme', '5eme'] },
+            { q: "Quel est le pluriel du mot « cheval » ?", correct: "chevaux", wrongs: ["chevals", "chevaus", "chevaux s"], levels: ['6eme'] },
+            { q: "Dans « Le chat noir dort », quelle est la fonction du mot « noir » ?", correct: "épithète", wrongs: ["attribut", "sujet", "complément d'objet"], levels: ['6eme', '5eme'] },
+            { q: "Quel est l'antonyme de « généreux » ?", correct: "avare", wrongs: ["joyeux", "courageux", "loyal"], levels: ['6eme'] },
+            { q: "Conjugue « chanter » à la 1ère personne du pluriel au présent de l'indicatif.", correct: "nous chantons", wrongs: ["nous chantions", "nous chanterons", "nous chantez"], levels: ['6eme'] },
+            { q: "Quel mot est un déterminant possessif ?", correct: "notre", wrongs: ["nous", "le", "cet"], levels: ['6eme', '5eme'] },
+            { q: "Quel est le synonyme du mot « périlleux » ?", correct: "dangereux", wrongs: ["agréable", "rapide", "calme"], levels: ['6eme', '5eme'] },
+            // 5ème
+            { q: "Dans la phrase « Le chevalier brandit son épée », que représente « son épée » ?", correct: "le COD", wrongs: ["le sujet", "le COI", "un complément de lieu"], levels: ['5eme'] },
+            { q: "À quel temps est conjugué le verbe dans « Il courut vers le château » ?", correct: "au passé simple", wrongs: ["à l'imparfait", "au présent", "au plus-que-parfait"], levels: ['5eme', '4eme'] },
+            { q: "Comment accorde-t-on : « Les fillettes sont ___ » ?", correct: "parties", wrongs: ["parti", "partie", "partis"], levels: ['5eme', '6eme'] },
+            { q: "Quel mot désigne le compagnon d'armes d'un chevalier au Moyen Âge ?", correct: "un écuyer", wrongs: ["un troubadour", "un serf", "un bailli"], levels: ['5eme'] },
+            { q: "Quelle proposition contient un homophone correctement orthographié ?", correct: "Où vas-tu ?", wrongs: ["Ou vas-tu ?", "Où veux-tu du thé ?", "Ou bien où ?"], levels: ['5eme', '6eme'] },
+            // 4ème
+            { q: "Dans « La femme qui porte un manteau », quel mot est le pronom relatif ?", correct: "qui", wrongs: ["la", "porte", "un"], levels: ['4eme', '3eme'] },
+            { q: "Quelle figure de style compare sans outil de comparaison dans « Cet homme est un lion » ?", correct: "la métaphore", wrongs: ["la comparaison", "la litote", "l'hyperbole"], levels: ['4eme', '3eme'] },
+            { q: "Quel auteur du XIXe siècle est célèbre pour ses contes et nouvelles réalistes et fantastiques (ex: Le Horla) ?", correct: "Guy de Maupassant", wrongs: ["Victor Hugo", "Molière", "Rabelais"], levels: ['4eme'] },
+            { q: "À la voix passive, quelle est la phrase correcte pour « Le chat mange la souris » ?", correct: "La souris est mangée par le chat.", wrongs: ["La souris mange le chat.", "Le chat est mangé par la souris.", "La souris a mangé le chat."], levels: ['4eme'] },
+            { q: "Quel mode exprime une action incertaine ou soumise à condition ?", correct: "le conditionnel", wrongs: ["l'indicatif", "l'impératif", "l'infinitif"], levels: ['4eme', '3eme'] },
+            // 3ème (Brevet)
+            { q: "Dans le discours indirect, que devient « Je viens » au passé ?", correct: "qu'il venait", wrongs: ["qu'il vient", "qu'il viendra", "qu'il vînt"], levels: ['3eme'] },
+            { q: "Quelle figure de style consiste à répéter un mot en début de vers ou de phrase ?", correct: "l'anaphore", wrongs: ["l'oxymore", "le chiasme", "la métonymie"], levels: ['3eme', '2nde'] },
+            { q: "Quel connecteur logique introduit une conséquence ?", correct: "donc", wrongs: ["parce que", "mais", "bien que"], levels: ['3eme'] },
+            { q: "Quel genre littéraire correspond au récit de la vie d'un auteur écrit par lui-même ?", correct: "l'autobiographie", wrongs: ["la biographie", "l'épopée", "le conte"], levels: ['3eme', '2nde'] },
+            { q: "Quelle figure de style oppose deux contraires dans « Cette obscure clarté » ?", correct: "un oxymore", wrongs: ["une hyperbole", "un euphémisme", "une antiphrase"], levels: ['3eme', '2nde'] },
+            // 2nde
+            { q: "En versification, comment appelle-t-on un vers de 12 syllabes ?", correct: "un alexandrin", wrongs: ["un décasyllabe", "un octosyllabe", "un hémistiche"], levels: ['2nde', '1ere'] },
+            { q: "Quel registre cherche à susciter la pitié et l'attendrissement du lecteur ?", correct: "le registre pathétique", wrongs: ["le registre tragique", "le registre polémique", "le registre comique"], levels: ['2nde'] },
+            { q: "Quelle figure de style atténue une réalité choquante ou brutale (ex: « Il nous a quittés » pour « Il est mort ») ?", correct: "un euphémisme", wrongs: ["une litote", "une anaphore", "une prétérition"], levels: ['2nde', '1ere'] },
+            { q: "Dans une pièce de théâtre, comment appelle-t-on les indications scéniques données par l'auteur ?", correct: "les didascalies", wrongs: ["les répliques", "les tirades", "les apartés"], levels: ['2nde', '1ere'] },
+            { q: "Quel mouvement littéraire du XIXe siècle vise à peindre la réalité sociale sans fard ?", correct: "le réalisme", wrongs: ["le romantisme", "le surréalisme", "le classicisme"], levels: ['2nde', '1ere'] },
+            // 1ère (Bac de Français)
+            { q: "Quel poète est l'auteur du recueil « Les Fleurs du Mal » (1857) ?", correct: "Charles Baudelaire", wrongs: ["Arthur Rimbaud", "Paul Verlaine", "Stéphane Mallarmé"], levels: ['1ere', 'terminale'] },
+            { q: "Quelle figure de style dit le moins pour faire entendre le plus (ex: « Va, je ne te hais point ») ?", correct: "la litote", wrongs: ["l'hyperbole", "la métonymie", "le chiasme"], levels: ['1ere', '2nde'] },
+            { q: "Quel mouvement littéraire du XVIe siècle place l'être humain et le savoir au centre des préoccupations ?", correct: "l'humanisme", wrongs: ["les Lumières", "le romantisme", "le symbolisme"], levels: ['1ere'] },
+            { q: "Quelle est la structure d'un chiasme en rhétorique ?", correct: "une disposition croisée AB / BA", wrongs: ["une gradation ascendante", "une répétition en fin de phrase", "une omission volontaire"], levels: ['1ere', 'terminale'] },
+            { q: "Dans quelle pièce Molière met-il en scène Argan, obsédé par sa santé fictive ?", correct: "Le Malade imaginaire", wrongs: ["Le Tartuffe", "L'Avare", "Le Misanthrope"], levels: ['1ere'] },
+            // Terminale
+            { q: "Quel écrivain et philosophe a rédigé « L'Étranger » et « Le Mythe de Sisyphe » ?", correct: "Albert Camus", wrongs: ["Jean-Paul Sartre", "André Gide", "Marcel Proust"], levels: ['terminale'] },
+            { q: "À quel courant théâtral du XXe siècle associe-t-on Samuel Beckett et Eugène Ionesco ?", correct: "le théâtre de l'absurde", wrongs: ["le drame romantique", "la tragédie classique", "le vaudeville"], levels: ['terminale'] },
+            { q: "Quel concept désigne la perte de repères et le dégoût existentiel chez Sartre ?", correct: "la Nausée", wrongs: ["le Spleen", "l'Angoisse pure", "le Mal du siècle"], levels: ['terminale'] },
+            { q: "Quelle grande œuvre romanesque de Marcel Proust commence par « Longtemps, je me suis couché de bonne heure » ?", correct: "À la recherche du temps perdu", wrongs: ["Les Thibault", "La Condition humaine", "Voyage au bout de la nuit"], levels: ['terminale'] },
         ],
         histoire: [
-            { q: "En quelle année a eu lieu la prise de la Bastille ?", correct: "1789", wrongs: ["1799", "1804", "1815"], level: 'college' },
-            { q: "Qui était empereur des Français en 1810 ?", correct: "Napoléon Ier", wrongs: ["Louis XVI", "Charlemagne", "Napoléon III"], level: 'college' },
-            { q: "En quelle année la Seconde Guerre mondiale s'est-elle terminée ?", correct: "1945", wrongs: ["1939", "1918", "1950"], level: 'college' },
-            { q: "Quel roi est guillotiné en 1793 ?", correct: "Louis XVI", wrongs: ["Louis XIV", "Henri IV", "Louis XV"], level: 'college' },
-            { q: "En quelle année le mur de Berlin est-il tombé ?", correct: "1989", wrongs: ["1991", "1975", "1961"], level: 'college' },
-            { q: "Qui a été sacré empereur en l'an 800 ?", correct: "Charlemagne", wrongs: ["Clovis", "Napoléon", "Jules César"], level: 'college' },
-            { q: "En quelle année a débuté la Première Guerre mondiale ?", correct: "1914", wrongs: ["1916", "1918", "1912"], level: 'college' },
-            { q: "Quel traité met fin à la Première Guerre mondiale ?", correct: "le traité de Versailles", wrongs: ["le traité de Rome", "le traité de Vienne", "le traité de Nantes"], level: 'lycee' },
-            { q: "En quelle année la France abolit-elle définitivement l'esclavage ?", correct: "1848", wrongs: ["1789", "1804", "1815"], level: 'lycee' },
-            { q: "Qui était roi de France au moment de la Révolution de 1789 ?", correct: "Louis XVI", wrongs: ["Louis XV", "Louis XIV", "Charles X"], level: 'college' },
-            { q: "En quelle année Christophe Colomb atteint-il l'Amérique ?", correct: "1492", wrongs: ["1500", "1450", "1520"], level: 'college' },
-            { q: "Quel général devient Premier consul en 1799 ?", correct: "Napoléon Bonaparte", wrongs: ["Robespierre", "Danton", "Lafayette"], level: 'lycee' },
-            { q: "En quelle année la France devient-elle une République pour la première fois ?", correct: "1792", wrongs: ["1789", "1804", "1848"], level: 'lycee' },
-            { q: "Quel événement déclenche la Première Guerre mondiale ?", correct: "l'assassinat de l'archiduc François-Ferdinand", wrongs: ["la crise de 1929", "le traité de Versailles", "la révolution russe"], level: 'lycee' },
-            { q: "En quelle année l'Algérie obtient-elle son indépendance ?", correct: "1962", wrongs: ["1954", "1958", "1970"], level: 'lycee' },
-            { q: "Qui dirige la France libre pendant la Seconde Guerre mondiale ?", correct: "Charles de Gaulle", wrongs: ["Philippe Pétain", "Georges Clemenceau", "Jean Moulin"], level: 'college' },
-            { q: "En quelle année a eu lieu le débarquement de Normandie ?", correct: "1944", wrongs: ["1943", "1945", "1942"], level: 'college' },
-            { q: "Quelle réforme majeure Jules Ferry met-il en place dans les années 1880 ?", correct: "l'école gratuite, laïque et obligatoire", wrongs: ["le suffrage universel", "la sécurité sociale", "les congés payés"], level: 'lycee' },
-            { q: "En quelle année les femmes obtiennent-elles le droit de vote en France ?", correct: "1944", wrongs: ["1918", "1958", "1936"], level: 'college' },
-            { q: "Quel pharaon a fait construire la grande pyramide de Gizeh ?", correct: "Khéops", wrongs: ["Toutânkhamon", "Ramsès II", "Akhenaton"], level: 'college' },
+            // 6ème
+            { q: "En quelle année l'écriture apparaît-elle en Mésopotamie (environ) ?", correct: "-3300 av. J.-C.", wrongs: ["-1000 av. J.-C.", "an 0", "-10000 av. J.-C."], levels: ['6eme'] },
+            { q: "Dans la Grèce antique, quelle cité est considérée comme le berceau de la démocratie ?", correct: "Athènes", wrongs: ["Sparte", "Mycènes", "Troie"], levels: ['6eme'] },
+            { q: "Quel homme politique athénien a dirigé la cité lors de son apogée au Ve siècle av. J.-C. ?", correct: "Périclès", wrongs: ["Alexandre le Grand", "Homère", "Solon"], levels: ['6eme'] },
+            { q: "Qui fut le premier empereur romain ?", correct: "Auguste", wrongs: ["Jules César", "Néron", "Marc Aurèle"], levels: ['6eme'] },
+            { q: "Quel fleuve traverse l'Égypte antique et permettait l'agriculture grâce à ses crues ?", correct: "le Nil", wrongs: ["l'Euphrate", "le Tigre", "le Jourdain"], levels: ['6eme'] },
+            // 5ème
+            { q: "Qui a été sacré empereur à Rome le jour de Noël en l'an 800 ?", correct: "Charlemagne", wrongs: ["Clovis", "Hugues Capet", "Saint Louis"], levels: ['5eme'] },
+            { q: "Quelle ville était la prestigieuse capitale de l'Empire byzantin ?", correct: "Constantinople", wrongs: ["Rome", "Alexandrie", "Antioche"], levels: ['5eme'] },
+            { q: "Quel roi de France a remporté la bataille de Bouvines en 1214 ?", correct: "Philippe Auguste", wrongs: ["Louis XIV", "François Ier", "Henri IV"], levels: ['5eme'] },
+            { q: "Quelle héroïne a délivré Orléans en 1429 pendant la guerre de Cent Ans ?", correct: "Jeanne d'Arc", wrongs: ["Aliénor d'Aquitaine", "Catherine de Médicis", "Blanche de Castille"], levels: ['5eme'] },
+            // 4ème
+            { q: "En quelle année la Bastille a-t-elle été prise par le peuple parisien ?", correct: "1789", wrongs: ["1799", "1804", "1792"], levels: ['4eme', '3eme'] },
+            { q: "Quel roi de France a été exécuté sur la guillotine en janvier 1793 ?", correct: "Louis XVI", wrongs: ["Louis XIV", "Louis XV", "Charles X"], levels: ['4eme'] },
+            { q: "Quel philosophe des Lumières a dirigé la grande « Encyclopédie » avec d'Alembert ?", correct: "Denis Diderot", wrongs: ["Voltaire", "Rousseau", "Montesquieu"], levels: ['4eme'] },
+            { q: "En quelle année Napoléon Bonaparte se fait-il sacrer empereur des Français ?", correct: "1804", wrongs: ["1799", "1815", "1792"], levels: ['4eme', '2nde'] },
+            { q: "En quelle année la France abolit-elle définitivement l'esclavage grâce à Victor Schœlcher ?", correct: "1848", wrongs: ["1789", "1804", "1871"], levels: ['4eme', '2nde'] },
+            // 3ème (Brevet)
+            { q: "En quelle année la Première Guerre mondiale a-t-elle débuté ?", correct: "1914", wrongs: ["1916", "1918", "1912"], levels: ['3eme'] },
+            { q: "Quelle célèbre bataille de 1916 a opposé Français et Allemands dans les tranchées ?", correct: "la bataille de Verdun", wrongs: ["la bataille de la Somme", "la bataille de la Marne", "la bataille d'Austerlitz"], levels: ['3eme'] },
+            { q: "Quel général a lancé l'appel à la résistance à la radio de Londres le 18 juin 1940 ?", correct: "Charles de Gaulle", wrongs: ["Philippe Pétain", "Jean Moulin", "Gaston Doumergue"], levels: ['3eme'] },
+            { q: "En quelle année le mur de Berlin est-il tombé, marquant la fin de la guerre froide ?", correct: "1989", wrongs: ["1991", "1975", "1985"], levels: ['3eme', 'terminale'] },
+            { q: "En quelle année la Ve République française a-t-elle été instaurée par De Gaulle ?", correct: "1958", wrongs: ["1944", "1968", "1946"], levels: ['3eme', '1ere'] },
+            // 2nde
+            { q: "Quel navigateur a atteint les Caraïbes en octobre 1492 ?", correct: "Christophe Colomb", wrongs: ["Vasco de Gama", "Fernand de Magellan", "Jacques Cartier"], levels: ['2nde'] },
+            { q: "Quel réformateur allemand a publié ses 95 thèses en 1517, initiant le protestantisme ?", correct: "Martin Luther", wrongs: ["Jean Calvin", "Érasme", "Thomas More"], levels: ['2nde'] },
+            { q: "Quel souverain français a signé l'Édit de Nantes en 1598 pour clore les guerres de religion ?", correct: "Henri IV", wrongs: ["François Ier", "Louis XIV", "Charles IX"], levels: ['2nde'] },
+            { q: "Quel imprimeur allemand a mis au point l'imprimerie à caractères mobiles vers 1450 ?", correct: "Johannes Gutenberg", wrongs: ["Alde Manuce", "Léonard de Vinci", "Nicolas Copernic"], levels: ['2nde'] },
+            // 1ère
+            { q: "Quelle loi fondamentale de 1905 institue la séparation des Églises et de l'État en France ?", correct: "la loi de 1905", wrongs: ["le décret d'Allarde", "la loi Jules Ferry", "la constitution de 1875"], levels: ['1ere'] },
+            { q: "Quel événement politique de 1871 a vu le peuple parisien s'insurger contre le gouvernement versaillais ?", correct: "la Commune de Paris", wrongs: ["la Fronde", "les Trois Glorieuses", "la Terreur"], levels: ['1ere'] },
+            { q: "Quel capitaine français juif a été injustement condamné pour trahison en 1894 avant d'être réhabilité ?", correct: "Alfred Dreyfus", wrongs: ["Jean Jaurès", "Georges Clemenceau", "Émile Zola"], levels: ['1ere'] },
+            { q: "Quel traité de paix de 1919 a redessiné la carte de l'Europe après la Grande Guerre ?", correct: "le traité de Versailles", wrongs: ["le traité de Vienne", "le traité de Rome", "le traité d'Utrecht"], levels: ['1ere'] },
+            // Terminale
+            { q: "En quelle année les accords d'Évian ont-ils scellé l'indépendance de l'Algérie ?", correct: "1962", wrongs: ["1954", "1958", "1968"], levels: ['terminale'] },
+            { q: "Quelle crise majeure de 1962 a failli provoquer une guerre nucléaire entre les USA et l'URSS ?", correct: "la crise des missiles de Cuba", wrongs: ["la crise du canal de Suez", "le blocus de Berlin", "la guerre de Corée"], levels: ['terminale'] },
+            { q: "Quel traité de 1957 a fondé la Communauté Économique Européenne (CEE) ?", correct: "le traité de Rome", wrongs: ["le traité de Maastricht", "le traité de Lisbonne", "le traité de Paris"], levels: ['terminale'] },
+            { q: "En quelle année l'URSS a-t-elle été officiellement dissoute ?", correct: "1991", wrongs: ["1989", "1985", "1995"], levels: ['terminale'] },
         ],
         geo: [
-            { q: "Quelle est la capitale de l'Espagne ?", correct: "Madrid", wrongs: ["Barcelone", "Lisbonne", "Séville"], level: 'college' },
-            { q: "Quel est le plus long fleuve de France ?", correct: "la Loire", wrongs: ["la Seine", "le Rhône", "la Garonne"], level: 'college' },
-            { q: "Quelle est la capitale de l'Italie ?", correct: "Rome", wrongs: ["Milan", "Naples", "Venise"], level: 'college' },
-            { q: "Quel est le plus haut sommet d'Europe occidentale ?", correct: "le Mont Blanc", wrongs: ["le Cervin", "le Mont Rose", "l'Etna"], level: 'college' },
-            { q: "Quelle est la capitale de l'Allemagne ?", correct: "Berlin", wrongs: ["Munich", "Hambourg", "Francfort"], level: 'college' },
-            { q: "Quel océan borde la côte ouest de la France ?", correct: "l'océan Atlantique", wrongs: ["l'océan Pacifique", "la mer Méditerranée", "la mer du Nord"], level: 'college' },
-            { q: "Quelle est la capitale du Japon ?", correct: "Tokyo", wrongs: ["Kyoto", "Osaka", "Séoul"], level: 'college' },
-            { q: "Quel est le plus grand désert chaud du monde ?", correct: "le Sahara", wrongs: ["le désert de Gobi", "le Kalahari", "le désert d'Atacama"], level: 'college' },
-            { q: "Quelle est la capitale du Canada ?", correct: "Ottawa", wrongs: ["Toronto", "Montréal", "Vancouver"], level: 'college' },
-            { q: "Quel pays a la plus grande population du monde ?", correct: "l'Inde", wrongs: ["la Chine", "les États-Unis", "l'Indonésie"], level: 'lycee' },
-            { q: "Quelle est la capitale du Portugal ?", correct: "Lisbonne", wrongs: ["Porto", "Madrid", "Séville"], level: 'college' },
-            { q: "Quel est le plus grand pays du monde par la superficie ?", correct: "la Russie", wrongs: ["le Canada", "la Chine", "les États-Unis"], level: 'college' },
-            { q: "Quelle chaîne de montagnes sépare traditionnellement l'Europe de l'Asie ?", correct: "l'Oural", wrongs: ["les Alpes", "les Carpates", "le Caucase"], level: 'lycee' },
-            { q: "Quelle est la capitale de la Grèce ?", correct: "Athènes", wrongs: ["Thessalonique", "Sparte", "Corinthe"], level: 'college' },
-            { q: "Quel est le plus grand océan du monde ?", correct: "l'océan Pacifique", wrongs: ["l'océan Atlantique", "l'océan Indien", "l'océan Arctique"], level: 'college' },
-            { q: "Quelle est la capitale du Royaume-Uni ?", correct: "Londres", wrongs: ["Manchester", "Édimbourg", "Liverpool"], level: 'college' },
-            { q: "Quel fleuve traverse l'Égypte ?", correct: "le Nil", wrongs: ["le Congo", "le Niger", "le Zambèze"], level: 'college' },
-            { q: "Quelle est la capitale de la Belgique ?", correct: "Bruxelles", wrongs: ["Anvers", "Liège", "Gand"], level: 'college' },
-            { q: "Quel continent est le plus peuplé ?", correct: "l'Asie", wrongs: ["l'Afrique", "l'Europe", "l'Amérique"], level: 'lycee' },
-            { q: "Quelle est la capitale de la Suisse ?", correct: "Berne", wrongs: ["Genève", "Zurich", "Lausanne"], level: 'college' },
+            // 6ème
+            { q: "Combien d'océans principaux compte la planète Terre ?", correct: "5", wrongs: ["3", "7", "4"], levels: ['6eme'] },
+            { q: "Quelle est la capitale de l'Espagne ?", correct: "Madrid", wrongs: ["Barcelone", "Séville", "Valence"], levels: ['6eme'] },
+            { q: "Quel est le plus grand continent par la superficie et la population ?", correct: "l'Asie", wrongs: ["l'Afrique", "l'Amérique", "l'Europe"], levels: ['6eme'] },
+            { q: "Quelle chaîne de montagnes abrite le Mont Blanc ?", correct: "les Alpes", wrongs: ["les Pyrénées", "les Vosges", "le Massif central"], levels: ['6eme', '5eme'] },
+            { q: "Quel est le plus grand désert chaud de la planète ?", correct: "le Sahara", wrongs: ["le désert de Gobi", "le désert d'Atacama", "le Kalahari"], levels: ['6eme'] },
+            // 5ème
+            { q: "Comment appelle-t-on la baisse de la fécondité accompagnée d'une baisse de la mortalité dans un pays ?", correct: "la transition démographique", wrongs: ["l'exode rural", "la métropolisation", "l'étalement urbain"], levels: ['5eme', '2nde'] },
+            { q: "Quelle ressource vitale est souvent qualifiée d'« or bleu » ?", correct: "l'eau douce", wrongs: ["le pétrole", "le gaz", "le blé"], levels: ['5eme'] },
+            { q: "Quel pays est actuellement le plus peuplé du monde ?", correct: "l'Inde", wrongs: ["la Chine", "les États-Unis", "l'Indonésie"], levels: ['5eme', '2nde'] },
+            // 4ème
+            { q: "Par quel canal artificiel les navires passent-ils pour relier la Méditerranée à la mer Rouge ?", correct: "le canal de Suez", wrongs: ["le canal de Panama", "le détroit de Gibraltar", "le détroit du Bosphore"], levels: ['4eme', 'terminale'] },
+            { q: "Quel terme désigne la concentration croissante des activités sur les littoraux maritimes ?", correct: "la littoralisation", wrongs: ["la désertification", "la continentalisation", "la déforestation"], levels: ['4eme', 'terminale'] },
+            { q: "Comment qualifie-t-on une ville géante de plus de 10 millions d'habitants ?", correct: "une mégapole", wrongs: ["une mégalopolis", "un technopôle", "une banlieue"], levels: ['4eme', '1ere'] },
+            // 3ème (Brevet)
+            { q: "Quel est le plus long fleuve de France métropolitaine ?", correct: "la Loire", wrongs: ["la Seine", "le Rhône", "la Garonne"], levels: ['3eme', '6eme'] },
+            { q: "Quelle île de l'océan Indien est un département et région d'outre-mer (DROM) français ?", correct: "La Réunion", wrongs: ["Madagascar", "Maurice", "Tahiti"], levels: ['3eme'] },
+            { q: "Quelle institution européenne siège principalement à Strasbourg ?", correct: "le Parlement européen", wrongs: ["la Commission européenne", "la Cour de justice", "la BCE"], levels: ['3eme'] },
+            // 2nde
+            { q: "Que mesure l'Indicateur de Développement Humain (IDH) créé par le PNUD ?", correct: "le niveau de santé, d'éducation et de revenu", wrongs: ["uniquement la richesse économique brute", "la superficie forestière", "le taux de chômage seul"], levels: ['2nde'] },
+            { q: "Quelle énergie n'émet pas directement de gaz à effet de serre pendant sa production ?", correct: "l'énergie solaire", wrongs: ["le charbon", "le gaz naturel", "le pétrole"], levels: ['2nde'] },
+            // 1ère
+            { q: "Quel grand quartier d'affaires de la métropole parisienne concentre sièges sociaux et tours modernes ?", correct: "La Défense", wrongs: ["Montparnasse", "Bercy", "Châtelet"], levels: ['1ere'] },
+            { q: "Comment appelle-t-on le retour de populations aisées dans des quartiers populaires rénovés ?", correct: "la gentrification", wrongs: ["la périurbanisation", "la ghettoïsation", "l'exode rural"], levels: ['1ere'] },
+            // Terminale
+            { q: "Que signifie le sigle ZEE en droit international maritime ?", correct: "Zone Économique Exclusive", wrongs: ["Zone d'Exploitation Européenne", "Zone Écologique Équilibrée", "Zone d'Échange Exceptionnel"], levels: ['terminale'] },
+            { q: "Par quel détroit stratégique passe environ un tiers du trafic maritime pétrolier mondial ?", correct: "le détroit d'Ormuz", wrongs: ["le détroit de Malacca", "le détroit de Béring", "le détroit de Magellan"], levels: ['terminale'] },
+            { q: "Quel canal relie l'océan Pacifique à l'océan Atlantique en Amérique centrale ?", correct: "le canal de Panama", wrongs: ["le canal de Suez", "le canal de Corinthe", "le canal du Midi"], levels: ['terminale'] },
         ],
         svt: [
-            { q: "Quel organe pompe le sang dans le corps humain ?", correct: "le cœur", wrongs: ["le foie", "le poumon", "le rein"], level: 'college' },
-            { q: "Quel gaz les plantes rejettent-elles lors de la photosynthèse ?", correct: "l'oxygène", wrongs: ["le CO₂", "l'azote", "l'hydrogène"], level: 'college' },
-            { q: "Combien de chromosomes possède une cellule humaine normale ?", correct: "46", wrongs: ["23", "44", "48"], level: 'lycee' },
-            { q: "Quel organe filtre le sang pour produire l'urine ?", correct: "le rein", wrongs: ["le foie", "l'estomac", "le pancréas"], level: 'college' },
-            { q: "Quelle est l'unité de base du vivant ?", correct: "la cellule", wrongs: ["l'atome", "le tissu", "l'organe"], level: 'college' },
-            { q: "Quel type de dents sert à couper les aliments ?", correct: "les incisives", wrongs: ["les molaires", "les canines", "les prémolaires"], level: 'college' },
-            { q: "Quel organe produit l'insuline ?", correct: "le pancréas", wrongs: ["le foie", "la rate", "la thyroïde"], level: 'lycee' },
-            { q: "Quel gaz respirons-nous pour vivre ?", correct: "le dioxygène", wrongs: ["le dioxyde de carbone", "l'azote", "l'hydrogène"], level: 'college' },
-            { q: "Quelle molécule porte l'information génétique ?", correct: "l'ADN", wrongs: ["l'ARN", "le glucose", "la protéine"], level: 'lycee' },
-            { q: "Quel est le rôle des globules rouges ?", correct: "transporter l'oxygène", wrongs: ["combattre les infections", "coaguler le sang", "digérer les aliments"], level: 'college' },
-            { q: "Quel organe est responsable de la respiration ?", correct: "les poumons", wrongs: ["le cœur", "le foie", "l'estomac"], level: 'college' },
-            { q: "Quelle partie de la plante absorbe l'eau du sol ?", correct: "les racines", wrongs: ["les feuilles", "les fleurs", "les tiges"], level: 'college' },
-            { q: "Combien de temps dure en moyenne une grossesse humaine ?", correct: "9 mois", wrongs: ["6 mois", "12 mois", "3 mois"], level: 'college' },
-            { q: "Quel est le plus grand organe du corps humain ?", correct: "la peau", wrongs: ["le foie", "le cœur", "le cerveau"], level: 'college' },
-            { q: "Quel processus permet aux plantes de produire leur propre nourriture ?", correct: "la photosynthèse", wrongs: ["la respiration", "la digestion", "la transpiration"], level: 'college' },
-            { q: "Quel organe stocke la bile ?", correct: "la vésicule biliaire", wrongs: ["le pancréas", "la rate", "le rein"], level: 'lycee' },
-            { q: "Combien de cavités possède le cœur humain ?", correct: "4", wrongs: ["2", "3", "6"], level: 'lycee' },
-            { q: "Quel type d'organisme se nourrit uniquement de plantes ?", correct: "un herbivore", wrongs: ["un carnivore", "un omnivore", "un décomposeur"], level: 'college' },
-            { q: "Quelle glande régule le métabolisme via des hormones ?", correct: "la thyroïde", wrongs: ["le pancréas", "la rate", "le thymus"], level: 'lycee' },
-            { q: "Quel est le rôle des globules blancs ?", correct: "défendre l'organisme contre les infections", wrongs: ["transporter l'oxygène", "transporter les nutriments", "coaguler le sang"], level: 'college' },
+            // 6ème
+            { q: "Quel organite cellulaire vert permet aux végétaux de réaliser la photosynthèse ?", correct: "le chloroplaste", wrongs: ["le ribosome", "la vacuole", "le noyau"], levels: ['6eme', '5eme'] },
+            { q: "Quel gaz les feuilles absorbent-elles principalement pour synthétiser leur matière organique ?", correct: "le dioxyde de carbone (CO₂)", wrongs: ["le dioxygène (O₂)", "l'azote", "l'argon"], levels: ['6eme'] },
+            { q: "Quelle partie de la fleur contient les grains de pollen ?", correct: "l'étamine", wrongs: ["le pistil", "le pétale", "le sépale"], levels: ['6eme'] },
+            { q: "Quel est le premier maillon d'une chaîne alimentaire terrestre ?", correct: "un producteur primaire végétal", wrongs: ["un carnivore", "un décomposeur", "un herbivore"], levels: ['6eme'] },
+            // 5ème
+            { q: "Quel organe permet aux poissons d'extraire le dioxygène dissous dans l'eau ?", correct: "les branchies", wrongs: ["les poumons", "les trachées", "les opercules"], levels: ['5eme'] },
+            { q: "Où s'effectue principalement l'absorption des nutriments vers le sang chez l'humain ?", correct: "dans l'intestin grêle", wrongs: ["dans l'estomac", "dans le côlon", "dans le foie"], levels: ['5eme'] },
+            { q: "Quel type de volcanisme se caractérise par des coulées de lave fluide sans explosion violente ?", correct: "le volcanisme effusif", wrongs: ["le volcanisme explosif", "le volcanisme fissural", "le point chaud"], levels: ['5eme'] },
+            // 4ème
+            { q: "Quelle cellule spécialisée transmet l'influx nerveux dans notre organisme ?", correct: "le neurone", wrongs: ["l'hématie", "l'adipocyte", "le lymphocyte"], levels: ['4eme'] },
+            { q: "Comment appelle-t-on l'espace de communication chimique entre deux neurones ?", correct: "la synapse", wrongs: ["l'axone", "la dendrite", "la gaine de myéline"], levels: ['4eme', 'terminale'] },
+            { q: "Quelle hormone mâle est sécrétée par les testicules à partir de la puberté ?", correct: "la testostérone", wrongs: ["l'œstrogène", "la progestérone", "l'insuline"], levels: ['4eme'] },
+            // 3ème (Brevet)
+            { q: "Combien de chromosomes comporte une cellule humaine non reproductrice saine ?", correct: "46 chromosomes", wrongs: ["23 chromosomes", "48 chromosomes", "44 chromosomes"], levels: ['3eme'] },
+            { q: "Quelle macromolécule en forme de double hélice porte l'information génétique ?", correct: "l'ADN", wrongs: ["l'ARN", "l'ATP", "le glycogène"], levels: ['3eme', '2nde'] },
+            { q: "Comment qualifie-t-on un allèle qui s'exprime même s'il n'est présent qu'en un seul exemplaire ?", correct: "dominant", wrongs: ["récessif", "codominant", "muet"], levels: ['3eme', '2nde'] },
+            { q: "Quel type de globule blanc détruit les bactéries par phagocytose ?", correct: "les phagocytes", wrongs: ["les plaquettes", "les hématies", "les neurones"], levels: ['3eme'] },
+            // 2nde
+            { q: "Quelle organite cellulaire est le siège de la respiration cellulaire et produit l'ATP ?", correct: "la mitochondrie", wrongs: ["le lysosome", "l'appareil de Golgi", "le centrosome"], levels: ['2nde', '1ere'] },
+            { q: "Quelles bases azotées s'apparient dans l'ADN selon la règle de complémentarité ?", correct: "A avec T, et C avec G", wrongs: ["A avec C, et T avec G", "A avec U, et C avec T", "A avec G, et T avec C"], levels: ['2nde'] },
+            // 1ère
+            { q: "Quelle phase de la division cellulaire (mitose) sépare les chromatides sœurs vers les pôles ?", correct: "l'anaphase", wrongs: ["la prophase", "la métaphase", "la télophase"], levels: ['1ere'] },
+            { q: "Quel type de lymphocytes produit des anticorps circulants spécifiques ?", correct: "les lymphocytes B (plasmocytes)", wrongs: ["les lymphocytes T cytotoxiques", "les macrophages", "les hématies"], levels: ['1ere', 'terminale'] },
+            // Terminale
+            { q: "Quel phénomène génétique lors de la prophase I de méiose échange des portions de chromatides ?", correct: "le crossing-over (brassage intrachromosomique)", wrongs: ["la mutation ponctuelle", "la dérive génétique", "l'épissage alternatif"], levels: ['terminale'] },
+            { q: "Quel réflexe involontaire provoque la contraction d'un muscle en réponse à son propre étirement ?", correct: "le réflexe myotatique", wrongs: ["le réflexe conditionné", "le réflexe cornéen", "le réflexe nociceptif"], levels: ['terminale'] },
         ],
         physique: [
-            { q: "Quelle est l'unité de mesure de la force ?", correct: "le newton", wrongs: ["le joule", "le watt", "le pascal"], level: 'college' },
-            { q: "Quel est le symbole chimique de l'or ?", correct: "Au", wrongs: ["Ag", "Fe", "Or"], level: 'college' },
-            { q: "À quelle température l'eau bout-elle au niveau de la mer ?", correct: "100°C", wrongs: ["90°C", "120°C", "80°C"], level: 'college' },
-            { q: "Quelle est l'unité de mesure de l'énergie ?", correct: "le joule", wrongs: ["le newton", "le volt", "l'ampère"], level: 'lycee' },
-            { q: "Quel est le symbole chimique du fer ?", correct: "Fe", wrongs: ["Fr", "Fi", "F"], level: 'college' },
-            { q: "Quelle particule porte une charge négative ?", correct: "l'électron", wrongs: ["le proton", "le neutron", "le photon"], level: 'lycee' },
-            { q: "Quelle est l'unité de mesure de la puissance électrique ?", correct: "le watt", wrongs: ["le volt", "l'ampère", "l'ohm"], level: 'college' },
-            { q: "Quel est le symbole chimique du sodium ?", correct: "Na", wrongs: ["So", "Sd", "S"], level: 'college' },
-            { q: "Comment appelle-t-on le passage de l'état liquide à l'état gazeux ?", correct: "la vaporisation", wrongs: ["la fusion", "la solidification", "la condensation"], level: 'lycee' },
-            { q: "Quelle est la vitesse de la lumière dans le vide (arrondie) ?", correct: "300 000 km/s", wrongs: ["150 000 km/s", "1 000 000 km/s", "30 000 km/s"], level: 'lycee' },
-            { q: "Quel est le symbole chimique de l'oxygène ?", correct: "O", wrongs: ["Ox", "Og", "On"], level: 'college' },
-            { q: "Quelle loi relie tension, intensité et résistance ?", correct: "la loi d'Ohm", wrongs: ["la loi de Newton", "la loi de Coulomb", "la loi de Joule"], level: 'lycee' },
-            { q: "Quelle est l'unité de mesure de la masse dans le Système international ?", correct: "le kilogramme", wrongs: ["le gramme", "le newton", "le litre"], level: 'college' },
-            { q: "Quel est le pH d'une solution neutre ?", correct: "7", wrongs: ["0", "14", "1"], level: 'lycee' },
-            { q: "Comment appelle-t-on un mélange d'eau et d'huile ?", correct: "un mélange hétérogène", wrongs: ["un mélange homogène", "une solution", "un corps pur"], level: 'college' },
-            { q: "Quelle est l'unité de mesure de la tension électrique ?", correct: "le volt", wrongs: ["l'ampère", "le watt", "l'ohm"], level: 'college' },
-            { q: "Quel est le symbole chimique du carbone ?", correct: "C", wrongs: ["Ca", "Cb", "Co"], level: 'college' },
-            { q: "Quelle force nous maintient au sol ?", correct: "la gravité", wrongs: ["le magnétisme", "la pression", "la friction"], level: 'college' },
-            { q: "Combien d'états physiques principaux la matière possède-t-elle ?", correct: "3", wrongs: ["2", "4", "5"], level: 'college' },
-            { q: "Quel est le symbole chimique de l'hydrogène ?", correct: "H", wrongs: ["He", "Hy", "Hg"], level: 'college' },
-        ],
-        techno: [
-            { q: "Quel langage est principalement utilisé pour structurer une page web ?", correct: "HTML", wrongs: ["CSS", "Python", "SQL"], level: 'college' },
-            { q: "Que désigne l'abréviation « CPU » ?", correct: "l'unité centrale de traitement", wrongs: ["la mémoire vive", "la carte graphique", "le disque dur"], level: 'college' },
-            { q: "Quel composant stocke les données de façon permanente dans un ordinateur ?", correct: "le disque dur", wrongs: ["la RAM", "le processeur", "la carte mère"], level: 'college' },
-            { q: "Quelle boucle répète des instructions tant qu'une condition est vraie ?", correct: "la boucle « tant que »", wrongs: ["la boucle « pour »", "la condition « si »", "la fonction"], level: 'lycee' },
-            { q: "Quel matériau est souvent utilisé en impression 3D ?", correct: "le PLA", wrongs: ["le verre", "le béton", "le cuivre"], level: 'college' },
-            { q: "Que mesure un capteur de température ?", correct: "la chaleur ambiante", wrongs: ["la lumière", "la pression", "le son"], level: 'college' },
-            { q: "Quelle unité mesure la puissance d'un appareil électrique ?", correct: "le watt", wrongs: ["le volt", "l'ampère", "l'ohm"], level: 'college' },
-            { q: "À quoi sert concrètement le Wi-Fi ?", correct: "une connexion réseau sans fil", wrongs: ["un câble réseau", "un type de processeur", "un logiciel antivirus"], level: 'college' },
-            { q: "Quel composant limite le courant dans un circuit électronique ?", correct: "une résistance", wrongs: ["une LED", "un condensateur", "un transistor"], level: 'lycee' },
-            { q: "Quel type d'énergie provient du soleil ?", correct: "l'énergie solaire", wrongs: ["l'énergie fossile", "l'énergie nucléaire", "l'énergie géothermique"], level: 'college' },
-            { q: "Quel type de logiciel permet de modéliser un objet en 3D avant fabrication ?", correct: "un logiciel de CAO", wrongs: ["un tableur", "un navigateur web", "un antivirus"], level: 'lycee' },
-            { q: "Quelle grandeur un ampèremètre mesure-t-il ?", correct: "l'intensité du courant", wrongs: ["la tension", "la puissance", "la résistance"], level: 'lycee' },
-            { q: "Quel matériau conduit bien l'électricité ?", correct: "le cuivre", wrongs: ["le bois", "le plastique", "le verre"], level: 'college' },
-            { q: "Que désigne « API » en informatique ?", correct: "une interface de programmation", wrongs: ["un type de processeur", "un langage de programmation", "un fichier image"], level: 'lycee' },
-            { q: "Quel composant convertit l'énergie électrique en mouvement ?", correct: "un moteur", wrongs: ["une résistance", "une LED", "un capteur"], level: 'college' },
-            { q: "Quelle est l'unité de la fréquence d'un processeur ?", correct: "le hertz", wrongs: ["le watt", "le bit", "l'octet"], level: 'lycee' },
-            { q: "Quel type de mémoire perd ses données à l'extinction de l'ordinateur ?", correct: "la RAM", wrongs: ["le disque dur", "la mémoire flash", "le SSD"], level: 'lycee' },
-            { q: "Quel outil permet d'assembler des composants électroniques par la chaleur ?", correct: "un fer à souder", wrongs: ["une perceuse", "une pince", "un tournevis"], level: 'college' },
-            { q: "Quelle énergie renouvelable utilise le vent ?", correct: "l'énergie éolienne", wrongs: ["l'énergie solaire", "l'énergie hydraulique", "l'énergie fossile"], level: 'college' },
-            { q: "Que désigne un « octet » en informatique ?", correct: "un groupe de 8 bits", wrongs: ["un groupe de 4 bits", "un groupe de 16 bits", "un groupe de 2 bits"], level: 'college' },
-        ],
-        anglais: [
-            { q: "What is the English word for « chat » ?", correct: "cat", wrongs: ["dog", "bird", "fish"], level: 'college' },
-            { q: "Complete: 'She ___ to school every day.'", correct: "goes", wrongs: ["go", "going", "gone"], level: 'college' },
-            { q: "What does 'to look forward to' mean?", correct: "attendre avec impatience", wrongs: ["regarder devant soi", "chercher quelque chose", "reculer"], level: 'lycee' },
-            { q: "What is the plural of 'child'?", correct: "children", wrongs: ["childs", "childes", "childrens"], level: 'college' },
-            { q: "Complete: 'I ___ never been to Paris.'", correct: "have", wrongs: ["has", "had", "having"], level: 'lycee' },
-            { q: "What is the English word for « pomme » ?", correct: "apple", wrongs: ["orange", "banana", "grape"], level: 'college' },
-            { q: "Choose the correct comparative: 'This is ___ than that.'", correct: "better", wrongs: ["gooder", "more good", "best"], level: 'college' },
-            { q: "What is the past tense of 'go'?", correct: "went", wrongs: ["goed", "gone", "going"], level: 'college' },
-            { q: "What does 'exhausted' mean?", correct: "épuisé", wrongs: ["content", "en colère", "confus"], level: 'lycee' },
-            { q: "Complete: 'They ___ watching TV right now.'", correct: "are", wrongs: ["is", "am", "be"], level: 'college' },
-            { q: "What is the English word for « fenêtre » ?", correct: "window", wrongs: ["door", "wall", "roof"], level: 'college' },
-            { q: "Which modal expresses obligation?", correct: "must", wrongs: ["might", "could", "would"], level: 'lycee' },
-            { q: "What is the opposite of 'fast'?", correct: "slow", wrongs: ["quick", "big", "loud"], level: 'college' },
-            { q: "Complete: 'If it rains, I ___ stay home.'", correct: "will", wrongs: ["would", "was", "did"], level: 'lycee' },
-            { q: "What does 'to give up' mean?", correct: "abandonner", wrongs: ["donner", "continuer", "gagner"], level: 'lycee' },
-            { q: "What is the English word for « voiture » ?", correct: "car", wrongs: ["bike", "train", "boat"], level: 'college' },
-            { q: "Choose the correct form: 'Yesterday, she ___ (watch) a film.'", correct: "watched", wrongs: ["watch", "watching", "watches"], level: 'college' },
-            { q: "What is the superlative of 'good'?", correct: "the best", wrongs: ["the better", "the goodest", "the most good"], level: 'college' },
-            { q: "What does 'a piece of cake' mean idiomatically?", correct: "quelque chose de très facile", wrongs: ["un dessert", "quelque chose de difficile", "une surprise"], level: 'lycee' },
-            { q: "Complete: 'There ___ many books on the shelf.'", correct: "are", wrongs: ["is", "was", "be"], level: 'college' },
-        ],
-        emc: [
-            { q: "Quel âge faut-il avoir pour voter en France ?", correct: "18 ans", wrongs: ["16 ans", "21 ans", "25 ans"], level: 'college' },
-            { q: "Quelle est la devise de la France ?", correct: "Liberté, Égalité, Fraternité", wrongs: ["Unité, Travail, Progrès", "Ordre et Progrès", "Dieu et mon droit"], level: 'college' },
-            { q: "Qui est élu au suffrage universel direct en France ?", correct: "le Président de la République", wrongs: ["le Premier ministre", "les préfets", "les juges"], level: 'college' },
-            { q: "Que signifie « laïcité » ?", correct: "la séparation entre l'État et les religions", wrongs: ["l'obligation de pratiquer une religion", "l'interdiction de toute religion", "la religion d'État"], level: 'lycee' },
-            { q: "Combien de pouvoirs distincts compose la séparation des pouvoirs ?", correct: "3", wrongs: ["2", "4", "5"], level: 'lycee' },
-            { q: "Quel document proclame les droits fondamentaux en 1789 ?", correct: "la Déclaration des droits de l'homme et du citoyen", wrongs: ["la Constitution de 1958", "le Code civil", "la Charte de l'environnement"], level: 'lycee' },
-            { q: "Qui vote les lois en France ?", correct: "le Parlement", wrongs: ["le Président seul", "le Conseil constitutionnel", "le gouvernement seul"], level: 'lycee' },
-            { q: "Quel principe garantit qu'on est innocent jusqu'à preuve du contraire ?", correct: "la présomption d'innocence", wrongs: ["la légitime défense", "la prescription", "le droit de grève"], level: 'lycee' },
-            { q: "Quelle institution veille au respect de la Constitution ?", correct: "le Conseil constitutionnel", wrongs: ["le Sénat", "la Cour des comptes", "la Mairie"], level: 'lycee' },
-            { q: "Quel est le rôle du Premier ministre en France ?", correct: "diriger le gouvernement", wrongs: ["représenter la France à l'étranger", "juger les criminels", "voter le budget seul"], level: 'lycee' },
-            { q: "En quelle année le droit de vote des femmes est-il instauré en France ?", correct: "1944", wrongs: ["1918", "1958", "1981"], level: 'college' },
-            { q: "Quel symbole représente la République française ?", correct: "Marianne", wrongs: ["le coq (officieux)", "la tour Eiffel", "le drapeau seul"], level: 'college' },
-            { q: "Que garantit la liberté d'expression ?", correct: "le droit d'exprimer ses opinions", wrongs: ["le droit de tout dire sans limite", "le droit de vote", "le droit à la propriété"], level: 'college' },
-            { q: "Quelle charte protège l'environnement dans la Constitution française ?", correct: "la Charte de l'environnement", wrongs: ["la Déclaration de 1789", "le Code civil", "la loi de 1905"], level: 'lycee' },
-            { q: "Environ combien de sénateurs compte le Sénat français ?", correct: "environ 350", wrongs: ["environ 100", "environ 577", "environ 900"], level: 'lycee' },
-            { q: "Quel âge faut-il pour être candidat à l'élection présidentielle en France ?", correct: "18 ans", wrongs: ["23 ans", "30 ans", "35 ans"], level: 'lycee' },
-            { q: "Quelle loi de 1905 instaure la séparation des Églises et de l'État ?", correct: "la loi de séparation des Églises et de l'État", wrongs: ["la loi Jules Ferry", "la loi sur la presse", "le Code civil"], level: 'lycee' },
-            { q: "Qui compose l'Assemblée nationale ?", correct: "des députés élus", wrongs: ["des sénateurs élus", "des ministres nommés", "des juges"], level: 'lycee' },
-            { q: "Quel principe interdit de discriminer selon l'origine, le sexe ou la religion ?", correct: "le principe d'égalité", wrongs: ["le principe de laïcité", "le principe de fraternité", "le principe de souveraineté"], level: 'college' },
-            { q: "Combien de temps dure un mandat présidentiel en France depuis 2000 ?", correct: "5 ans", wrongs: ["7 ans", "4 ans", "6 ans"], level: 'college' },
+            // 6ème
+            { q: "Dans quel état physique la matière prend-elle la forme du récipient tout en gardant un volume propre ?", correct: "liquide", wrongs: ["solide", "gazeux", "plasma"], levels: ['6eme'] },
+            { q: "Quel instrument de mesure utilise-t-on pour mesurer une masse ?", correct: "une balance", wrongs: ["une éprouvette", "un thermomètre", "un dynamomètre"], levels: ['6eme'] },
+            { q: "Quel composant fournit l'énergie électrique dans un circuit simple ?", correct: "la pile (générateur)", wrongs: ["la lampe", "l'interrupteur", "le fil"], levels: ['6eme'] },
+            // 5ème
+            { q: "À quelle température l'eau pure gèle-t-elle à pression atmosphérique normale ?", correct: "0 °C", wrongs: ["100 °C", "-10 °C", "4 °C"], levels: ['5eme'] },
+            { q: "Comment qualifie-t-on un mélange où l'on ne distingue aucun constituant à l'œil nu ?", correct: "un mélange homogène", wrongs: ["un mélange hétérogène", "un corps pur", "une suspension"], levels: ['5eme'] },
+            { q: "Si une lampe grille dans un circuit en série, que font les autres lampes ?", correct: "elles s'éteignent toutes", wrongs: ["elles restent allumées", "elles brillent plus fort", "elles clignotent"], levels: ['5eme'] },
+            // 4ème
+            { q: "Quelle est la vitesse de la lumière dans le vide (arrondie) ?", correct: "300 000 km/s", wrongs: ["150 000 km/s", "3 000 000 km/s", "30 000 km/s"], levels: ['4eme', '3eme'] },
+            { q: "Quelle formule relie la masse m, le volume V et la masse volumique ρ ?", correct: "ρ = m / V", wrongs: ["ρ = m × V", "ρ = V / m", "ρ = m + V"], levels: ['4eme'] },
+            // 3ème (Brevet)
+            { q: "Quelle loi fondamentale relie la tension U, la résistance R et l'intensité I ?", correct: "la loi d'Ohm (U = R × I)", wrongs: ["la loi de Newton", "la loi de Joule", "la loi de Coulomb"], levels: ['3eme'] },
+            { q: "Quelle est l'unité de mesure de la puissance électrique dans le système international ?", correct: "le watt (W)", wrongs: ["le joule (J)", "le volt (V)", "l'ampère (A)"], levels: ['3eme'] },
+            { q: "Quelle formule donne l'énergie cinétique d'un objet en mouvement de masse m et vitesse v ?", correct: "Ec = 1/2 m v²", wrongs: ["Ec = m × g × h", "Ec = m × v", "Ec = 1/2 m² v"], levels: ['3eme', '1ere'] },
+            { q: "Quelle grandeur mesure un dynamomètre ?", correct: "une force (en newtons)", wrongs: ["une masse (en kg)", "une tension (en V)", "un poids (en kg)"], levels: ['3eme'] },
+            // 2nde
+            { q: "Quelle loi décrit la réfraction de la lumière entre deux milieux d'indices n₁ et n₂ ?", correct: "la loi de Snell-Descartes (n₁ sin i₁ = n₂ sin i₂)", wrongs: ["la loi de Kepler", "la loi d'Ohm", "la loi de Beer-Lambert"], levels: ['2nde'] },
+            { q: "Selon le principe d'inertie, que fait un objet si les forces qui s'exercent sur lui se compensent ?", correct: "il est immobile ou en mouvement rectiligne uniforme", wrongs: ["il accélère en ligne droite", "il décrit une trajectoire circulaire", "il ralentit progressivement"], levels: ['2nde', '1ere'] },
+            // 1ère
+            { q: "Quelle est la relation reliant la longueur d'onde λ, la célérité v et la période T d'une onde ?", correct: "λ = v × T", wrongs: ["λ = v / T", "λ = v × f²", "λ = T / v"], levels: ['1ere'] },
+            { q: "Quelle quantité d'énergie mécanique se conserve en l'absence de frottements ?", correct: "Em = Ec + Ep", wrongs: ["Em = Ec - Ep", "Em = Ec × Ep", "Em = Ec / Ep"], levels: ['1ere'] },
+            // Terminale
+            { q: "Selon la 2e loi de Newton, à quoi est égale la somme des forces extérieures appliquées à un point matériel ?", correct: "m × a (masse × accélération)", wrongs: ["m × v", "1/2 m v²", "m × g × h"], levels: ['terminale'] },
+            { q: "Quel effet physique décale la fréquence d'une onde lorsque la source s'éloigne ou se rapproche ?", correct: "l'effet Doppler", wrongs: ["l'effet Joule", "l'effet photoélectrique", "l'effet Zeeman"], levels: ['terminale'] },
         ],
         chimie: [
-            { q: "Quelle est la formule chimique de l'eau ?", correct: "H₂O", wrongs: ["CO₂", "O₂", "NaCl"], level: 'college' },
-            { q: "Quel est le symbole chimique du cuivre ?", correct: "Cu", wrongs: ["C", "Co", "Cv"], level: 'college' },
-            { q: "Combien d'atomes contient une molécule de méthane (CH₄) ?", correct: "5", wrongs: ["4", "2", "1"], level: 'college' },
-            { q: "Que se produit-il quand on mélange du vinaigre et du bicarbonate de soude ?", correct: "un dégagement de gaz (CO₂)", wrongs: ["une explosion", "un métal liquide", "rien du tout"], level: 'college' },
-            { q: "Quel gaz entretient la combustion ?", correct: "le dioxygène", wrongs: ["l'azote", "le dioxyde de carbone", "l'hélium"], level: 'college' },
-            { q: "Le fer rouille au contact de quoi ?", correct: "de l'oxygène et de l'eau", wrongs: ["du seul azote", "du dioxyde de carbone sec", "du sel seul"], level: 'college' },
-            { q: "Quelle couleur prend le tournesol (indicateur) dans un acide ?", correct: "rouge", wrongs: ["bleu", "vert", "jaune"], level: 'college' },
-            { q: "Comment appelle-t-on un corps qui ne peut pas être décomposé par une réaction chimique ?", correct: "un élément chimique", wrongs: ["un mélange", "un composé", "une solution"], level: 'college' },
-            { q: "Dans quel état se trouve le mercure à température ambiante ?", correct: "liquide", wrongs: ["solide", "gazeux", "plasma"], level: 'college' },
-            { q: "À quelle famille appartiennent l'hélium et le néon ?", correct: "les gaz rares (gaz nobles)", wrongs: ["les halogènes", "les métaux alcalins", "les métalloïdes"], level: 'college' },
-            { q: "Quelle est l'unité de la quantité de matière en chimie ?", correct: "la mole", wrongs: ["le gramme", "le litre", "le newton"], level: 'lycee' },
-            { q: "Combien d'entités contient une mole (nombre d'Avogadro) ?", correct: "environ 6,02 × 10²³", wrongs: ["environ 6,02 × 10²⁶", "exactement 1 000", "environ 3,14 × 10²³"], level: 'lycee' },
-            { q: "Que dit la loi de conservation de la masse (Lavoisier) ?", correct: "la masse des réactifs égale celle des produits", wrongs: ["la masse augmente toujours", "la masse diminue toujours", "la masse dépend du volume"], level: 'lycee' },
-            { q: "Un atome devient un ion négatif (anion) quand il...…", correct: "gagne des électrons", wrongs: ["perd des électrons", "gagne des protons", "perd des neutrons"], level: 'lycee' },
-            { q: "Qu'est-ce qu'un catalyseur ?", correct: "une substance qui accélère une réaction sans être consommée", wrongs: ["une substance consommée par la réaction", "un produit de la réaction", "un réactif lent"], level: 'lycee' },
-            { q: "Que caractérise une réaction exothermique ?", correct: "elle dégage de la chaleur", wrongs: ["elle absorbe de la chaleur", "elle émet uniquement de la lumière", "elle ne produit aucun changement"], level: 'lycee' },
-            { q: "Un pH supérieur à 7 indique une solution...…", correct: "basique", wrongs: ["acide", "neutre", "saturée"], level: 'lycee' },
-            { q: "Quelle est la masse molaire de l'eau (H₂O), en g/mol ?", correct: "18", wrongs: ["10", "36", "22"], level: 'lycee' },
-            { q: "Que forment généralement un métal et un non-métal en réagissant ?", correct: "un composé ionique (sel)", wrongs: ["un gaz noble", "un alliage", "une molécule organique"], level: 'lycee' },
-            { q: "Quelle technique sépare les constituants d'un mélange selon leur affinité avec un solvant ?", correct: "la chromatographie", wrongs: ["la distillation", "la centrifugation", "la décantation simple"], level: 'lycee' },
+            // 6ème
+            { q: "Quelle est la formule chimique de la molécule d'eau ?", correct: "H₂O", wrongs: ["CO₂", "O₂", "NaCl"], levels: ['6eme', '5eme'] },
+            { q: "Quel réactif prend une couleur bleue en présence d'eau ?", correct: "le sulfate de cuivre anhydre", wrongs: ["l'eau de chaux", "le papier pH", "la liqueur de Fehling"], levels: ['6eme'] },
+            // 5ème
+            { q: "Quel gaz trouble l'eau de chaux en présence de dioxyde de carbone ?", correct: "le dioxyde de carbone", wrongs: ["le dioxygène", "le diazote", "l'hélium"], levels: ['5eme'] },
+            { q: "Quelle proportion approximative de diazote (N₂) l'air atmosphérique contient-il ?", correct: "environ 78 %", wrongs: ["environ 21 %", "environ 50 %", "environ 1 %"], levels: ['5eme'] },
+            // 4ème
+            { q: "Combien d'atomes d'hydrogène compte une molécule de méthane (CH₄) ?", correct: "4", wrongs: ["1", "2", "5"], levels: ['4eme'] },
+            { q: "Lors de la combustion complète du carbone dans le dioxygène, quel gaz est produit ?", correct: "le dioxyde de carbone (CO₂)", wrongs: ["le monoxyde de carbone (CO)", "le dihydrogène (H₂)", "l'ozone (O₃)"], levels: ['4eme'] },
+            // 3ème (Brevet)
+            { q: "Quel est le pH d'une solution d'eau pure neutre à 25 °C ?", correct: "7", wrongs: ["0", "14", "1"], levels: ['3eme'] },
+            { q: "Un atome qui gagne un électron devient :", correct: "un anion (ion négatif)", wrongs: ["un cation (ion positif)", "un isotope", "un neutron"], levels: ['3eme'] },
+            { q: "Quel ion caractérise l'acidité d'une solution aqueuse ?", correct: "l'ion hydrogène H⁺ (ou oxonium H₃O⁺)", wrongs: ["l'ion hydroxyde HO⁻", "l'ion chlorure Cl⁻", "l'ion sodium Na⁺"], levels: ['3eme'] },
+            // 2nde
+            { q: "Quelle unité du système international mesure la quantité de matière ?", correct: "la mole (mol)", wrongs: ["le gramme (g)", "le litre (L)", "le joule (J)"], levels: ['2nde'] },
+            { q: "Que vaut approximativement la constante d'Avogadro N_A ?", correct: "6,02 × 10²³ mol⁻¹", wrongs: ["6,02 × 10²⁶ mol⁻¹", "1,60 × 10⁻¹⁹ C", "3,00 × 10⁸ m/s"], levels: ['2nde', '1ere'] },
+            { q: "Dans un tableau d'avancement, comment nomme-t-on le réactif entièrement consommé en premier ?", correct: "le réactif limitant", wrongs: ["le réactif en excès", "le produit final", "le catalyseur"], levels: ['2nde'] },
+            // 1ère
+            { q: "Dans une réaction d'oxydoréduction, qu'est-ce qu'un réducteur ?", correct: "une espèce chimique capable de céder des électrons", wrongs: ["une espèce capable de capter des électrons", "une espèce qui libère des protons", "une espèce neutre"], levels: ['1ere'] },
+            { q: "Quelle loi d'optique relie l'absorbance A d'une solution à sa concentration molaire C ?", correct: "la loi de Beer-Lambert (A = k × C)", wrongs: ["la loi d'Ohm", "la loi de Boyle-Mariotte", "la loi de Lavoisier"], levels: ['1ere'] },
+            // Terminale
+            { q: "Comment est définie la constante d'acidité Ka d'un couple acide/base AH / A⁻ ?", correct: "Ka = ([A⁻] × [H₃O⁺]) / [AH]", wrongs: ["Ka = [AH] / [A⁻]", "Ka = [H₃O⁺] × [HO⁻]", "Ka = pH × [A⁻]"], levels: ['terminale'] },
+            { q: "Comment appelle-t-on une substance qui accélère une réaction chimique sans être consommée ?", correct: "un catalyseur", wrongs: ["un inhibiteur", "un réactif limitant", "un soluté"], levels: ['terminale'] },
+        ],
+        techno: [
+            // 6ème
+            { q: "À quelle grande famille de matériaux le pin et le chêne appartiennent-ils ?", correct: "les matières organiques (bois)", wrongs: ["les métaux", "les céramiques", "les plastiques"], levels: ['6eme'] },
+            { q: "Sur une bicyclette, quel organe transmet l'effort des pédales à la roue arrière ?", correct: "la chaîne et les pignons", wrongs: ["les freins", "le guidon", "la fourche"], levels: ['6eme'] },
+            // 5ème
+            { q: "Quel type de pont utilise des câbles métalliques tendus depuis de hauts pylônes (ex: Viaduc de Millau) ?", correct: "un pont à haubans", wrongs: ["un pont en arc", "un pont à poutres", "un pont suspendu simple"], levels: ['5eme'] },
+            { q: "Quelle énergie renouvelable exploite directement la force du vent ?", correct: "l'énergie éolienne", wrongs: ["l'énergie hydraulique", "l'énergie solaire", "l'énergie géothermique"], levels: ['5eme'] },
+            // 4ème
+            { q: "Dans un système automatisé, quel composant détecte une information de l'environnement (ex: présence, lumière) ?", correct: "un capteur", wrongs: ["un actionneur", "un moteur", "une batterie"], levels: ['4eme'] },
+            { q: "Quel filament plastique biosourcé est le plus couramment employé en impression 3D FDM ?", correct: "le PLA", wrongs: ["le PVC", "le téflon", "le plomb"], levels: ['4eme'] },
+            // 3ème (Brevet)
+            { q: "Quelle suite d'instructions logique exécutée pas à pas résout un problème précis ?", correct: "un algorithme", wrongs: ["un processeur", "une base de données", "un disque dur"], levels: ['3eme'] },
+            { q: "Quel protocole réseau sans fil à courte portée permet d'appairer un casque audio ou une souris ?", correct: "le Bluetooth", wrongs: ["la 4G", "la fibre optique", "le câble Ethernet"], levels: ['3eme'] },
+            { q: "Dans un réseau local, quel équipement central aiguille les paquets de données entre ordinateurs ?", correct: "le routeur (ou switch)", wrongs: ["la souris", "l'imprimante", "la webcam"], levels: ['3eme'] },
+            // 2nde
+            { q: "Combien d'octets (bytes) y a-t-il exactement dans un kilooctet selon la norme classique ?", correct: "1024 octets (ou 1000 selon la norme décimale)", wrongs: ["8 octets", "100 octets", "64 octets"], levels: ['2nde'] },
+            { q: "Quel composant électronique principal traite les instructions et exécute les calculs dans un PC ?", correct: "le microprocesseur (CPU)", wrongs: ["la carte mère", "l'alimentation", "le disque SSD"], levels: ['2nde'] },
+            // 1ère
+            { q: "En programmation Python, quel mot-clé permet de déclarer une nouvelle fonction ?", correct: "def", wrongs: ["function", "func", "declare"], levels: ['1ere'] },
+            { q: "Dans une base de données relationnelle SQL, quelle instruction permet d'extraire des lignes d'une table ?", correct: "SELECT", wrongs: ["FETCH", "GET", "LOOKUP"], levels: ['1ere'] },
+            // Terminale
+            { q: "Quel modèle de cryptographie utilise une clé publique pour chiffrer et une clé privée pour déchiffrer ?", correct: "le chiffrement asymétrique (RSA)", wrongs: ["le chiffrement symétrique", "le code de César", "le hachage simple"], levels: ['terminale'] },
+            { q: "Quelle architecture matérielle classique sépare le processeur de la mémoire centrale via un bus ?", correct: "l'architecture de Von Neumann", wrongs: ["l'architecture Harvard", "l'architecture RISC", "l'architecture ARM"], levels: ['terminale'] },
+        ],
+        anglais: [
+            // 6ème
+            { q: "What is the English translation for « chien » ?", correct: "dog", wrongs: ["cat", "bird", "fish"], levels: ['6eme'] },
+            { q: "Complete the sentence: 'She ___ my best friend.'", correct: "is", wrongs: ["are", "am", "be"], levels: ['6eme'] },
+            { q: "What is the opposite of 'big'?", correct: "small", wrongs: ["fast", "loud", "heavy"], levels: ['6eme'] },
+            { q: "What day comes immediately after Tuesday?", correct: "Wednesday", wrongs: ["Thursday", "Monday", "Friday"], levels: ['6eme'] },
+            // 5ème
+            { q: "Choose the correct present continuous form: 'Listen, they ___ (sing) right now.'", correct: "are singing", wrongs: ["sing", "is singing", "sings"], levels: ['5eme'] },
+            { q: "What is the irregular plural form of 'child'?", correct: "children", wrongs: ["childs", "childes", "childrens"], levels: ['5eme'] },
+            { q: "How do you say « Il est midi » in English?", correct: "It's midday (or 12 o'clock)", wrongs: ["It's midnight", "It's twelve minutes", "It's noon past"], levels: ['5eme'] },
+            // 4ème
+            { q: "What is the simple past form of the irregular verb 'to see'?", correct: "saw", wrongs: ["seed", "seen", "seeing"], levels: ['4eme'] },
+            { q: "Choose the correct comparative: 'A car is ___ than a bicycle.'", correct: "faster", wrongs: ["more fast", "fastest", "as fast"], levels: ['4eme'] },
+            { q: "What does the phrasal verb 'to look for' mean in French?", correct: "chercher", wrongs: ["ressembler à", "surveiller", "regarder vers"], levels: ['4eme'] },
+            // 3ème (Brevet)
+            { q: "Complete with the present perfect: 'I ___ (live) here for three years.'", correct: "have lived", wrongs: ["lived", "had lived", "am living"], levels: ['3eme'] },
+            { q: "Which modal verb expresses strong prohibition?", correct: "mustn't", wrongs: ["should", "might", "can"], levels: ['3eme'] },
+            { q: "What does the idiom 'it's raining cats and dogs' mean?", correct: "il pleut des cordes", wrongs: ["des animaux tombent du ciel", "il fait grand soleil", "il y a un orage de grêle"], levels: ['3eme'] },
+            // 2nde
+            { q: "Complete the conditional clause: 'If it rains tomorrow, we ___ stay home.'", correct: "will", wrongs: ["would", "were", "did"], levels: ['2nde'] },
+            { q: "What does the false friend 'actually' mean in French?", correct: "en réalité / en fait", wrongs: ["actuellement", "en action", "efficacement"], levels: ['2nde'] },
+            // 1ère
+            { q: "Which modal verb best expresses a strong logical deduction: 'He's been working all day, he ___ be exhausted.'", correct: "must", wrongs: ["might", "should", "could"], levels: ['1ere'] },
+            { q: "What does the linking word 'nevertheless' mean?", correct: "néanmoins / pourtant", wrongs: ["en conséquence", "de plus", "par conséquent"], levels: ['1ere'] },
+            // Terminale
+            { q: "Complete the third conditional: 'If you had studied harder, you ___ the exam.'", correct: "would have passed", wrongs: ["will pass", "would pass", "had passed"], levels: ['terminale'] },
+            { q: "What is the meaning of the formal verb 'to jeopardize'?", correct: "mettre en péril / compromettre", wrongs: ["justifier", "juger équitablement", "accélérer"], levels: ['terminale'] },
+        ],
+        emc: [
+            // 6ème
+            { q: "Quel document officiel fixe les droits et les devoirs de tous les élèves au collège ?", correct: "le règlement intérieur", wrongs: ["le carnet de correspondance seul", "le bulletin scolaire", "le code de la route"], levels: ['6eme'] },
+            { q: "Quel numéro vert gratuit permet de signaler une situation de harcèlement scolaire en France ?", correct: "le 3018", wrongs: ["le 15", "le 18", "le 112"], levels: ['6eme', '5eme'] },
+            { q: "Qui les élèves élisent-ils au début de l'année pour les représenter aux conseils de classe ?", correct: "les délégués de classe", wrongs: ["le proviseur", "les surveillants", "les parents d'élèves"], levels: ['6eme'] },
+            // 5ème
+            { q: "Quel grand principe républicain interdit toute différence de droit entre les femmes et les hommes ?", correct: "l'égalité filles-garçons", wrongs: ["la laïcité", "la hiérarchie", "le suffrage censitaire"], levels: ['5eme'] },
+            { q: "Comment appelle-t-on le fait d'aider bénévolement les personnes en difficulté au sein d'un collectif ?", correct: "la solidarité associative", wrongs: ["le civisme forcé", "la concurrence", "le mécénat privé"], levels: ['5eme'] },
+            // 4ème
+            { q: "Quel texte officiel affiché dans tous les collèges publics garantit la neutralité religieuse de l'État ?", correct: "la Charte de la laïcité", wrongs: ["la Déclaration des droits de 1789", "le Code civil", "la Constitution de 1958"], levels: ['4eme'] },
+            { q: "Quelle limite légale s'applique à la liberté d'expression ?", correct: "l'interdiction de l'injure, de la diffamation et de l'incitation à la haine", wrongs: ["l'interdiction de critiquer une loi", "l'obligation de penser comme la majorité", "aucune limite absolue"], levels: ['4eme'] },
+            // 3ème (Brevet)
+            { q: "À quel âge un citoyen français acquiert-il le droit de vote ?", correct: "18 ans", wrongs: ["16 ans", "21 ans", "25 ans"], levels: ['3eme'] },
+            { q: "Quelle est la devise officielle de la République française ?", correct: "Liberté, Égalité, Fraternité", wrongs: ["Travail, Famille, Patrie", "Ordre et Progrès", "Dieu et mon droit"], levels: ['3eme'] },
+            { q: "Quelles sont les deux assemblées qui composent le Parlement français et votent les lois ?", correct: "l'Assemblée nationale et le Sénat", wrongs: ["le Conseil d'État et le Sénat", "le Conseil constitutionnel et la Mairie", "les Députés et les Ministres"], levels: ['3eme'] },
+            { q: "Quelle journée obligatoire permet aux jeunes citoyens de découvrir les enjeux de défense nationale ?", correct: "la JDC (Journée Défense et Citoyenneté)", wrongs: ["le baccalauréat", "le recensement militaire seul", "le service militaire actif"], levels: ['3eme'] },
+            // 2nde
+            { q: "Quel grand principe juridique affirme que nul ne peut être sanctionné sans texte de loi préalable ?", correct: "le principe de légalité des délits et des peines", wrongs: ["la présomption de culpabilité", "le privilège d'immunité", "la coutume"], levels: ['2nde'] },
+            { q: "En quelle année l'Assemblée générale de l'ONU a-t-elle proclamé la Déclaration universelle des droits de l'homme ?", correct: "1948", wrongs: ["1789", "1918", "1968"], levels: ['2nde', '1ere'] },
+            // 1ère
+            { q: "Quel est le rôle fondamental d'un lanceur d'alerte dans une démocratie ?", correct: "révéler des faits contraires à l'intérêt général au public", wrongs: ["espionner pour un pays étranger", "voter les budgets", "juger les procès"], levels: ['1ere'] },
+            { q: "Quel organisme veille au pluralisme politique dans les médias audiovisuels en France ?", correct: "l'Arcom (ex-CSA)", wrongs: ["l'Insee", "la Cnil", "le Défenseur des droits"], levels: ['1ere'] },
+            // Terminale
+            { q: "Quelle haute juridiction vérifie la conformité des lois à la Constitution française (notamment via la QPC) ?", correct: "le Conseil constitutionnel", wrongs: ["le Conseil d'État", "la Cour de cassation", "la Cour des comptes"], levels: ['terminale'] },
+            { q: "Où siège la Cour pénale internationale (CPI) chargée de juger les crimes contre l'humanité ?", correct: "à La Haye (Pays-Bas)", wrongs: ["à Genève (Suisse)", "à New York (USA)", "à Bruxelles (Belgique)"], levels: ['terminale'] },
         ],
         philo: [
-            { q: "Qui a dit « Je pense, donc je suis » (Cogito ergo sum) ?", correct: "René Descartes", wrongs: ["Jean-Jacques Rousseau", "Platon", "Emmanuel Kant"], level: 'lycee' },
-            { q: "Dans quelle célèbre allégorie Platon illustre-t-il l'accès à la vérité ?", correct: "l'allégorie de la caverne", wrongs: ["le mythe de Sisyphe", "le tonneau des Danaïdes", "le talon d'Achille"], level: 'college' },
-            { q: "Quel philosophe grec antique a été condamné à boire la ciguë ?", correct: "Socrate", wrongs: ["Aristote", "Épicure", "Thalès"], level: 'college' },
-            { q: "Quelle méthode d'interrogation et d'accouchement des esprits Socrate utilisait-il ?", correct: "la maïeutique", wrongs: ["la dialectique matérialiste", "le scepticisme absolu", "la sophistique"], level: 'lycee' },
-            { q: "Que signifie étymologiquement le mot « philosophie » en grec ancien ?", correct: "amour de la sagesse", wrongs: ["recherche du pouvoir", "science des dieux", "art du discours"], level: 'college' },
-            { q: "Qui est l'auteur de l'œuvre politique « Du contrat social » ?", correct: "Jean-Jacques Rousseau", wrongs: ["Voltaire", "Montesquieu", "Thomas Hobbes"], level: 'lycee' },
-            { q: "Selon Emmanuel Kant, quel principe moral universel doit guider nos actions ?", correct: "l'impératif catégorique", wrongs: ["la volonté de puissance", "l'hédonisme", "l'utilitarisme strict"], level: 'lycee' },
-            { q: "Quelle philosophie antique prône la tranquillité de l'âme et la maîtrise des désirs vains ?", correct: "l'épicurisme", wrongs: ["le nihilisme", "le cynisme agressif", "l'idéalisme allemand"], level: 'college' },
-            { q: "Pour les Stoïciens comme Épictète, sur quoi devons-nous concentrer notre attention ?", correct: "ce qui dépend de nous", wrongs: ["ce qui arrive aux autres", "la richesse matérielle", "le hasard de la chance"], level: 'college' },
-            { q: "Quel philosophe a affirmé que « l'existence précède l'essence » dans l'existentialisme ?", correct: "Jean-Paul Sartre", wrongs: ["Albert Camus", "Michel Foucault", "Arthur Schopenhauer"], level: 'lycee' },
-            { q: "Qui a théorisé la séparation des pouvoirs (législatif, exécutif, judiciaire) ?", correct: "Montesquieu", wrongs: ["Diderot", "Machiavel", "Alexis de Tocqueville"], level: 'college' },
-            { q: "Dans « Le Prince », quel auteur analyse la conquête et la conservation du pouvoir politique ?", correct: "Nicolas Machiavel", wrongs: ["Thomas More", "John Locke", "Baruch Spinoza"], level: 'lycee' },
-            { q: "Selon Aristote, quel type d'animal l'être humain est-il par nature ?", correct: "un animal politique (zoon politikon)", wrongs: ["un être purement solitaire", "un animal prédateur", "un esprit désincarné"], level: 'lycee' },
-            { q: "Quel philosophe allemand a proclamé « Dieu est mort » et théorisé le « surhomme » ?", correct: "Friedrich Nietzsche", wrongs: ["G.W.F. Hegel", "Karl Marx", "Martin Heidegger"], level: 'lycee' },
-            { q: "D'après Baruch Spinoza, qu'est-ce que la liberté ?", correct: "la connaissance de la nécessité", wrongs: ["l'absence totale de contraintes", "le libre arbitre absolu", "l'obéissance aveugle"], level: 'lycee' },
-            { q: "Quel mythe Albert Camus analyse-t-il pour décrire la condition absurde de l'homme ?", correct: "le mythe de Sisyphe", wrongs: ["le mythe de Prométhée", "le mythe d'Icare", "le mythe de Narcisse"], level: 'lycee' },
-            { q: "Quelle distinction centrale John Locke et les empiristes font-ils sur l'origine des idées ?", correct: "toutes les idées proviennent de l'expérience", wrongs: ["les idées sont toutes innées dès la naissance", "la raison pure précède toute sensation", "les idées viennent des rêves"], level: 'lycee' },
-            { q: "Quel courant philosophique doute systématiquement de toute certitude absolue ?", correct: "le scepticisme", wrongs: ["le dogmatisme", "le positivisme", "le réalisme"], level: 'college' },
-            { q: "Quelle célèbre formule de Rousseau ouvre le premier livre du « Contrat social » ?", correct: "« L'homme est né libre, et partout il est dans les fers »", wrongs: ["« Tout ce qui est rationnel est réel »", "« L'enfer, c'est les autres »", "« Science sans conscience n'est que ruine de l'âme »"], level: 'lycee' },
-            { q: "Quelle maxime était inscrite au fronton du temple de Delphes et reprise par Socrate ?", correct: "« Connais-toi toi-même »", wrongs: ["« Carpe diem »", "« Rien de trop »", "« Oser savoir »"], level: 'college' },
-        ],
+            // Collège (Initiation à la réflexion philosophique, morale & esprit critique)
+            { q: "Dans l'Antiquité grecque, quel sage disait « Tout ce que je sais, c'est que je ne sais rien » ?", correct: "Socrate", wrongs: ["Alexandre", "Jules César", "Héraclite"], levels: ['6eme', '5eme', '4eme', '3eme'] },
+            { q: "Que signifie étymologiquement le mot « philosophie » en grec ancien ?", correct: "l'amour de la sagesse", wrongs: ["la science des dieux", "le pouvoir de la parole", "la recherche de richesse"], levels: ['6eme', '5eme', '4eme', '3eme'] },
+            { q: "Quelle distinction philosophique sépare une simple croyance sans preuve d'un savoir vérifié ?", correct: "croire n'est pas savoir", wrongs: ["croire est toujours supérieur", "le savoir est toujours faux", "il n'y a aucune différence"], levels: ['6eme', '5eme', '4eme', '3eme'] },
+            { q: "Dans le mythe de Gygès raconté par Platon, que permet l'anneau magique trouvé par le berger ?", correct: "de devenir invisible aux yeux de tous", wrongs: ["de voler dans les cieux", "de lire dans les pensées", "de transformer le plomb en or"], levels: ['5eme', '4eme', '3eme'] },
+            { q: "Quelle formule éthique universelle invite à ne pas faire à autrui ce qu'on ne voudrait pas subir ?", correct: "la règle d'or", wrongs: ["la loi du plus fort", "l'impératif égoïste", "le droit du talion"], levels: ['6eme', '5eme', '4eme', '3eme'] },
+            { q: "Quelle allégorie de Platon illustre des prisonniers prenant des ombres pour la réalité ?", correct: "l'allégorie de la caverne", wrongs: ["le mythe de Sisyphe", "le talon d'Achille", "le tonneau des Danaïdes"], levels: ['4eme', '3eme', '2nde'] },
+            // 2nde
+            { q: "Selon Aristote, par quel sentiment la philosophie et la recherche du savoir commencent-elles ?", correct: "l'étonnement", wrongs: ["la peur", "la colère", "l'ennui"], levels: ['2nde'] },
+            { q: "Qu'est-ce qui distingue traditionnellement l'acquis culturel de la nature biologique chez l'humain ?", correct: "la culture est transmise par l'apprentissage social", wrongs: ["la nature s'apprend à l'école", "la culture est purement génétique", "il n'y a aucune distinction"], levels: ['2nde'] },
+            { q: "Quel terme philosophique désigne la capacité de faire des choix sans y être contraint par une force extérieure ?", correct: "le libre arbitre", wrongs: ["le déterminisme absolu", "le fatalisme", "le réflexe"], levels: ['2nde', '1ere'] },
+            // 1ère
+            { q: "Qui a formulé la célèbre certitude : « Je pense, donc je suis » (Cogito, ergo sum) ?", correct: "René Descartes", wrongs: ["Jean-Jacques Rousseau", "Blaise Pascal", "David Hume"], levels: ['1ere', 'terminale'] },
+            { q: "Quelle philosophie antique d'Épictète et Marc Aurèle enseigne de se concentrer sur ce qui dépend de nous ?", correct: "le stoïcisme", wrongs: ["l'épicurisme", "le nihilisme", "le cynisme"], levels: ['1ere', 'terminale'] },
+            { q: "Selon Jean-Jacques Rousseau, dans quel état vivait l'homme avant l'établissement de la société et des lois ?", correct: "l'état de nature", wrongs: ["l'état de guerre permanente", "le règne de la machine", "le siècle des Lumières"], levels: ['1ere', 'terminale'] },
+            // Terminale (Programme officiel du Bac)
+            { q: "Pour Sigmund Freud, quelle instance psychique inconsciente regroupe les pulsions et désirs refoulés ?", correct: "le Ça (et l'Inconscient)", wrongs: ["le Surmoi", "le Moi conscient", "la raison pure"], levels: ['terminale'] },
+            { q: "Selon Emmanuel Kant, quel impératif moral exige d'agir de façon à ce que notre maxime devienne une loi universelle ?", correct: "l'impératif catégorique", wrongs: ["l'impératif hypothétique", "le principe de plaisir", "l'utilitarisme strict"], levels: ['terminale'] },
+            { q: "Quel philosophe du XVIIe siècle a soutenu que la liberté n'est pas le libre arbitre mais « la connaissance de la nécessité » ?", correct: "Baruch Spinoza", wrongs: ["René Descartes", "Thomas Hobbes", "John Locke"], levels: ['terminale'] },
+            { q: "Quel penseur existentialiste a écrit : « L'existence précède l'essence » et « L'homme est condamné à être libre » ?", correct: "Jean-Paul Sartre", wrongs: ["Albert Camus", "Michel Foucault", "Arthur Schopenhauer"], levels: ['terminale'] },
+            { q: "Dans « Le Prince », quel auteur analyse la conquête et la conservation réaliste du pouvoir d'État ?", correct: "Nicolas Machiavel", wrongs: ["Thomas More", "Montesquieu", "Alexis de Tocqueville"], levels: ['terminale'] },
+            { q: "Pour Karl Marx, quel phénomène le travailleur subit-il lorsque le produit de son travail lui devient étranger ?", correct: "l'aliénation", wrongs: ["l'émancipation", "la sublimation", "la rédemption"], levels: ['terminale'] },
+            { q: "Selon Friedrich Nietzsche, quelle notion morale dénonce-t-il comme une invention affaiblissant les instincts vitaux ?", correct: "la morale du ressentiment (des esclaves)", wrongs: ["la volonté de puissance", "le surhomme", "le gai savoir"], levels: ['terminale'] },
+        ]
     };
 
-    function generateBankLesson(subjectId, index, band, variant = 0) {
+    /** Filtre la banque de questions pour un niveau scolaire donné. */
+    function getQuestionsForNiveau(subjectId, niveau) {
         const fullBank = FACT_BANKS[subjectId] || [];
-        const filtered = fullBank.filter(f => f.level === band);
-        // Repli sur la banque complète si le filtre est trop restrictif
-        const bank = filtered.length >= 5 ? filtered : fullBank;
+        const norm = normalizeNiveau(niveau);
+        const band = bandForNiveau(norm);
+
+        // 1. Filtrage précis par niveau (exact match)
+        const exact = fullBank.filter(q => {
+            if (Array.isArray(q.levels)) return q.levels.includes(norm);
+            return q.level === norm;
+        });
+        if (exact.length >= 6) return exact;
+
+        // 2. Filtrage par cycle / bande (collège ou lycée)
+        const cycle = fullBank.filter(q => {
+            if (Array.isArray(q.levels)) {
+                return q.levels.includes(norm) || q.levels.includes(band);
+            }
+            return q.level === norm || q.level === band;
+        });
+        if (cycle.length >= 5) return cycle;
+
+        // 3. Repli de secours
+        return fullBank;
+    }
+
+    function generateBankLesson(subjectId, index, niveau, variant = 0) {
+        const norm = normalizeNiveau(niveau);
+        const bank = getQuestionsForNiveau(subjectId, norm);
+
         if (!bank || bank.length === 0) {
             return {
                 type: 'qcm',
@@ -471,56 +838,71 @@ const QuestionBank = (() => {
                 exp: '',
             };
         }
-        const rng = seededRng(hashSeed(subjectId + ':' + band + ':' + index + ':v' + variant));
+
+        const rng = seededRng(hashSeed(subjectId + ':' + norm + ':' + index + ':v' + variant));
         const fact = bank[(index * 3 + variant) % bank.length];
         const opts0 = [fact.correct, ...fact.wrongs];
         const { opts, correct } = shuffleOptions(opts0, 0, rng);
+
         return {
             type: 'qcm',
             title: 'Niveau ' + (index + 1),
             q: fact.q,
             opts,
             correct,
-            exp: `Réponse : ${fact.correct}.`,
+            exp: fact.exp || `Réponse : ${fact.correct}.`,
         };
     }
 
     /* ================= API publique ================= */
 
     return {
+        normalizeNiveau,
         bandForNiveau,
+        getQuestionsForNiveau,
+
+        /**
+         * Génère UNE seule leçon pour une matière, un numéro, un niveau et une variante.
+         */
+        generateOne(subjectId, index, niveau, variant = 0) {
+            const norm = normalizeNiveau(niveau);
+            return subjectId === 'maths'
+                ? generateMathLesson(index, norm, variant)
+                : generateBankLesson(subjectId, index, norm, variant);
+        },
+
         /**
          * Étend une matière (objet DASH_SUBJECTS) jusqu'à `totalCount` niveaux,
-         * avec un contenu adapté à `niveauBand` ('college' ou 'lycee') pour
-         * les niveaux générés (6 à `totalCount`). Chaque niveau propose 3
-         * variantes aléatoires distinctes (.variants = [v0, v1, v2]).
+         * avec un contenu adapté au niveau scolaire (`niveau`) pour les 100 niveaux.
          */
-        extend(subject, totalCount, niveauBand) {
-            const band = niveauBand === 'lycee' ? 'lycee' : 'college';
-            const handWritten = subject.lessons.map((lesson, i) => {
+        extend(subject, totalCount, niveau) {
+            const norm = normalizeNiveau(niveau);
+            const handWritten = (subject.lessons || []).map((lesson, i) => {
                 const l0 = reshuffleHandWritten(lesson, subject.id, i);
                 if (!l0.variants || l0.variants.length === 0) {
-                    const l1 = subject.id === 'maths' ? generateMathLesson(i, band, 1) : generateBankLesson(subject.id, i, band, 1);
-                    const l2 = subject.id === 'maths' ? generateMathLesson(i, band, 2) : generateBankLesson(subject.id, i, band, 2);
+                    const l1 = QuestionBank.generateOne(subject.id, i, norm, 1);
+                    const l2 = QuestionBank.generateOne(subject.id, i, norm, 2);
                     l0.variants = [l0, l1, l2];
                 }
                 return l0;
             });
+
             const lessons = handWritten.slice();
             for (let i = lessons.length; i < totalCount; i++) {
-                const l0 = subject.id === 'maths' ? generateMathLesson(i, band, 0) : generateBankLesson(subject.id, i, band, 0);
-                const l1 = subject.id === 'maths' ? generateMathLesson(i, band, 1) : generateBankLesson(subject.id, i, band, 1);
-                const l2 = subject.id === 'maths' ? generateMathLesson(i, band, 2) : generateBankLesson(subject.id, i, band, 2);
+                const l0 = QuestionBank.generateOne(subject.id, i, norm, 0);
+                const l1 = QuestionBank.generateOne(subject.id, i, norm, 1);
+                const l2 = QuestionBank.generateOne(subject.id, i, norm, 2);
                 l0.variants = [l0, l1, l2];
                 lessons.push(l0);
             }
             return { ...subject, lessons };
         },
+
         /**
-         * Récupère une leçon / variante spécifique (0, 1 ou 2) parmi les 3 du niveau.
+         * Récupère une leçon / variante spécifique parmi les 3 du niveau.
          */
-        getLesson(subjectOrId, index, niveauBand, variant = 0) {
-            const band = (niveauBand === 'lycee') ? 'lycee' : 'college';
+        getLesson(subjectOrId, index, niveau, variant = 0) {
+            const norm = normalizeNiveau(niveau);
             const subjectId = (typeof subjectOrId === 'string') ? subjectOrId : (subjectOrId ? subjectOrId.id : '');
             const subjectObj = (typeof subjectOrId === 'object' && subjectOrId !== null) ? subjectOrId : null;
 
@@ -532,16 +914,7 @@ const QuestionBank = (() => {
                 if (variant === 0) return lesson;
             }
 
-            return subjectId === 'maths'
-                ? generateMathLesson(index, band, variant)
-                : generateBankLesson(subjectId, index, band, variant);
-        },
-        /**
-         * Génère UNE seule leçon pour `index` et `variant` donnés.
-         */
-        generateOne(subjectId, index, niveauBand, variant = 0) {
-            const band = niveauBand === 'lycee' ? 'lycee' : 'college';
-            return subjectId === 'maths' ? generateMathLesson(index, band, variant) : generateBankLesson(subjectId, index, band, variant);
+            return QuestionBank.generateOne(subjectId, index, norm, variant);
         },
     };
 })();

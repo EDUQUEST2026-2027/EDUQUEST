@@ -98,17 +98,29 @@ const QuizEngine = (() => {
 
     /* ================= QCM ================= */
 
+    function getShuffledChoices(question) {
+        if (!question._renderedChoices || question._renderedChoicesKey !== question.q) {
+            const choices = (question.opts || []).map((opt, origIndex) => ({ opt, origIndex }));
+            question._renderedChoices = shuffleArray(choices);
+            question._renderedChoicesKey = question.q;
+        }
+        return question._renderedChoices;
+    }
+
     function renderQCM(question) {
-        // Mélange les choix entre chaque essai tout en gardant l'index d'origine (data-choice)
-        const choices = (question.opts || []).map((opt, origIndex) => ({ opt, origIndex }));
-        const shuffled = shuffleArray(choices);
-        return shuffled.map(c =>
+        // Ordre stable pendant toute la tentative (ne change plus au clic ni à la correction)
+        const choices = getShuffledChoices(question);
+        return choices.map(c =>
             `<button class="dash-option-btn" data-choice="${c.origIndex}">${esc(c.opt)}</button>`
         ).join('');
     }
     function bindQCM(container, question, quizState, onSubmit) {
         container.querySelectorAll('[data-choice]').forEach(btn => {
-            btn.addEventListener('click', () => onSubmit(parseInt(btn.dataset.choice)));
+            btn.addEventListener('click', () => {
+                container.querySelectorAll('[data-choice]').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                onSubmit(parseInt(btn.dataset.choice));
+            });
         });
     }
     function gradeQCM(question, submitted) {
@@ -118,6 +130,7 @@ const QuizEngine = (() => {
         container.querySelectorAll('[data-choice]').forEach(btn => {
             const i = parseInt(btn.dataset.choice);
             btn.disabled = true;
+            if (i === submitted) btn.classList.add('selected');
             if (i === question.correct) btn.classList.add('correct');
             else if (i === submitted) btn.classList.add('wrong');
         });
@@ -134,7 +147,11 @@ const QuizEngine = (() => {
     }
     function bindVraiFaux(container, question, quizState, onSubmit) {
         container.querySelectorAll('[data-choice]').forEach(btn => {
-            btn.addEventListener('click', () => onSubmit(btn.dataset.choice === 'true'));
+            btn.addEventListener('click', () => {
+                container.querySelectorAll('[data-choice]').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                onSubmit(btn.dataset.choice === 'true');
+            });
         });
     }
     function gradeVraiFaux(question, submitted) {
@@ -144,6 +161,7 @@ const QuizEngine = (() => {
         container.querySelectorAll('[data-choice]').forEach(btn => {
             const value = btn.dataset.choice === 'true';
             btn.disabled = true;
+            if (value === submitted) btn.classList.add('selected');
             if (value === question.correct) btn.classList.add('correct');
             else if (value === submitted) btn.classList.add('wrong');
         });
@@ -168,7 +186,12 @@ const QuizEngine = (() => {
     }
     function revealReponseCourte(container, question, submitted) {
         const input = container.querySelector('.dash-short-input');
-        if (input) input.disabled = true;
+        if (input) {
+            if (submitted !== undefined && submitted !== null) input.value = String(submitted);
+            input.disabled = true;
+            const isCorrect = question.accepted && question.accepted.some(a => isFuzzyMatch(a, submitted));
+            input.classList.add(isCorrect ? 'correct' : 'wrong');
+        }
         const submitBtn = container.querySelector('.dash-short-submit');
         if (submitBtn) submitBtn.disabled = true;
     }
@@ -179,13 +202,21 @@ const QuizEngine = (() => {
         let blankIndex = 0;
         const isDropdown = question.type === 'texte_a_choix' || question.type === 'texte_menu_deroulant' || Boolean(question.useSelect || question.choices);
 
+        if (!question._cachedDropdowns || question._cachedDropdownsKey !== question.q) {
+            question._cachedDropdowns = {};
+            question._cachedDropdownsKey = question.q;
+        }
+
         const sentence = esc(question.textWithBlanks).replace(/___/g, () => {
             const bIdx = blankIndex++;
             if (isDropdown) {
-                const candidates = (question.choices && question.choices[bIdx])
-                    ? question.choices[bIdx]
-                    : (question.blanks ? Array.from(new Set(question.blanks.flat())) : []);
-                const shuffled = shuffleArray(candidates);
+                if (!question._cachedDropdowns[bIdx]) {
+                    const candidates = (question.choices && question.choices[bIdx])
+                        ? question.choices[bIdx]
+                        : (question.blanks ? Array.from(new Set(question.blanks.flat())) : []);
+                    question._cachedDropdowns[bIdx] = shuffleArray(candidates);
+                }
+                const shuffled = question._cachedDropdowns[bIdx];
                 const optsHtml = shuffled.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
                 return `<select class="dash-blank-input dash-blank-select" data-blank="${bIdx}"><option value="">— Choisir —</option>${optsHtml}</select>`;
             }
@@ -195,11 +226,15 @@ const QuizEngine = (() => {
         // Boîte de mots proposés pour le texte à trous textuel
         let wordBankHtml = '';
         if (!isDropdown && question.blanks) {
-            const rawWords = Array.from(new Set(
-                question.blanks.flat().concat(question.distractors || [])
-            )).filter(Boolean);
-            if (rawWords.length > 0) {
-                const shuffledWords = shuffleArray(rawWords);
+            if (!question._cachedWordBank || question._cachedWordBankKey !== question.q) {
+                const rawWords = Array.from(new Set(
+                    question.blanks.flat().concat(question.distractors || [])
+                )).filter(Boolean);
+                question._cachedWordBank = rawWords.length > 0 ? shuffleArray(rawWords) : [];
+                question._cachedWordBankKey = question.q;
+            }
+            const shuffledWords = question._cachedWordBank;
+            if (shuffledWords.length > 0) {
                 wordBankHtml = `
                     <div class="dash-wordbank-container">
                         <span class="dash-wordbank-label">💡 Mots proposés (clique pour insérer) :</span>
@@ -259,10 +294,15 @@ const QuizEngine = (() => {
     function revealTexteATrous(container, question, submitted) {
         const given = Array.isArray(submitted) ? submitted : [];
         container.querySelectorAll('.dash-blank-input').forEach((input, i) => {
+            if (given[i] !== undefined && given[i] !== null) {
+                input.value = given[i];
+            }
             input.disabled = true;
-            const isCorrect = question.blanks[i].some(a => isFuzzyMatch(a, given[i]));
+            const isCorrect = question.blanks && question.blanks[i] && question.blanks[i].some(a => isFuzzyMatch(a, given[i]));
             input.classList.add(isCorrect ? 'correct' : 'wrong');
-            if (!isCorrect) input.title = 'Attendu : ' + question.blanks[i][0];
+            if (!isCorrect && question.blanks && question.blanks[i]) {
+                input.title = 'Attendu : ' + question.blanks[i][0];
+            }
         });
         container.querySelectorAll('.dash-word-chip').forEach(btn => btn.disabled = true);
         const submitBtn = container.querySelector('.dash-blanks-submit');
