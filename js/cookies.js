@@ -100,28 +100,30 @@ const EduCookies = (() => {
 
     /** Retourne le consentement enregistré, ou null si aucun choix valide. */
     function readConsent() {
-        if (_memoryConsent) return _memoryConsent;
         try {
             const raw = localStorage.getItem(LS_KEY);
-            if (!raw) return null;
+            if (!raw) return _memoryConsent;
             const c = JSON.parse(raw);
-            if (!c || CHOICES.indexOf(c.choice) === -1) return null;
+            if (!c || CHOICES.indexOf(c.choice) === -1) return _memoryConsent;
 
             // Règle CNIL : vérification de péremption du consentement (12 mois)
             if (c.ts) {
                 const ageMs = Date.now() - new Date(c.ts).getTime();
                 if (ageMs > 365 * 24 * 3600 * 1000) {
                     try { localStorage.removeItem(LS_KEY); } catch {}
+                    _memoryConsent = null;
                     return null;
                 }
             }
 
-            return {
+            const parsed = {
                 choice: c.choice,
                 analytics: Boolean(c.analytics),
                 marketing: Boolean(c.marketing),
                 ts: c.ts || null,
             };
+            _memoryConsent = parsed;
+            return parsed;
         } catch { return _memoryConsent; } // JSON corrompu ou stockage bloqué → on utilise le fallback
     }
 
@@ -270,22 +272,24 @@ const EduCookies = (() => {
         closeBanner: closeBanner,
         isOpen: () => Boolean(els),
     };
-    window.EduCookies = API;
 
-    // Rouverture du bandeau sur demande (panneau d'administration, page légale)
-    window.addEventListener('eduquest:cookie-reopen', () => openBanner(null));
+    if (typeof window !== 'undefined') {
+        window.EduCookies = API;
+        window.addEventListener('eduquest:cookie-reopen', () => openBanner(null));
+    }
 
     function init() {
-        // Bandeau automatique uniquement si aucun choix valide n'est enregistré
+        if (typeof document === 'undefined') return;
         if (!readConsent()) setTimeout(() => openBanner(null), 600);
     }
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-    else init();
+    if (typeof document !== 'undefined') {
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else init();
+    }
 
     return API;
 })();
 
-// Accessible aussi via window (modules / chargements particuliers)
-if (typeof window !== 'undefined') {
-    window.EduCookies = EduCookies;
-}
+if (typeof window !== 'undefined') window.EduCookies = EduCookies;
+if (typeof globalThis !== 'undefined') globalThis.EduCookies = EduCookies;
+if (typeof module !== 'undefined' && module.exports) module.exports = EduCookies;

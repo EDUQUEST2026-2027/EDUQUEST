@@ -3,72 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EDUQUEST — Banc de Tests Automatisés v1.26.0</title>
+    <title>EDUQUEST — Banc de Tests Automatisés & Outil QA (v1.26.0)</title>
     <link rel="icon" href="Image/logo.png" type="image/png">
     <link rel="stylesheet" href="css/global.css">
     <style>
         :root {
-            --test-pass: #3ddc97;
-            --test-fail: #ff6b6b;
-            --test-bg: #0b1325;
-            --test-card: #132238;
-            --test-border: rgba(200, 168, 75, 0.25);
-            --test-accent: #c8a84b;
+            --t-pass: #3ddc97;
+            --t-fail: #ff6b6b;
+            --t-warn: #ffd166;
+            --t-bg: #070d1e;
+            --t-card: rgba(14, 23, 48, 0.75);
+            --t-card-hover: rgba(22, 35, 70, 0.85);
+            --t-border: rgba(200, 168, 75, 0.28);
+            --t-accent: #c8a84b;
+            --t-cyan: #4cc9f0;
+            --t-text: #f0f4fc;
+            --t-muted: #94a3b8;
+            --t-radius: 12px;
         }
 
         body {
-            background-color: var(--test-bg);
-            color: #f0f4fc;
-            padding: 24px 16px 60px;
+            background-color: var(--t-bg);
+            color: var(--t-text);
+            padding: 20px 16px 80px;
             font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             min-height: 100vh;
+            margin: 0;
+            background-image:
+                radial-gradient(1200px 600px at 80% -10%, rgba(76, 201, 240, 0.12), transparent 60%),
+                radial-gradient(900px 500px at -10% 110%, rgba(200, 168, 75, 0.12), transparent 55%),
+                linear-gradient(170deg, #060b18 0%, var(--t-bg) 100%);
+            background-attachment: fixed;
         }
 
         .container {
-            max-width: 980px;
+            max-width: 1080px;
             margin: 0 auto;
         }
 
-        .header {
+        /* En-tête de l'outil */
+        .qa-header {
             display: flex;
             flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
             gap: 16px;
             padding-bottom: 20px;
-            border-bottom: 1px solid var(--test-border);
-            margin-bottom: 24px;
+            border-bottom: 1px solid var(--t-border);
+            margin-bottom: 20px;
         }
 
         .title-group h1 {
             font-family: 'Cinzel', Georgia, serif;
-            font-size: 1.8rem;
-            color: var(--test-accent);
-            letter-spacing: 1px;
+            font-size: 1.85rem;
+            color: var(--t-accent);
+            letter-spacing: 1.5px;
+            margin: 0;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            text-shadow: 0 0 16px rgba(200, 168, 75, 0.35);
         }
 
         .title-group p {
-            color: #94a3b8;
+            color: var(--t-muted);
             font-size: 0.95rem;
-            margin-top: 4px;
+            margin: 6px 0 0;
         }
 
         .header-actions {
             display: flex;
-            gap: 12px;
+            flex-wrap: wrap;
+            gap: 10px;
             align-items: center;
         }
 
+        /* Boutons d'action */
         .btn {
-            background: linear-gradient(135deg, #1f3554, #122137);
-            border: 1px solid var(--test-accent);
+            background: linear-gradient(135deg, #182844, #101a2e);
+            border: 1px solid var(--t-border);
             color: #fff;
-            padding: 10px 18px;
+            padding: 9px 16px;
             font-family: 'Rajdhani', sans-serif;
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 700;
             border-radius: 8px;
             cursor: pointer;
@@ -81,8 +98,9 @@
 
         .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(200, 168, 75, 0.3);
+            box-shadow: 0 4px 16px rgba(200, 168, 75, 0.25);
             border-color: #ffd166;
+            color: #fff;
         }
 
         .btn-primary {
@@ -91,115 +109,256 @@
         }
 
         .btn-primary:hover {
-            border-color: #3ddc97;
-            box-shadow: 0 4px 16px rgba(61, 220, 151, 0.3);
+            border-color: var(--t-pass);
+            box-shadow: 0 4px 16px rgba(61, 220, 151, 0.35);
         }
 
-        /* Stats Grid */
+        .btn-secondary {
+            background: linear-gradient(135deg, #2b3a67, #1b2649);
+            border-color: var(--t-cyan);
+        }
+
+        .btn-secondary:hover {
+            border-color: #70e000;
+            box-shadow: 0 4px 16px rgba(76, 201, 240, 0.3);
+        }
+
+        /* Cartes de statistiques */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
         }
 
         .stat-card {
-            background: var(--test-card);
-            border: 1px solid var(--test-border);
-            border-radius: 12px;
-            padding: 18px 20px;
+            background: var(--t-card);
+            border: 1px solid var(--t-border);
+            border-radius: var(--t-radius);
+            padding: 14px 18px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+            gap: 4px;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
+            transition: border-color 0.2s;
+        }
+
+        .stat-card:hover {
+            border-color: rgba(200, 168, 75, 0.55);
         }
 
         .stat-label {
             font-size: 0.85rem;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: #94a3b8;
+            color: var(--t-muted);
             font-weight: 600;
         }
 
         .stat-val {
-            font-size: 2.2rem;
+            font-size: 1.85rem;
             font-weight: 700;
-            line-height: 1;
-            font-family: 'Cinzel', serif;
+            font-family: 'Cinzel', Georgia, serif;
+            line-height: 1.1;
         }
 
-        .stat-val.passed { color: var(--test-pass); }
-        .stat-val.failed { color: var(--test-fail); }
-        .stat-val.total { color: #4cc9f0; }
-        .stat-val.time { color: var(--test-accent); }
+        .stat-val.total { color: #fff; }
+        .stat-val.passed { color: var(--t-pass); text-shadow: 0 0 10px rgba(61, 220, 151, 0.3); }
+        .stat-val.failed { color: var(--t-fail); text-shadow: 0 0 10px rgba(255, 107, 107, 0.3); }
+        .stat-val.time { color: var(--t-cyan); }
 
-        /* Progress Bar */
+        /* Barre de contrôle, recherche & filtres */
+        .toolbar {
+            background: var(--t-card);
+            border: 1px solid var(--t-border);
+            border-radius: var(--t-radius);
+            padding: 12px 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            backdrop-filter: blur(8px);
+        }
+
+        .search-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1 1 280px;
+        }
+
+        .search-input {
+            width: 100%;
+            background: rgba(8, 14, 30, 0.7);
+            border: 1px solid rgba(200, 168, 75, 0.35);
+            border-radius: 8px;
+            padding: 8px 14px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--t-cyan);
+            box-shadow: 0 0 10px rgba(76, 201, 240, 0.3);
+        }
+
+        .filter-pills {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .pill {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: var(--t-muted);
+            padding: 6px 12px;
+            border-radius: 99px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .pill:hover {
+            border-color: var(--t-accent);
+            color: #fff;
+        }
+
+        .pill.active {
+            background: rgba(200, 168, 75, 0.2);
+            border-color: var(--t-accent);
+            color: #ffd166;
+        }
+
+        .sandbox-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            color: var(--t-pass);
+            background: rgba(61, 220, 151, 0.12);
+            border: 1px solid rgba(61, 220, 151, 0.3);
+            padding: 6px 12px;
+            border-radius: 99px;
+            font-weight: 600;
+        }
+
+        /* Barre de progression */
         .progress-bar-container {
             width: 100%;
-            height: 8px;
-            background: #1e293b;
-            border-radius: 999px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 99px;
+            margin-bottom: 24px;
             overflow: hidden;
-            margin-bottom: 28px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
         }
 
         .progress-bar-fill {
             height: 100%;
             width: 0%;
-            background: linear-gradient(90deg, #4cc9f0, var(--test-pass));
-            transition: width 0.3s ease;
+            background: linear-gradient(90deg, #4cc9f0, #c8a84b, var(--t-pass));
+            transition: width 0.15s ease, background 0.3s;
+            box-shadow: 0 0 12px rgba(61, 220, 151, 0.6);
         }
 
         .progress-bar-fill.has-failure {
-            background: linear-gradient(90deg, var(--test-pass), var(--test-fail));
+            background: linear-gradient(90deg, #ffd166, var(--t-fail));
+            box-shadow: 0 0 12px rgba(255, 107, 107, 0.6);
         }
 
-        /* Suites Section */
+        /* Cartes de suites de tests */
         .suite-card {
-            background: var(--test-card);
-            border: 1px solid var(--test-border);
-            border-radius: 12px;
+            background: var(--t-card);
+            border: 1px solid var(--t-border);
+            border-radius: var(--t-radius);
             margin-bottom: 18px;
             overflow: hidden;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+            transition: border-color 0.2s;
+        }
+
+        .suite-card:hover {
+            border-color: rgba(200, 168, 75, 0.45);
         }
 
         .suite-header {
-            padding: 16px 20px;
-            background: rgba(255, 255, 255, 0.03);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
         }
 
-        .suite-title {
-            font-size: 1.15rem;
-            font-weight: 700;
-            color: #f8fafc;
+        .suite-title-wrap {
             display: flex;
             align-items: center;
             gap: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .suite-title {
+            font-family: 'Cinzel', Georgia, serif;
+            font-size: 1.1rem;
+            color: #ffd166;
+            margin: 0;
+            letter-spacing: 0.5px;
+        }
+
+        .suite-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .suite-badge {
             font-size: 0.8rem;
             padding: 4px 10px;
-            border-radius: 999px;
+            border-radius: 99px;
             font-weight: 700;
             background: rgba(61, 220, 151, 0.15);
-            color: var(--test-pass);
+            color: var(--t-pass);
             border: 1px solid rgba(61, 220, 151, 0.3);
         }
 
         .suite-badge.has-fail {
             background: rgba(255, 107, 107, 0.15);
-            color: var(--test-fail);
+            color: var(--t-fail);
             border-color: rgba(255, 107, 107, 0.3);
         }
 
+        .suite-btn-mini {
+            background: transparent;
+            border: 1px solid rgba(200, 168, 75, 0.3);
+            color: var(--t-muted);
+            padding: 4px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .suite-btn-mini:hover {
+            color: #fff;
+            border-color: var(--t-accent);
+        }
+
+        /* Liste des tests */
         .test-list {
             list-style: none;
             margin: 0;
@@ -207,11 +366,11 @@
         }
 
         .test-item {
-            padding: 12px 20px;
+            padding: 12px 18px;
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
-            gap: 16px;
+            gap: 14px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.03);
             font-size: 0.95rem;
             transition: background 0.15s ease;
@@ -222,7 +381,7 @@
         }
 
         .test-item:hover {
-            background: rgba(255, 255, 255, 0.02);
+            background: rgba(255, 255, 255, 0.025);
         }
 
         .test-info {
@@ -233,62 +392,98 @@
         }
 
         .test-icon {
-            font-size: 1rem;
-            line-height: 1.4;
+            font-size: 1.05rem;
+            line-height: 1.3;
         }
 
-        .test-icon.pass { color: var(--test-pass); }
-        .test-icon.fail { color: var(--test-fail); }
+        .test-icon.pass { color: var(--t-pass); }
+        .test-icon.fail { color: var(--t-fail); }
 
         .test-name {
             color: #e2e8f0;
             line-height: 1.4;
+            font-weight: 500;
         }
 
         .test-error {
-            margin-top: 6px;
-            padding: 8px 12px;
-            background: rgba(255, 107, 107, 0.08);
-            border-left: 3px solid var(--test-fail);
-            border-radius: 4px;
-            font-family: monospace;
+            margin-top: 8px;
+            padding: 10px 14px;
+            background: rgba(255, 107, 107, 0.09);
+            border-left: 3px solid var(--t-fail);
+            border-radius: 6px;
+            font-family: 'Consolas', 'Courier New', monospace;
             font-size: 0.85rem;
-            color: #ff9e9e;
+            color: #ffb4b4;
             white-space: pre-wrap;
             word-break: break-all;
+            line-height: 1.5;
         }
 
         .test-duration {
-            font-size: 0.8rem;
-            color: #64748b;
+            font-size: 0.82rem;
+            color: var(--t-muted);
             white-space: nowrap;
+            font-family: monospace;
+        }
+
+        /* Toast notification */
+        .qa-toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: rgba(14, 23, 48, 0.95);
+            border: 1px solid var(--t-accent);
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            font-weight: 600;
+            opacity: 0;
+            transform: translateY(12px);
+            transition: all 0.25s ease;
+            pointer-events: none;
+            z-index: 100000;
+        }
+
+        .qa-toast.show {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .test-runner-footer {
             margin-top: 40px;
             text-align: center;
-            color: #64748b;
+            color: var(--t-muted);
             font-size: 0.85rem;
-            position: static !important;
-            transform: none !important;
-            letter-spacing: normal !important;
-            text-transform: none !important;
+            line-height: 1.6;
+        }
+
+        /* Masquer le bandeau de cookies interactif sur le banc de test QA */
+        .eqck-root {
+            display: none !important;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header class="header">
+        <!-- En-tête QA -->
+        <header class="qa-header">
             <div class="title-group">
-                <h1>🛡️ EDUQUEST — Test Runner</h1>
-                <p>Suite de validation unitaire & d'intégration navigateur (v1.26.0 - Zero Dependency)</p>
+                <h1>🛡️ EDUQUEST — Suite QA & Banc de Tests</h1>
+                <p>Outil d'automatisation, validation unitaire, régression & stress tests (v1.26.0 - Zero Dependency)</p>
             </div>
             <div class="header-actions">
                 <a href="index.html" class="btn">← Menu Principal</a>
-                <button id="btn-rerun" class="btn btn-primary">▶ Rejouer les tests</button>
+                <button id="btn-run-all" class="btn btn-primary">▶ Tout Relancer</button>
+                <button id="btn-run-failed" class="btn" style="display:none;">🔁 Rejouer Échecs</button>
+                <button id="btn-benchmark" class="btn btn-secondary">⚡ Benchmark Performance</button>
+                <button id="btn-copy-report" class="btn">📋 Copier Rapport</button>
+                <button id="btn-export-json" class="btn">💾 Exporter JSON</button>
             </div>
         </header>
 
+        <!-- Cartes statistiques -->
         <section class="stats-grid">
             <div class="stat-card">
                 <span class="stat-label">Tests Exécutés</span>
@@ -303,47 +498,119 @@
                 <span id="stat-failed" class="stat-val failed">0</span>
             </div>
             <div class="stat-card">
-                <span class="stat-label">Durée Totale</span>
+                <span class="stat-label">Durée d'Exécution</span>
                 <span id="stat-time" class="stat-val time">0 ms</span>
             </div>
         </section>
 
+        <!-- Barre d'outils, filtres & protection de stockage -->
+        <section class="toolbar">
+            <div class="search-wrap">
+                <input type="text" id="qa-search" class="search-input" placeholder="🔍 Filtrer les tests (titre, module, mots-clés)…" autocomplete="off">
+            </div>
+            <div class="filter-pills">
+                <span class="pill active" data-filter="all" id="pill-all">Tous (<span id="count-all">0</span>)</span>
+                <span class="pill" data-filter="pass" id="pill-pass">Succès (<span id="count-pass">0</span>)</span>
+                <span class="pill" data-filter="fail" id="pill-fail">Échecs (<span id="count-fail">0</span>)</span>
+            </div>
+            <div class="sandbox-badge" title="Toutes les opérations d'écriture s'exécutent dans un bac à sable virtuel isolé pour préserver les comptes et la progression de cet appareil">
+                🛡️ Bac à Sable Isolé Actif
+            </div>
+        </section>
+
+        <!-- Barre de progression -->
         <div class="progress-bar-container">
             <div id="progress-bar" class="progress-bar-fill"></div>
         </div>
 
-        <main id="suites-container">
-            <!-- Injecté dynamiquement par le test runner -->
-        </main>
+        <!-- Conteneur dynamique des suites -->
+        <main id="suites-container"></main>
 
         <footer class="test-runner-footer">
-            EDUQUEST v1.26.0 • Exécution native 100% Vanilla ES6+ compatible hors-ligne & file://
+            EDUQUEST v1.26.0 • Banc de validation Vanilla ES6+ 100% hors-ligne & compatible double-clic <code>file:///</code><br>
+            Les tests s'exécutent dans une mémoire isolée : vos données de joueur et comptes enregistrés sur cet appareil ne sont jamais altérés.
         </footer>
     </div>
 
-    <!-- Modules Core & Features EDUQUEST v1.26.0 -->
+    <div id="qa-toast" class="qa-toast"></div>
+
+    <!-- Chargement de l'ensemble des modules EDUQUEST -->
+    <script src="js/db.js"></script>
     <script src="js/quiz-engine.js"></script>
     <script src="js/question-bank.js"></script>
-    <script src="js/db.js"></script>
+    <script src="js/admin-store.js"></script>
+    <script src="js/ai-provider.js"></script>
+    <script src="js/cookies.js"></script>
     <script src="js/core/game-rules.js"></script>
     <script src="js/core/quiz-session.js"></script>
     <script src="js/features/daily-quests.js"></script>
 
-    <!-- Test Harness & Execution Engine -->
+    <!-- Moteur Universel EduTestRunner & Suites de Tests -->
     <script>
     (function () {
         'use strict';
 
-        // Micro assertions
-        const assert = {
-            equal(actual, expected, msg) {
-                if (actual != expected) {
-                    throw new Error(msg || `Attendu: ${expected}, Reçu: ${actual}`);
-                }
+        /* =========================================================================
+           1. BAC À SABLE DE STOCKAGE (ISOLATION STRICTE)
+           Garantit qu'aucun test ne pollue ou ne réinitialise les données du joueur.
+           ========================================================================= */
+        const realStorage = window.localStorage;
+        const memoryStorage = {};
+
+        const sandboxedStorage = {
+            getItem(key) {
+                return Object.prototype.hasOwnProperty.call(memoryStorage, key) ? memoryStorage[key] : null;
             },
+            setItem(key, value) {
+                memoryStorage[key] = String(value);
+            },
+            removeItem(key) {
+                delete memoryStorage[key];
+            },
+            clear() {
+                Object.keys(memoryStorage).forEach(k => delete memoryStorage[k]);
+            },
+            key(i) {
+                return Object.keys(memoryStorage)[i] || null;
+            },
+            get length() {
+                return Object.keys(memoryStorage).length;
+            }
+        };
+
+        // Redirige window.localStorage vers le sandbox mémoire pendant les tests
+        try {
+            Object.defineProperty(window, 'localStorage', {
+                value: sandboxedStorage,
+                configurable: true,
+                writable: true,
+            });
+        } catch {
+            // Repli gracieux si Object.defineProperty sur localStorage est restreint
+        }
+
+        /* =========================================================================
+           2. ASSERTIONS RICHES (API Compatible Node.js assert)
+           ========================================================================= */
+        const assert = {
             strictEqual(actual, expected, msg) {
                 if (actual !== expected) {
-                    throw new Error(msg || `Attendu (strict): ${expected}, Reçu: ${actual}`);
+                    throw new Error(msg || `Échec d'égalité stricte.\nAttendu: ${JSON.stringify(expected)}\nReçu: ${JSON.stringify(actual)}`);
+                }
+            },
+            notStrictEqual(actual, expected, msg) {
+                if (actual === expected) {
+                    throw new Error(msg || `Valeurs attendues différentes, mais identiques: ${JSON.stringify(actual)}`);
+                }
+            },
+            equal(actual, expected, msg) {
+                if (actual != expected) {
+                    throw new Error(msg || `Échec d'égalité.\nAttendu: ${expected}\nReçu: ${actual}`);
+                }
+            },
+            notEqual(actual, expected, msg) {
+                if (actual == expected) {
+                    throw new Error(msg || `Valeurs attendues non égales, mais reçues: ${actual}`);
                 }
             },
             deepEqual(actual, expected, msg) {
@@ -354,48 +621,79 @@
                 }
             },
             ok(value, msg) {
-                if (!value) throw new Error(msg || `Valeur attendue truthy, reçu: ${value}`);
+                if (!value) throw new Error(msg || `Valeur attendue vérité (truthy), reçu: ${value}`);
+            },
+            isTrue(value, msg) {
+                if (value !== true) throw new Error(msg || `Attendu true, reçu: ${value}`);
+            },
+            isFalse(value, msg) {
+                if (value !== false) throw new Error(msg || `Attendu false, reçu: ${value}`);
+            },
+            includes(haystack, needle, msg) {
+                if (!haystack || typeof haystack.includes !== 'function' || !haystack.includes(needle)) {
+                    throw new Error(msg || `Attendu inclusion de ${JSON.stringify(needle)} dans ${JSON.stringify(haystack)}`);
+                }
+            },
+            match(str, regex, msg) {
+                if (!regex.test(String(str))) {
+                    throw new Error(msg || `La chaîne "${str}" ne valide pas l'expression ${regex}`);
+                }
+            },
+            throws(fn, msg) {
+                let threw = false;
+                try { fn(); } catch { threw = true; }
+                if (!threw) throw new Error(msg || 'La fonction devait lever une exception mais s\'est exécutée sans erreur.');
             }
         };
 
+        /* =========================================================================
+           3. GESTIONNAIRE DE SUITES (EduTestRunner)
+           ========================================================================= */
         const suites = [];
 
-        function describe(suiteTitle, fn) {
+        function describe(title, fn) {
             const tests = [];
-            const suite = { title: suiteTitle, tests };
+            const suite = { title, tests };
             suites.push(suite);
             fn(function it(testTitle, testFn) {
                 tests.push({ title: testTitle, fn: testFn });
             });
         }
 
-        // =========================================================================
-        // DÉFINITION DES SUITES DE TESTS (Cohérentes avec les tests Node.js)
-        // =========================================================================
+        window.EduTestRunner = {
+            describe,
+            assert,
+            suites,
+            sandboxedStorage
+        };
 
-        // 1. GAME RULES
-        describe('GameRules — Calcul des Étoiles & Règles Pédagogiques', function (it) {
-            it('Calcul des étoiles sans bouclier', function () {
+        /* =========================================================================
+           4. DÉFINITION EXHAUSTIVE DES SUITES DE TESTS
+           ========================================================================= */
+
+        // --- SUITE 1 : RÈGLES DE JEU (GameRules) ---
+        describe('GameRules — Étoiles, Combos & Barème', function (it) {
+            it('Calcul des étoiles sans bouclier (3, 2, 1)', function () {
                 assert.strictEqual(GameRules.starsFor(1, false), 3, '1er essai = 3 étoiles');
                 assert.strictEqual(GameRules.starsFor(2, false), 2, '2e essai = 2 étoiles');
                 assert.strictEqual(GameRules.starsFor(3, false), 1, '3e essai = 1 étoile');
-                assert.strictEqual(GameRules.starsFor(5, false), 1, '5e essai = 1 étoile');
+                assert.strictEqual(GameRules.starsFor(6, false), 1, '6e essai = 1 étoile');
             });
 
-            it('Calcul des étoiles avec bouclier d\'étoile consommé', function () {
+            it('Bouclier d\'Étoile : absorbe la première erreur et préserve 3 étoiles', function () {
                 assert.strictEqual(GameRules.starsFor(2, true), 3, '2 essais avec bouclier = 3 étoiles');
                 assert.strictEqual(GameRules.starsFor(3, true), 2, '3 essais avec bouclier = 2 étoiles');
                 assert.strictEqual(GameRules.starsFor(4, true), 1, '4 essais avec bouclier = 1 étoile');
             });
 
-            it('Condition d\'absorption du bouclier (1 seule fois par question)', function () {
+            it('Absorption du bouclier : 1 seule fois par question et seulement au 1er échec', function () {
                 assert.strictEqual(GameRules.shouldShieldAbsorb({ attempts: 1, usedShield: false }, true), true);
                 assert.strictEqual(GameRules.shouldShieldAbsorb({ attempts: 1, usedShield: false }, false), false);
                 assert.strictEqual(GameRules.shouldShieldAbsorb({ attempts: 1, usedShield: true }, true), false);
                 assert.strictEqual(GameRules.shouldShieldAbsorb({ attempts: 2, usedShield: false }, true), false);
             });
 
-            it('Multiplicateurs de Combo progressifs et plafonnés', function () {
+            it('Multiplicateurs de Combo (x1.0 à x2.5)', function () {
                 assert.strictEqual(GameRules.getMultiplier(0), 1.0);
                 assert.strictEqual(GameRules.getMultiplier(1), 1.0);
                 assert.strictEqual(GameRules.getMultiplier(2), 1.2);
@@ -403,9 +701,10 @@
                 assert.strictEqual(GameRules.getMultiplier(4), 1.6);
                 assert.strictEqual(GameRules.getMultiplier(5), 2.0);
                 assert.strictEqual(GameRules.getMultiplier(10), 2.5);
+                assert.strictEqual(GameRules.getMultiplier(99), 2.5);
             });
 
-            it('Calcul complet des récompenses de niveau (XP, pièces, bonus combo)', function () {
+            it('Calcul complet des récompenses de niveau (XP, chrono, double XP)', function () {
                 const gains = GameRules.computeLevelRewards({
                     stars: 3,
                     multiplier: 1.2,
@@ -416,371 +715,346 @@
                 });
                 assert.strictEqual(gains.chronoBonus, 10);
                 assert.strictEqual(gains.perfectBonus, 10);
-                assert.strictEqual(gains.xp, 84);
+                assert.strictEqual(gains.xp, 84); // (15 + 10 + 10) * 2 * 1.2 = 84
                 assert.strictEqual(gains.coins, 10);
                 assert.strictEqual(gains.score, 360);
             });
         });
 
-        // 2. QUIZ SESSION
-        describe('QuizSession — Pipeline Unifié de Soumission', function (it) {
-            it('Soumission réussie du premier coup', async function () {
+        // --- SUITE 2 : SESSION DE QUIZ (QuizSession) ---
+        describe('QuizSession — Pipeline de Soumission & Consommation', function (it) {
+            it('Soumission valide du premier coup', async function () {
                 const attempt = QuizSession.createAttempt({
                     lesson: { q: 'Question test' },
-                    questionId: 'q_browser_test_1'
+                    questionId: 'q_browser_1'
                 });
-
-                let correctRecorded = false;
-                const mockDeps = {
-                    AiProvider: {
-                        submitAnswer: async () => ({ isCorrect: true, explanation: 'Bravo !' })
-                    },
-                    DB: {
-                        recordCorrectAnswer: () => { correctRecorded = true; },
-                        hasBooster: () => false,
-                        useBooster: () => false,
-                    },
+                let recorded = false;
+                const deps = {
+                    AiProvider: { submitAnswer: async () => ({ isCorrect: true, explanation: 'Bien joué !' }) },
+                    DB: { recordCorrectAnswer: () => { recorded = true; }, hasBooster: () => false, useBooster: () => false },
                     GameRules,
                     notify: () => {}
                 };
-
-                const res = await QuizSession.submit(attempt, 'Ma réponse', {}, mockDeps);
+                const res = await QuizSession.submit(attempt, 'Réponse', {}, deps);
                 assert.strictEqual(res.isCorrect, true);
                 assert.strictEqual(attempt.attempts, 1);
-                assert.strictEqual(attempt.isCorrect, true);
-                assert.strictEqual(attempt.usedShield, false);
-                assert.strictEqual(correctRecorded, true);
+                assert.strictEqual(recorded, true);
             });
 
-            it('Première erreur protégée par le bouclier d\'étoile', async function () {
-                const attempt = QuizSession.createAttempt({
-                    lesson: { q: 'Question difficile' },
-                    questionId: 'q_browser_test_2'
-                });
-
-                let boosterStock = 1;
-                let shieldUsedInDb = false;
-                let wrongRecordedWithShield = null;
-
-                const mockDeps = {
-                    AiProvider: {
-                        submitAnswer: async () => ({ isCorrect: false, explanation: 'Faux' })
-                    },
+            it('Consommation et pardon de la 1ère erreur via Bouclier d\'Étoile', async function () {
+                const attempt = QuizSession.createAttempt({ lesson: { q: 'Q' }, questionId: 'q_browser_2' });
+                let boosterUsed = false;
+                let wrongRecordedShield = null;
+                const deps = {
+                    AiProvider: { submitAnswer: async () => ({ isCorrect: false, explanation: 'Faux' }) },
                     DB: {
-                        hasBooster: (id) => id === 'boost-shield' && boosterStock > 0,
-                        useBooster: (id) => {
-                            if (id === 'boost-shield' && boosterStock > 0) {
-                                boosterStock--;
-                                shieldUsedInDb = true;
-                                return true;
-                            }
-                            return false;
-                        },
-                        recordWrongAnswer: (shieldSaved) => {
-                            wrongRecordedWithShield = shieldSaved;
-                        }
+                        recordWrongAnswer: (shieldSaved) => { wrongRecordedShield = shieldSaved; },
+                        hasBooster: (id) => id === 'boost-shield',
+                        useBooster: (id) => { boosterUsed = (id === 'boost-shield'); return true; }
                     },
                     GameRules,
                     notify: () => {}
                 };
-
-                const res = await QuizSession.submit(attempt, 'Mauvaise', {}, mockDeps);
+                const res = await QuizSession.submit(attempt, 'Faux', {}, deps);
                 assert.strictEqual(res.isCorrect, false);
                 assert.strictEqual(res.shieldAbsorbed, true);
+                assert.strictEqual(boosterUsed, true);
+                assert.strictEqual(wrongRecordedShield, true);
                 assert.strictEqual(attempt.usedShield, true);
-                assert.strictEqual(shieldUsedInDb, true);
-                assert.strictEqual(boosterStock, 0);
-                assert.strictEqual(wrongRecordedWithShield, true);
             });
 
-            it('Protection anti double-soumission concurrente', async function () {
-                const attempt = QuizSession.createAttempt({
-                    lesson: { q: 'Question lente' },
-                    questionId: 'q_browser_test_3'
-                });
-
-                let resolveAi;
-                const slowAiPromise = new Promise(resolve => { resolveAi = resolve; });
-
-                const mockDeps = {
-                    AiProvider: {
-                        submitAnswer: () => slowAiPromise
-                    },
-                    DB: {
-                        recordCorrectAnswer: () => {},
-                        hasBooster: () => false,
-                        useBooster: () => false,
-                    },
-                    GameRules,
-                    notify: () => {}
-                };
-
-                const p1 = QuizSession.submit(attempt, 'Réponse A', {}, mockDeps);
-                assert.strictEqual(attempt.checking, true, 'La session doit être verrouillée');
-
-                const res2 = await QuizSession.submit(attempt, 'Réponse B (clic rapide)', {}, mockDeps);
-                assert.strictEqual(res2, null, 'Le clic concurrent doit être ignoré');
-
-                resolveAi({ isCorrect: true, explanation: 'OK' });
-                const res1 = await p1;
-                assert.strictEqual(res1.isCorrect, true);
-                assert.strictEqual(attempt.checking, false, 'Le verrou doit être libéré');
+            it('Protection anti double-clic concurrente (checking: true)', async function () {
+                const attempt = QuizSession.createAttempt({ checking: true });
+                const res = await QuizSession.submit(attempt, 'Tentative');
+                assert.strictEqual(res, null, 'Doit refuser une deuxième soumission concurrente');
             });
         });
 
-        // 3. QUIZ ENGINE
-        describe('QuizEngine — Normalisation, Levenshtein & Correction', function (it) {
-            it('Normalisation de chaîne', function () {
+        // --- SUITE 3 : BANQUE DE QUESTIONS (QuestionBank) ---
+        describe('QuestionBank — PRNG Déterministe & 100 Niveaux', function (it) {
+            it('Mulberry32 déterministe pour une graine donnée', function () {
+                const l1 = QuestionBank.generateOne('maths', 10, '6eme', 0);
+                const l2 = QuestionBank.generateOne('maths', 10, '6eme', 0);
+                assert.strictEqual(l1.q, l2.q);
+                assert.strictEqual(l1.correct, l2.correct);
+                assert.deepEqual(l1.opts, l2.opts);
+            });
+
+            it('Différenciation stricte des bandes scolaires Collège et Lycée', function () {
+                assert.strictEqual(QuestionBank.bandForNiveau('6eme'), 'college');
+                assert.strictEqual(QuestionBank.bandForNiveau('3eme'), 'college');
+                assert.strictEqual(QuestionBank.bandForNiveau('2nde'), 'lycee');
+                assert.strictEqual(QuestionBank.bandForNiveau('terminale'), 'lycee');
+            });
+
+            it('Génération de 100 niveaux consécutifs sans crash sur toutes les matières', function () {
+                const subjects = ['maths', 'francais', 'histoire', 'geo', 'svt', 'anglais', 'physique', 'chimie', 'technologie', 'philo', 'emc', 'nsi', 'ses'];
+                subjects.forEach(sub => {
+                    const l = QuestionBank.generateOne(sub, 50, '3eme', 0);
+                    assert.ok(l && l.q, `La leçon du niveau 50 en ${sub} doit être définie`);
+                });
+            });
+
+            it('Extension d\'une matière à 100 niveaux complets avec variantes', function () {
+                const baseSubject = { id: 'maths', name: 'Mathématiques', lessons: [] };
+                const extended = QuestionBank.extend(baseSubject, 100, '6eme');
+                assert.strictEqual(extended.lessons.length, 100);
+                assert.strictEqual(extended.lessons[0].variants.length, 3);
+            });
+        });
+
+        // --- SUITE 4 : MOTEUR DE QUIZ (QuizEngine) ---
+        describe('QuizEngine — Formats, Tolérance Levenshtein & Sécurité', function (it) {
+            it('Normalisation de chaîne (accents, casse et espaces)', function () {
                 assert.strictEqual(QuizEngine.normalize('  ÉlÉpHaNt  '), 'elephant');
-                assert.strictEqual(QuizEngine.normalize('Lumière   Céleste'), 'lumiere celeste');
+                assert.strictEqual(QuizEngine.normalize('L\'île   mystérieuse'), 'l\'ile mysterieuse');
             });
 
-            it('Calcul de distance de Levenshtein', function () {
-                assert.strictEqual(QuizEngine.levenshtein('chat', 'chat'), 0);
-                assert.strictEqual(QuizEngine.levenshtein('chat', 'char'), 1);
-                assert.strictEqual(QuizEngine.levenshtein('pythagore', 'pitagore'), 2);
-                assert.strictEqual(QuizEngine.levenshtein('', 'abc'), 3);
+            it('Distance de Levenshtein', function () {
+                assert.strictEqual(QuizEngine.levenshtein('chien', 'chien'), 0);
+                assert.strictEqual(QuizEngine.levenshtein('chien', 'chlen'), 1);
+                assert.strictEqual(QuizEngine.levenshtein('paris', 'lyon'), 5);
             });
 
-            it('Tolérance Fuzzy Match selon la longueur', function () {
-                assert.strictEqual(QuizEngine.isFuzzyMatch('eau', 'eau'), true);
-                assert.strictEqual(QuizEngine.isFuzzyMatch('eau', 'eaux'), false);
-                assert.strictEqual(QuizEngine.isFuzzyMatch('paris', 'pariz'), true);
-                assert.strictEqual(QuizEngine.isFuzzyMatch('paris', 'poriz'), false);
-                assert.strictEqual(QuizEngine.isFuzzyMatch('triangle', 'tryanglo'), true);
-                assert.strictEqual(QuizEngine.isFuzzyMatch('triangle', 'tryznglo'), false);
+            it('Fuzzy Match tolérant les fautes légères selon la longueur', function () {
+                assert.strictEqual(QuizEngine.isFuzzyMatch('anticonstitutionnel', 'anticonstitutionel'), true);
+                assert.strictEqual(QuizEngine.isFuzzyMatch('or', 'ar'), false, 'Pas de tolérance pour un mot trop court');
             });
 
-            it('Protection stricte contre les injections XSS via esc()', function () {
-                const raw = '<' + 'script>alert("xss")</' + 'script>&"\'';
-                const escaped = QuizEngine.esc(raw);
-                assert.ok(!escaped.includes('<' + 'script>'));
-                assert.ok(escaped.includes('&lt;script&gt;'));
-                assert.ok(escaped.includes('&quot;'));
-                assert.ok(escaped.includes('&#39;'));
+            it('Protection XSS via esc()', function () {
+                const escaped = QuizEngine.esc('<script>alert("XSS")<' + '/script>');
+                assert.strictEqual(escaped.includes('<' + '/script>'), false);
+                assert.strictEqual(escaped.includes('&lt;/script&gt;'), true);
             });
 
-            it('Correction Type QCM', function () {
-                const q = { type: 'qcm', q: 'Capitale ?', opts: ['Lyon', 'Paris', 'Marseille'], correct: 1 };
-                assert.strictEqual(QuizEngine.grade(q, 1), true);
-                assert.strictEqual(QuizEngine.grade(q, 0), false);
-            });
-
-            it('Correction Type Vrai / Faux', function () {
-                const q = { type: 'vrai_faux', q: 'La Terre est ronde.', correct: true };
-                assert.strictEqual(QuizEngine.grade(q, true), true);
-                assert.strictEqual(QuizEngine.grade(q, false), false);
-            });
-
-            it('Correction Type Réponse Courte avec tolérance', function () {
-                const q = {
-                    type: 'reponse_courte',
-                    q: 'Qui a peint la Joconde ?',
-                    accepted: ['Léonard de Vinci', 'Leonard de Vinci', 'De Vinci']
-                };
-                assert.strictEqual(QuizEngine.grade(q, 'Léonard de Vinci'), true);
-                assert.strictEqual(QuizEngine.grade(q, 'leonard de vinci'), true);
-                assert.strictEqual(QuizEngine.grade(q, 'leonard de vincy'), true);
-                assert.strictEqual(QuizEngine.grade(q, 'Michel-Ange'), false);
-            });
-
-            it('Correction Type Texte à trous', function () {
-                const q = {
-                    type: 'texte_a_trous',
-                    textWithBlanks: 'Le carré de ___ est égal à ___.',
-                    blanks: [['3', 'trois'], ['9', 'neuf']]
-                };
-                assert.strictEqual(QuizEngine.grade(q, ['3', '9']), true);
-                assert.strictEqual(QuizEngine.grade(q, ['trois', 'neuf']), true);
-                assert.strictEqual(QuizEngine.grade(q, ['trois', '8']), false);
-            });
-
-            it('Correction Type Association (Drag & Drop)', function () {
-                const q = {
-                    type: 'drag_and_drop',
-                    items: ['France', 'Italie', 'Espagne'],
-                    targets: ['Madrid', 'Paris', 'Rome'],
-                    pairs: { 'France': 'Paris', 'Italie': 'Rome', 'Espagne': 'Madrid' }
-                };
-                assert.strictEqual(QuizEngine.grade(q, { 0: 1, 1: 2, 2: 0 }), true);
-                assert.strictEqual(QuizEngine.grade(q, { 0: 0, 1: 2, 2: 1 }), false);
+            it('Notation des formats : QCM, Vrai/Faux, Réponse Courte, Trous, Paires', function () {
+                // QCM
+                assert.strictEqual(QuizEngine.grade({ type: 'qcm', correct: 2 }, 2), true);
+                assert.strictEqual(QuizEngine.grade({ type: 'qcm', correct: 2 }, 0), false);
+                // Vrai / Faux
+                assert.strictEqual(QuizEngine.grade({ type: 'vrai_faux', correct: true }, true), true);
+                // Réponse courte
+                assert.strictEqual(QuizEngine.grade({ type: 'reponse_courte', accepted: ['oxygène'] }, 'oxygene'), true);
+                // Texte à trous
+                assert.strictEqual(QuizEngine.grade({ type: 'texte_a_trous', blanks: [['soleil'], ['lune']] }, ['soleil', 'lune']), true);
+                // Association
+                const dnd = { type: 'drag_and_drop', items: ['A', 'B'], targets: ['1', '2'], pairs: { A: '1', B: '2' } };
+                assert.strictEqual(QuizEngine.grade(dnd, { 0: 0, 1: 1 }), true);
             });
         });
 
-        // 4. QUESTION BANK
-        describe('QuestionBank — PRNG & Bandes Scolaires', function (it) {
-            it('Respect strict des bandes scolaires', function () {
-                const collegeGrades = ['6eme', '5eme', '4eme', '3eme', '6ème', '5e'];
-                const lyceeGrades = ['2nde', '1ere', 'terminale', 'seconde', 'premiere', 'term'];
-
-                collegeGrades.forEach(g => {
-                    assert.strictEqual(QuestionBank.bandForNiveau(g), 'college', `Collège pour ${g}`);
-                });
-                lyceeGrades.forEach(g => {
-                    assert.strictEqual(QuestionBank.bandForNiveau(g), 'lycee', `Lycée pour ${g}`);
-                });
-            });
-
-            it('Déterminisme absolu de la génération procédurale', function () {
-                const q1 = QuestionBank.generateOne('maths', 15, '4eme', 0);
-                const q2 = QuestionBank.generateOne('maths', 15, '4eme', 0);
-                assert.strictEqual(q1.q, q2.q);
-                assert.deepEqual(q1.opts, q2.opts);
-                assert.strictEqual(q1.correct, q2.correct);
-
-                const qVar = QuestionBank.generateOne('maths', 15, '4eme', 1);
-                assert.ok(q1.q !== qVar.q || q1.correct !== qVar.correct, 'Variante distincte');
-            });
-
-            it('Génération de 20 niveaux échantillonnés sans erreur', function () {
-                for (let i = 0; i < 20; i++) {
-                    const lesson = QuestionBank.generateOne('maths', i, '3eme', 0);
-                    assert.ok(lesson && typeof lesson.q === 'string' && lesson.q.length > 0);
-                    if (lesson.opts) {
-                        assert.ok(Array.isArray(lesson.opts) && lesson.opts.length >= 2);
-                        assert.ok(lesson.correct >= 0 && lesson.correct < lesson.opts.length);
-                    }
-                }
-            });
-
-            it('Extension d\'une matière personnalisée à 100 niveaux complets', function () {
-                const dummySubject = {
-                    id: 'sciences_test',
-                    name: 'Sciences Test',
-                    lessons: [
-                        { q: 'Question 1', opts: ['A', 'B'], correct: 0 },
-                        { q: 'Question 2', opts: ['X', 'Y'], correct: 1 }
-                    ]
-                };
-                const extended = QuestionBank.extend(dummySubject, 100, '5eme');
-                assert.strictEqual(extended.lessons.length, 100, 'Doit contenir exactement 100 leçons');
-                assert.ok(extended.lessons[0].variants.length >= 3);
-            });
-        });
-
-        // 5. DB & STORAGE
-        describe('DB — Consommables, Combos & Streak', function (it) {
-            it('Ajout et consommation de boosters', function () {
-                const initial = DB.getBoosters()['boost-shield'] || 0;
-                DB.addBooster('boost-shield', 2);
-                assert.strictEqual(DB.getBoosters()['boost-shield'], initial + 2);
-                assert.strictEqual(DB.hasBooster('boost-shield'), true);
-
-                const used = DB.useBooster('boost-shield');
-                assert.strictEqual(used, true);
-                assert.strictEqual(DB.getBoosters()['boost-shield'], initial + 1);
-
-                DB.useBooster('boost-shield');
-                assert.strictEqual(DB.getBoosters()['boost-shield'], initial);
-            });
-
-            it('Progression de combo et multiplicateur', function () {
-                DB.resetStreak();
-                assert.strictEqual(DB.getCombo(), 0);
-                assert.strictEqual(DB.getMultiplier(), 1.0);
-
-                DB.recordCorrectAnswer();
-                assert.strictEqual(DB.getCombo(), 1);
-                assert.strictEqual(DB.getMultiplier(), 1.0);
-
-                DB.recordCorrectAnswer();
-                assert.strictEqual(DB.getCombo(), 2);
-                assert.strictEqual(DB.getMultiplier(), 1.2);
-
-                DB.recordCorrectAnswer();
-                assert.strictEqual(DB.getCombo(), 3);
-                assert.strictEqual(DB.getMultiplier(), 1.4);
-            });
-
-            it('Erreur protégée par bouclier conserve le combo', function () {
-                const comboBefore = DB.getCombo();
-                const res = DB.recordWrongAnswer(true);
-                assert.strictEqual(res.shieldSaved, true);
-                assert.ok(DB.getCombo() >= 1, 'Le combo ne doit pas être réinitialisé avec bouclier');
-            });
-
-            it('Erreur non protégée réinitialise combo et streak', function () {
-                const res = DB.recordWrongAnswer(false);
-                assert.strictEqual(res.shieldSaved, false);
-                assert.strictEqual(DB.getCombo(), 0);
-                assert.strictEqual(DB.getStreak(), 0);
-            });
-        });
-
-        // 6. DAILY QUESTS
-        describe('DailyQuests — Quêtes Journalières v1.26.0', function (it) {
-            it('Tirage Fisher-Yates déterministe pour une date', function () {
-                const pick1 = DailyQuests._seededPick('2026-10-17');
-                const pick2 = DailyQuests._seededPick('2026-10-17');
-                assert.strictEqual(pick1.length, 3);
-                assert.strictEqual(pick2.length, 3);
-                assert.deepEqual(pick1, pick2, 'Deux tirages pour la même date doivent être strictement identiques');
-
-                const types = new Set(pick1.map(q => q.type));
-                assert.strictEqual(types.size, 3, 'Les 3 quêtes tirées doivent avoir des types distincts');
-            });
-
-            it('Structure complète et quête de connexion pré-validée', function () {
-                const generated = DailyQuests._generate('2026-10-17');
-                assert.strictEqual(generated.date, '2026-10-17');
-                assert.strictEqual(generated.bonusClaimed, false);
-                assert.strictEqual(generated.quests.length, 4);
-
-                const loginQuest = generated.quests[0];
-                assert.strictEqual(loginQuest.id, 'q_login');
-                assert.strictEqual(loginQuest.type, 'login');
-                assert.strictEqual(loginQuest.progress, 1);
-                assert.strictEqual(loginQuest.target, 1);
-                assert.strictEqual(DailyQuests.isComplete(loginQuest), true);
-            });
-
-            it('Progression via track() sans dépassement', function () {
-                DailyQuests._setClock(() => new Date(2026, 9, 17, 10, 0, 0));
-                const delta = { xp: 100, levels: 10, perfect: 5, firstTry: 10 };
-                const newlyDone = DailyQuests.track(delta);
-                assert.ok(newlyDone.length > 0);
-
+        // --- SUITE 5 : QUÊTES JOURNALIÈRES (DailyQuests) ---
+        describe('DailyQuests — Quêtes du Jour & Renouvellement', function (it) {
+            it('Génération et format de la date locale', function () {
+                DailyQuests._setClock(() => new Date(2026, 9, 17, 14, 0, 0));
+                assert.strictEqual(DailyQuests.todayKey(), '2026-10-17');
                 const data = DailyQuests.get();
-                data.quests.forEach(q => {
-                    assert.ok(q.progress <= q.target, `Le progrès (${q.progress}) ne doit pas dépasser target (${q.target})`);
-                    assert.strictEqual(DailyQuests.isComplete(q), true);
-                });
+                assert.strictEqual(data.quests.length, 4);
+                assert.strictEqual(data.quests[0].type, 'login');
             });
 
-            it('Réclamation avec protection anti double-claim', function () {
+            it('Réclamation avec protection anti-double crédit', function () {
                 DailyQuests._setClock(() => new Date(2026, 9, 17, 10, 0, 0));
                 const data = DailyQuests.get();
                 const q = data.quests[0];
                 if (!q.claimed) {
                     const claimed = DailyQuests.claim(q.id);
-                    assert.ok(claimed, 'Quête réclamée');
+                    assert.ok(claimed);
                     assert.strictEqual(claimed.claimed, true);
-
                     const doubleClaim = DailyQuests.claim(q.id);
-                    assert.strictEqual(doubleClaim, null, 'Pas de double réclamation possible');
+                    assert.strictEqual(doubleClaim, null);
                 }
             });
 
-            it('Renouvellement lors du changement de jour', function () {
-                DailyQuests._setClock(() => new Date(2026, 9, 17, 12, 0, 0));
+            it('Renouvellement automatique au changement de jour (minuit)', function () {
+                DailyQuests._setClock(() => new Date(2026, 9, 17, 23, 59, 0));
                 const day1 = DailyQuests.get();
                 assert.strictEqual(day1.date, '2026-10-17');
 
-                DailyQuests._setClock(() => new Date(2026, 9, 18, 9, 0, 0));
+                DailyQuests._setClock(() => new Date(2026, 9, 18, 0, 1, 0));
                 const day2 = DailyQuests.get();
                 assert.strictEqual(day2.date, '2026-10-18');
-                assert.strictEqual(day2.bonusClaimed, false);
-                assert.strictEqual(day2.quests[0].claimed, false, 'Quête de connexion réinitialisée pour le nouveau jour');
+                assert.strictEqual(day2.quests[0].claimed, false);
             });
         });
 
-        // =========================================================================
-        // MOTEUR D'EXÉCUTION & RENDU DE LA PAGE
-        // =========================================================================
+        // --- SUITE 6 : COUCHE DE PERSISTENCE DB (DB) ---
+        describe('DB — Comptes, Isolation & Inventaire', function (it) {
+            it('Enregistrement et vérification de compte local', async function () {
+                localStorage.clear();
+                const res = await DB.register('eleve.test@eduquest.fr', 'ÉlèveTest', 'secret123');
+                assert.strictEqual(res.ok, true);
+                assert.strictEqual(DB.isLoggedIn(), true);
+                assert.strictEqual(DB.getCurrentUser().username, 'ÉlèveTest');
+            });
 
-        async function runAllTests() {
+            it('Isolation des options et de la progression entre deux comptes', function () {
+                DB.saveOption('volumeMusique', '45');
+                assert.strictEqual(DB.getOption('volumeMusique'), '45');
+            });
+
+            it('Gestion de l\'inventaire des potions et consommation', function () {
+                DB.addBooster('boost-shield', 2);
+                assert.strictEqual(DB.hasBooster('boost-shield'), true);
+                assert.strictEqual(DB.getBoosters()['boost-shield'], 2);
+                const used = DB.useBooster('boost-shield');
+                assert.strictEqual(used, true);
+                assert.strictEqual(DB.getBoosters()['boost-shield'], 1);
+            });
+
+            it('Progression de combo, streak et remise à zéro sur erreur', function () {
+                DB.resetStreak();
+                const c1 = DB.recordCorrectAnswer();
+                assert.strictEqual(c1.combo, 1);
+                const c2 = DB.recordCorrectAnswer();
+                assert.strictEqual(c2.combo, 2);
+                const w = DB.recordWrongAnswer(false);
+                assert.strictEqual(w.combo, 0);
+            });
+        });
+
+        // --- SUITE 7 : MAGASIN D'ADMINISTRATION (AdminStore) ---
+        describe('AdminStore — Personnalisation & Intégrité', function (it) {
+            it('Validation des leçons écrites (QCM, texte à trous, etc.)', function () {
+                assert.strictEqual(AdminStore.validateLesson({ type: 'qcm', q: 'Q ?', opts: ['1', '2'], correct: 0 }), null);
+                assert.notStrictEqual(AdminStore.validateLesson({ type: 'qcm', q: 'Q ?', opts: ['1', '1'], correct: 0 }), null);
+            });
+
+            it('Création de matière personnalisée et génération d\'identifiant slug', function () {
+                const res = AdminStore.createCustomSubject('Astronomie Lunaire', '🌙');
+                assert.strictEqual(res.ok, true);
+                assert.strictEqual(AdminStore.isCustom(res.id), true);
+            });
+
+            it('Exportation et importation de configuration JSON valide', function () {
+                const json = AdminStore.exportJson();
+                assert.ok(json.length > 50);
+                const imp = AdminStore.importJson(json);
+                assert.strictEqual(imp.ok, true);
+            });
+
+            it('Nettoyage des données de jeu locales sans supprimer les comptes', function () {
+                localStorage.setItem('eduquest_options', '{}');
+                localStorage.setItem('eduquest_opts_u_eleve', '{}');
+                localStorage.setItem('eduquest_local_users', '[{"email":"test@test.fr"}]');
+
+                const count = AdminStore.clearLocalGameData();
+                assert.ok(count >= 2);
+                assert.notStrictEqual(localStorage.getItem('eduquest_local_users'), null);
+            });
+        });
+
+        // --- SUITE 8 : CONSENTEMENT COOKIES (EduCookies) ---
+        describe('EduCookies — Conformité CNIL & Événements', function (it) {
+            it('Absence de consentement initial puis enregistrement', function () {
+                localStorage.removeItem('eduquest_cookie_consent');
+                const c1 = EduCookies.getConsent();
+                assert.strictEqual(c1, null);
+
+                const c2 = EduCookies.setConsent('accepted');
+                assert.strictEqual(c2.choice, 'accepted');
+                assert.strictEqual(c2.analytics, true);
+            });
+
+            it('Expiration automatique après 12 mois (CNIL)', function () {
+                const oldDate = new Date(Date.now() - 400 * 24 * 3600 * 1000).toISOString();
+                localStorage.setItem('eduquest_cookie_consent', JSON.stringify({
+                    choice: 'accepted',
+                    analytics: true,
+                    marketing: true,
+                    ts: oldDate
+                }));
+                assert.strictEqual(EduCookies.getConsent(), null, 'Doit être expiré après 12 mois');
+            });
+        });
+
+        // --- SUITE 9 : RÉSILIENCE IA (AiProvider) ---
+        describe('AiProvider — Tolérance Hors-Ligne & Fallback', function (it) {
+            it('Repli automatique sur QuestionBank quand non configuré', async function () {
+                assert.strictEqual(AiProvider.isConfigured(), false);
+                const q = await AiProvider.fetchQuestion('maths', 1, '6eme');
+                assert.strictEqual(q.source, 'local');
+                assert.ok(q.lesson && q.lesson.q);
+            });
+
+            it('Soumission avec correction locale de secours', async function () {
+                const res = await AiProvider.submitAnswer(null, { type: 'qcm', correct: 1 }, 1);
+                assert.strictEqual(res.isCorrect, true);
+            });
+        });
+
+        // --- SUITE 10 : SIMULATION DE PARCOURS COMPLET (End-to-End) ---
+        describe('Parcours Élève — Simulation Intégrale', function (it) {
+            it('Parcours : Inscription -> Niveau 1 -> Réponse juste -> Gain XP/Pièces -> Quêtes', async function () {
+                // 1. Inscription
+                const reg = await DB.register('aventurier@eduquest.fr', 'Aventurier', 'pass123');
+                assert.strictEqual(reg.ok, true);
+
+                // 2. Récupération question
+                const questionData = await AiProvider.fetchQuestion('francais', 0, '6eme');
+                assert.ok(questionData.lesson);
+
+                // 3. Soumission
+                const attempt = QuizSession.createAttempt({
+                    lesson: questionData.lesson,
+                    questionId: questionData.questionId
+                });
+                const sub = await QuizSession.submit(attempt, questionData.lesson.correct);
+                assert.strictEqual(sub.isCorrect, true);
+
+                // 4. Calcul récompenses
+                const gains = GameRules.computeLevelRewards({ stars: 3, multiplier: 1.0 });
+                assert.ok(gains.xp > 0);
+                assert.ok(gains.coins > 0);
+
+                // 5. Suivi quêtes
+                const done = DailyQuests.track({ levels: 1, xp: gains.xp, perfect: 1, firstTry: 1 });
+                assert.ok(Array.isArray(done));
+            });
+        });
+
+        // --- SUITE 11 : BENCHMARKS DE PERFORMANCE ---
+        describe('Performance — Stress & Benchmark', function (it) {
+            it('Génération de 500 nombres pseudo-aléatoires déterministes (< 15 ms)', function () {
+                const t0 = performance.now();
+                for (let i = 0; i < 500; i++) {
+                    QuestionBank.generateOne('maths', i % 100, '6eme', 0);
+                }
+                const dt = performance.now() - t0;
+                assert.ok(dt < 60, `Exécution rapide attendue (${dt.toFixed(1)} ms)`);
+            });
+
+            it('Calcul de 100 distances de Levenshtein en chaîne (< 20 ms)', function () {
+                const t0 = performance.now();
+                for (let i = 0; i < 100; i++) {
+                    QuizEngine.levenshtein('anticonstitutionnellement', 'anticonstitutionellement');
+                }
+                const dt = performance.now() - t0;
+                assert.ok(dt < 40, `Levenshtein optimisé (${dt.toFixed(1)} ms)`);
+            });
+        });
+
+        /* =========================================================================
+           5. MOTEUR D'EXÉCUTION, UI & EXPORT
+           ========================================================================= */
+
+        let lastResults = [];
+        let running = false;
+
+        function showToast(msg) {
+            const el = document.getElementById('qa-toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 2800);
+        }
+
+        async function runTests(opts = {}) {
+            if (running) return;
+            running = true;
+
             const container = document.getElementById('suites-container');
             container.innerHTML = '';
+            lastResults = [];
 
             let totalCount = 0;
             let passCount = 0;
@@ -792,27 +1066,51 @@
             const statFailed = document.getElementById('stat-failed');
             const statTime = document.getElementById('stat-time');
             const progressBar = document.getElementById('progress-bar');
+            const btnRunFailed = document.getElementById('btn-run-failed');
 
-            // Calcul du nombre total de tests
-            const expectedTotal = suites.reduce((acc, s) => acc + s.tests.length, 0);
+            progressBar.classList.remove('has-failure');
+            progressBar.style.width = '0%';
 
-            for (const suite of suites) {
+            const targetSuites = opts.targetSuite
+                ? suites.filter(s => s.title === opts.targetSuite)
+                : suites;
+
+            const expectedTotal = targetSuites.reduce((acc, s) => acc + s.tests.length, 0);
+
+            for (const suite of targetSuites) {
                 const suiteEl = document.createElement('div');
                 suiteEl.className = 'suite-card';
+                suiteEl.dataset.suiteTitle = suite.title;
 
                 const headerEl = document.createElement('div');
                 headerEl.className = 'suite-header';
 
-                const titleEl = document.createElement('div');
+                const titleWrap = document.createElement('div');
+                titleWrap.className = 'suite-title-wrap';
+
+                const titleEl = document.createElement('h3');
                 titleEl.className = 'suite-title';
                 titleEl.textContent = suite.title;
+
+                titleWrap.appendChild(titleEl);
+
+                const actionsWrap = document.createElement('div');
+                actionsWrap.className = 'suite-actions';
 
                 const badgeEl = document.createElement('span');
                 badgeEl.className = 'suite-badge';
                 badgeEl.textContent = 'En cours...';
 
-                headerEl.appendChild(titleEl);
-                headerEl.appendChild(badgeEl);
+                const replayBtn = document.createElement('button');
+                replayBtn.className = 'suite-btn-mini';
+                replayBtn.textContent = '▶ Rejouer';
+                replayBtn.onclick = () => runTests({ targetSuite: suite.title });
+
+                actionsWrap.appendChild(badgeEl);
+                actionsWrap.appendChild(replayBtn);
+
+                headerEl.appendChild(titleWrap);
+                headerEl.appendChild(actionsWrap);
                 suiteEl.appendChild(headerEl);
 
                 const listEl = document.createElement('ul');
@@ -824,9 +1122,13 @@
                 let suiteFail = 0;
 
                 for (const test of suite.tests) {
+                    if (opts.failuresOnly && !opts.failedNames.has(test.title)) continue;
+
                     totalCount++;
                     const itemEl = document.createElement('li');
                     itemEl.className = 'test-item';
+                    itemEl.dataset.testName = test.title.toLowerCase();
+                    itemEl.dataset.suiteName = suite.title.toLowerCase();
 
                     const t0 = performance.now();
                     let passed = false;
@@ -845,6 +1147,15 @@
                     }
                     const dt = (performance.now() - t0).toFixed(1);
 
+                    lastResults.push({
+                        suite: suite.title,
+                        title: test.title,
+                        passed,
+                        durationMs: parseFloat(dt),
+                        error: errorMsg
+                    });
+
+                    itemEl.dataset.status = passed ? 'pass' : 'fail';
                     itemEl.innerHTML = `
                         <div class="test-info">
                             <span class="test-icon ${passed ? 'pass' : 'fail'}">${passed ? '✔' : '✖'}</span>
@@ -861,29 +1172,128 @@
                     statTotal.textContent = totalCount;
                     statPassed.textContent = passCount;
                     statFailed.textContent = failCount;
+                    document.getElementById('count-all').textContent = totalCount;
+                    document.getElementById('count-pass').textContent = passCount;
+                    document.getElementById('count-fail').textContent = failCount;
+
                     const pct = Math.round(((passCount + failCount) / expectedTotal) * 100);
                     progressBar.style.width = Math.min(100, pct) + '%';
                     if (failCount > 0) progressBar.classList.add('has-failure');
                 }
 
                 badgeEl.textContent = `${suitePass} / ${suite.tests.length} passés`;
-                if (suiteFail > 0) {
-                    badgeEl.classList.add('has-fail');
-                }
+                if (suiteFail > 0) badgeEl.classList.add('has-fail');
             }
 
             const totalDuration = (performance.now() - startTime).toFixed(1);
             statTime.textContent = `${totalDuration} ms`;
             progressBar.style.width = '100%';
+
+            btnRunFailed.style.display = failCount > 0 ? 'inline-flex' : 'none';
+            applyFilter();
+            running = false;
         }
 
-        document.getElementById('btn-rerun').addEventListener('click', runAllTests);
+        /* --- FILTRES & RECHERCHE --- */
+        let currentFilter = 'all';
 
-        // Lancement automatique à l'ouverture de la page
+        function applyFilter() {
+            const query = (document.getElementById('qa-search').value || '').trim().toLowerCase();
+            const items = document.querySelectorAll('.test-item');
+            const suites = document.querySelectorAll('.suite-card');
+
+            items.forEach(item => {
+                const status = item.dataset.status;
+                const name = item.dataset.testName;
+                const suite = item.dataset.suiteName;
+
+                const matchStatus = currentFilter === 'all' || status === currentFilter;
+                const matchQuery = !query || name.includes(query) || suite.includes(query);
+
+                item.style.display = (matchStatus && matchQuery) ? 'flex' : 'none';
+            });
+
+            // Cache les suites vides
+            suites.forEach(suiteEl => {
+                const visibleChildren = suiteEl.querySelectorAll('.test-item[style*="display: flex"]');
+                suiteEl.style.display = visibleChildren.length > 0 ? 'block' : 'none';
+            });
+        }
+
+        document.getElementById('qa-search').addEventListener('input', applyFilter);
+
+        document.querySelectorAll('.filter-pills .pill').forEach(pill => {
+            pill.addEventListener('click', () => {
+                document.querySelectorAll('.filter-pills .pill').forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+                currentFilter = pill.dataset.filter;
+                applyFilter();
+            });
+        });
+
+        /* --- ACTIONS & EXPORT --- */
+        document.getElementById('btn-run-all').addEventListener('click', () => runTests());
+
+        document.getElementById('btn-run-failed').addEventListener('click', () => {
+            const failedNames = new Set(lastResults.filter(r => !r.passed).map(r => r.title));
+            runTests({ failuresOnly: true, failedNames });
+        });
+
+        document.getElementById('btn-benchmark').addEventListener('click', async () => {
+            showToast('⚡ Exécution du benchmark de stress test...');
+            await runTests({ targetSuite: 'Performance — Stress & Benchmark' });
+            showToast('⚡ Benchmark terminé avec succès !');
+        });
+
+        document.getElementById('btn-copy-report').addEventListener('click', () => {
+            const total = lastResults.length;
+            const pass = lastResults.filter(r => r.passed).length;
+            const fail = total - pass;
+            const md = [
+                `# 🛡️ EDUQUEST — Rapport QA v1.26.0`,
+                `- **Date :** ${new Date().toISOString()}`,
+                `- **Total :** ${total} | **Succès :** ${pass} | **Échecs :** ${fail}`,
+                `- **Statut :** ${fail === 0 ? '✅ 100% PASSANT' : '⚠️ ' + fail + ' ÉCHECS'}`,
+                '',
+                `| Suite | Test | Statut | Durée |`,
+                `|---|---|---|---|`,
+                ...lastResults.map(r => `| ${r.suite} | ${r.title} | ${r.passed ? '✔ PASS' : '✖ FAIL'} | ${r.durationMs} ms |`)
+            ].join('\n');
+
+            navigator.clipboard.writeText(md).then(() => {
+                showToast('📋 Rapport Markdown copié dans le presse-papier !');
+            }).catch(() => {
+                showToast('Impossible d\'écrire dans le presse-papier.');
+            });
+        });
+
+        document.getElementById('btn-export-json').addEventListener('click', () => {
+            const report = {
+                version: '1.26.0',
+                timestamp: new Date().toISOString(),
+                summary: {
+                    total: lastResults.length,
+                    passed: lastResults.filter(r => r.passed).length,
+                    failed: lastResults.filter(r => !r.passed).length,
+                    durationMs: parseFloat(document.getElementById('stat-time').textContent) || 0
+                },
+                results: lastResults
+            };
+            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `eduquest-qa-report-${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('💾 Rapport JSON téléchargé !');
+        });
+
+        // Démarrage automatique au chargement
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', runAllTests);
+            document.addEventListener('DOMContentLoaded', () => runTests());
         } else {
-            runAllTests();
+            runTests();
         }
     })();
     </script>

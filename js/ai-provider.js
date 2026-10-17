@@ -16,7 +16,13 @@
        → { isCorrect, explanation, answerKey: {...} }
    ============================================================================= */
 
-const AiProvider = (() => {
+(function (root, factory) {
+    const api = factory(root);
+    if (typeof module === 'object' && module.exports) module.exports = api;
+    if (root) root.AiProvider = api;
+    if (typeof window !== 'undefined') window.AiProvider = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
+    'use strict';
 
     // ⚠️ À renseigner une fois les deux scénarios Make publiés.
     const GENERATE_WEBHOOK_URL = ''; // ex: 'https://hook.eu2.make.com/xxxxxxxx'
@@ -108,4 +114,4 @@ const AiProvider = (() => {
     }
 
     return { isConfigured, fetchQuestion, submitAnswer };
-})();
+});

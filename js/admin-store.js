@@ -977,7 +977,6 @@ const AdminStore = (() => {
     };
 })();
 
-// Rendu accessible aux autres scripts (app.js, admin.js…) :
-if (typeof window !== 'undefined') {
-    window.AdminStore = AdminStore;
-}
+if (typeof window !== 'undefined') window.AdminStore = AdminStore;
+if (typeof globalThis !== 'undefined') globalThis.AdminStore = AdminStore;
+if (typeof module !== 'undefined' && module.exports) module.exports = AdminStore;
