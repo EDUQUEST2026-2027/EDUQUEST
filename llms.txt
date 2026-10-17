@@ -1,7 +1,7 @@
 # EDUQUEST — llms.txt
 # Documentation destinée aux agents IA et assistants conversationnels.
 # Standard : https://llmstxt.org/
-# Dernière mise à jour : 2026-10-12
+# Dernière mise à jour : 2026-10-17
 
 > EDUQUEST est une application web éducative française de révision gamifiée
 > pour les élèves du collège et du lycée (6e → Terminale). 100 % front-end,
@@ -10,7 +10,7 @@
 ## Identité
 
 - **Nom** : EDUQUEST
-- **Version** : 1.25.0
+- **Version** : 1.26.0
 - **Type** : Application web éducative (jeu de révision gamifié)
 - **Langue** : français (fr-FR)
 - **Public** : élèves (6e → Terminale), enseignants, établissements scolaires, familles
@@ -51,28 +51,34 @@ apprentissage gamifié, streak, combo, éducation nationale, gratuit, pwa, offli
 | `map.html` | Carte de la matière : parcours des îles, niveaux de quiz (1 à 100), mode chrono optionnel |
 | `legal.html` | Mentions légales, politique de confidentialité et gestion des cookies |
 
-## Pages exclues de l'indexation
+## Pages et outils internes
 
-| Route | Raison |
-|-------|--------|
-| `admin.html` | Panneau d'administration (usage interne, gestion membres, niveaux, leçons, boutique, récompenses) |
+| Route | Rôle |
+|-------|------|
+| `admin.html` | Panneau d'administration (gestion membres, niveaux, leçons, boutique, récompenses) |
+| `test.html` | Banc de tests automatisés autonome exécutable directement dans le navigateur |
 
 ## Architecture technique
 
-| Fichier | Rôle |
-|---------|------|
-| `app.js` | Moteur principal du jeu, gestionnaire d'état, contrôleur de pages, HUD, quêtes et boutique |
-| `db.js` | Couche d'abstraction base de données (localStorage / API REST MySQL) |
-| `question-bank.js` | Banque de questions et générateur déterministe (100 niveaux par matière) |
-| `quiz-engine.js` | Moteur de rendu et validation des 5 types de questions |
-| `ai-provider.js` | Pont IA (Make webhook) avec repli transparent sur la banque locale |
-| `admin-store.js` | Configuration centrale du panneau d'administration (niveaux, leçons, boutique, récompenses) |
-| `admin.js` | Interface et moteur du panneau d'administration |
-| `admin.css` | Styles du panneau d'administration |
-| `quests.css` | Styles pour le tableau de quêtes journalières et le moteur de confettis Canvas |
-| `global.css` / `style.css` | Tokens graphiques, univers spatial animé, cartes et responsive mobile |
-| `service-worker.js` | Mise en cache et fonctionnement hors-ligne (PWA v1.25.0) |
-| `cookies.js` | Bandeau de consentement RGPD/CNIL (durée de validité 12 mois) |
+| Fichier / Dossier | Rôle |
+|-------------------|------|
+| `js/app.js` | Contrôleur principal du jeu, gestionnaire d'état, HUD, boutique, confettis |
+| `js/db.js` | Couche d'accès aux données isolée par utilisateur (localStorage / API SQL optionnelle) |
+| `js/question-bank.js` | Banque de questions et générateur procédural déterministe (100 niveaux par matière) |
+| `js/quiz-engine.js` | Moteur de rendu et validation des 6 types de questions avec tolérance Levenshtein |
+| `js/core/game-rules.js` | Règles de jeu pures partagées (calcul étoiles, bouclier, combos, barèmes) |
+| `js/core/quiz-session.js` | Pipeline unifié de soumission des quiz et consommation des boosters |
+| `js/features/daily-quests.js` | Moteur de quêtes journalières déterministes (PRNG, tirage Fisher-Yates, minuit) |
+| `js/ai-provider.js` | Pont IA (Make webhook) avec repli transparent sur la banque locale |
+| `js/admin-store.js` | Configuration centrale du panneau d'administration |
+| `js/admin.js` | Interface et moteur du panneau d'administration |
+| `js/cookies.js` | Bandeau de consentement RGPD/CNIL (mémorisation 12 mois) |
+| `css/global.css` | Design system, polices locales, univers spatial et utilitaires |
+| `css/style.css` | Styles spécifiques aux pages de jeu, modales et composants interactifs |
+| `css/quests.css` | Styles des cartes de quêtes journalières et conteneur de confettis |
+| `css/admin.css` | Thème glassmorphism pour le panneau d'administration |
+| `service-worker.js` | PWA et mise en cache hors-ligne intégrale (v1.26.0) |
+| `tests/` | Suite de tests automatisés native Node.js (`node --test tests/*.test.js`) |
 
 ## Données personnelles & Confidentialité
 

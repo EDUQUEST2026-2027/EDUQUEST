@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const QuizEngine = require('../quiz-engine.js');
+const QuizEngine = require('../js/quiz-engine.js');
 
 test('QuizEngine - Normalisation & Algorithme Levenshtein', async (t) => {
     await t.test('Normalisation de chaîne', () => {

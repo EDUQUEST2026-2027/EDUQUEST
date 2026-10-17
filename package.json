@@ -5,6 +5,6 @@
   "private": true,
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "check": "node --check app.js db.js quiz-engine.js question-bank.js admin.js admin-store.js js/core/game-rules.js js/core/quiz-session.js js/features/daily-quests.js"
+    "check": "node --check js/app.js js/db.js js/quiz-engine.js js/question-bank.js js/admin.js js/admin-store.js js/ai-provider.js js/cookies.js js/core/game-rules.js js/core/quiz-session.js js/features/daily-quests.js"
   }
 }

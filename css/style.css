@@ -1,15 +1,7 @@
 /* ==========================================================================
-   STYLE.CSS — EDUQUEST v2.0
-   Feuille de style spécifique définissant le design de chaque page.
-
-   STRUCTURE DU FICHIER :
-   Ce fichier regroupe les styles spécifiques de toutes les pages du jeu.
-   Pour faciliter la maintenance, il est divisé en sections par page :
-     1. ACCUEIL   (index.html)   → Logo, menu principal, animations
-     2. OPTIONS   (options.html) → Panneaux de réglage, sliders, cases à cocher
-     3. LOGIN     (login.html)   → Formulaires de connexion/inscription, onglets
-     4. JOUER     (jouer.html)   → Sélecteur de niveau (pills), grille des matières
-     5. MAP       (map.html)     → Carte du monde, chemin, personnage, niveaux, modale
+   STYLE.CSS — EDUQUEST v1.26.0
+   Design system des pages, modales, animations et composants interactifs.
+   ========================================================================== */
 
    DÉPENDANCE :
    Ce fichier utilise les variables CSS définies dans global.css (ex: var(--c-night)).
@@ -25,22 +17,22 @@
    ========================================================================== */
 @font-face {
     font-family: 'Press Start 2P';
-    src: url('fonts/PressStart2P-Regular.woff2') format('woff2'),
-         url('fonts/PressStart2P-Regular.ttf')   format('truetype');
+    src: url('../fonts/PressStart2P-Regular.woff2') format('woff2'),
+         url('../fonts/PressStart2P-Regular.ttf')   format('truetype');
     font-weight: 400;
     font-display: swap;
 }
 @font-face {
     font-family: 'Silkscreen';
-    src: url('fonts/Silkscreen-Regular.woff2') format('woff2'),
-         url('fonts/Silkscreen-Regular.ttf')   format('truetype');
+    src: url('../fonts/Silkscreen-Regular.woff2') format('woff2'),
+         url('../fonts/Silkscreen-Regular.ttf')   format('truetype');
     font-weight: 400;
     font-display: swap;
 }
 @font-face {
     font-family: 'Silkscreen';
-    src: url('fonts/Silkscreen-Bold.woff2') format('woff2'),
-         url('fonts/Silkscreen-Bold.ttf')   format('truetype');
+    src: url('../fonts/Silkscreen-Bold.woff2') format('woff2'),
+         url('../fonts/Silkscreen-Bold.ttf')   format('truetype');
     font-weight: 700;
     font-display: swap;
 }
@@ -374,7 +366,7 @@
 
 
 /* ==========================================================================
-   2. OPTIONS (options.html)
+   2. OPTIONS (Modale #modalOptions)
    ========================================================================== */
 
 /* --- Panneau Principal (Glassmorphisme) --- */
@@ -647,7 +639,7 @@
 
 
 /* ==========================================================================
-   3. LOGIN (login.html)
+   3. CONNEXION & INSCRIPTION (Modale #modalLogin)
    ========================================================================== */
 
 /* --- Panneau de Connexion/Inscription --- */

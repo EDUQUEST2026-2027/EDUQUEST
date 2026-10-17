@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { setupTestEnv } = require('./test-helper.js');
 
 setupTestEnv();
-const DB = require('../db.js');
+const DB = require('../js/db.js');
 
 test('DB - Gestion des Boosters et Consommables', async (t) => {
     setupTestEnv();

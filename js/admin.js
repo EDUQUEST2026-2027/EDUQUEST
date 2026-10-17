@@ -1,5 +1,5 @@
 /* =============================================================================
-   ADMIN.JS — EDUQUEST v1.21.0
+   ADMIN.JS — EDUQUEST v1.26.0
    Interface du panneau d'administration (admin.html).
 
    PRINCIPE :
@@ -1030,7 +1030,7 @@
             <div class="adm-card">
                 <h2>👥 Membres <small>comptes du jeu (mode local)</small></h2>
                 <div class="adm-note">
-                    Les comptes permettent aux élèves de se connecter sur cet appareil (login.html). En mode local,
+                    Les comptes permettent aux élèves de se connecter sur cet appareil (modale Se Connecter). En mode local,
                     la <b>progression est liée à l'appareil</b>, pas au compte — utilisez « Réglages → Réinitialiser
                     la progression » pour repartir de zéro.
                 </div>

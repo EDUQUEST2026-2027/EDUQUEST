@@ -1,44 +1,14 @@
 <!DOCTYPE html>
 <html lang="fr">
 <!--
-  DASHBOARD.HTML — EDUQUEST v2.0
-  Page principale de jeu : tableau de bord, progression et boutique.
-
-  RÔLE :
-  C'est la page centrale du jeu. Elle regroupe toutes les fonctionnalités :     - DASHBOARD   → grille des 10 matières avec progression
-    - MAP         → carte de progression par matière (nœuds SVG interactifs)
-    - QUIZ        → questions interactives avec feedback + récompenses
-    - BOUTIQUE    → personnalisation du halo/avatar avec skins achetables
-
-  NAVIGATION :
-    Accessible depuis index.html via le bouton JOUER.
-    Le joueur navigue entre les vues via des onglets (Matières | Boutique).
-    Un bouton "← Retour" permet de revenir au menu principal (index.html).
-
-  PERSISTANCE (via db.js → localStorage) :
-    - Progression des matières (leçons complétées)
-    - XP et pièces accumulées
-    - Skins possédés et équipé
-    - Niveau du joueur
-
-  SCRIPTS :
-    db.js  → couche base de données (localStorage ↔ API SQL)
-    app.js → moteur principal → initDashboard()
-
-  FONCTIONS JS ACTIVES SUR CETTE PAGE :
-    initGlobalMusic()      → musique de fond
-    createEnvironment()    → étoiles et nuages animés
-    updateFooterVersion()  → version dans le footer
-    applyFullscreenSetting() → plein écran si activé
-    initDashboard()        → moteur du dashboard (matières, quiz, boutique)
+  DASHBOARD.HTML — EDUQUEST v1.26.0
+  Tableau de bord : progression des 13 matières, quêtes journalières, boutique et quiz.
 -->
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EDUQUEST — Tableau de Bord</title>
+    <title>Mon tableau de bord — EDUQUEST</title>
     <meta name="description" content="EDUQUEST — Explore les matières, réponds aux quiz et personnalise ton avatar.">
-    <!-- v1.21 : référencement & partage (voir bot.txt) -->
     <meta name="theme-color" content="#0d1330">
     <meta name="robots" content="index, follow">
     <meta property="og:type" content="website">
@@ -48,57 +18,39 @@
     <meta property="og:image" content="Image/logo.webp">
     <meta name="twitter:card" content="summary_large_image">
     <link rel="icon" type="image/webp" href="Image/logo.webp">
-    <link rel="stylesheet" href="global.css">
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="quests.css">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/quests.css">
     <link rel="manifest" href="manifest.webmanifest">
 </head>
 
 <body>
-    <!-- ================================================================
-         COUCHES D'ARRIÈRE-PLAN
-         Fond spatial animé identique aux autres pages.
-    ================================================================ -->
     <div class="background"></div>
     <div class="stars" id="stars"></div>
     <div class="clouds" id="clouds"></div>
 
-    <!-- Bouton d'accès rapide aux options (flottant en haut à droite) -->
+    <!-- Accès direct aux options -->
     <a class="options-wheel floating" href="index.html#options" title="Options">⚙️</a>
 
-    <!-- ================================================================
-         CONTENEUR PRINCIPAL DU DASHBOARD
-         Le contenu est généré dynamiquement par JS (initDashboard).
-         Le div #dashboard-app est le point de montage du rendu.
-    ================================================================ -->
     <main class="container" id="dashboardPage" style="justify-content: flex-start; padding-top: 30px;">
         <div id="dashboard-app" style="width: 100%; max-width: 960px;"></div>
-
-        <!-- Bouton de retour au menu principal -->
         <a class="dash-back-btn" href="index.html">← RETOUR AU MENU</a>
     </main>
 
     <footer>
-        <div class="footer">Version 1.25.0</div>
-        <!-- v1.20 : liens légaux (bandeau cookies + mentions) -->
+        <div class="footer">Version 1.26.0</div>
         <div class="legal-links"><a href="legal.html">Mentions légales</a> · <a href="legal.html#cookies" onclick="window.dispatchEvent(new Event('eduquest:cookie-reopen'))">Cookies</a></div>
     </footer>
 
-    <!-- IMPORTANT : db.js avant app.js. quiz-engine.js, question-bank.js et
-         ai-provider.js doivent être chargés avant app.js car initDashboard()
-         les utilise dès son premier rendu (question-bank.js étend
-         DASH_SUBJECTS à 100 niveaux par matière ; ai-provider.js permet de
-         générer les niveaux via un agent IA si configuré). -->
-    <script src="db.js"></script>
-    <script src="admin-store.js"></script> <!-- v1.19 : config du panneau d'administration (chargée avant app.js) -->
-    <script src="quiz-engine.js"></script>
-    <script src="question-bank.js"></script>
-    <script src="ai-provider.js"></script>
-    <script src="js/core/game-rules.js"></script> <!-- v1.26 : règles de jeu pures partagées -->
-    <script src="js/core/quiz-session.js"></script> <!-- v1.26 : pipeline unifié de quiz -->
-    <script src="js/features/daily-quests.js"></script> <!-- v1.26 : quêtes journalières déterministes -->
-    <script src="app.js"></script>
-    <script src="cookies.js"></script> <!-- v1.20 : bandeau de consentement RGPD -->
+    <script src="js/db.js"></script>
+    <script src="js/admin-store.js"></script>
+    <script src="js/quiz-engine.js"></script>
+    <script src="js/question-bank.js"></script>
+    <script src="js/ai-provider.js"></script>
+    <script src="js/core/game-rules.js"></script>
+    <script src="js/core/quiz-session.js"></script>
+    <script src="js/features/daily-quests.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/cookies.js"></script>
 </body>
-
 </html>

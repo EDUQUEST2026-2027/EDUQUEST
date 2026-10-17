@@ -1,6 +1,6 @@
 /* =============================================================================
-   COOKIES.JS — EDUQUEST v1.20
-   Bandeau de consentement aux cookies (RGPD / CNIL) + mémorisation du choix.
+   COOKIES.JS — EDUQUEST v1.26.0
+   Bandeau de consentement aux cookies (RGPD / CNIL) + mémorisation du choix (12 mois).
 
    RÔLE :
    - Au premier chargement d'une page du site, affiche un bandeau permettant

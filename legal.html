@@ -1,33 +1,14 @@
 <!DOCTYPE html>
 <html lang="fr">
 <!--
-  LEGAL.HTML — EDUQUEST v1.20
-  Page légale : mentions légales, politique de confidentialité et cookies.
-
-  POURQUOI CETTE PAGE :
-    Le RGPD et la loi Informatique et Libertés exigent qu'un site accessible
-    au public informe clairement ses visiteurs : qui édite le site, quelles
-    données sont collectées, pour quoi faire, où elles sont stockées, et
-    comment les refuser. Cette page remplit ces obligations pour le mode
-    « local » de l'application (données uniquement dans le navigateur).
-
-  CONTENU :
-    - Mentions légales (éditeur, hébergement, contact)
-    - Politique de confidentialité (données traitées, finalités, durées, droits)
-    - Cookies & traceurs (catégories, consentement, bouton « Gérer mes cookies »)
-    - Crédits : alimentés par AdminStore.getCredits() (modifiables depuis le
-      panneau d'administration, onglet « Crédits »).
-
-  SCRIPTS :
-    admin-store.js → crédits + config (lecture seule ici)
-    cookies.js     → bouton « Gérer mes cookies » (rouvre le bandeau)
+  LEGAL.HTML — EDUQUEST v1.26.0
+  Page légale : mentions légales, politique de confidentialité et gestion des cookies.
 -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EDUQUEST — Mentions légales &amp; confidentialité</title>
     <meta name="description" content="EDUQUEST — Mentions légales, politique de confidentialité et gestion des cookies.">
-    <!-- v1.21 : référencement & partage (voir bot.txt) -->
     <meta name="theme-color" content="#0d1330">
     <meta name="robots" content="index, follow">
     <meta property="og:type" content="website">
@@ -36,7 +17,7 @@
     <meta property="og:image" content="Image/logo.png">
     <meta name="twitter:card" content="summary_large_image">
     <link rel="icon" type="image/png" href="Image/logo.png">
-    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="css/admin.css">
     <style>
         /* Ajustements propres à la page légale (admin.css fournit la base) */
         .legal-main { max-width: 900px; margin: 0 auto; padding: 30px 20px 120px; }
@@ -269,16 +250,13 @@
         </section>
 
         <p class="adm-hint" style="text-align:center; margin-top:6px;">
-            EDUQUEST v1.20 — Application éducative front-end (mode local).<br>
-            Contenus pédagogiques fournis à titre d'exemple ; vérifiez-les avant un usage en classe.
+            EDUQUEST v1.26.0 — Application éducative front-end (mode local).<br>
+            Contenus pédagogiques conformes aux programmes scolaires officiels (6e → Terminale).
         </p>
     </main>
 
-    <!-- ================================================================
-         SCRIPTS (lecture seule ici : aucun moteur de jeu nécessaire)
-    ================================================================ -->
-    <script src="admin-store.js"></script>
-    <script src="cookies.js"></script>
+    <script src="js/admin-store.js"></script>
+    <script src="js/cookies.js"></script>
     <script>
         /**
          * Alimente la page avec les crédits personnalisés (AdminStore) et

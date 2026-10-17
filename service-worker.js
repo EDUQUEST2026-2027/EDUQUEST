@@ -7,23 +7,25 @@ const PRECACHE_URLS = [
   'dashboard.html',
   'map.html',
   'legal.html',
-  'global.css',
-  'style.css',
-  'quests.css',
-  'admin.css',
-  'app.js',
-  'db.js',
-  'admin.js',
-  'admin-store.js',
-  'ai-provider.js',
-  'cookies.js',
-  'question-bank.js',
-  'quiz-engine.js',
+  'test.html',
+  'css/global.css',
+  'css/style.css',
+  'css/quests.css',
+  'css/admin.css',
+  'js/app.js',
+  'js/db.js',
+  'js/admin.js',
+  'js/admin-store.js',
+  'js/ai-provider.js',
+  'js/cookies.js',
+  'js/question-bank.js',
+  'js/quiz-engine.js',
   'js/core/game-rules.js',
   'js/core/quiz-session.js',
   'js/features/daily-quests.js',
   'manifest.webmanifest',
   'Image/logo.webp',
+  'Image/logo.png',
   'Image/personnages/robot.webp',
   'Image/personnages/einstein.webp',
   'Image/personnages/marie-curie.webp',
@@ -33,7 +35,20 @@ const PRECACHE_URLS = [
   'Image/personnages/davinci.webp',
   'Image/personnages/hugo.webp',
   'Image/personnages/astronaute.webp',
-  'Image/personnages/mage.webp'
+  'Image/personnages/mage.webp',
+  'Image/ile/maths.webp',
+  'Image/ile/francais.webp',
+  'Image/ile/histoire.webp',
+  'Image/ile/geo.svg',
+  'Image/ile/svt.webp',
+  'Image/ile/anglais.webp',
+  'Image/ile/physique.webp',
+  'Image/ile/chimie.svg',
+  'Image/ile/technologie.webp',
+  'Image/ile/philo.svg',
+  'Image/ile/emc.svg',
+  'Image/ile/nsi.svg',
+  'Image/ile/ses.svg'
 ];
 
 self.addEventListener('install', event => {
@@ -58,7 +73,6 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // Ignorer les requêtes non GET
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
@@ -67,7 +81,6 @@ self.addEventListener('fetch', event => {
         return cachedResponse;
       }
       return fetch(event.request).then(response => {
-        // Optionnel : Mettre en cache les nouvelles requêtes réussies
         if (!response || response.status !== 200 || response.type !== 'basic') {
           return response;
         }

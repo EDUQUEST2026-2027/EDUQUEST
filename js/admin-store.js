@@ -1,5 +1,5 @@
 /* =============================================================================
-   ADMIN-STORE.JS — EDUQUEST v1.19
+   ADMIN-STORE.JS — EDUQUEST v1.26.0
    Couche de configuration du panneau d'administration (admin.html).
 
    RÔLE :
@@ -33,7 +33,7 @@ const AdminStore = (() => {
     // Clé localStorage unique pour toute la configuration administrateur
     const LS_KEY = 'eduquest_admin_data';
 
-    // Niveaux scolaires par défaut (identiques à jouer.html) : id stable
+    // Niveaux scolaires par défaut (6ème → Terminale) : id stable
     // (utilisé dans DB.setNiveau et les clés de progression), label affiché,
     // bande de contenu collège/lycée (voir QuestionBank.bandForNiveau).
     const DEFAULT_LEVELS = [

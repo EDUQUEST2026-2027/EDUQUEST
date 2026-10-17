@@ -1,6 +1,6 @@
 /* ==========================================================================
-   DB.JS — EDUQUEST v2.0
-   Couche d'abstraction Base de Données
+   DB.JS — EDUQUEST v1.26.0
+   Couche d'abstraction Base de Données (LocalStorage / API REST MySQL).
 
    RÔLE :
    Ce fichier est le pont entre le site web (frontend) et la base de données
@@ -400,10 +400,9 @@ const DB = (() => {
     /* -----------------------------------------------------------------------
        NIVEAU SCOLAIRE SÉLECTIONNÉ
        -----------------------------------------------------------------------
-       Le niveau scolaire détermine quel contenu est affiché (6ème, 5ème…).
-       Il est sélectionné sur la page jouer.html et utilisé partout ailleurs.
-
-       Valeurs possibles : '6eme', '5eme', '4eme', '3eme', '2nde', '1ere', 'terminale'
+       Détermine quel contenu est affiché (6ème → Terminale).
+       Sélectionné sur le tableau de bord (dashboard.html) ou dans les options.
+       Valeurs : '6eme', '5eme', '4eme', '3eme', '2nde', '1ere', 'terminale'
     ----------------------------------------------------------------------- */
 
     function _niveauKey() {

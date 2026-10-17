@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const QuestionBank = require('../question-bank.js');
+const QuestionBank = require('../js/question-bank.js');
 
 test('QuestionBank - Déterminisme du PRNG et Bandes Scolaires', async (t) => {
     await t.test('Respect strict des bandes scolaires', () => {

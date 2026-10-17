@@ -74,30 +74,42 @@ Puis ouvrez l'URL affichée (ex. `http://localhost:8080`).
 
 ---
 
-## 🗂️ Architecture des fichiers
+## 🗂️ Architecture & Organisation des fichiers
 
-| Fichier | Rôle |
+```text
+├── index.html, dashboard.html, map.html, admin.html, legal.html, test.html
+├── service-worker.js, manifest.webmanifest, robots.txt, sitemap.xml, llms.txt, schema.sql
+├── css/   → global.css, style.css, quests.css, admin.css
+├── js/    → app.js, db.js, quiz-engine.js, question-bank.js, admin.js, admin-store.js, ai-provider.js, cookies.js
+│   ├── core/     → game-rules.js, quiz-session.js
+│   └── features/ → daily-quests.js
+├── docs/  → ARCHITECTURE.md, GUIDE_CONTRIBUTION.md, API_PERSISTENCE.md
+└── tests/ → daily-quests, db, game-rules-and-session, question-bank, quiz-engine (.test.js)
+```
+
+| Fichier / Dossier | Rôle |
 |---|---|
-| `index.html` | Page d'accueil : menu principal, modale de connexion/inscription, options de jeu (audio, mode chrono, éco-énergie, plein écran) |
-| `dashboard.html` | Tableau de bord élève : sélecteur de classe, missions quotidiennes, sélection des matières, boutique complète, succès |
-| `map.html` | Carte interactive d'une matière : parcours des îles, niveaux jouables, modale de quiz avec combo et timer chrono |
+| `index.html` | Page d'accueil : menu principal, modales Options & Connexion, univers spatial |
+| `dashboard.html` | Tableau de bord élève : sélection de classe, missions quotidiennes, sélection des 13 matières, boutique, succès |
+| `map.html` | Carte interactive d'une matière : parcours des îles, niveaux jouables (1 à 100), modale de quiz avec combo et timer chrono |
 | `admin.html` | **Panneau d'administration unifié** : interface d'administration avec navigation par onglets |
-| `admin.js` | Moteur du panneau d'administration : CRUD complet membres, niveaux, matières, boutique, succès, récompenses et crédits |
-| `admin-store.js` | Couche de persistance et configuration centrale du panneau d'administration |
-| `admin.css` | Design system moderne pour l'administration (dark glassmorphism, responsive, feedback visuel) |
-| `app.js` | Logique principale de jeu : contrôleur de pages, quêtes quotidiennes (`DailyQuests`), confettis (`Celebrate`), HUD, boutique, combos |
-| `quests.css` | Styles dédiés au tableau de quêtes journalières (cartes de verre, anneaux SVG) et au canvas plein écran des confettis |
-| `db.js` | Couche d'accès aux données : persistance locale isolée par utilisateur (`localStorage`) ou synchronisation API backend MySQL |
-| `quiz-engine.js` | Moteur de rendu et de validation des 5 types de questions |
-| `question-bank.js` | Banque de questions et générateur déterministe (PRNG semé) pour les niveaux 6 à 100 par matière |
-| `ai-provider.js` | Adaptateur IA : communication avec Make/webhooks pour génération/correction de questions à la volée |
-| `global.css` / `style.css` | Tokens graphiques, univers spatial animé, cartes, fenêtres modales et responsive mobile |
-| `service-worker.js` | PWA et mise en cache hors-ligne des ressources de l'application (v1.24.0) |
-| `cookies.js` | Bandeau de consentement RGPD (mémorisation du choix 12 mois) |
-| `legal.html` | Mentions légales, politique de confidentialité et gestion des cookies |
-| `llms.txt` | Fiche documentaire pour agents IA et grands modèles de langage |
-| `robots.txt` | Règles d'indexation pour moteurs de recherche et robots IA |
+| `legal.html` | Mentions légales, politique de confidentialité RGPD et gestion des cookies |
+| `test.html` | **Banc de tests navigateur autonome** : interface d'évaluation complète avec retour visuel immédiat |
+| `css/` | Feuilles de style modulaires : `global.css`, `style.css`, `quests.css` et `admin.css` |
+| `js/app.js` | Contrôleur principal de jeu : gestionnaire de vues, audio, HUD, boutique, confettis Canvas |
+| `js/db.js` | Couche d'accès aux données : persistance locale isolée par utilisateur (`localStorage`) ou API SQL optionnelle |
+| `js/quiz-engine.js` | Moteur de rendu et de validation des 6 types de questions avec tolérance orthographique Levenshtein |
+| `js/question-bank.js` | Banque de questions et générateur procédural déterministe (PRNG mulberry32) pour les niveaux 6 à 100 par matière |
+| `js/core/game-rules.js` | Règles de jeu pures partagées (calcul d'étoiles, règles du bouclier, combos, barèmes) |
+| `js/core/quiz-session.js` | Pipeline unifié de soumission des quiz et consommation sécurisée des boosters |
+| `js/features/daily-quests.js` | Moteur de quêtes journalières déterministes (tirage Fisher-Yates, renouvellement minuit) |
+| `js/ai-provider.js` | Adaptateur IA : communication avec Make/webhooks pour génération/correction à la volée avec repli local |
+| `js/admin-store.js` | Configuration centrale du panneau d'administration (niveaux, leçons, boutique, récompenses) |
+| `js/admin.js` | Moteur et interface utilisateur du panneau d'administration |
+| `js/cookies.js` | Bandeau de consentement RGPD conforme CNIL (mémorisation du choix 12 mois) |
+| `service-worker.js` | PWA et mise en cache hors-ligne intégrale de l'application (v1.26.0) |
 | `schema.sql` | Schéma MySQL pour le déploiement avec serveur backend optionnel |
+| `docs/` | Guides techniques approfondis : [Architecture](docs/ARCHITECTURE.md), [Guide de contribution](docs/GUIDE_CONTRIBUTION.md), [Persistance des données](docs/API_PERSISTENCE.md) |
 
 ---
 
@@ -107,7 +119,7 @@ Accessible depuis le lien « 🔐 Administration » en bas de page ou directemen
 
 - **👥 Membres :** Création, modification de mot de passe, attribution des rôles (`eleve` / `admin`) ou suppression de comptes locaux avec sessions isolées.
 - **🎓 Niveaux scolaires :** Ajout, modification, réorganisation et suppression des niveaux/classes (6ème, 5ème, 4ème, 3ème, 2nde, 1ère, Terminale, classes personnalisées).
-- **📚 Matières & Leçons :** Personnalisation des intitulés, des icônes et création de questions personnalisées (parmi les 5 types disponibles).
+- **📚 Matières & Leçons :** Personnalisation des intitulés, des icônes et création de questions personnalisées (parmi les 6 types disponibles).
 - **🛍️ Boutique :** Création et gestion complète des articles (halos, personnages, titres, thèmes, boosters), prix en pièces, visuels et descriptions.
 - **🏆 Succès & Badges :** Édition, activation et attribution/retrait manuel des badges et succès élèves.
 - **🎁 Récompenses :** Configuration des barèmes de gains (XP et pièces pour leçons réussies, 3 étoiles, quêtes quotidiennes, coffre bonus, premier sans faute, multiplicateur chrono).
@@ -118,10 +130,10 @@ Accessible depuis le lien « 🔐 Administration » en bas de page ou directemen
 
 ## 🤖 Activer le mode IA (Questions à la demande)
 
-Par défaut, les questions proviennent de la banque intégrée déterministe (`question-bank.js`).
+Par défaut, les questions proviennent de la banque intégrée déterministe (`js/question-bank.js`).
 
 Pour connecter un agent IA génératif (ex. via Make ou webhook direct) :
-1. Renseignez vos endpoints webhooks dans `ai-provider.js` :
+1. Renseignez vos endpoints webhooks dans `js/ai-provider.js` :
 
 ```javascript
 const GENERATE_WEBHOOK_URL = 'https://hook.eu2.make.com/xxxxxxxx';
@@ -137,17 +149,27 @@ En cas de perte de connexion ou d'erreur réseau, l'application bascule automati
 Par défaut, l'application fonctionne intégralement dans le navigateur (`localStorage`).
 Pour activer la sauvegarde centralisée sur une base de données MySQL :
 1. Déployez le script `schema.sql` sur votre serveur MySQL.
-2. Décommentez et configurez la variable `API_URL` dans `db.js` vers votre API backend.
+2. Décommentez et configurez la variable `API_URL` dans `js/db.js` vers votre API backend (voir [Guide de Persistance](docs/API_PERSISTENCE.md)).
 
 ---
 
-## 🧪 Validation & Tests
+## 🧪 Validation & Tests Automatisés
 
-Vérification de la syntaxe et de l'intégrité de l'ensemble des modules JavaScript du projet :
+Le projet dispose d'une couverture de tests complète (45 tests unitaires) sans dépendance externe :
 
+### 1. Tests unitaires Node.js (CLI)
 ```bash
-node --check app.js db.js quiz-engine.js question-bank.js admin.js admin-store.js
+npm test
 ```
+*Vérifie le déterminisme du PRNG, les bandes scolaires 6e-Terminale, les paliers de combo, la protection du bouclier, les quêtes journalières et les algorithmes de correction Levenshtein.*
+
+### 2. Contrôle de syntaxe JavaScript
+```bash
+npm run check
+```
+
+### 3. Banc de tests visuel en navigateur
+Ouvrez simplement `test.html` dans un navigateur pour exécuter la suite de tests en environnement web réel.
 
 ---
 
@@ -157,3 +179,4 @@ node --check app.js db.js quiz-engine.js question-bank.js admin.js admin-store.j
 - Support du mode plein écran via l'API Fullscreen du navigateur.
 - Prise en charge des préférences d'accessibilité (`prefers-reduced-motion` pour neutraliser les animations et confettis si demandé par l'utilisateur).
 - Mode économie d'énergie disponible dans les options de jeu.
+

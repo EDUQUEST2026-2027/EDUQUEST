@@ -1,25 +1,6 @@
 /* ==========================================================================
-   APP.JS — EDUQUEST v2.0
-   Script principal du jeu : moteur unique chargé sur toutes les pages.
-
-   ARCHITECTURE :
-   Ce fichier est chargé sur CHAQUE page HTML. Il contient toutes les
-   fonctions du jeu et détecte automatiquement sur quelle page il se trouve
-   pour n'initialiser que les fonctions nécessaires.
-
-   DÉPENDANCE : db.js doit être chargé AVANT app.js dans chaque page HTML.
-   → <script src="db.js"></script>
-   → <script src="app.js"></script>
-
-   SOMMAIRE DES SECTIONS :
-   1. Utilitaires partagés  → fonctions communes à toutes les pages
-   2. Système Audio         → lecture de la playlist musicale
-   3. Accueil & Notifications → page index.html, messages toast
-   4. Connexion             → page login.html (connexion + inscription)
-   5. Options               → page options.html (préférences du joueur)
-   6. Sélecteur de Niveau   → page jouer.html (choix du niveau scolaire et matière)
-   7. Carte des Matières    → page map.html (progression par niveau)
-   Initialisation globale   → point d'entrée unique (DOMContentLoaded)
+   APP.JS — EDUQUEST v1.26.0
+   Contrôleur principal du jeu : cycle de vie des vues, audio, HUD, modales.
    ========================================================================== */
 
 /* ==========================================================================
@@ -618,9 +599,7 @@ function initAccueil() {
 }
 
 /* ==========================================================================
-   4. LOGIQUE DE CONNEXION  (via db.js → compatible SQL)
-   Gère la page login.html : onglets Connexion/Inscription, bouton Déconnexion.
-   Toutes les opérations d'authentification passent par db.js (DB.login, DB.register, DB.logout).
+   4. AUTHENTIFICATION & COMPTE (Modale #modalLogin)
    ========================================================================== */
 function initConnexion() {
     /* --- Récupération des éléments HTML de la page login.html --- */
@@ -805,21 +784,8 @@ function initConnexion() {
 }
 
 /* ==========================================================================
-   5. LOGIQUE DES OPTIONS
-   Gère la page options.html : chargement des préférences, sauvegarde, UI.
+   5. GESTION DES OPTIONS (Modale #modalOptions)
    ========================================================================== */
-/**
- * Initialise tous les contrôles de la page options.html.
- * Cette fonction ne fait rien si le bouton #saveOptions est absent
- * (ce qui est le cas sur toutes les autres pages).
- *
- * FONCTIONNEMENT :
- * - Au chargement : lit les options sauvegardées (via DB) et met à jour l'UI
- * - Contrôle son global (sonsActifs) : désactive musique et effets si off
- * - Plein écran : interagit avec l'API Fullscreen du navigateur
- * - Particules : cache/affiche les nuages en temps réel
- * - Sauvegarde : écrit toutes les options via DB.saveOption() et redirige
- */
 function initOptions() {
     /* --- Récupération des éléments HTML de la page options.html --- */
     const volumeMusique    = document.getElementById('volumeMusique');  // Slider 0-100
@@ -1071,32 +1037,18 @@ function initOptions() {
     ecoModeCheckbox.addEventListener('change', autoSave);
     if (animationsCheckbox) animationsCheckbox.addEventListener('change', autoSave);
     if (modeChronoCheckbox) modeChronoCheckbox.addEventListener('change', autoSave);
+    const optNiveauSelect = document.getElementById('optionsNiveauSelect');
+    if (optNiveauSelect) optNiveauSelect.addEventListener('change', autoSave);
 
     // Sync de la checkbox plein écran quand l'utilisateur appuie sur Échap
     document.addEventListener('fullscreenchange', () => {
-        pleinEcran.checked = !!document.fullscreenElement; // !! convertit en booléen
+        pleinEcran.checked = !!document.fullscreenElement;
     });
 }
 
 /* ==========================================================================
-   6. SÉLECTEUR DE NIVEAU (page jouer.html)
-   Gère le choix du niveau scolaire et l'affichage de la grille des matières.
-   ========================================================================== */
-/**
- * Initialise la page jouer.html.
- * Sort immédiatement si le conteneur #niveauPills n'existe pas (pas sur cette page).
- *
- * FONCTIONNEMENT :
- * - Affiche les "pills" de niveau scolaire (6ème, 5ème, …)
- * - Restaure le niveau précédemment sélectionné (surligné) via DB.getNiveau()
- * - Affiche la grille des matières si un niveau est déjà sélectionné
- * - Gère le clic sur une pill : sélectionne le niveau, sauvegarde via DB.setNiveau()
- *   et affiche la grille avec une animation
- */
-
-/* ==========================================================================
-   6bis. CÉLÉBRATIONS (confettis) & QUÊTES JOURNALIÈRES
-   Modules partagés entre map.html et dashboard.html.
+   6. CÉLÉBRATIONS (confettis)
+   Moteur de confettis Canvas autonome et partagé.
    ========================================================================== */
 
 /**
