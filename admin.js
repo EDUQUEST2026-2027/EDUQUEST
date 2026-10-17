@@ -34,6 +34,39 @@
     };
     const LESSON_ORDER = ['qcm', 'vrai_faux', 'reponse_courte', 'texte_a_trous', 'drag_and_drop'];
 
+    const OFFICIAL_ISLANDS = [
+        { value: 'Image/ile/maths.webp', label: '📐 Île des Mathématiques' },
+        { value: 'Image/ile/francais.webp', label: '📚 Île du Français' },
+        { value: 'Image/ile/histoire.webp', label: '📜 Île de l\'Histoire' },
+        { value: 'Image/ile/geo.svg', label: '🌍 Île de la Géographie' },
+        { value: 'Image/ile/svt.webp', label: '🔬 Île des SVT' },
+        { value: 'Image/ile/anglais.webp', label: '🇬🇧 Île d\'Anglais' },
+        { value: 'Image/ile/physique.webp', label: '⚡ Île de Physique' },
+        { value: 'Image/ile/chimie.svg', label: '🧪 Île de Chimie' },
+        { value: 'Image/ile/technologie.webp', label: '💻 Île de Technologie' },
+        { value: 'Image/ile/philo.svg', label: '🏛️ Île de Philosophie' },
+        { value: 'Image/ile/emc.svg', label: '⚖️ Île d\'EMC' },
+        { value: 'Image/ile/nsi.svg', label: '💻 Île de NSI & Numérique' },
+        { value: 'Image/ile/ses.svg', label: '📈 Île de SES (Économie)' },
+    ];
+
+    function renderSubjectIcon(icon, altText = '', extraClass = '') {
+        const raw = typeof icon === 'string' ? icon.trim() : '';
+        const isImg = raw && (
+            raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('data:') ||
+            raw.startsWith('/') || raw.startsWith('Image/') ||
+            /\.(png|webp|svg|jpg|jpeg)$/i.test(raw)
+        );
+        if (isImg) {
+            let src = raw;
+            if (!src.startsWith('http') && !src.startsWith('data:') && !src.startsWith('/') && !src.startsWith('Image/')) {
+                src = 'Image/ile/' + src;
+            }
+            return `<img src="${esc(src)}" alt="${esc(altText)}" class="adm-subj-img ${extraClass}" onerror="this.onerror=null;this.replaceWith(document.createTextNode('📘'));">`;
+        }
+        return `<span class="adm-subj-emoji ${extraClass}">${esc(raw || '📘')}</span>`;
+    }
+
     /* ============================== ÉTAT ============================== */
 
     const S = {
@@ -315,18 +348,37 @@
                         <div class="adm-subject-list">
                             ${list.map(x => `
                                 <button class="adm-subject-item${S.subjectId === x.id ? ' active' : ''}" onclick="ADM.openSubject('${x.id}')">
-                                    <span class="icon">${esc(x.icon || '📘')}</span>
+                                    <span class="icon">${renderSubjectIcon(x.icon, x.name)}</span>
                                     <span class="name">${esc(x.name || x.id)}</span>
                                     <span class="count">${x.lessons.length}</span>
                                 </button>`).join('')}
                         </div>
                         <div style="margin-top:14px; border-top:1px dashed rgba(154,167,216,.2); padding-top:12px;">
-                            <div class="adm-form">
-                                <div class="adm-field"><label>Nouvelle matière</label>
-                                    <input class="adm-input" id="admNewName" placeholder="Nom (ex: Musique)">
-                                    <input class="adm-input" id="admNewIcon" placeholder="Icône (emoji, ex: 🎵)" style="margin-top:6px;">
-                                    <button class="adm-btn" style="margin-top:6px;" onclick="ADM.createSubject()">+ Créer la matière</button>
+                            <div class="adm-form" style="display:flex; flex-direction:column; gap:8px;">
+                                <div class="adm-field">
+                                    <label>Nom de la nouvelle matière</label>
+                                    <input class="adm-input" id="admNewName" placeholder="Ex: Musique, SES, NSI...">
                                 </div>
+                                <div class="adm-field">
+                                    <label>Illustration / Île officielle</label>
+                                    <select class="adm-select" id="admNewIslandSelect" onchange="ADM.onSubjectIslandSelect(this.value, 'admNewIcon', 'admNewPreview')">
+                                        <option value="">— Emoji ou URL personnalisée —</option>
+                                        ${OFFICIAL_ISLANDS.map(isl => `<option value="${isl.value}">${isl.label}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div class="adm-field">
+                                    <label>Icône (URL, fichier ou emoji)</label>
+                                    <div style="display:flex; gap:6px; align-items:center;">
+                                        <input class="adm-input" id="admNewIcon" placeholder="ex: 🎵 ou Image/ile/..." oninput="ADM.updateSubjectIconPreview('admNewIcon', 'admNewPreview')">
+                                        <label class="adm-ico-btn" style="cursor:pointer; display:flex; align-items:center; padding:6px 9px;" title="Charger une image depuis votre PC">
+                                            📁<input type="file" accept="image/*" style="display:none;" onchange="ADM.handleSubjectImageUpload(this, 'admNewIcon', 'admNewPreview')">
+                                        </label>
+                                        <div id="admNewPreview" class="adm-subj-preview" style="width:36px; height:36px; min-width:36px;">
+                                            <span>📘</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button class="adm-btn adm-btn-ok" style="margin-top:4px;" onclick="ADM.createSubject()">+ Créer la matière</button>
                             </div>
                             <p class="adm-hint" style="margin-top:8px;">Les matières personnalisées n'ont que les leçons que
                             vous écrivez (aucune génération automatique).</p>
@@ -366,10 +418,13 @@
         const editor = S.editingLesson !== null && S.editingLesson !== undefined && S.editingLesson >= -1
             && S.subjectId === sub.id ? renderLessonEditor(lessons) : '';
 
+        const currentIcon = fresh.icon || '';
+        const matchingIsland = OFFICIAL_ISLANDS.find(isl => isl.value === currentIcon || (currentIcon && currentIcon.endsWith(isl.value.replace('Image/ile/', ''))));
+
         return `
             <div class="adm-card">
                 <div class="adm-toolbar">
-                    <h2 style="margin:0;">${esc(fresh.icon || '📘')} ${esc(fresh.name)}</h2>
+                    <h2 style="margin:0; display:flex; align-items:center; gap:10px;">${renderSubjectIcon(fresh.icon, fresh.name, 'adm-title-img')} ${esc(fresh.name)}</h2>
                     <span class="adm-badge ${isCustom ? 'adm-badge-custom' : 'adm-badge-system'}">${isCustom ? 'Personnalisée' : 'Matière du jeu'}</span>
                 </div>
                 <div class="adm-note">
@@ -378,12 +433,34 @@
                 : `Les niveaux 1 à ${lessons.length} (écrits à la main${customized ? ', partiellement modifiés' : ''}) sont modifiables ici ; au-delà, le contenu est généré automatiquement (100 niveaux au total).`}
                 </div>
 
-                <div class="adm-form-row" style="margin-bottom:14px;">
-                    <div class="adm-field"><label>Nom de la matière</label>
-                        <input class="adm-input" id="admMetaName" value="${esc(fresh.name)}"></div>
-                    <div class="adm-field"><label>Icône (emoji ou symbole)</label>
-                        <input class="adm-input" id="admMetaIcon" value="${esc(fresh.icon)}" style="max-width:120px;"></div>
-                    <button class="adm-btn" onclick="ADM.saveMeta()">💾 Renommer</button>
+                <div class="adm-form-row" style="margin-bottom:14px; align-items:flex-end; gap:12px; flex-wrap:wrap;">
+                    <div class="adm-field" style="flex:1; min-width:180px;">
+                        <label>Nom de la matière</label>
+                        <input class="adm-input" id="admMetaName" value="${esc(fresh.name)}">
+                    </div>
+                    <div class="adm-field" style="flex:1; min-width:200px;">
+                        <label>Illustration / Île officielle</label>
+                        <select class="adm-select" id="admMetaIslandSelect" onchange="ADM.onSubjectIslandSelect(this.value, 'admMetaIcon', 'admMetaPreview')">
+                            <option value="">— Emoji ou URL personnalisée —</option>
+                            ${OFFICIAL_ISLANDS.map(isl => `<option value="${isl.value}"${matchingIsland && matchingIsland.value === isl.value ? ' selected' : ''}>${isl.label}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="adm-field" style="flex:1; min-width:180px;">
+                        <label>Icône (URL, fichier ou emoji)</label>
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            <input class="adm-input" id="admMetaIcon" value="${esc(fresh.icon)}" placeholder="Ex: Image/ile/maths.webp ou 📐" oninput="ADM.updateSubjectIconPreview('admMetaIcon', 'admMetaPreview')">
+                            <label class="adm-ico-btn" style="cursor:pointer; display:flex; align-items:center; padding:6px 9px;" title="Charger une image locale (PNG, SVG, WebP, JPG)">
+                                📁<input type="file" accept="image/*" style="display:none;" onchange="ADM.handleSubjectImageUpload(this, 'admMetaIcon', 'admMetaPreview')">
+                            </label>
+                        </div>
+                    </div>
+                    <div class="adm-field" style="width:auto;">
+                        <label style="text-align:center;">Aperçu</label>
+                        <div id="admMetaPreview" class="adm-subj-preview">
+                            ${renderSubjectIcon(fresh.icon, fresh.name)}
+                        </div>
+                    </div>
+                    <button class="adm-btn adm-btn-ok" onclick="ADM.saveMeta()">💾 Enregistrer</button>
                     ${isCustom
                 ? `<button class="adm-btn adm-btn-danger" onclick="ADM.deleteSubject()">Supprimer la matière</button>`
                 : `<button class="adm-btn adm-btn-ghost" onclick="ADM.resetSubject()" title="Retirer toutes les modifications de cette matière">Rétablir l'original</button>`}
@@ -1046,6 +1123,8 @@
                         <input class="adm-input" id="admCrCreator" maxlength="120" value="${esc(c.creatorName)}" placeholder="Votre nom ou votre équipe"></div>
                     <div class="adm-field"><label>Site web (optionnel)</label>
                         <input class="adm-input" id="admCrWebsite" maxlength="200" value="${esc(c.website)}" placeholder="mon-site.fr"></div>
+                    <div class="adm-field"><label>Dépôt GitHub du projet (optionnel)</label>
+                        <input class="adm-input" id="admCrGithub" maxlength="200" value="${esc(c.githubUrl || '')}" placeholder="https://github.com/EDUQUEST2026-2027/EDUQUEST"></div>
                     <div class="adm-field"><label>E-mail de contact (optionnel)</label>
                         <input class="adm-input" id="admCrEmail" type="email" maxlength="200" value="${esc(c.contactEmail)}" placeholder="contact@mon-site.fr"></div>
                     <div class="adm-field"><label>Note complémentaire (optionnelle, infobulle du pied de page)</label>
@@ -1158,6 +1237,72 @@
             S.lessonDraft = null;
             S.subjectList = [];
             renderTabContent();
+        },
+        onSubjectIslandSelect(val, inputId, previewId) {
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.value = val;
+            }
+            this.updateSubjectIconPreview(inputId, previewId);
+        },
+        updateSubjectIconPreview(inputId, previewId) {
+            const input = document.getElementById(inputId);
+            const preview = document.getElementById(previewId);
+            if (!preview) return;
+            const val = input ? input.value : '';
+            preview.innerHTML = renderSubjectIcon(val);
+        },
+        handleSubjectImageUpload(fileInput, targetInputId, previewId) {
+            if (!fileInput || !fileInput.files || !fileInput.files[0]) return;
+            const file = fileInput.files[0];
+            if (!file.type.startsWith('image/')) {
+                toast('Veuillez sélectionner un fichier image valide.', 'err');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const rawDataUrl = e.target.result;
+                const img = new Image();
+                img.onload = () => {
+                    try {
+                        const maxDim = 160;
+                        let w = img.width;
+                        let h = img.height;
+                        if (w > maxDim || h > maxDim) {
+                            if (w > h) {
+                                h = Math.round((h * maxDim) / w);
+                                w = maxDim;
+                            } else {
+                                w = Math.round((w * maxDim) / h);
+                                h = maxDim;
+                            }
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        const optimizedDataUrl = canvas.toDataURL(file.type === 'image/png' ? 'image/png' : 'image/webp', 0.88);
+                        const targetInput = document.getElementById(targetInputId);
+                        if (targetInput) targetInput.value = optimizedDataUrl;
+                        ADM.updateSubjectIconPreview(targetInputId, previewId);
+                        toast('Image chargée et optimisée ✔', 'ok');
+                    } catch (err) {
+                        const targetInput = document.getElementById(targetInputId);
+                        if (targetInput) targetInput.value = rawDataUrl;
+                        ADM.updateSubjectIconPreview(targetInputId, previewId);
+                        toast('Image chargée ✔', 'ok');
+                    }
+                };
+                img.onerror = () => {
+                    const targetInput = document.getElementById(targetInputId);
+                    if (targetInput) targetInput.value = rawDataUrl;
+                    ADM.updateSubjectIconPreview(targetInputId, previewId);
+                    toast('Image chargée ✔', 'ok');
+                };
+                img.src = rawDataUrl;
+            };
+            reader.readAsDataURL(file);
         },
         createSubject() {
             const name = (document.getElementById('admNewName') || {}).value || '';
@@ -1513,6 +1658,7 @@
                 tagline: val('admCrTagline'),
                 creatorName: val('admCrCreator'),
                 website: val('admCrWebsite'),
+                githubUrl: val('admCrGithub'),
                 contactEmail: val('admCrEmail'),
                 extraNote: val('admCrNote'),
             });

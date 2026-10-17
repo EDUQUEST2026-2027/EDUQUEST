@@ -130,6 +130,8 @@
                     <td id="legalContact">À compléter par l'éditeur (panneau d'administration → onglet « Crédits »)</td></tr>
                 <tr><th>Site web de l'éditeur</th>
                     <td id="legalSite">—</td></tr>
+                <tr><th>Dépôt GitHub du projet</th>
+                    <td id="legalGithub"><a href="https://github.com/EDUQUEST2026-2027/EDUQUEST" target="_blank" rel="noopener">🐙 github.com/EDUQUEST2026-2027/EDUQUEST</a></td></tr>
                 <tr><th>Hébergement</th>
                     <td>Application front-end : selon le mode d'utilisation, les fichiers sont servis
                     depuis votre machine locale ou un hébergement web de votre choix (à indiquer ici
@@ -315,6 +317,12 @@
                 if (c.website) {
                     const url = /^https?:\/\//i.test(c.website) ? c.website : 'https://' + c.website;
                     parts.push('<a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(c.website) + '</a>');
+                }
+                if (c.githubUrl) {
+                    const ghUrl = /^https?:\/\//i.test(c.githubUrl) ? c.githubUrl : 'https://' + c.githubUrl;
+                    const ghEl = document.getElementById('legalGithub');
+                    if (ghEl) ghEl.innerHTML = '<a href="' + esc(ghUrl) + '" target="_blank" rel="noopener">🐙 ' + esc(c.githubUrl.replace(/^https?:\/\//i, '')) + '</a>';
+                    parts.push('<a href="' + esc(ghUrl) + '" target="_blank" rel="noopener">🐙 GitHub</a>');
                 }
                 if (c.contactEmail) parts.push('<a href="mailto:' + esc(c.contactEmail) + '">' + esc(c.contactEmail) + '</a>');
                 let html = parts.join(' · ');

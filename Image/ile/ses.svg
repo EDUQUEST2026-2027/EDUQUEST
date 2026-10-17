@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
+  <!-- ============================================================
+       ÎLOT « SES » (Sciences Économiques & Sociales) — EDUQUEST
+       Temple boursier, flèche de croissance verte 📈, monnaie dorée,
+       balance des échanges et agora citoyenne.
+       ============================================================ -->
+  <defs>
+    <linearGradient id="sesRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a3e20"/>
+      <stop offset="0.6" stop-color="#2b2310"/>
+      <stop offset="1" stop-color="#141006"/>
+    </linearGradient>
+    <linearGradient id="sesRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8c773e"/>
+      <stop offset="0.6" stop-color="#5a4c25"/>
+      <stop offset="1" stop-color="#332a12"/>
+    </linearGradient>
+    <linearGradient id="sesGrass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2ed573"/>
+      <stop offset="0.7" stop-color="#10ac84"/>
+      <stop offset="1" stop-color="#0b6b52"/>
+    </linearGradient>
+    <linearGradient id="sesGold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff2a1"/>
+      <stop offset="0.5" stop-color="#ffd32a"/>
+      <stop offset="1" stop-color="#e18f00"/>
+    </linearGradient>
+    <linearGradient id="sesMarble" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.7" stop-color="#e4e7eb"/>
+      <stop offset="1" stop-color="#c8ced6"/>
+    </linearGradient>
+    <linearGradient id="sesGrowth" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#1dd1a1"/>
+      <stop offset="1" stop-color="#10ac84"/>
+    </linearGradient>
+    <radialGradient id="sesHalo" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#ffd32a" stop-opacity="0.35"/>
+      <stop offset="0.6" stop-color="#2ed573" stop-opacity="0.15"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="sesShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+    <filter id="sesGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#ffd32a" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <!-- Halo doré de prospérité -->
+  <circle cx="210" cy="180" r="140" fill="url(#sesHalo)"/>
+
+  <!-- Base flottante (rocher) -->
+  <g filter="url(#sesShadow)">
+    <path d="M 75 250 Q 210 275 345 250 Q 370 290 320 340 Q 210 395 100 340 Q 50 290 75 250 Z" fill="url(#sesRockDeep)"/>
+    <path d="M 85 245 Q 210 268 335 245 Q 360 275 320 310 Q 210 365 100 310 Q 60 275 85 245 Z" fill="url(#sesRockTop)"/>
+    <!-- Plateau verdoyant pelouse alpine -->
+    <ellipse cx="210" cy="245" rx="140" ry="42" fill="url(#sesGrass)"/>
+    <ellipse cx="210" cy="242" rx="130" ry="34" fill="#55efc4" fill-opacity="0.35"/>
+  </g>
+
+  <!-- Bâtiment Institution / Bourse néoclassique (style Banque / Agora) -->
+  <g filter="url(#sesShadow)">
+    <!-- Marches du temple -->
+    <polygon points="120,242 300,242 290,235 130,235" fill="url(#sesMarble)"/>
+    <polygon points="130,235 290,235 282,228 138,228" fill="url(#sesMarble)"/>
+
+    <!-- 4 Colonnes doriques -->
+    <rect x="145" y="165" width="14" height="63" rx="2" fill="url(#sesMarble)"/>
+    <rect x="185" y="165" width="14" height="63" rx="2" fill="url(#sesMarble)"/>
+    <rect x="221" y="165" width="14" height="63" rx="2" fill="url(#sesMarble)"/>
+    <rect x="261" y="165" width="14" height="63" rx="2" fill="url(#sesMarble)"/>
+
+    <!-- Architrave -->
+    <rect x="135" y="157" width="150" height="10" rx="2" fill="url(#sesMarble)"/>
+
+    <!-- Fronton triangulaire avec symbole monétaire -->
+    <polygon points="130,157 290,157 210,118" fill="url(#sesMarble)"/>
+    <circle cx="210" cy="142" r="11" fill="url(#sesGold)" filter="url(#sesGlow)"/>
+    <text x="210" y="146" text-anchor="middle" font-size="11" font-weight="bold" fill="#7a4e00">€</text>
+  </g>
+
+  <!-- Flèche de croissance verte (📈 Graphique économique) -->
+  <g filter="url(#sesGlow)">
+    <!-- Courbe montante -->
+    <path d="M 105 210 Q 155 220 185 180 T 260 140 T 325 90" fill="none" stroke="url(#sesGrowth)" stroke-width="4.5" stroke-linecap="round"/>
+    <!-- Tête de flèche -->
+    <polygon points="325,90 310,95 320,108" fill="#1dd1a1"/>
+  </g>
+
+  <!-- Pièces de monnaie dorées empilées (côté droit) -->
+  <g filter="url(#sesShadow)">
+    <ellipse cx="295" cy="240" rx="14" ry="6" fill="url(#sesGold)"/>
+    <ellipse cx="295" cy="235" rx="14" ry="6" fill="url(#sesGold)"/>
+    <ellipse cx="295" cy="230" rx="14" ry="6" fill="url(#sesGold)"/>
+    <text x="295" y="233" text-anchor="middle" font-size="8" font-weight="bold" fill="#7a4e00">$</text>
+  </g>
+
+  <!-- Balance des échanges (côté gauche) -->
+  <g>
+    <line x1="95" y1="215" x2="95" y2="240" stroke="#7a5230" stroke-width="3"/>
+    <line x1="80" y1="218" x2="110" y2="218" stroke="#ffd32a" stroke-width="2.5"/>
+    <polygon points="76,224 84,224 80,228" fill="#ffd32a"/>
+    <polygon points="106,224 114,224 110,228" fill="#ffd32a"/>
+  </g>
+</svg>

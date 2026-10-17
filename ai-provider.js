@@ -58,10 +58,17 @@ const AiProvider = (() => {
      *   questionId est null en mode local : pas de validation serveur à faire,
      *   QuizEngine.grade() peut corriger directement avec la leçon en main.
      */
-    async function fetchQuestion(subjectId, index, niveauBand, opts = {}) {
+    async function fetchQuestion(subjectId, index, niveauOrBand, opts = {}) {
+        const norm = (typeof QuestionBank !== 'undefined' && QuestionBank.normalizeNiveau)
+            ? QuestionBank.normalizeNiveau(niveauOrBand)
+            : (niveauOrBand || '6eme');
+        const niveauBand = (typeof QuestionBank !== 'undefined' && QuestionBank.bandForNiveau)
+            ? QuestionBank.bandForNiveau(norm)
+            : 'college';
+
         if (isConfigured()) {
             try {
-                const data = await postJSON(GENERATE_WEBHOOK_URL, { subjectId, index, niveauBand });
+                const data = await postJSON(GENERATE_WEBHOOK_URL, { subjectId, index, niveau: norm, niveauBand });
                 if (data && data.lesson) {
                     return { lesson: data.lesson, questionId: data.questionId || null, source: 'ai' };
                 }
@@ -72,7 +79,7 @@ const AiProvider = (() => {
         const variant = (opts && typeof opts.variant === 'number') ? opts.variant : 0;
         let lesson = (opts && opts.localLesson && variant === 0)
             ? opts.localLesson
-            : QuestionBank.getLesson(opts.subject || subjectId, index, niveauBand, variant);
+            : QuestionBank.getLesson(opts.subject || subjectId, index, norm, variant);
         return { lesson, questionId: null, source: 'local' };
     }
 

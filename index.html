@@ -271,6 +271,20 @@
                 </label>
             </div>
 
+            <!-- Option 7.5 : Animations esthétiques de l'interface (Étape 10) -->
+            <div class="option-group">
+                <label class="checkbox-container">
+                    <span class="checkbox">
+                        <input type="checkbox" id="animationsActives" checked>
+                        <span class="checkbox-mark">✓</span>
+                    </span>
+                    <span class="option-label">🎨 Animations esthétiques de l'interface</span>
+                </label>
+                <p class="adm-hint" style="margin-top: 4px; padding-left: 36px;">
+                    Désactive les ondulations, flottements d'îles et pulsations décoratives.
+                </p>
+            </div>
+
             <!-- Option 8 : Mode Économie d'énergie (Remplace l'ancienne V-Sync)
                  Désactive les animations CSS gourmandes (particules, dégradés animés)
                  pour préserver la batterie des appareils mobiles.
@@ -286,6 +300,31 @@
                 <p class="adm-hint" style="margin-top: 4px; padding-left: 36px;">
                     Désactive les animations d'arrière-plan pour économiser la batterie.
                 </p>
+            </div>
+
+            <!-- Option 9 : Niveau scolaire / Classe -->
+            <div class="option-group">
+                <label class="option-label" for="optionsNiveauSelect">🎓 Classe / Niveau scolaire</label>
+                <div style="margin-top: 8px;">
+                    <select class="dash-grade-select" id="optionsNiveauSelect" style="width: 100%;">
+                        <option value="6eme">🎓 6ème (Collège)</option>
+                        <option value="5eme">🎓 5ème (Collège)</option>
+                        <option value="4eme">🎓 4ème (Collège)</option>
+                        <option value="3eme">🎓 3ème (Collège)</option>
+                        <option value="2nde">🎓 2nde (Lycée)</option>
+                        <option value="1ere">🎓 1ère (Lycée)</option>
+                        <option value="terminale">🎓 Terminale (Lycée)</option>
+                    </select>
+                </div>
+                <p class="adm-hint" style="margin-top: 4px; padding-left: 4px;">
+                    Adapte automatiquement l'ensemble des questions aux programmes scolaires officiels.
+                </p>
+            </div>
+
+            <!-- Section GitHub & Projet Open Source (Étape 11) -->
+            <div class="options-project-info" style="margin-top: 10px; margin-bottom: 12px; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); text-align: center; font-size: 13px; color: var(--muted, #94a3b8);">
+                <span>✨ Projet EDUQUEST</span> · 
+                <a href="https://github.com/EDUQUEST2026-2027/EDUQUEST" target="_blank" rel="noopener" id="optionsGithubLink" style="color: var(--cyan, #38bdf8); text-decoration: none; font-weight: 600;">🐙 Dépôt GitHub</a>
             </div>
 
             <!-- Boutons d'action -->

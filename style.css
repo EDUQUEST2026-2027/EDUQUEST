@@ -1479,10 +1479,81 @@
 /* --- Responsive (Map) --- */
 @media (max-width: 720px) {
     .map-header {
-        top: 12px; left: 12px; right: 12px;
-        align-items: flex-start;
-        flex-direction: column;
+        top: 0;
+        left: 0;
+        right: 0;
+        padding: 8px 12px;
+        background: rgba(8, 14, 28, 0.92);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid rgba(200, 168, 75, 0.25);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        align-items: center;
+        flex-direction: row;
+        justify-content: space-between;
+        gap: 8px;
+        z-index: 20;
     }
+
+    .map-header > div:first-child {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .subject-icon {
+        font-size: 1.6rem;
+    }
+
+    .map-header h1 {
+        font-size: clamp(1.1rem, 4vw, 1.35rem);
+        letter-spacing: 0.5px;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 36vw;
+    }
+
+    .map-header > div:last-child {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .map-header .options-wheel {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    .map-header .back-button {
+        min-height: 36px;
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        border-radius: 8px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .map-header .dash-streak-pill {
+        padding: 4px 8px;
+        gap: 4px;
+        font-size: 11px;
+    }
+
+    .map-header .dash-streak-label {
+        display: none;
+    }
+
+    .level-track {
+        padding-top: 68px !important;
+    }
+
     .level-map { min-height: 100vh; }
 
     /* Réduction du personnage */
@@ -1498,8 +1569,10 @@
     .character-hat::before { font-size: 8px; top: 10px; }
     .character-cape { width: 24px; height: 14px; }
 
-    .modal { padding: 24px 20px; }
+    .modal { padding: 20px 16px; border-radius: 16px; width: calc(100% - 24px); }
     .modal-stars-choice { flex-direction: column; }
+    .modal-close-btn { min-height: 44px; display: flex; align-items: center; justify-content: center; }
+    .modal-reset-btn { min-height: 40px; display: flex; align-items: center; justify-content: center; }
 }
 
 
@@ -1756,6 +1829,41 @@
     margin-bottom: 12px;
 }
 
+/* --- Îles flottantes des matières (Dashboard) --- */
+.dash-subject-island-wrap {
+    width: 100%;
+    height: 84px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 4px 0 10px 0;
+    position: relative;
+    pointer-events: none;
+}
+
+.dash-subject-island {
+    max-width: 96px;
+    max-height: 80px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.5));
+    animation: islandFloat 3.8s ease-in-out infinite alternate;
+    transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94), filter 0.35s ease;
+}
+
+.dash-subject-card:hover .dash-subject-island {
+    transform: scale(1.1) translateY(-5px);
+    filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.65)) drop-shadow(0 0 12px rgba(255, 209, 102, 0.4));
+}
+
+@keyframes islandFloat {
+    0% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-4px) rotate(0.6deg); }
+    100% { transform: translateY(-7px) rotate(-0.8deg); }
+}
+
+
 .dash-subject-card h3 {
     font-family: 'Cinzel', serif;
     font-size: 15px;
@@ -1975,6 +2083,13 @@
 .dash-option-btn:hover:not(:disabled) {
     border-color: rgba(200, 168, 75, 0.45);
     background: rgba(255, 255, 255, 0.08);
+}
+
+.dash-option-btn.selected {
+    border-color: var(--c-gold, #c8a84b);
+    background: rgba(200, 168, 75, 0.22);
+    box-shadow: 0 0 12px rgba(200, 168, 75, 0.35);
+    transform: scale(1.01);
 }
 
 .dash-option-btn.correct {
@@ -2333,8 +2448,12 @@
 
 /* --- Responsive (Dashboard) --- */
 @media (max-width: 768px) {
+    .dash-header {
+        padding-right: 48px; /* Évite tout chevauchement avec la roue d'options flottante */
+    }
     .dash-hud {
         padding: 8px 12px 8px 8px;
+        gap: 8px;
     }
     .dash-avatar {
         width: 38px;
@@ -2342,7 +2461,40 @@
         font-size: 12px;
     }
     .dash-tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: nowrap;
         overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        margin: 16px 0 20px;
+        padding-bottom: 4px;
+    }
+    .dash-tabs::-webkit-scrollbar {
+        display: none;
+    }
+    .dash-tab {
+        flex-shrink: 0;
+        white-space: nowrap;
+        padding: 9px 15px;
+        font-size: 12.5px;
+    }
+    .dash-shop-filters {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 4px;
+        margin: 12px 0 16px 0;
+    }
+    .dash-shop-filters::-webkit-scrollbar {
+        display: none;
+    }
+    .dash-shop-filter-btn {
+        flex-shrink: 0;
+        white-space: nowrap;
+        padding: 7px 12px;
+        font-size: 12px;
     }
     .dash-subjects-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -2353,10 +2505,51 @@
         gap: 10px;
     }
     .dash-modal {
+        width: calc(100% - 20px);
+        max-height: 92vh;
         padding: 20px 16px;
+        border-radius: 16px;
+    }
+    .dash-modal-actions {
+        flex-direction: column-reverse;
+        gap: 8px;
+        width: 100%;
+        margin-top: 16px;
+    }
+    .dash-modal-actions .dash-btn-primary,
+    .dash-modal-actions .dash-btn-ghost {
+        width: 100%;
+        min-height: 46px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-size: 13.5px;
+        padding: 11px 16px;
+        box-sizing: border-box;
+    }
+    .dash-option-btn {
+        padding: 12px 14px;
+        min-height: 46px;
+        font-size: 13.5px;
+        display: flex;
+        align-items: center;
+    }
+    .dash-vf-btn {
+        min-height: 46px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
     .dash-back-btn {
-        width: calc(100% - 20px);
+        width: calc(100% - 24px);
+        min-height: 48px;
+        padding: 13px 18px;
+        font-size: 0.95rem;
+        margin: 24px auto 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 }
 
@@ -2366,6 +2559,22 @@
     }
     .dash-skins-grid {
         grid-template-columns: 1fr;
+    }
+    .dash-hud {
+        border-radius: 16px;
+        padding: 6px 10px;
+    }
+    .dash-streak-pill .dash-streak-label {
+        display: none;
+    }
+    .dash-streak-pill {
+        padding: 4px 8px;
+        font-size: 10.5px;
+        gap: 4px;
+    }
+    .dash-coins {
+        padding: 6px 10px;
+        font-size: 12px;
     }
 }
 
@@ -2789,6 +2998,15 @@ body.eco-mode-active .stars, body.eco-mode-active .clouds { display: none !impor
 }
 .dash-grade-select option { background: #070b1a; color: white; }
 
+@media (max-width: 600px) {
+    .dash-grade-select {
+        font-size: 0.92rem;
+        padding: 4px 8px;
+        max-width: 140px;
+    }
+}
+
+
 /* =============================================================================
    SYSTÈME DE STREAK, COMBOS ET MULTIPLICATEUR DE SCORE
    ============================================================================= */
@@ -2926,4 +3144,368 @@ body.eco-mode-active .stars, body.eco-mode-active .clouds { display: none !impor
     70% { transform: scale(1.15); opacity: 1; }
     100% { transform: scale(1); }
 }
+
+/* =============================================================================
+   INDICE PÉDAGOGIQUE & EXPLICATIONS ENRICHIES (Étape 6)
+   ============================================================================= */
+
+.dash-hint-container {
+    margin: 8px 0 14px 0;
+    text-align: left;
+}
+
+.dash-hint-toggle-btn {
+    background: rgba(255, 209, 102, 0.12);
+    border: 1px solid rgba(255, 209, 102, 0.35);
+    color: #ffd166;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.25s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.dash-hint-toggle-btn:hover {
+    background: rgba(255, 209, 102, 0.22);
+    border-color: #ffd166;
+    box-shadow: 0 0 12px rgba(255, 209, 102, 0.35);
+    transform: translateY(-1px);
+}
+
+.dash-hint-toggle-btn.active {
+    background: rgba(255, 209, 102, 0.28);
+    border-color: #ffd166;
+    color: #fff;
+}
+
+.dash-hint-drawer {
+    margin-top: 8px;
+    padding: 12px 16px;
+    background: rgba(20, 28, 55, 0.92);
+    border-left: 4px solid #ffd166;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    animation: hintFadeIn 0.3s ease;
+}
+
+@keyframes hintFadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.dash-hint-badge {
+    display: inline-block;
+    font-family: 'Rajdhani', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #ffd166;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.dash-hint-text {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.45;
+    color: #e2e8f0;
+}
+
+/* Explications de feedback enrichies */
+.dash-feedback-badge {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dash-feedback-exp {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 8px;
+    border-left: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.dash-feedback.ok .dash-feedback-exp {
+    border-left-color: #6bca82;
+    background: rgba(45, 80, 22, 0.25);
+}
+
+.dash-feedback.ko .dash-feedback-exp {
+    border-left-color: #ff6b6b;
+    background: rgba(139, 58, 58, 0.25);
+}
+
+.dash-feedback-exp-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #ffd166;
+    margin-bottom: 4px;
+}
+
+.dash-feedback-exp-content {
+    font-size: 0.95rem;
+    line-height: 1.4;
+    color: #f1f5f9;
+}
+
+/* =========================================================================
+   BOTTOM NAVIGATION BAR & ADAPTATION MENUS POUR MOBILE (Étape 9)
+   ========================================================================= */
+
+/* Par défaut sur grand écran / bureau : la barre basse est masquée */
+.dash-bottom-nav {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    /* 1. Remplacement des onglets du haut par la barre de navigation basse */
+    .dash-tabs {
+        display: none !important;
+    }
+
+    .dash-bottom-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 9999;
+        height: calc(60px + env(safe-area-inset-bottom, 0px));
+        padding: 4px 6px calc(4px + env(safe-area-inset-bottom, 0px));
+        background: rgba(9, 14, 30, 0.95);
+        backdrop-filter: blur(20px) saturate(1.5);
+        -webkit-backdrop-filter: blur(20px) saturate(1.5);
+        border-top: 1px solid rgba(200, 168, 75, 0.35);
+        box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.7), 0 -1px 0 rgba(255, 255, 255, 0.08) inset;
+        justify-content: space-around;
+        align-items: center;
+    }
+
+    .dash-bnav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        flex: 1;
+        min-height: 48px;
+        background: transparent;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        color: rgba(255, 255, 255, 0.55);
+        text-decoration: none;
+        font-family: 'Rajdhani', sans-serif;
+        font-weight: 700;
+        transition: color 0.2s ease, transform 0.15s ease;
+        padding: 4px 2px;
+        position: relative;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .dash-bnav-item:active {
+        transform: scale(0.92);
+    }
+
+    .dash-bnav-icon {
+        font-size: 1.25rem;
+        line-height: 1;
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.2s ease, filter 0.2s ease;
+    }
+
+    .dash-bnav-label {
+        font-size: 0.72rem;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        line-height: 1;
+    }
+
+    .dash-bnav-item.active {
+        color: var(--c-gold, #ffd166);
+    }
+
+    .dash-bnav-item.active .dash-bnav-icon {
+        transform: translateY(-2px) scale(1.12);
+        filter: drop-shadow(0 0 8px rgba(200, 168, 75, 0.6));
+    }
+
+    .dash-bnav-item.active::before {
+        content: '';
+        position: absolute;
+        top: -4px;
+        width: 24px;
+        height: 3px;
+        border-radius: 999px;
+        background: var(--c-gold, #ffd166);
+        box-shadow: 0 0 10px rgba(200, 168, 75, 0.8);
+    }
+
+    .dash-bnav-badge {
+        position: absolute;
+        top: -5px;
+        right: -10px;
+        background: #ef5350;
+        color: #fff;
+        font-size: 9px;
+        font-weight: 800;
+        padding: 1px 5px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    /* 2. Dégagement de sécurité pour le contenu défilant */
+    #dashboardPage,
+    #dashboard-app,
+    main.container:has(#dashboard-app) {
+        padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    /* Masquer le bouton retour bureau au bas de page (remplacé par Accueil dans la bottom nav) */
+    .dash-back-btn {
+        display: none !important;
+    }
+
+    /* Masquer la roue d'options flottante gênante sur smartphone (accessible directement via la bottom nav) */
+    .options-wheel.floating {
+        display: none !important;
+    }
+
+    /* 3. Adaptation du header dashboard sur smartphone */
+    .dash-header {
+        padding: 10px 14px;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+    }
+    .dash-brand {
+        font-size: 1.25rem;
+    }
+    .dash-grade-select {
+        font-size: 0.95rem;
+        padding: 4px 8px;
+    }
+    .dash-user-greeting {
+        font-size: 0.85rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 140px;
+    }
+
+    /* 4. Adaptation des modales Options & Connexion sur écran tactile */
+    .options-container {
+        padding: 18px 14px;
+        border-radius: 20px;
+        max-height: 90vh;
+        width: calc(100% - 20px);
+        margin: 0 auto;
+    }
+    .options-header {
+        font-size: 1.7rem;
+        margin-bottom: 12px;
+    }
+    .options-buttons {
+        flex-direction: column;
+        gap: 8px;
+    }
+    .options-buttons .option-button {
+        width: 100%;
+        min-height: 48px;
+        font-size: 1rem;
+    }
+
+    .login-container {
+        padding: 20px 16px;
+        border-radius: 20px;
+        width: calc(100% - 20px);
+        max-height: 90vh;
+        margin: 0 auto;
+    }
+}
+
+/* =========================================================================
+   DÉSACTIVATION DES ANIMATIONS ESTHÉTIQUES (Étape 10)
+   ========================================================================= */
+body.no-animations,
+body.no-animations * {
+    animation: none !important;
+}
+
+body.no-animations *::before,
+body.no-animations *::after {
+    animation: none !important;
+}
+
+body.no-animations .dash-subject-island {
+    animation: none !important;
+    transform: none !important;
+}
+
+body.no-animations .logo-image {
+    animation: none !important;
+    transform: none !important;
+}
+
+body.no-animations .star,
+body.no-animations .cloud,
+body.no-animations .matiere-icon,
+body.no-animations .level-dot.active,
+body.no-animations .dash-map-wrap circle,
+body.no-animations .dash-node-group circle,
+body.no-animations .quest-board::before,
+body.no-animations .quest-card,
+body.no-animations .quest-claim-btn,
+body.no-animations .quest-chest,
+body.no-animations .quest-icon,
+body.no-animations .quest-chest-icon {
+    animation: none !important;
+    transform: none !important;
+}
+
+body.no-animations *,
+body.no-animations *::before,
+body.no-animations *::after {
+    transition-duration: 0.05s !important;
+}
+
+/* --- Lien GitHub des Crédits (Étape 11) --- */
+.footer-github-link {
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+.footer-github-link:hover {
+    background: rgba(95, 212, 230, 0.18);
+    color: #bbf2f6 !important;
+    border-bottom: none !important;
+}
+.options-project-info a:hover {
+    text-decoration: underline !important;
+    filter: brightness(1.2);
+}
+
+
 

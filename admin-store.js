@@ -370,10 +370,11 @@ const AdminStore = (() => {
         creatorName: 'L\u2019\u00e9quipe EDUQUEST',
         contactEmail: '',
         website: '',
+        githubUrl: 'https://github.com/EDUQUEST2026-2027/EDUQUEST',
         extraNote: '',
     };
 
-    const CREDIT_TEXT_FIELDS = ['studioName', 'tagline', 'creatorName', 'contactEmail', 'website', 'extraNote'];
+    const CREDIT_TEXT_FIELDS = ['studioName', 'tagline', 'creatorName', 'contactEmail', 'website', 'githubUrl', 'extraNote'];
 
     function cloneDefaults() { return _clone(DEFAULT_CREDITS); }
 

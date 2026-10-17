@@ -24,22 +24,23 @@
 
 **Complet** : EDUQUEST transforme les révisions en aventure : l'élève choisit
 sa matière, son niveau scolaire (6e → Terminale ou classe personnalisée), puis
-gravit des îles en répondant à des quiz variés (QCM avec choix mélangés à chaque essai,
+gravit des îles flottantes en répondant à des quiz variés (QCM avec choix mélangés à chaque essai,
 vrai/faux, réponse courte, texte à trous avec banque de mots et tolérance aux fautes de frappe,
-texte à choix avec menus déroulants, association). 3 variantes de questions par niveau
-avec renouvellement aléatoire à chaque échec. Séries de victoires (streak), combos en chaîne
-avec multiplicateur de score et d'XP dynamique (x1.0 à x2.5), potions consommables
+texte à choix avec menus déroulants, association). Bouton d'indice pédagogique 💡,
+3 variantes de questions par niveau avec renouvellement aléatoire à chaque échec. Séries de victoires (streak),
+combos en chaîne avec multiplicateur de score et d'XP dynamique (x1.0 à x2.5), potions consommables
 (Double XP, Bouclier d'Étoile), quêtes quotidiennes, succès, boutique de personnalisation
 (halos, avatars historiques, titres, thème astral d'origine offert, thèmes visuels, boosters)
-et mode chronométré maintiennent une motivation constante. 11 matières (incluant
-la Philosophie et la Chimie dédiée), 100 niveaux par matière, contenus,
-boutique, succès et récompenses ajustables via un panneau d'administration autonome.
+et mode chronométré maintiennent une motivation constante. 13 matières adaptées au cycle scolaire
+(Technologie au collège, NSI & Numérique et SES au lycée, Philosophie, EMC, Chimie dédiée), 100 niveaux par matière,
+îlots flottants vectoriels animés, barre de navigation mobile basse, contrôle des animations d'interface,
+contenus, boutique, succès, crédits GitHub et récompenses ajustables via un panneau d'administration autonome.
 
 ## Mots-clés
 
 révision, jeu éducatif, quiz, collège, lycée, mathématiques, français, SVT,
-histoire, anglais, physique, chimie, philosophie, apprentissage gamifié, streak, combo,
-éducation nationale, gratuit, pwa, offline
+histoire, anglais, physique, chimie, philosophie, technologie, nsi, ses, numérique,
+apprentissage gamifié, streak, combo, éducation nationale, gratuit, pwa, offline
 
 ## Pages publiques
 

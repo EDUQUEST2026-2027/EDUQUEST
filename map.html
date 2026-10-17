@@ -94,17 +94,24 @@
              Les valeurs de .subject-icon et <h1> sont injectées par JS (initMap).
         ================================================================ -->
         <section class="map-header" aria-label="Carte des niveaux">
-            <!-- Côté gauche : icône et titre de la matière -->
-            <div>
-                <!-- Icône de la matière : remplacée par JS selon le paramètre 'icon' de l'URL -->
-                <!-- Si icon=maths.png → <img src="Image/ile/maths.png"> -->
-                <!-- Si icon=🌍 (emoji) → textContent = '🌍' -->
+            <!-- Côté gauche : icône, titre de la matière et sélecteur de classe -->
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                 <span class="subject-icon">📚</span>
-                <!-- Titre remplacé par JS : titleEl.textContent = subject; -->
                 <h1>Matière</h1>
+                <div class="dash-grade-wrap" style="display: inline-flex; align-items: center;">
+                    <select class="dash-grade-select" id="mapGradeSelect" aria-label="Choisir sa classe">
+                        <option value="6eme">🎓 6ème</option>
+                        <option value="5eme">🎓 5ème</option>
+                        <option value="4eme">🎓 4ème</option>
+                        <option value="3eme">🎓 3ème</option>
+                        <option value="2nde">🎓 2nde</option>
+                        <option value="1ere">🎓 1ère</option>
+                        <option value="terminale">🎓 Terminale</option>
+                    </select>
+                </div>
             </div>
             <!-- Côté droit : boutons d'action -->
-            <div style="display: flex; gap: 10px; pointer-events: auto;">
+            <div style="display: flex; gap: 10px; align-items: center; pointer-events: auto;">
                 <a class="options-wheel" href="index.html#options" title="Options">⚙️</a>
                 <a class="back-button" href="dashboard.html">← RETOUR</a>
             </div>
@@ -176,6 +183,7 @@
             ============================================================ -->
             <div id="modal-quiz-zone" hidden>
                 <p id="modal-quiz-question" class="modal-subtitle"></p>
+                <div id="modal-quiz-hint-slot"></div>
                 <div id="modal-quiz-body" class="dash-quiz-body"></div>
                 <div id="modal-quiz-feedback"></div>
                 <div id="modal-quiz-actions" class="dash-modal-actions"></div>

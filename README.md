@@ -42,9 +42,17 @@ Puis ouvrez l'URL affichée (ex. `http://localhost:8080`).
   - **Potion Double XP :** Multiplie par 2 l'XP gagnée au prochain niveau réussi.
   - **Bouclier d'Étoile :** Préserve le score 3 étoiles ainsi que la série de combos en cas de première erreur.
   - Réachats illimités et historique d'inventaire complet par utilisateur.
-- **🏛️ Matières enrichies (11 matières) :**
-  - Ajout de la **Philosophie** avec îlot dédié (`philo.svg`) et questions de réflexion pour le lycée.
-  - Scission et correction définitive de la **Chimie** avec ses propres leçons et visuel.
+- **🏛️ Matières enrichies (13 matières) & cycle adapté :**
+  - **Technologie :** Réservée aux niveaux collège (6e, 5e, 4e, 3e) avec algorithmique, capteurs, matériaux et réseaux.
+  - **NSI & Numérique :** Dédiée aux niveaux lycée (2nde SNT, 1ère & Terminale NSI) avec programmation Python, SQL, protocoles réseaux, complexité et arbres binaires, accompagnée de son îlot flottant cybernétique vectoriel (`nsi.svg`).
+  - **SES (Sciences Économiques & Sociales) :** Marché, création monétaire, PIB, socialisation et commerce international, avec son îlot boursier doré vectoriel (`ses.svg`).
+  - **Philosophie & EMC :** Îlots dédiés (`philo.svg`, `emc.svg`) et questions de réflexion éthique, citoyenne et républicaine.
+  - **Chimie dédiée :** Scission définitive avec questions et banque propres.
+- **🏝️ Îles flottantes & personnalisation graphique :** Remplacement des symboles textuels par de véritables îles flottantes animées, support d'upload d'illustrations locales (avec compression Canvas automatique) et choix d'icônes dans le panneau d'administration.
+- **💡 Bouton Indice & Explications pédagogiques enrichies :** Bouton 💡 dans les quiz révélant une aide de cours contextualisée, et explications détaillées de la règle pour chaque question.
+- **📱 Ergonomie smartphone & Bottom Navigation :** Barre de navigation basse (Bottom Nav) sur mobile (Matières, Boutique, Succès, Options, Accueil), zones tactiles confortables (≥48px) et suppression de tout chevauchement d'éléments.
+- **🎨 Contrôle des animations :** Option dédiée permettant de désactiver les ondulations, pulsations et mouvements d'interface pour le confort visuel ou l'accessibilité.
+- **🐙 Projet Open-Source & Crédits GitHub :** Lien direct et éditable vers le dépôt officiel GitHub intégré au pied de page, à la modale d'options, aux crédits et aux mentions légales.
 - **🗺️ Carte des îles & progression dynamique :** Chaque matière propose un parcours d'îles avec niveaux interactifs (de 1 à 100), hitbox étendue pour un confort tactile optimal, étoiles de maîtrise et déplacement animé du personnage.
 - **🎓 Sélecteur de niveau d'étude intégré :** Choix direct et persistant de la classe (6ème, 5ème, 4ème, 3ème, 2nde, 1ère, Terminale ou classes personnalisées) dans l'en-tête du tableau de bord (`dashboard.html`).
 - **🎯 Types de questions interactives :** QCM classique, Vrai/Faux, Réponse courte, Texte à trous, Texte à choix déroulant et Association de paires (propulsé par `quiz-engine.js`).

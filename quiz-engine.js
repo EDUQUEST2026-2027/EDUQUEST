@@ -126,6 +126,12 @@ const QuizEngine = (() => {
     function gradeQCM(question, submitted) {
         return submitted === question.correct;
     }
+    function freezeQCM(container, question, submitted) {
+        container.querySelectorAll('[data-choice]').forEach(btn => {
+            btn.disabled = true;
+            if (parseInt(btn.dataset.choice) === submitted) btn.classList.add('selected');
+        });
+    }
     function revealQCM(container, question, submitted) {
         container.querySelectorAll('[data-choice]').forEach(btn => {
             const i = parseInt(btn.dataset.choice);
@@ -157,6 +163,12 @@ const QuizEngine = (() => {
     function gradeVraiFaux(question, submitted) {
         return submitted === question.correct;
     }
+    function freezeVraiFaux(container, question, submitted) {
+        container.querySelectorAll('[data-choice]').forEach(btn => {
+            btn.disabled = true;
+            if (btn.dataset.choice === String(submitted)) btn.classList.add('selected');
+        });
+    }
     function revealVraiFaux(container, question, submitted) {
         container.querySelectorAll('[data-choice]').forEach(btn => {
             const value = btn.dataset.choice === 'true';
@@ -183,6 +195,15 @@ const QuizEngine = (() => {
     }
     function gradeReponseCourte(question, submitted) {
         return question.accepted.some(a => isFuzzyMatch(a, submitted));
+    }
+    function freezeReponseCourte(container, question, submitted) {
+        const input = container.querySelector('.dash-short-input');
+        if (input) {
+            if (submitted !== undefined && submitted !== null) input.value = String(submitted);
+            input.disabled = true;
+        }
+        const submitBtn = container.querySelector('.dash-short-submit');
+        if (submitBtn) submitBtn.disabled = true;
     }
     function revealReponseCourte(container, question, submitted) {
         const input = container.querySelector('.dash-short-input');
@@ -291,22 +312,29 @@ const QuizEngine = (() => {
         );
     }
 
-    function revealTexteATrous(container, question, submitted) {
+    function freezeTexteATrous(container, question, submitted) {
         const given = Array.isArray(submitted) ? submitted : [];
         container.querySelectorAll('.dash-blank-input').forEach((input, i) => {
             if (given[i] !== undefined && given[i] !== null) {
                 input.value = given[i];
             }
             input.disabled = true;
+        });
+        container.querySelectorAll('.dash-word-chip').forEach(btn => btn.disabled = true);
+        const submitBtn = container.querySelector('.dash-blanks-submit');
+        if (submitBtn) submitBtn.disabled = true;
+    }
+
+    function revealTexteATrous(container, question, submitted) {
+        freezeTexteATrous(container, question, submitted);
+        const given = Array.isArray(submitted) ? submitted : [];
+        container.querySelectorAll('.dash-blank-input').forEach((input, i) => {
             const isCorrect = question.blanks && question.blanks[i] && question.blanks[i].some(a => isFuzzyMatch(a, given[i]));
             input.classList.add(isCorrect ? 'correct' : 'wrong');
             if (!isCorrect && question.blanks && question.blanks[i]) {
                 input.title = 'Attendu : ' + question.blanks[i][0];
             }
         });
-        container.querySelectorAll('.dash-word-chip').forEach(btn => btn.disabled = true);
-        const submitBtn = container.querySelector('.dash-blanks-submit');
-        if (submitBtn) submitBtn.disabled = true;
     }
 
     /* ================= ASSOCIATION (« drag & drop ») ================= */
@@ -363,21 +391,53 @@ const QuizEngine = (() => {
             return Number(given[i]) === expectedTargetIndex;
         });
     }
-    function revealDragAndDrop(container, question, submitted) {
+    function freezeDragAndDrop(container, question, submitted) {
         container.querySelectorAll('.dash-dd-chip, .dash-dd-target, .dash-dd-submit').forEach(el => el.disabled = true);
+        if (submitted && typeof submitted === 'object') {
+            Object.entries(submitted).forEach(([itemIdx, targetIdx]) => {
+                const targetEl = container.querySelector(`.dash-dd-target[data-target="${targetIdx}"]`);
+                if (targetEl) {
+                    const dropZone = targetEl.querySelector('.dash-dd-drop');
+                    if (dropZone && question.items && question.items[itemIdx]) {
+                        dropZone.textContent = question.items[itemIdx];
+                    }
+                }
+            });
+        }
+    }
+    function revealDragAndDrop(container, question, submitted) {
+        freezeDragAndDrop(container, question, submitted);
+        const given = submitted && typeof submitted === 'object' ? submitted : {};
+        container.querySelectorAll('.dash-dd-target').forEach(targetEl => {
+            const targetIdx = Number(targetEl.dataset.target);
+            const itemIdx = Object.keys(given).find(i => Number(given[i]) === targetIdx);
+            if (itemIdx !== undefined) {
+                const itemName = question.items[itemIdx];
+                const expectedTargetIndex = question.targets.indexOf(question.pairs[itemName]);
+                if (targetIdx === expectedTargetIndex) {
+                    targetEl.classList.add('correct');
+                } else {
+                    targetEl.classList.add('wrong');
+                }
+            }
+        });
     }
 
     /* ================= REGISTRE ================= */
 
     const QUESTION_ENGINES = {
-        qcm:            { render: renderQCM,            bind: bindQCM,            grade: gradeQCM,            reveal: revealQCM },
-        vrai_faux:      { render: renderVraiFaux,        bind: bindVraiFaux,       grade: gradeVraiFaux,       reveal: revealVraiFaux },
-        reponse_courte: { render: renderReponseCourte,   bind: bindReponseCourte,  grade: gradeReponseCourte,  reveal: revealReponseCourte },
-        texte_a_trous:  { render: renderTexteATrous,     bind: bindTexteATrous,    grade: gradeTexteATrous,    reveal: revealTexteATrous },
-        drag_and_drop:  { render: renderDragAndDrop,     bind: bindDragAndDrop,    grade: gradeDragAndDrop,    reveal: revealDragAndDrop },
+        qcm:            { render: renderQCM,            bind: bindQCM,            grade: gradeQCM,            freeze: freezeQCM,            reveal: revealQCM },
+        vrai_faux:      { render: renderVraiFaux,        bind: bindVraiFaux,       grade: gradeVraiFaux,       freeze: freezeVraiFaux,       reveal: revealVraiFaux },
+        reponse_courte: { render: renderReponseCourte,   bind: bindReponseCourte,  grade: gradeReponseCourte,  freeze: freezeReponseCourte,  reveal: revealReponseCourte },
+        texte_a_trous:  { render: renderTexteATrous,     bind: bindTexteATrous,    grade: gradeTexteATrous,    freeze: freezeTexteATrous,    reveal: revealTexteATrous },
+        drag_and_drop:  { render: renderDragAndDrop,     bind: bindDragAndDrop,    grade: gradeDragAndDrop,    freeze: freezeDragAndDrop,    reveal: revealDragAndDrop },
     };
 
     function engineFor(question) {
+        if (!question) return QUESTION_ENGINES.qcm;
+        if (question.type === 'texte_a_choix' || question.type === 'texte_menu_deroulant') {
+            return QUESTION_ENGINES.texte_a_trous;
+        }
         return QUESTION_ENGINES[question.type] || QUESTION_ENGINES.qcm;
     }
 
@@ -393,6 +453,11 @@ const QuizEngine = (() => {
         /** Corrige une réponse soumise. */
         grade(question, submitted) {
             return engineFor(question).grade(question, submitted);
+        },
+        /** Gèle les contrôles sans modifier le DOM existant (évite les clignotements/sauts au clic). */
+        freeze(container, question, submitted) {
+            const engine = engineFor(question);
+            if (engine.freeze) engine.freeze(container, question, submitted);
         },
         /** Désactive les contrôles et colore correct/incorrect après correction. */
         reveal(container, question, submitted) {

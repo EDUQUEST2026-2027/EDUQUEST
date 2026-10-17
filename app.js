@@ -106,6 +106,10 @@ function refreshFooterCredits() {
         const url = /^https?:\/\//i.test(c.website) ? c.website : 'https://' + c.website;
         bits.push('<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener">' + escapeHtml(c.website) + '</a>');
     }
+    if (c.githubUrl) {
+        const ghUrl = /^https?:\/\//i.test(c.githubUrl) ? c.githubUrl : 'https://' + c.githubUrl;
+        bits.push('<a href="' + escapeHtml(ghUrl) + '" target="_blank" rel="noopener" class="footer-github-link" title="Dépôt GitHub du projet">🐙 GitHub</a>');
+    }
     if (c.contactEmail) {
         bits.push('<a href="mailto:' + escapeHtml(c.contactEmail) + '">' + escapeHtml(c.contactEmail) + '</a>');
     }
@@ -115,6 +119,16 @@ function refreshFooterCredits() {
     if (!html) footer.classList.remove('footer-with-links');
     else footer.classList.add('footer-with-links');
     footer.title = 'Version ' + APP_VERSION + (c.extraNote ? ' — ' + c.extraNote : '');
+
+    const optGh = document.getElementById('optionsGithubLink');
+    if (optGh) {
+        if (c.githubUrl) {
+            optGh.href = /^https?:\/\//i.test(c.githubUrl) ? c.githubUrl : 'https://' + c.githubUrl;
+            optGh.style.display = '';
+        } else {
+            optGh.style.display = 'none';
+        }
+    }
 }
 
 /*
@@ -143,6 +157,10 @@ function currentNiveauBand() {
         if (band) return band;
     }
     return QuestionBank.bandForNiveau(niveau || '6eme');
+}
+
+function currentNiveau() {
+    return (typeof DB !== 'undefined' && DB.getNiveau) ? (DB.getNiveau() || '6eme') : '6eme';
 }
 
 /**
@@ -186,6 +204,19 @@ function applyEcoModeSetting() {
         document.body.classList.add('eco-mode-active');
     } else {
         document.body.classList.remove('eco-mode-active');
+    }
+}
+
+/**
+ * Active ou désactive les animations esthétiques de l'interface (Étape 10).
+ * Ajoute ou retire la classe 'no-animations' sur document.body.
+ */
+function applyAnimationsSetting() {
+    const val = getOption('animationsActives');
+    if (val === 'false') {
+        document.body.classList.add('no-animations');
+    } else {
+        document.body.classList.remove('no-animations');
     }
 }
 
@@ -253,6 +284,7 @@ function createEnvironment() {
 
     applyParticulesSetting();
     applyEcoModeSetting();
+    applyAnimationsSetting();
 }
 
 /**
@@ -748,6 +780,7 @@ function initOptions() {
     const backButton       = document.getElementById('backButton');     // Bouton "Retour"
     const particulesCheckbox = document.getElementById('particules');   // Checkbox particules
     const ecoModeCheckbox    = document.getElementById('ecoMode');          // Checkbox Économie d'énergie
+    const animationsCheckbox = document.getElementById('animationsActives'); // Checkbox Animations esthétiques
     const modeChronoCheckbox = document.getElementById('modeChrono');    // Checkbox Mode Défi Chronométré
 
     // Détection de la page : si saveOptions n'existe pas, on n'est pas sur options.html
@@ -855,16 +888,21 @@ function initOptions() {
         updateVolumeEffets();  // Met à jour l'affichage
 
         // Checkboxes (booléens stockés en string)
-        ['pleinEcran', 'particules', 'ecoMode', 'sonsActifs', 'musiqueActive', 'effetsActifs', 'modeChrono'].forEach(id => {
+        ['pleinEcran', 'particules', 'ecoMode', 'sonsActifs', 'musiqueActive', 'effetsActifs', 'modeChrono', 'animationsActives'].forEach(id => {
             const value = getOption(id);
             const el    = document.getElementById(id);
             if (!el) return;
             if (value !== null) {
                 el.checked = value === 'true'; // Convertit la string en booléen
-            } else if (['sonsActifs', 'musiqueActive', 'effetsActifs'].includes(id)) {
-                el.checked = true; // Valeur par défaut : sons activés
+            } else if (['sonsActifs', 'musiqueActive', 'effetsActifs', 'animationsActives'].includes(id)) {
+                el.checked = true; // Valeur par défaut : activé
             }
         });
+
+        const optNiveauEl = document.getElementById('optionsNiveauSelect');
+        if (optNiveauEl && typeof DB !== 'undefined' && DB.getNiveau) {
+            optNiveauEl.value = DB.getNiveau() || '6eme';
+        }
 
         // Si le son global est désactivé, on mémorise les états des sous-options
         // avant d'appeler updateSoundControlsState() qui les efface
@@ -910,9 +948,10 @@ function initOptions() {
         }
     });
 
-    // Checkbox Particules : affiche/cache les nuages immédiatement
+    // Checkbox Particules & Animations : affiche/cache et applique immédiatement
     ecoModeCheckbox.addEventListener('change', applyEcoModeSetting);
     particulesCheckbox.addEventListener('change', applyParticulesSetting);
+    if (animationsCheckbox) animationsCheckbox.addEventListener('change', applyAnimationsSetting);
 
     /* --- Bouton Sauvegarder --- */
     /**
@@ -927,8 +966,17 @@ function initOptions() {
         saveOption('pleinEcran', String(pleinEcran.checked));
         saveOption('particules', String(particulesCheckbox.checked));
         saveOption('ecoMode', String(ecoModeCheckbox.checked));
+        if (animationsCheckbox) saveOption('animationsActives', String(animationsCheckbox.checked));
         saveOption('sonsActifs', String(sonsActifs.checked));
         if (modeChronoCheckbox) saveOption('modeChrono', String(modeChronoCheckbox.checked));
+
+        const optNiveau = document.getElementById('optionsNiveauSelect');
+        if (optNiveau && typeof DB !== 'undefined' && DB.setNiveau) {
+            DB.setNiveau(optNiveau.value);
+            if (typeof getEffectiveSubjects === 'function') {
+                DASH_SUBJECTS = getEffectiveSubjects(optNiveau.value);
+            }
+        }
 
         if (sonsActifs.checked) {
             // Son global activé → on sauvegarde les états actuels des sous-options
@@ -969,6 +1017,7 @@ function initOptions() {
     pleinEcran.addEventListener('change', autoSave);
     particulesCheckbox.addEventListener('change', autoSave);
     ecoModeCheckbox.addEventListener('change', autoSave);
+    if (animationsCheckbox) animationsCheckbox.addEventListener('change', autoSave);
     if (modeChronoCheckbox) modeChronoCheckbox.addEventListener('change', autoSave);
 
     // Sync de la checkbox plein écran quand l'utilisateur appuie sur Échap
@@ -1009,6 +1058,8 @@ const Celebrate = (() => {
     let canvas = null, ctx = null, particles = [], rafId = null;
 
     function reducedMotion() {
+        const animSaved = (typeof getOption === 'function') ? getOption('animationsActives') : null;
+        if (animSaved === 'false') return true;
         return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     }
 
@@ -1279,14 +1330,94 @@ window.DailyQuests = DailyQuests;
  *   }
  * }
  */
+/**
+ * Retourne un indice pédagogique adapté pour la leçon et la matière.
+ */
+function getLessonHint(lesson, subjectId) {
+    if (!lesson) return '';
+    if (lesson.hint && typeof lesson.hint === 'string' && lesson.hint.trim()) {
+        return lesson.hint.trim();
+    }
+    const q = (lesson.q || '').toLowerCase();
+    const subj = String(subjectId || '').toLowerCase();
+
+    if (subj.includes('math')) {
+        if (q.includes('+')) return "Effectue l'addition colonne par colonne en surveillant les retenues.";
+        if (q.includes('-')) return "Pour la soustraction, pose le calcul ou décompose en dizaines et unités.";
+        if (q.includes('×') || q.includes('*')) return "Fais appel à tes tables de multiplication et décompose si nécessaire.";
+        if (q.includes('÷') || q.includes('/')) return "La division cherche combien de fois le diviseur est contenu dans le dividende.";
+        if (q.includes('hypoténuse') || q.includes('pythagore')) return "Théorème de Pythagore : Hypoténuse² = Côté1² + Côté2².";
+        if (q.includes('périmètre')) return "Le périmètre est le tour de la figure : additionne les longueurs de tous les côtés.";
+        if (q.includes('aire')) return "Pour un rectangle ou carré : Aire = Longueur × Largeur.";
+        if (q.includes('pourcentage') || q.includes('%')) return "Une hausse de p% revient à multiplier la valeur par (1 + p/100).";
+        if (q.includes('exp') || q.includes('e⁰')) return "Rappel : l'exponentielle est toujours positive, et e⁰ = 1.";
+        if (q.includes('ln')) return "Rappel : ln(1) = 0 et la fonction logarithme est la réciproque de l'exponentielle.";
+        if (q.includes('dérivée')) return "Applique la formule de dérivation associée (ax^n → n ax^(n-1), e^(kx) → k e^(kx)).";
+        return "Prends un brouillon et détaille les étapes du calcul sans te précipiter.";
+    }
+    if (subj.includes('franc') || subj.includes('gramm')) {
+        if (q.includes('conjugue') || q.includes('verbe')) return "Identifie le sujet (pronom ou nom) pour accorder la bonne terminaison au verbe.";
+        return "Observe bien les accords en genre et en nombre ainsi que la nature grammaticale des mots.";
+    }
+    if (subj.includes('anglais')) {
+        if (q.includes('past') || q.includes('prétérit')) return "Vérifie s'il s'agit d'un verbe régulier (-ed) ou d'un verbe irrégulier (2ème colonne).";
+        if (q.includes('comparative') || q.includes('superlative')) return "Les adjectifs courts prennent -er/-est ; les adjectifs longs sont précédés de more/most.";
+        return "Repère les indices temporels (yesterday, now, already...) pour choisir le bon temps verbal.";
+    }
+    if (subj.includes('hist')) {
+        return "Remémore-toi la frise chronologique et les grandes périodes clés (Antiquité, Moyen Âge, Siècle des Lumières, Guerres mondiales).";
+    }
+    if (subj.includes('geo')) {
+        return "Situe mentalement le continent, le pays ou le repère géographique sur la carte.";
+    }
+    if (subj.includes('svt')) {
+        return "Pense au rôle vital ou à la fonction biologique de cet organe ou de ce système dans l'organisme.";
+    }
+    if (subj.includes('phys')) {
+        if (q.includes('ohm') || q.includes('tension')) return "Loi d'Ohm : U = R × I (Tension = Résistance × Intensité).";
+        if (q.includes('puissance') || q.includes('watt')) return "Puissance électrique : P = U × I.";
+        if (q.includes('vitesse')) return "Relation cinématique : Vitesse = Distance ÷ Temps (v = d / t).";
+        return "Vérifie les unités physiques fondamentales (mètres, secondes, Volts, Joules).";
+    }
+    if (subj.includes('chim')) {
+        if (q.includes('ph')) return "À 25 °C : pH < 7 est acide, pH = 7 est neutre, pH > 7 est basique.";
+        if (q.includes('atome') || q.includes('molécule')) return "Chaque symbole représente un élément (H = Hydrogène, C = Carbone, O = Oxygène, N = Azote).";
+        return "Pense aux formules moléculaires usuelles et à la conservation des atomes.";
+    }
+    if (subj.includes('techno')) {
+        return "Pense à la chaîne d'information (capteur → processeur → actionneur) et aux propriétés des matériaux.";
+    }
+    if (subj.includes('emc')) {
+        return "Rappelle-toi les principes républicains fondamentaux (Liberté, Égalité, Fraternité, Laïcité) et les institutions démocratiques.";
+    }
+    if (subj.includes('philo')) {
+        return "Réfléchis au sens étymologique des concepts et aux grandes thèses de la philosophie.";
+    }
+
+    return "Lis attentivement l'énoncé et procède par élimination des réponses manifestement fausses.";
+}
+
+window._toggleQuizHint = function(btn) {
+    const parent = btn.closest('.dash-modal') || btn.closest('.modal') || btn.closest('#modal-quiz-zone') || document;
+    const drawer = parent.querySelector('.dash-hint-drawer');
+    if (!drawer) return;
+    const isHidden = drawer.style.display === 'none' || !drawer.style.display;
+    drawer.style.display = isHidden ? 'block' : 'none';
+    btn.classList.toggle('active', isHidden);
+    btn.setAttribute('aria-expanded', String(isHidden));
+    btn.innerHTML = isHidden 
+        ? `<span class="dash-hint-icon">💡</span> Masquer l'indice` 
+        : `<span class="dash-hint-icon">💡</span> Besoin d'un indice ?`;
+};
+
 function initMap() {
     const mapHeader = document.querySelector('.map-header');
     if (!mapHeader) return; // Pas sur la page map.html → on sort
 
-    /** Une icône de matière peut être un fichier d'îlot (PNG ou SVG) ou un
-     *  emoji Unicode. Retourne true si c'est un fichier image. */
+    /** Une icône de matière peut être un fichier d'îlot (PNG ou SVG, WebP, JPG),
+     *  une URL web, un data:image ou un emoji Unicode. Retourne true si c'est un fichier image. */
     function isIconFile(icon) {
-        return /\.(png|svg|webp)$/i.test(icon);
+        return /\.(png|svg|webp|jpg|jpeg)$/i.test(icon) || (typeof icon === 'string' && (icon.startsWith('http://') || icon.startsWith('https://') || icon.startsWith('data:') || icon.startsWith('Image/')));
     }
 
     /**
@@ -1313,6 +1444,10 @@ function initMap() {
         'Philosophie': 'philo',
         'Philo': 'philo',
         'EMC': 'emc',
+        'NSI & Numérique': 'nsi',
+        'NSI': 'nsi',
+        'SES (Économie)': 'ses',
+        'SES': 'ses',
     };
 
     /* --- Lecture des paramètres d'URL --- */
@@ -1325,8 +1460,20 @@ function initMap() {
     // v1.19 — Recherche aussi par NOM affiché : couvre les matières renommées
     // ou créées dans le panneau d'administration (le nom peut différer des
     // clés historiques de MATIERE_TO_SUBJECT_ID).
-    const carteSubject = DASH_SUBJECTS.find(s => s.id === MATIERE_TO_SUBJECT_ID[subject])
+    let carteSubject = DASH_SUBJECTS.find(s => s.id === MATIERE_TO_SUBJECT_ID[subject])
         || DASH_SUBJECTS.find(s => s.name === subject);
+
+    if (!carteSubject) {
+        const rawList = (typeof AdminStore !== 'undefined' && typeof AdminStore.applyOverrides === 'function')
+            ? AdminStore.applyOverrides(RAW_DASH_SUBJECTS)
+            : RAW_DASH_SUBJECTS;
+        const fallbackRaw = rawList.find(s => s.id === MATIERE_TO_SUBJECT_ID[subject])
+            || rawList.find(s => s.name === subject);
+        if (fallbackRaw) {
+            const curNiv = (typeof DB !== 'undefined' && DB.getNiveau) ? (DB.getNiveau() || '6eme') : '6eme';
+            carteSubject = fallbackRaw._custom ? fallbackRaw : (typeof QuestionBank !== 'undefined' ? QuestionBank.extend(fallbackRaw, 100, curNiv) : fallbackRaw);
+        }
+    }
 
     /** Nombre de niveaux affichés : aligné sur le nombre de leçons réelles
      *  si la matière est connue du moteur de quiz, sinon 6 par défaut
@@ -1338,11 +1485,48 @@ function initMap() {
     const iconEl  = document.querySelector('.subject-icon'); // Icône de la matière
     if (titleEl) titleEl.textContent = subject;
 
+    const mapGradeSelect = document.getElementById('mapGradeSelect');
+    if (mapGradeSelect) {
+        const curNiveau = (typeof DB !== 'undefined' && DB.getNiveau) ? (DB.getNiveau() || '6eme') : '6eme';
+        mapGradeSelect.value = curNiveau;
+        mapGradeSelect.addEventListener('change', () => {
+            const newNiv = mapGradeSelect.value;
+            if (typeof DB !== 'undefined' && DB.setNiveau) {
+                DB.setNiveau(newNiv);
+            }
+            if (typeof getEffectiveSubjects === 'function') {
+                DASH_SUBJECTS = getEffectiveSubjects(newNiv);
+                carteSubject = DASH_SUBJECTS.find(s => s.id === MATIERE_TO_SUBJECT_ID[subject])
+                    || DASH_SUBJECTS.find(s => s.name === subject);
+                if (!carteSubject) {
+                    const rawList = (typeof AdminStore !== 'undefined' && typeof AdminStore.applyOverrides === 'function')
+                        ? AdminStore.applyOverrides(RAW_DASH_SUBJECTS)
+                        : RAW_DASH_SUBJECTS;
+                    const fallbackRaw = rawList.find(s => s.id === MATIERE_TO_SUBJECT_ID[subject])
+                        || rawList.find(s => s.name === subject);
+                    if (fallbackRaw) {
+                        carteSubject = fallbackRaw._custom ? fallbackRaw : (typeof QuestionBank !== 'undefined' ? QuestionBank.extend(fallbackRaw, 100, newNiv) : fallbackRaw);
+                    }
+                }
+            }
+            const lbl = mapGradeSelect.options[mapGradeSelect.selectedIndex]?.text || newNiv;
+            showNotification(`🎓 Programme actualisé : ${lbl}`, 'info');
+        });
+    }
+
+    const resolveIslandUrl = (src) => {
+        if (!src) return '';
+        if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:') || src.startsWith('/') || src.startsWith('Image/')) {
+            return src;
+        }
+        return 'Image/ile/' + src;
+    };
+
     if (iconEl) {
-        // Icône fichier (PNG ou SVG îlot) vs emoji Unicode.
+        // Icône fichier (PNG ou SVG îlot, URL web ou image perso) vs emoji Unicode.
         if (isIconFile(icon)) {
             // Si l'icône est un fichier image : on crée une balise <img>
-            iconEl.innerHTML = `<img src="Image/ile/${icon}" class="matiere-icon" style="width:1em;height:1em;vertical-align:middle;">`;
+            iconEl.innerHTML = `<img src="${resolveIslandUrl(icon)}" class="matiere-icon" style="width:1.2em;height:1.2em;vertical-align:middle;object-fit:contain;">`;
         } else {
             // Sinon c'est un emoji : on l'affiche directement comme texte
             iconEl.textContent = icon;
@@ -1354,7 +1538,7 @@ function initMap() {
     const bgIslandEl = document.getElementById('subject-bg-island');
     if (bgIslandEl) {
         if (isIconFile(icon)) {
-            bgIslandEl.src = 'Image/ile/' + icon;
+            bgIslandEl.src = resolveIslandUrl(icon);
         } else {
             bgIslandEl.remove();
         }
@@ -1673,10 +1857,14 @@ function initMap() {
      * Convertit un résultat de quiz en étoiles, sur le même principe que le
      * dashboard : plus l'élève a eu besoin d'essais, moins il gagne d'étoiles.
      */
-    function starsFromAttempts(attempts) {
+    function starsFromAttempts(attempts, usedShield = false) {
         if (attempts === 1) return 3;
         if (attempts === 2) {
-            // Bouclier d'étoile : sauve la 3e étoile au 1er échec
+            // Si le bouclier a déjà été consommé lors de l'erreur au 1er essai, 3 étoiles sont accordées sans redébit
+            if (usedShield) {
+                return 3;
+            }
+            // Secours si le bouclier est en réserve mais n'avait pas été consommé à la 1re tentative
             if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster('boost-shield')) {
                 DB.useBooster('boost-shield');
                 window._lastUsedBoosterShield = true;
@@ -1761,7 +1949,7 @@ function initMap() {
                 perfect:  starsEarned === 3 ? 1 : 0,
                 firstTry: starsEarned === 3 ? 1 : 0,
             });
-            const usedShield = Boolean(window._lastUsedBoosterShield);
+            const usedShield = Boolean(window._lastUsedBoosterShield || (typeof currentAttempt !== 'undefined' && currentAttempt && currentAttempt.usedShield));
             window._lastUsedBoosterShield = false;
             if (typeof window.checkBadges === 'function') {
                 window.checkBadges({
@@ -1799,6 +1987,7 @@ function initMap() {
             if (chronoBarEl) chronoBarEl.remove();
             const oldComboBar = document.getElementById('map-combo-bar-container');
             if (oldComboBar) oldComboBar.remove();
+            delete body.dataset.renderedLessonKey;
             questionEl.textContent = 'Génération de la question…';
             body.innerHTML = `<div class="dash-feedback">⏳ Préparation de la question du niveau ${currentModalLevel}…</div>`;
             feedbackEl.innerHTML = '';
@@ -1851,10 +2040,33 @@ function initMap() {
             <div class="dash-combo-mult-badge">Bonus <b>x${multiplier.toFixed(1)}</b></div>
         `;
 
-        questionEl.textContent = lesson.q;
-        body.innerHTML = QuizEngine.renderBody(lesson);
+        const lessonKey = (lesson.id || lesson.q) + '_' + (currentAttempt.variant || 0);
+        const needsRender = (body.dataset.renderedLessonKey !== lessonKey);
+
+        if (needsRender) {
+            questionEl.textContent = lesson.q;
+            body.innerHTML = QuizEngine.renderBody(lesson);
+            body.dataset.renderedLessonKey = lessonKey;
+        }
+
+        const hintSlot = document.getElementById('modal-quiz-hint-slot');
+        const hintText = getLessonHint(lesson, carteSubject ? carteSubject.id : subject);
 
         if (!answered && !checking) {
+            if (hintSlot) {
+                hintSlot.innerHTML = hintText ? `
+                    <div class="dash-hint-container">
+                        <button class="dash-hint-toggle-btn" type="button" onclick="window._toggleQuizHint(this)" aria-expanded="false">
+                            <span class="dash-hint-icon">💡</span> Besoin d'un indice ?
+                        </button>
+                        <div class="dash-hint-drawer" style="display: none;">
+                            <div class="dash-hint-drawer-content">
+                                <span class="dash-hint-badge">💡 INDICE PÉDAGOGIQUE</span>
+                                <p class="dash-hint-text">${escapeHtml(hintText)}</p>
+                            </div>
+                        </div>
+                    </div>` : '';
+            }
             feedbackEl.innerHTML = '';
             actionsEl.innerHTML = `<button class="dash-btn-ghost" id="modal-quiz-cancel">Annuler</button>`;
             document.getElementById('modal-quiz-cancel').addEventListener('click', () => {
@@ -1862,7 +2074,9 @@ function initMap() {
                 modal.hidden = true;
                 positionCharacter(findCurrentLevel(progress), true);
             });
-            QuizEngine.bind(body, lesson, currentAttempt, _mapSubmitQuiz);
+            if (needsRender) {
+                QuizEngine.bind(body, lesson, currentAttempt, _mapSubmitQuiz);
+            }
 
             if (chronoEnabled) {
                 if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
@@ -1879,26 +2093,38 @@ function initMap() {
                 }, 1000);
             }
         } else if (checking) {
+            if (hintSlot) hintSlot.innerHTML = '';
             if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
+            QuizEngine.freeze(body, lesson, submitted);
             feedbackEl.innerHTML = `<div class="dash-feedback" role="status" aria-live="polite">Correction en cours…</div>`;
             actionsEl.innerHTML = '';
         } else {
+            if (hintSlot) hintSlot.innerHTML = '';
             if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
             QuizEngine.reveal(body, lesson, submitted);
             const multTag = multiplier > 1.0 ? `<span class="dash-combo-tag">x${multiplier.toFixed(1)}</span> ` : '';
-            feedbackEl.innerHTML = `<div class="dash-feedback ${isCorrect ? 'ok' : 'ko'}">${isCorrect ? '✓ Bonne réponse ! ' + multTag : '✗ Pas tout à fait. '}${escapeHtml(currentAttempt.explanation || lesson.exp || '')}</div>`;
+            const expText = currentAttempt.explanation || (lesson ? lesson.exp : '') || '';
+            feedbackEl.innerHTML = `
+                <div class="dash-feedback ${isCorrect ? 'ok' : 'ko'}">
+                    <div class="dash-feedback-badge">${isCorrect ? '✓ Bonne réponse ! ' + multTag : '✗ Pas tout à fait...'}</div>
+                    ${expText ? `
+                        <div class="dash-feedback-exp">
+                            <div class="dash-feedback-exp-title">📖 Explication & Règle de cours :</div>
+                            <div class="dash-feedback-exp-content">${escapeHtml(expText)}</div>
+                        </div>
+                    ` : ''}
+                </div>`;
 
             if (isCorrect) {
-                const starsNow = starsFromAttempts(currentAttempt.attempts);
+                const starsNow = starsFromAttempts(currentAttempt.attempts, currentAttempt.usedShield);
                 if (starsNow === 3) {
                     Celebrate.confetti();
                 }
                 actionsEl.innerHTML = `<button class="dash-btn-primary" id="modal-quiz-continue">Continuer</button>`;
                 document.getElementById('modal-quiz-continue').addEventListener('click', () => {
-                    const stars = starsFromAttempts(currentAttempt.attempts);
-                    const res = unlockNextAndSave(stars);
+                    const res = unlockNextAndSave(starsNow);
                     modal.hidden = true;
-                    showNotification(`✓ Niveau réussi — ${'⭐'.repeat(stars)}${res.isFirstSuccess ? ` (+${res.xpGained} XP ${res.multiplier > 1.0 ? `[x${res.multiplier}] ` : ''}, +${res.coinsGained} pièces, +${res.scoreGained} pts)` : ''}`);
+                    showNotification(`✓ Niveau réussi — ${'⭐'.repeat(starsNow)}${res.isFirstSuccess ? ` (+${res.xpGained} XP ${res.multiplier > 1.0 ? `[x${res.multiplier}] ` : ''}, +${res.coinsGained} pièces, +${res.scoreGained} pts)` : ''}`);
                 });
             } else {
                 actionsEl.innerHTML = `
@@ -1911,6 +2137,7 @@ function initMap() {
                 });
                 document.getElementById('modal-quiz-retry').addEventListener('click', async () => {
                     if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
+                    delete body.dataset.renderedLessonKey;
                     window.mapQuizTimeRemaining = 30;
                     const nextVariant = ((currentAttempt.variant || 0) + 1 + Math.floor(Math.random() * 2)) % 3;
                     currentAttempt.variant = nextVariant;
@@ -1923,7 +2150,7 @@ function initMap() {
 
                     try {
                         const { lesson, questionId } = await AiProvider.fetchQuestion(
-                            carteSubject.id, currentModalLevel - 1, currentNiveauBand(), {
+                            carteSubject.id, currentModalLevel - 1, currentNiveau(), {
                                 variant: nextVariant,
                                 subject: carteSubject
                             }
@@ -1979,9 +2206,10 @@ function initMap() {
             if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster('boost-shield')) {
                 DB.useBooster('boost-shield');
                 shieldSaved = true;
+                attempt.usedShield = true;
                 window._lastUsedBoosterShield = true;
                 if (typeof showNotification === 'function') {
-                    showNotification('🛡️ Bouclier d\'Étoile consommé : Série et combo protégés !', 'info');
+                    showNotification('🛡️ Bouclier d\'Étoile consommé : Série et 3 étoiles protégées !', 'info');
                 }
             }
             if (typeof DB !== 'undefined' && DB.recordWrongAnswer) {
@@ -2011,6 +2239,8 @@ function initMap() {
             if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
 
             if (carteSubject && carteSubject.lessons[currentModalLevel - 1]) {
+                const mapBody = document.getElementById('modal-quiz-body');
+                if (mapBody) delete mapBody.dataset.renderedLessonKey;
                 quizZone.hidden = false;
                 starsZone.hidden = true;
                 const requestedLevel = currentModalLevel;
@@ -2024,13 +2254,14 @@ function initMap() {
                     checking: 'loading',
                     lesson: null,
                     questionId: null,
-                    explanation: ''
+                    explanation: '',
+                    usedShield: false
                 };
                 const attempt = currentAttempt; // identité figée pour le garde anti-course
                 renderModalQuiz(); // Affiche d'abord l'état « génération… »
 
                 /* Question via AiProvider : variante aléatoire parmi 3 */
-                AiProvider.fetchQuestion(carteSubject.id, requestedLevel - 1, currentNiveauBand(), {
+                AiProvider.fetchQuestion(carteSubject.id, requestedLevel - 1, currentNiveau(), {
                     variant: initialVariant,
                     subject: carteSubject
                 })
@@ -2198,7 +2429,7 @@ const RAW_DASH_SUBJECTS = [
         { title: "Les écosystèmes", q: "Un organisme qui se nourrit exclusivement de végétaux est un :", opts: ["décomposeur", "carnivore", "herbivore", "omnivore"], correct: 2, exp: "Par définition, un herbivore ne consomme que des végétaux." },
         { type: "reponse_courte", title: "Le cœur", q: "Combien de cavités possède le cœur humain ?", accepted: ["4", "quatre"], exp: "Le cœur a 4 cavités : 2 oreillettes et 2 ventricules." },
     ]},
-    { id: "techno", name: "Technologie", icon: "⚙", lessons: [
+    { id: "techno", name: "Technologie", icon: "⚙", band: "college", lessons: [
         { type: "texte_a_choix", title: "Les algorithmes", q: "Choisis les bons termes pour compléter la définition.", textWithBlanks: "Pour répéter des instructions tant qu'une condition est vraie, on utilise une boucle ___, et pour faire un choix, une condition ___.", choices: [["tant que", "pour", "infinie"], ["si", "sinon", "alors"]], blanks: [["tant que"], ["si"]], exp: "« Tant que » (while) et « si » (if) sont des structures fondamentales en programmation." },
         { title: "Les capteurs", q: "Un capteur de température mesure :", opts: ["la pression", "la chaleur ambiante", "le son", "la lumière"], correct: 1, exp: "C'est sa fonction première : convertir une température en signal exploitable." },
         { title: "Les matériaux", q: "Le PLA est un matériau souvent utilisé en :", opts: ["chauffage", "soudure", "impression 3D", "isolation électrique"], correct: 2, exp: "Le PLA est un plastique biodégradable très utilisé en fabrication additive." },
@@ -2226,19 +2457,33 @@ const RAW_DASH_SUBJECTS = [
         { title: "Les ressources", q: "Quelle énergie est considérée comme renouvelable ?", opts: ["le pétrole", "le gaz naturel", "le charbon", "l'énergie solaire"], correct: 3, exp: "Le soleil est une source inépuisable à l'échelle humaine." },
         { type: "reponse_courte", title: "Le plus long fleuve", q: "Quel est le plus long fleuve du monde ?", accepted: ["nil", "le nil"], exp: "Le Nil (environ 6 650 km) est généralement considéré comme le plus long fleuve du monde." },
     ]},
-    { id: "emc", name: "EMC", icon: "⚖", lessons: [
+    { id: "emc", name: "EMC", icon: "⚖", island: "Image/ile/emc.svg", lessons: [
         { title: "La citoyenneté", q: "Quel âge faut-il avoir pour voter en France ?", opts: ["21 ans", "18 ans", "16 ans", "25 ans"], correct: 1, exp: "La majorité électorale est fixée à 18 ans." },
         { title: "Les institutions", q: "Qui est élu au suffrage universel direct en France ?", opts: ["le Premier ministre", "les préfets", "le Président de la République", "les juges"], correct: 2, exp: "Le Président est élu directement par les citoyens depuis 1962." },
         { title: "Les valeurs de la République", q: "« Liberté, Égalité, Fraternité » est :", opts: ["un traité", "un article de loi", "la devise de la France", "une chanson"], correct: 2, exp: "Cette devise figure dans la Constitution française." },
         { title: "La justice", q: "Le principe de présomption d'innocence signifie que :", opts: ["on est toujours coupable", "on est innocent tant que la culpabilité n'est pas prouvée", "la peine est automatique", "il n'y a pas de procès"], correct: 1, exp: "Ce principe protège tout accusé jusqu'au jugement." },
         { type: "drag_and_drop", title: "Les pouvoirs", q: "Associe chaque pouvoir à son rôle.", items: ["Pouvoir exécutif", "Pouvoir législatif", "Pouvoir judiciaire"], targets: ["Applique les lois", "Vote les lois", "Fait respecter les lois"], pairs: { "Pouvoir exécutif": "Applique les lois", "Pouvoir législatif": "Vote les lois", "Pouvoir judiciaire": "Fait respecter les lois" }, exp: "La séparation des pouvoirs structure les institutions démocratiques." },
     ]},
-    { id: "philo", name: "Philosophie", icon: "🏛️", lessons: [
+    { id: "philo", name: "Philosophie", icon: "🏛️", island: "Image/ile/philo.svg", lessons: [
         { title: "L'allégorie de la caverne", q: "Qui a écrit l'allégorie de la caverne ?", opts: ["Socrate", "Platon", "Aristote", "Descartes"], correct: 1, exp: "Platon expose l'allégorie de la caverne dans La République (Livre VII)." },
         { title: "Le doute méthodique", q: "Quelle célèbre formule résume la certitude première de René Descartes ?", opts: ["Je sais que je ne sais rien", "L'homme est un loup pour l'homme", "Cogito, ergo sum (Je pense, donc je suis)", "Connais-toi toi-même"], correct: 2, exp: "Dans le Discours de la méthode, Descartes découvre le « Cogito » au terme du doute méthodique." },
         { title: "La conscience", q: "Pour Sigmund Freud, quelle partie de la psyché regroupe les pulsions refoulées ?", opts: ["Le Surmoi", "Le Moi", "L'Inconscient / Le Ça", "La conscience morale"], correct: 2, exp: "Le Ça représente le réservoir des pulsions inconscientes." },
         { type: "vrai_faux", title: "L'éthique et la morale", q: "Pour Emmanuel Kant, un acte moral doit être guidé par le devoir et l'impératif catégorique, sans rechercher son propre intérêt.", correct: true, exp: "Vrai : la morale déontologique kantienne repose sur le devoir désintéressé." },
         { type: "texte_a_trous", title: "Le contrat social", q: "Complète la citation de Jean-Jacques Rousseau.", textWithBlanks: "L'homme est né ___ et partout il est dans les ___.", blanks: [["libre"], ["fers"]], distractors: ["seul", "sage", "liens", "chaînes"], exp: "« L'homme est né libre et partout il est dans les fers » (Du contrat social, 1762)." },
+    ]},
+    { id: "nsi", name: "NSI & Numérique", icon: "Image/ile/nsi.svg", band: "lycee", island: "Image/ile/nsi.svg", lessons: [
+        { title: "Binaire et Bits", q: "Quelle est la valeur décimale de l'octet binaire 00001010 ?", opts: ["8", "10", "12", "16"], correct: 1, exp: "En binaire : 8 + 2 = 10 (positions 2³ et 2¹)." },
+        { title: "Algorithmique Python", q: "En Python, que renvoie l'expression [x * 2 for x in [1, 2, 3]] ?", opts: ["[1, 2, 3]", "[2, 4, 6]", "[2, 2, 2]", "Error"], correct: 1, exp: "C'est une compréhension de liste qui multiplie chaque élément par 2 : [2, 4, 6]." },
+        { type: "vrai_faux", title: "Complexité algorithmique", q: "La recherche dichotomique dans un tableau trié de taille N a une complexité logarithmique O(log N).", correct: true, exp: "Vrai : à chaque étape, on divise par deux l'espace de recherche." },
+        { type: "texte_a_trous", title: "Architecture Web", q: "Complète le rôle des langages du Web.", textWithBlanks: "Le langage ___ structure le contenu d'une page, le langage ___ gère sa présentation visuelle et ___ assure son interactivité dynamique.", blanks: [["HTML"], ["CSS"], ["JavaScript"]], distractors: ["SQL", "Python", "PHP"], exp: "Le trio fondamental du front-end est HTML (structure), CSS (style) et JavaScript (interactivité)." },
+        { type: "drag_and_drop", title: "Réseaux & Protocoles", q: "Associe chaque protocole à son usage.", items: ["HTTP / HTTPS", "DNS", "SSH"], targets: ["Transfert de pages Web", "Résolution nom de domaine en IP", "Connexion à distance sécurisée"], pairs: { "HTTP / HTTPS": "Transfert de pages Web", "DNS": "Résolution nom de domaine en IP", "SSH": "Connexion à distance sécurisée" }, exp: "Ces protocoles fondamentaux structurent les communications sur Internet." },
+    ]},
+    { id: "ses", name: "SES (Économie)", icon: "Image/ile/ses.svg", band: "lycee", island: "Image/ile/ses.svg", lessons: [
+        { title: "Le marché et les prix", q: "Selon la loi de l'offre et de la demande, lorsque la demande d'un bien augmente sans que l'offre ne change, son prix :", opts: ["diminue", "tend à augmenter", "reste toujours fixe", "devient nul"], correct: 1, exp: "La rareté relative entraîne une hausse du prix d'équilibre." },
+        { title: "La création monétaire", q: "Qui crée la majeure partie de la monnaie en circulation dans une économie moderne ?", opts: ["L'État par l'impôt", "Les banques commerciales lors de l'octroi de crédits", "La banque centrale par impression de billets", "Les entreprises industrielles"], correct: 1, exp: "« Les crédits font les dépôts » : les banques commerciales créent la monnaie scripturale lors d'un prêt." },
+        { type: "vrai_faux", title: "Le PIB et la croissance", q: "Le Produit Intérieur Brut (PIB) mesure la richesse totale des patrimoines des ménages.", correct: false, exp: "Faux : le PIB mesure le flux de valeur ajoutée créée sur une période donnée (un an), pas le stock de patrimoine." },
+        { type: "texte_a_choix", title: "La socialisation", q: "Complète les modes d'apprentissage social.", textWithBlanks: "La socialisation ___ se déroule pendant l'enfance au sein de la famille et de l'école, tandis que la socialisation ___ s'exerce à l'âge adulte dans le monde professionnel.", choices: [["primaire", "secondaire", "initiale"], ["secondaire", "primaire", "tertiaire"]], blanks: [["primaire"], ["secondaire"]], exp: "La sociologie distingue la socialisation primaire (enfance) de la socialisation secondaire (vie adulte)." },
+        { type: "drag_and_drop", title: "Facteurs de production", q: "Associe chaque facteur de production à sa définition.", items: ["Facteur Travail", "Facteur Capital", "Progrès technique"], targets: ["Activité humaine rémunérée", "Biens durables utilisés pour produire (machines)", "Amélioration de l'efficacité productive"], pairs: { "Facteur Travail": "Activité humaine rémunérée", "Facteur Capital": "Biens durables utilisés pour produire (machines)", "Progrès technique": "Amélioration de l'efficacité productive" }, exp: "Le travail, le capital et la productivité globale des facteurs sont les moteurs de la production." },
     ]},
 ];
 
@@ -2259,8 +2504,22 @@ const NIVEAU_BAND = currentNiveauBand();
  */
 function getEffectiveSubjects(niveau) {
     const currentNiv = niveau || (typeof DB !== 'undefined' && DB.getNiveau ? DB.getNiveau() : '6eme') || '6eme';
+    const band = (typeof AdminStore !== 'undefined' && AdminStore.levelBand)
+        ? (AdminStore.levelBand(currentNiv) || (typeof QuestionBank !== 'undefined' ? QuestionBank.bandForNiveau(currentNiv) : 'college'))
+        : (typeof QuestionBank !== 'undefined' ? QuestionBank.bandForNiveau(currentNiv) : 'college');
+
     const raw = (typeof AdminStore !== 'undefined' ? AdminStore.applyOverrides(RAW_DASH_SUBJECTS) : RAW_DASH_SUBJECTS);
-    return raw.map(s => s._custom ? s : QuestionBank.extend(s, 100, currentNiv));
+
+    // Filtrage des matières selon le cycle scolaire :
+    // - "techno" (Technologie) est uniquement réservé aux niveaux collège (6e, 5e, 4e, 3e)
+    // - "nsi" (NSI & Numérique) est uniquement réservé aux niveaux lycée (2nde, 1ère, Terminale)
+    const filtered = raw.filter(s => {
+        if (s.id === 'techno' && band !== 'college') return false;
+        if (s.id === 'nsi' && band !== 'lycee') return false;
+        return true;
+    });
+
+    return filtered.map(s => s._custom ? s : QuestionBank.extend(s, 100, currentNiv));
 }
 
 let DASH_SUBJECTS = getEffectiveSubjects();
@@ -2291,7 +2550,44 @@ const SUBJECT_TO_MATIERE = {
     chimie:   { name: 'Chimie',        icon: 'chimie.svg' },
     techno:   { name: 'Technologie',   icon: 'technologie.webp' },
     philo:    { name: 'Philosophie',   icon: 'philo.svg' },
+    emc:      { name: 'EMC',           icon: 'emc.svg' },
+    nsi:      { name: 'NSI & Numérique', icon: 'nsi.svg' },
+    ses:      { name: 'SES (Économie)', icon: 'ses.svg' },
 };
+
+/**
+ * Résout l'illustration de l'île flottante pour une matière (DASH_SUBJECTS).
+ * Priorité : image personnalisée, island SVG/WebP du projet, ou fallback null.
+ */
+function getSubjectIslandSrc(subject) {
+    if (!subject) return null;
+    if (subject.image) return subject.image;
+    if (subject.island) return subject.island;
+    if (subject.id === 'nsi') return 'Image/ile/nsi.svg';
+    if (subject.id === 'ses') return 'Image/ile/ses.svg';
+    if (subject.id === 'emc') return 'Image/ile/emc.svg';
+
+    const iconStr = typeof subject.icon === 'string' ? subject.icon.trim() : '';
+    if (iconStr && (iconStr.startsWith('http://') || iconStr.startsWith('https://') || iconStr.startsWith('data:') || /\.(png|webp|svg|jpg)$/i.test(iconStr))) {
+        if (iconStr.startsWith('http') || iconStr.startsWith('data:') || iconStr.startsWith('/') || iconStr.startsWith('Image/')) {
+            return iconStr;
+        }
+        return 'Image/ile/' + iconStr;
+    }
+
+    const mapping = SUBJECT_TO_MATIERE[subject.id];
+    if (mapping && mapping.icon && /\.(png|webp|svg)$/i.test(mapping.icon)) {
+        return 'Image/ile/' + mapping.icon;
+    }
+
+    const byName = Object.values(SUBJECT_TO_MATIERE).find(m => m.name.toLowerCase() === (subject.name || '').toLowerCase());
+    if (byName && byName.icon && /\.(png|webp|svg)$/i.test(byName.icon)) {
+        return 'Image/ile/' + byName.icon;
+    }
+
+    return null;
+}
+
 
 const BADGES_CATALOG = (typeof AdminStore !== 'undefined' && AdminStore.DEFAULT_BADGES)
     ? AdminStore.DEFAULT_BADGES
@@ -2770,10 +3066,39 @@ function initDashboard() {
     function renderTabs() {
         const badgesTotal = getBadgesCatalog().length;
         const unlockedCount = (typeof DB !== 'undefined' && DB.getBadges) ? DB.getBadges().length : state.badges.length;
-        return `<nav class="dash-tabs">
-            <button class="dash-tab ${state.view === 'dashboard' || state.view === 'map' ? 'active' : ''}" onclick="window._dashGoDashboard()">Matières</button>
-            <button class="dash-tab ${state.view === 'shop' ? 'active' : ''}" onclick="window._dashGoShop()">Boutique</button>
-            <button class="dash-tab ${state.view === 'badges' ? 'active' : ''}" onclick="window._dashGoBadges()">Succès (${unlockedCount}/${badgesTotal})</button>
+        return `
+        <!-- Onglets bureau classiques -->
+        <nav class="dash-tabs" aria-label="Navigation principale">
+            <button class="dash-tab ${state.view === 'dashboard' || state.view === 'map' ? 'active' : ''}" onclick="window._dashGoDashboard()">🏝️ Matières</button>
+            <button class="dash-tab ${state.view === 'shop' ? 'active' : ''}" onclick="window._dashGoShop()">🛍️ Boutique</button>
+            <button class="dash-tab ${state.view === 'badges' ? 'active' : ''}" onclick="window._dashGoBadges()">🏆 Succès (${unlockedCount}/${badgesTotal})</button>
+        </nav>
+
+        <!-- Barre de navigation inférieure ergonomique pour mobile (Bottom Navigation Bar) -->
+        <nav class="dash-bottom-nav" aria-label="Navigation mobile">
+            <button class="dash-bnav-item ${state.view === 'dashboard' || state.view === 'map' ? 'active' : ''}" onclick="window._dashGoDashboard()" aria-label="Matières">
+                <span class="dash-bnav-icon">🏝️</span>
+                <span class="dash-bnav-label">Matières</span>
+            </button>
+            <button class="dash-bnav-item ${state.view === 'shop' ? 'active' : ''}" onclick="window._dashGoShop()" aria-label="Boutique">
+                <span class="dash-bnav-icon">🛍️</span>
+                <span class="dash-bnav-label">Boutique</span>
+            </button>
+            <button class="dash-bnav-item ${state.view === 'badges' ? 'active' : ''}" onclick="window._dashGoBadges()" aria-label="Succès">
+                <span class="dash-bnav-icon">
+                    🏆
+                    <span class="dash-bnav-badge">${unlockedCount}</span>
+                </span>
+                <span class="dash-bnav-label">Succès</span>
+            </button>
+            <a class="dash-bnav-item" href="index.html#options" aria-label="Options">
+                <span class="dash-bnav-icon">⚙️</span>
+                <span class="dash-bnav-label">Options</span>
+            </a>
+            <a class="dash-bnav-item" href="index.html" aria-label="Accueil">
+                <span class="dash-bnav-icon">🏠</span>
+                <span class="dash-bnav-label">Accueil</span>
+            </a>
         </nav>`;
     }
 
@@ -2820,9 +3145,16 @@ function initDashboard() {
             
             const total = s.lessons.length;
             const pct = Math.round((done / total) * 100);
+            const islandSrc = getSubjectIslandSrc(s);
+            const iconHtml = islandSrc
+                ? `<div class="dash-subject-island-wrap">
+                     <img src="${escapeHtml(islandSrc)}" alt="${escapeHtml(s.name)}" class="dash-subject-island" loading="lazy">
+                   </div>`
+                : `<div class="dash-subject-icon">${s.icon}</div>`;
+
             return `<div class="dash-subject-card" onclick="window._dashOpenMap('${s.id}')" tabindex="0" role="button" aria-label="${escapeHtml(s.name)}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window._dashOpenMap('${s.id}');}">
                 <span class="dash-pct mono">${done}/${total}</span>
-                <div class="dash-subject-icon">${s.icon}</div>
+                ${iconHtml}
                 <h3>${s.name}</h3>
                 <div class="dash-progress-track"><div class="dash-progress-fill" style="width:${pct}%"></div></div>
             </div>`;
@@ -2944,11 +3276,16 @@ function initDashboard() {
                 </g>`;
         }).join('');
 
+        const islandSrc = getSubjectIslandSrc(subject);
+        const eyebrowIcon = islandSrc
+            ? `<img src="${escapeHtml(islandSrc)}" alt="" style="width:1.3em;height:1.3em;vertical-align:middle;object-fit:contain;margin-right:6px;">`
+            : `${escapeHtml(subject.icon || '📘')} `;
+
         return `<section>
             <button class="dash-back-map" onclick="window._dashGoDashboard()">← Retour aux matières</button>
             <div class="dash-map-wrap">
                 <div class="dash-map-title">
-                    <div class="dash-eyebrow">${subject.icon}  Parcours</div>
+                    <div class="dash-eyebrow" style="display:flex; align-items:center;">${eyebrowIcon} Parcours</div>
                     <h2>${subject.name}</h2>
                     ${subject.lessons.length > MAX_VISIBLE ? `<p style="font-size:12px; color:rgba(255,255,255,0.5); margin-top:4px;">Aperçu des ${MAX_VISIBLE} premiers niveaux sur ${subject.lessons.length}.</p>` : ''}
                 </div>
@@ -3048,18 +3385,28 @@ function initDashboard() {
     }
 
     function renderQuizModal() {
+        if (!state.quiz) {
+            const oldOverlay = document.getElementById('dashQuizOverlay');
+            if (oldOverlay) oldOverlay.remove();
+            return;
+        }
+
         const { subjectId, lessonIndex, submitted, answered, isCorrect, loading, checking, explanation } = state.quiz;
         const subject = DASH_SUBJECTS.find(s => s.id === subjectId);
+        let overlay = document.getElementById('dashQuizOverlay');
 
         if (loading) {
-            const overlay = document.createElement('div');
-            overlay.className = 'dash-overlay';
-            overlay.id = 'dashQuizOverlay';
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'dash-overlay';
+                overlay.id = 'dashQuizOverlay';
+                document.body.appendChild(overlay);
+            }
+            delete overlay.dataset.quizKey;
             overlay.innerHTML = `<div class="dash-modal">
                 <div class="dash-eyebrow">${subject ? escapeHtml(subject.name) : 'Quiz'} · Niveau ${lessonIndex + 1}</div>
                 <h3 role="status" aria-live="polite">Génération de la question…</h3>
             </div>`;
-            dashApp.appendChild(overlay);
             return;
         }
 
@@ -3079,13 +3426,35 @@ function initDashboard() {
         </div>`;
 
         const lesson = state.quiz.lesson;
+        const hintText = getLessonHint(lesson, subjectId);
+        const hintButtonHtml = (!answered && !checking && hintText) ? `
+            <div class="dash-hint-container">
+                <button class="dash-hint-toggle-btn" type="button" onclick="window._toggleQuizHint(this)" aria-expanded="false">
+                    <span class="dash-hint-icon">💡</span> Besoin d'un indice ?
+                </button>
+                <div class="dash-hint-drawer" style="display: none;">
+                    <div class="dash-hint-drawer-content">
+                        <span class="dash-hint-badge">💡 INDICE PÉDAGOGIQUE</span>
+                        <p class="dash-hint-text">${escapeHtml(hintText)}</p>
+                    </div>
+                </div>
+            </div>` : '';
 
         let feedback = '';
         if (checking) {
             feedback = `<div class="dash-feedback" role="status" aria-live="polite">Correction en cours…</div>`;
         } else if (answered) {
             const multTag = multiplier > 1.0 ? `<span class="dash-combo-tag">x${multiplier.toFixed(1)}</span> ` : '';
-            feedback = `<div class="dash-feedback ${isCorrect ? 'ok' : 'ko'}">${isCorrect ? '✓ Bonne réponse ! ' + multTag : '✗ Pas tout à fait. '}${escapeHtml(explanation)}</div>`;
+            const expText = explanation || (lesson ? lesson.exp : '') || '';
+            feedback = `<div class="dash-feedback ${isCorrect ? 'ok' : 'ko'}">
+                <div class="dash-feedback-badge">${isCorrect ? '✓ Bonne réponse ! ' + multTag : '✗ Pas tout à fait...'}</div>
+                ${expText ? `
+                    <div class="dash-feedback-exp">
+                        <div class="dash-feedback-exp-title">📖 Explication & Règle de cours :</div>
+                        <div class="dash-feedback-exp-content">${escapeHtml(expText)}</div>
+                    </div>
+                ` : ''}
+            </div>`;
             if (isCorrect) {
                 const rewards = (typeof AdminStore !== 'undefined' && typeof AdminStore.getRewardsConfig === 'function')
                     ? AdminStore.getRewardsConfig()
@@ -3094,9 +3463,10 @@ function initDashboard() {
                 const chronoBonus = (chronoEnabled && (window.quizTimeRemaining || 0) > 0)
                     ? Math.floor(rewards.chronoBonusMaxXp * (window.quizTimeRemaining / 30))
                     : 0;
-                const baseTotalXp = rewards.xpBase + chronoBonus + (state.quiz.attempts === 1 ? (rewards.firstTryBonusXp || 0) : 0);
+                const hasShieldBonus = (state.quiz.attempts === 1 || Boolean(state.quiz.usedShield));
+                const baseTotalXp = rewards.xpBase + chronoBonus + (hasShieldBonus ? (rewards.firstTryBonusXp || 0) : 0);
                 const totalXp = Math.round(baseTotalXp * multiplier);
-                const baseScore = 100 * (state.quiz.attempts === 1 ? 3 : (state.quiz.attempts === 2 ? 2 : 1));
+                const baseScore = 100 * (hasShieldBonus ? 3 : (state.quiz.attempts === 2 ? 2 : 1));
                 const earnedScore = Math.round(baseScore * multiplier);
                 feedback += `<div class="dash-reward-line"><span>+${totalXp} XP ${multiplier > 1.0 ? `<b style="color:#ffa502;">(x${multiplier.toFixed(1)})</b>` : ''}</span><span>+${rewards.coinsBase} <span class="dash-coin-dot" style="display:inline-block; width:10px;height:10px; vertical-align:middle;"></span></span><span style="color:#ffbe0b; font-weight:700;">+${earnedScore} pts</span></div>`;
             }
@@ -3116,24 +3486,60 @@ function initDashboard() {
                </div>`
             : '';
 
-        const overlay = document.createElement('div');
-        overlay.className = 'dash-overlay';
-        overlay.id = 'dashQuizOverlay';
+        const quizKey = lesson ? ((lesson.id || lesson.q) + '_' + (state.quiz.variant || 0)) : null;
+
+        if (overlay && overlay.dataset.quizKey === quizKey && overlay.querySelector('.dash-quiz-body')) {
+            // Mise à jour sur place : le DOM de la question n'est PAS réinitialisé, les choix ne sautent pas !
+            const comboEl = overlay.querySelector('.dash-quiz-combo-bar');
+            if (comboEl) comboEl.outerHTML = comboBarHtml;
+
+            if (checking || answered) {
+                const chronoBar = overlay.querySelector('#chrono-bar-container');
+                if (chronoBar) chronoBar.remove();
+                const hintEl = overlay.querySelector('.dash-hint-container');
+                if (hintEl) hintEl.remove();
+            }
+
+            const feedbackSlot = overlay.querySelector('.dash-modal-feedback-slot');
+            if (feedbackSlot) feedbackSlot.innerHTML = feedback;
+
+            const actionsSlot = overlay.querySelector('.dash-modal-actions-slot');
+            if (actionsSlot) actionsSlot.innerHTML = actions;
+
+            const body = overlay.querySelector('.dash-quiz-body');
+            if (checking && lesson) {
+                QuizEngine.freeze(body, lesson, submitted);
+            } else if (answered && lesson) {
+                QuizEngine.reveal(body, lesson, submitted);
+            }
+            return;
+        }
+
+        // Première création ou changement de question
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.className = 'dash-overlay';
+            overlay.id = 'dashQuizOverlay';
+            document.body.appendChild(overlay);
+        }
+        overlay.dataset.quizKey = quizKey || '';
         overlay.innerHTML = `<div class="dash-modal">
             <div class="dash-eyebrow">${escapeHtml(subject ? subject.name : '')} · ${escapeHtml(lesson ? lesson.title : '')}</div>
             ${chronoHtml}
             ${comboBarHtml}
             <h3>${escapeHtml(lesson ? lesson.q : '')}</h3>
+            ${hintButtonHtml}
             <div class="dash-quiz-body">${lesson ? QuizEngine.renderBody(lesson) : ''}</div>
-            ${feedback}
-            ${actions}
+            <div class="dash-modal-feedback-slot">${feedback}</div>
+            <div class="dash-modal-actions-slot">${actions}</div>
         </div>`;
-        dashApp.appendChild(overlay);
 
         const body = overlay.querySelector('.dash-quiz-body');
         if (answered && lesson) {
             QuizEngine.reveal(body, lesson, submitted);
-        } else if (!checking && lesson) {
+        } else if (checking && lesson) {
+            QuizEngine.freeze(body, lesson, submitted);
+        } else if (lesson) {
             QuizEngine.bind(body, lesson, state.quiz, window._dashSubmitQuiz);
             if (chronoEnabled) {
                 if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
@@ -3156,10 +3562,24 @@ function initDashboard() {
 
     window._dashChangeNiveau = function(val) {
         DB.setNiveau(val);
+        if (typeof getEffectiveSubjects === 'function') {
+            DASH_SUBJECTS = getEffectiveSubjects(val);
+        }
+        const niveaux = (window.AdminStore && typeof AdminStore.getNiveauxScolaires === 'function')
+            ? AdminStore.getNiveauxScolaires()
+            : [];
+        const found = niveaux.find(n => n.id === val);
+        const label = found ? (found.label || found.name) : val;
+        showNotification(`🎓 Programme actualisé pour la classe : ${label}`, 'info');
         render();
     };
 
     function navigateToView(viewName, subjectId = null, push = true) {
+        if (state.quiz) {
+            state.quiz = null;
+            const overlay = document.getElementById('dashQuizOverlay');
+            if (overlay) overlay.remove();
+        }
         state.view = viewName;
         state.currentSubject = subjectId;
         if (viewName === 'badges') {
@@ -3187,7 +3607,12 @@ function initDashboard() {
     window._dashOpenMap = function (id) {
         const subj = DASH_SUBJECTS.find(s => s.id === id);
         const island = SUBJECT_TO_MATIERE[id];
-        const matiere = subj ? { name: subj.name, icon: island ? island.icon : subj.icon } : null;
+        const islandSrc = subj ? getSubjectIslandSrc(subj) : null;
+        let iconParam = island ? island.icon : (subj ? subj.icon : '');
+        if (islandSrc) {
+            iconParam = islandSrc;
+        }
+        const matiere = subj ? { name: subj.name, icon: iconParam } : null;
         if (matiere) {
             window.location.href = 'map.html?matiere=' + encodeURIComponent(matiere.name) + '&icon=' + encodeURIComponent(matiere.icon);
             return;
@@ -3210,32 +3635,37 @@ function initDashboard() {
             answered: false,
             isCorrect: false,
             attempts: 0,
-            explanation: ''
+            explanation: '',
+            usedShield: false
         };
         render();
 
-        const niveauBand = currentNiveauBand();
+        const currentNiv = currentNiveau();
         const dashSubj = DASH_SUBJECTS.find(s => s.id === subjectId);
         const { lesson, questionId } = await AiProvider.fetchQuestion(
-            subjectId, lessonIndex, niveauBand, { variant: initialVariant, subject: dashSubj }
+            subjectId, lessonIndex, currentNiv, { variant: initialVariant, subject: dashSubj }
         );
 
         if (!state.quiz || state.quiz.subjectId !== subjectId || state.quiz.lessonIndex !== lessonIndex) return;
         state.quiz.lesson = lesson;
         state.quiz.questionId = questionId;
         state.quiz.loading = false;
-        render();
+        renderQuizModal();
     };
 
     window._dashCloseQuiz = function () {
         if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
         state.quiz = null;
+        const overlay = document.getElementById('dashQuizOverlay');
+        if (overlay) overlay.remove();
         render();
     };
 
     window._dashRetryQuiz = async function () {
         if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
         window.quizTimeRemaining = 30;
+        const overlay = document.getElementById('dashQuizOverlay');
+        if (overlay) delete overlay.dataset.quizKey;
         const { subjectId, lessonIndex } = state.quiz;
         const nextVariant = ((state.quiz.variant || 0) + 1 + Math.floor(Math.random() * 2)) % 3;
         state.quiz.variant = nextVariant;
@@ -3245,18 +3675,18 @@ function initDashboard() {
         state.quiz.checking = false;
         state.quiz.loading = true;
         state.quiz.explanation = '';
-        render();
+        renderQuizModal();
 
-        const niveauBand = currentNiveauBand();
+        const currentNiv = currentNiveau();
         const dashSubj = DASH_SUBJECTS.find(s => s.id === subjectId);
         const { lesson, questionId } = await AiProvider.fetchQuestion(
-            subjectId, lessonIndex, niveauBand, { variant: nextVariant, subject: dashSubj }
+            subjectId, lessonIndex, currentNiv, { variant: nextVariant, subject: dashSubj }
         );
         if (!state.quiz || state.quiz.subjectId !== subjectId || state.quiz.lessonIndex !== lessonIndex) return;
         state.quiz.lesson = lesson;
         state.quiz.questionId = questionId;
         state.quiz.loading = false;
-        render();
+        renderQuizModal();
     };
 
     window._dashSubmitQuiz = async function (rawAnswer) {
@@ -3265,7 +3695,7 @@ function initDashboard() {
         quiz.submitted = rawAnswer;
         quiz.attempts += 1;
         quiz.checking = true;
-        render();
+        renderQuizModal();
 
         const result = await AiProvider.submitAnswer(quiz.questionId, quiz.lesson, rawAnswer);
         if (state.quiz !== quiz) return;
@@ -3287,14 +3717,15 @@ function initDashboard() {
             if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster('boost-shield')) {
                 DB.useBooster('boost-shield');
                 shieldSaved = true;
+                quiz.usedShield = true;
                 window._lastUsedBoosterShield = true;
-                showNotification('🛡️ Bouclier d\'Étoile consommé : Série et combo protégés !', 'info');
+                showNotification('🛡️ Bouclier d\'Étoile consommé : Série et 3 étoiles protégées !', 'info');
             }
             if (typeof DB !== 'undefined' && DB.recordWrongAnswer) {
                 DB.recordWrongAnswer(shieldSaved);
             }
         }
-        render();
+        renderQuizModal();
     };
 
     window._dashFinishQuiz = function () {
@@ -3306,6 +3737,7 @@ function initDashboard() {
         let coinsGained = 0;
         let scoreGained = 0;
         
+        let usedShield = Boolean(state.quiz && state.quiz.usedShield);
         if (lessonIndex === (state.progress[subjectId] || 0)) {
             state.progress[subjectId] = (state.progress[subjectId] || 0) + 1;
             
@@ -3318,8 +3750,7 @@ function initDashboard() {
                 ? Math.floor(rewards.chronoBonusMaxXp * (window.quizTimeRemaining / 30))
                 : 0;
             let usedDoubleXp = false;
-            let usedShield = false;
-            if (attempts === 2 && typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster('boost-shield')) {
+            if (!usedShield && attempts === 2 && typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster('boost-shield')) {
                 DB.useBooster('boost-shield');
                 usedShield = true;
                 showNotification('🛡️ Bouclier d\'Étoile consommé : 3 étoiles préservées !', 'info');
@@ -3338,7 +3769,7 @@ function initDashboard() {
             xpGained = Math.round(baseCalcXp * mult);
             coinsGained = rewards.coinsBase;
 
-            const baseScore = 100 * (attempts === 1 ? 3 : (attempts === 2 ? 2 : 1));
+            const baseScore = 100 * ((attempts === 1 || usedShield) ? 3 : (attempts === 2 ? 2 : 1));
             scoreGained = Math.round(baseScore * mult);
             const currentScore = parseInt(getOption('dash_total_score') || '0', 10);
             saveOption('dash_total_score', String(currentScore + scoreGained));
@@ -3348,6 +3779,7 @@ function initDashboard() {
             triggerBadgesCheck({
                 justAnsweredFirstTry: (attempts === 1 || usedShield),
                 justCompletedLevel: true,
+                starsEarned: (attempts === 1 || usedShield) ? 3 : (attempts === 2 ? 2 : 1),
                 subjectId,
                 usedDoubleXp,
                 usedShield,
@@ -3360,14 +3792,16 @@ function initDashboard() {
             });
         }
         state.quiz = null;
+        const overlay = document.getElementById('dashQuizOverlay');
+        if (overlay) overlay.remove();
         persistState();
 
         Celebrate.confetti();
         DailyQuests.track({
             levels:   1,
             xp:       xpGained,
-            perfect:  attempts === 1 ? 1 : 0,
-            firstTry: attempts === 1 ? 1 : 0,
+            perfect:  (attempts === 1 || usedShield) ? 1 : 0,
+            firstTry: (attempts === 1 || usedShield) ? 1 : 0,
         });
 
         render();
