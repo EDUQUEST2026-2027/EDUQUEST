@@ -56,7 +56,8 @@ const EduCookies = (() => {
   border:1px solid rgba(200,168,75,.45);border-radius:16px;
   box-shadow:0 18px 50px rgba(0,0,0,.55);padding:18px 20px;color:#e9edff;
   font-family:'Rajdhani','Segoe UI',system-ui,sans-serif;font-size:15px;line-height:1.5;
-  backdrop-filter:blur(8px);}
+  backdrop-filter:blur(8px);max-height:85vh;max-height:85dvh;overflow-y:auto;
+  overscroll-behavior:contain;}
 .eqck-title{font-family:Cinzel,Georgia,serif;font-weight:700;letter-spacing:1px;
   color:#e6cf8a;font-size:16px;margin-bottom:6px;}
 .eqck-text{margin:0 0 12px;color:#c9d3f5;}
@@ -94,20 +95,34 @@ const EduCookies = (() => {
        LECTURE / ÉCRITURE DU CONSENTEMENT
        ----------------------------------------------------------------------- */
 
+    // Fallback mémoire si le localStorage est inaccessible (navigation privée stricte, quota dépassé)
+    let _memoryConsent = null;
+
     /** Retourne le consentement enregistré, ou null si aucun choix valide. */
     function readConsent() {
+        if (_memoryConsent) return _memoryConsent;
         try {
             const raw = localStorage.getItem(LS_KEY);
             if (!raw) return null;
             const c = JSON.parse(raw);
             if (!c || CHOICES.indexOf(c.choice) === -1) return null;
+
+            // Règle CNIL : vérification de péremption du consentement (12 mois)
+            if (c.ts) {
+                const ageMs = Date.now() - new Date(c.ts).getTime();
+                if (ageMs > 365 * 24 * 3600 * 1000) {
+                    try { localStorage.removeItem(LS_KEY); } catch {}
+                    return null;
+                }
+            }
+
             return {
                 choice: c.choice,
                 analytics: Boolean(c.analytics),
                 marketing: Boolean(c.marketing),
                 ts: c.ts || null,
             };
-        } catch { return null; } // JSON corrompu ou stockage bloqué → on redemande
+        } catch { return _memoryConsent; } // JSON corrompu ou stockage bloqué → on utilise le fallback
     }
 
     /**
@@ -132,6 +147,7 @@ const EduCookies = (() => {
             marketing: marketing,
             ts: new Date().toISOString(),
         };
+        _memoryConsent = consent;
         try { localStorage.setItem(LS_KEY, JSON.stringify(consent)); } catch { /* stockage bloqué */ }
         try {
             document.dispatchEvent(new CustomEvent('eduquest:consent', { detail: consent }));

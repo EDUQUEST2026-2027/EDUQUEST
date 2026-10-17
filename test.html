@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDUQUEST — Banc de Tests Automatisés v1.26.0</title>
+    <link rel="icon" href="Image/logo.png" type="image/png">
+    <link rel="stylesheet" href="global.css">
+    <style>
+        :root {
+            --test-pass: #3ddc97;
+            --test-fail: #ff6b6b;
+            --test-bg: #0b1325;
+            --test-card: #132238;
+            --test-border: rgba(200, 168, 75, 0.25);
+            --test-accent: #c8a84b;
+        }
+
+        body {
+            background-color: var(--test-bg);
+            color: #f0f4fc;
+            padding: 24px 16px 60px;
+            font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 980px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--test-border);
+            margin-bottom: 24px;
+        }
+
+        .title-group h1 {
+            font-family: 'Cinzel', Georgia, serif;
+            font-size: 1.8rem;
+            color: var(--test-accent);
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .title-group p {
+            color: #94a3b8;
+            font-size: 0.95rem;
+            margin-top: 4px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #1f3554, #122137);
+            border: 1px solid var(--test-accent);
+            color: #fff;
+            padding: 10px 18px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(200, 168, 75, 0.3);
+            border-color: #ffd166;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2d5016, #4a7c59);
+            border-color: #6bca82;
+        }
+
+        .btn-primary:hover {
+            border-color: #3ddc97;
+            box-shadow: 0 4px 16px rgba(61, 220, 151, 0.3);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--test-card);
+            border: 1px solid var(--test-border);
+            border-radius: 12px;
+            padding: 18px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .stat-val {
+            font-size: 2.2rem;
+            font-weight: 700;
+            line-height: 1;
+            font-family: 'Cinzel', serif;
+        }
+
+        .stat-val.passed { color: var(--test-pass); }
+        .stat-val.failed { color: var(--test-fail); }
+        .stat-val.total { color: #4cc9f0; }
+        .stat-val.time { color: var(--test-accent); }
+
+        /* Progress Bar */
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: #1e293b;
+            border-radius: 999px;
+            overflow: hidden;
+            margin-bottom: 28px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #4cc9f0, var(--test-pass));
+            transition: width 0.3s ease;
+        }
+
+        .progress-bar-fill.has-failure {
+            background: linear-gradient(90deg, var(--test-pass), var(--test-fail));
+        }
+
+        /* Suites Section */
+        .suite-card {
+            background: var(--test-card);
+            border: 1px solid var(--test-border);
+            border-radius: 12px;
+            margin-bottom: 18px;
+            overflow: hidden;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+
+        .suite-header {
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .suite-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #f8fafc;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .suite-badge {
+            font-size: 0.8rem;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-weight: 700;
+            background: rgba(61, 220, 151, 0.15);
+            color: var(--test-pass);
+            border: 1px solid rgba(61, 220, 151, 0.3);
+        }
+
+        .suite-badge.has-fail {
+            background: rgba(255, 107, 107, 0.15);
+            color: var(--test-fail);
+            border-color: rgba(255, 107, 107, 0.3);
+        }
+
+        .test-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .test-item {
+            padding: 12px 20px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 0.95rem;
+            transition: background 0.15s ease;
+        }
+
+        .test-item:last-child {
+            border-bottom: none;
+        }
+
+        .test-item:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .test-info {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .test-icon {
+            font-size: 1rem;
+            line-height: 1.4;
+        }
+
+        .test-icon.pass { color: var(--test-pass); }
+        .test-icon.fail { color: var(--test-fail); }
+
+        .test-name {
+            color: #e2e8f0;
+            line-height: 1.4;
+        }
+
+        .test-error {
+            margin-top: 6px;
+            padding: 8px 12px;
+            background: rgba(255, 107, 107, 0.08);
+            border-left: 3px solid var(--test-fail);
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #ff9e9e;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .test-duration {
+            font-size: 0.8rem;
+            color: #64748b;
+            white-space: nowrap;
+        }
+
+        .test-runner-footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #64748b;
+            font-size: 0.85rem;
+            position: static !important;
+            transform: none !important;
+            letter-spacing: normal !important;
+            text-transform: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="title-group">
+                <h1>🛡️ EDUQUEST — Test Runner</h1>
+                <p>Suite de validation unitaire & d'intégration navigateur (v1.26.0 - Zero Dependency)</p>
+            </div>
+            <div class="header-actions">
+                <a href="index.html" class="btn">← Menu Principal</a>
+                <button id="btn-rerun" class="btn btn-primary">▶ Rejouer les tests</button>
+            </div>
+        </header>
+
+        <section class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-label">Tests Exécutés</span>
+                <span id="stat-total" class="stat-val total">0</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Succès</span>
+                <span id="stat-passed" class="stat-val passed">0</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Échecs</span>
+                <span id="stat-failed" class="stat-val failed">0</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Durée Totale</span>
+                <span id="stat-time" class="stat-val time">0 ms</span>
+            </div>
+        </section>
+
+        <div class="progress-bar-container">
+            <div id="progress-bar" class="progress-bar-fill"></div>
+        </div>
+
+        <main id="suites-container">
+            <!-- Injecté dynamiquement par le test runner -->
+        </main>
+
+        <footer class="test-runner-footer">
+            EDUQUEST v1.26.0 • Exécution native 100% Vanilla ES6+ compatible hors-ligne & file://
+        </footer>
+    </div>
+
+    <!-- Modules Core & Features EDUQUEST v1.26.0 -->
+    <script src="quiz-engine.js"></script>
+    <script src="question-bank.js"></script>
+    <script src="db.js"></script>
+    <script src="js/core/game-rules.js"></script>
+    <script src="js/core/quiz-session.js"></script>
+    <script src="js/features/daily-quests.js"></script>
+
+    <!-- Test Harness & Execution Engine -->
+    <script>
+    (function () {
+        'use strict';
+
+        // Micro assertions
+        const assert = {
+            equal(actual, expected, msg) {
+                if (actual != expected) {
+                    throw new Error(msg || `Attendu: ${expected}, Reçu: ${actual}`);
+                }
+            },
+            strictEqual(actual, expected, msg) {
+                if (actual !== expected) {
+                    throw new Error(msg || `Attendu (strict): ${expected}, Reçu: ${actual}`);
+                }
+            },
+            deepEqual(actual, expected, msg) {
+                const a = JSON.stringify(actual);
+                const e = JSON.stringify(expected);
+                if (a !== e) {
+                    throw new Error(msg || `Incohérence structurelle.\nAttendu: ${e}\nReçu: ${a}`);
+                }
+            },
+            ok(value, msg) {
+                if (!value) throw new Error(msg || `Valeur attendue truthy, reçu: ${value}`);
+            }
+        };
+
+        const suites = [];
+
+        function describe(suiteTitle, fn) {
+            const tests = [];
+            const suite = { title: suiteTitle, tests };
+            suites.push(suite);
+            fn(function it(testTitle, testFn) {
+                tests.push({ title: testTitle, fn: testFn });
+            });
+        }
+
+        // =========================================================================
+        // DÉFINITION DES SUITES DE TESTS (Cohérentes avec les tests Node.js)
+        // =========================================================================
+
+        // 1. GAME RULES
+        describe('GameRules — Calcul des Étoiles & Règles Pédagogiques', function (it) {
+            it('Calcul des étoiles sans bouclier', function () {
+                assert.strictEqual(GameRules.starsFor(1, false), 3, '1er essai = 3 étoiles');
+                assert.strictEqual(GameRules.starsFor(2, false), 2, '2e essai = 2 étoiles');
+                assert.strictEqual(GameRules.starsFor(3, false), 1, '3e essai = 1 étoile');
+                assert.strictEqual(GameRules.starsFor(5, false), 1, '5e essai = 1 étoile');
+            });
+
+            it('Calcul des étoiles avec bouclier d\'étoile consommé', function () {
+                assert.strictEqual(GameRules.starsFor(2, true), 3, '2 essais avec bouclier = 3 étoiles');
+                assert.strictEqual(GameRules.starsFor(3, true), 2, '3 essais avec bouclier = 2 étoiles');
+                assert.strictEqual(GameRules.starsFor(4, true), 1, '4 essais avec bouclier = 1 étoile');
+            });
+
+            it('Condition d\'absorption du bouclier (1 seule fois par question)', function () {
+                assert.strictEqual(GameRules.shouldShieldAbsorb({ attempts: 1, usedShield: false }, true), true);
+                assert.strictEqual(GameRules.shouldShieldAbsorb({ attempts: 1, usedShield: false }, false), false);
+                assert.strictEqual(GameRules.shouldShieldAbsorb({ attempts: 1, usedShield: true }, true), false);
+                assert.strictEqual(GameRules.shouldShieldAbsorb({ attempts: 2, usedShield: false }, true), false);
+            });
+
+            it('Multiplicateurs de Combo progressifs et plafonnés', function () {
+                assert.strictEqual(GameRules.getMultiplier(0), 1.0);
+                assert.strictEqual(GameRules.getMultiplier(1), 1.0);
+                assert.strictEqual(GameRules.getMultiplier(2), 1.2);
+                assert.strictEqual(GameRules.getMultiplier(3), 1.4);
+                assert.strictEqual(GameRules.getMultiplier(4), 1.6);
+                assert.strictEqual(GameRules.getMultiplier(5), 2.0);
+                assert.strictEqual(GameRules.getMultiplier(10), 2.5);
+            });
+
+            it('Calcul complet des récompenses de niveau (XP, pièces, bonus combo)', function () {
+                const gains = GameRules.computeLevelRewards({
+                    stars: 3,
+                    multiplier: 1.2,
+                    chronoEnabled: true,
+                    timeRemaining: 20,
+                    doubleXp: true,
+                    rewards: { xpBase: 15, coinsBase: 10, chronoBonusMaxXp: 15, firstTryBonusXp: 10 }
+                });
+                assert.strictEqual(gains.chronoBonus, 10);
+                assert.strictEqual(gains.perfectBonus, 10);
+                assert.strictEqual(gains.xp, 84);
+                assert.strictEqual(gains.coins, 10);
+                assert.strictEqual(gains.score, 360);
+            });
+        });
+
+        // 2. QUIZ SESSION
+        describe('QuizSession — Pipeline Unifié de Soumission', function (it) {
+            it('Soumission réussie du premier coup', async function () {
+                const attempt = QuizSession.createAttempt({
+                    lesson: { q: 'Question test' },
+                    questionId: 'q_browser_test_1'
+                });
+
+                let correctRecorded = false;
+                const mockDeps = {
+                    AiProvider: {
+                        submitAnswer: async () => ({ isCorrect: true, explanation: 'Bravo !' })
+                    },
+                    DB: {
+                        recordCorrectAnswer: () => { correctRecorded = true; },
+                        hasBooster: () => false,
+                        useBooster: () => false,
+                    },
+                    GameRules,
+                    notify: () => {}
+                };
+
+                const res = await QuizSession.submit(attempt, 'Ma réponse', {}, mockDeps);
+                assert.strictEqual(res.isCorrect, true);
+                assert.strictEqual(attempt.attempts, 1);
+                assert.strictEqual(attempt.isCorrect, true);
+                assert.strictEqual(attempt.usedShield, false);
+                assert.strictEqual(correctRecorded, true);
+            });
+
+            it('Première erreur protégée par le bouclier d\'étoile', async function () {
+                const attempt = QuizSession.createAttempt({
+                    lesson: { q: 'Question difficile' },
+                    questionId: 'q_browser_test_2'
+                });
+
+                let boosterStock = 1;
+                let shieldUsedInDb = false;
+                let wrongRecordedWithShield = null;
+
+                const mockDeps = {
+                    AiProvider: {
+                        submitAnswer: async () => ({ isCorrect: false, explanation: 'Faux' })
+                    },
+                    DB: {
+                        hasBooster: (id) => id === 'boost-shield' && boosterStock > 0,
+                        useBooster: (id) => {
+                            if (id === 'boost-shield' && boosterStock > 0) {
+                                boosterStock--;
+                                shieldUsedInDb = true;
+                                return true;
+                            }
+                            return false;
+                        },
+                        recordWrongAnswer: (shieldSaved) => {
+                            wrongRecordedWithShield = shieldSaved;
+                        }
+                    },
+                    GameRules,
+                    notify: () => {}
+                };
+
+                const res = await QuizSession.submit(attempt, 'Mauvaise', {}, mockDeps);
+                assert.strictEqual(res.isCorrect, false);
+                assert.strictEqual(res.shieldAbsorbed, true);
+                assert.strictEqual(attempt.usedShield, true);
+                assert.strictEqual(shieldUsedInDb, true);
+                assert.strictEqual(boosterStock, 0);
+                assert.strictEqual(wrongRecordedWithShield, true);
+            });
+
+            it('Protection anti double-soumission concurrente', async function () {
+                const attempt = QuizSession.createAttempt({
+                    lesson: { q: 'Question lente' },
+                    questionId: 'q_browser_test_3'
+                });
+
+                let resolveAi;
+                const slowAiPromise = new Promise(resolve => { resolveAi = resolve; });
+
+                const mockDeps = {
+                    AiProvider: {
+                        submitAnswer: () => slowAiPromise
+                    },
+                    DB: {
+                        recordCorrectAnswer: () => {},
+                        hasBooster: () => false,
+                        useBooster: () => false,
+                    },
+                    GameRules,
+                    notify: () => {}
+                };
+
+                const p1 = QuizSession.submit(attempt, 'Réponse A', {}, mockDeps);
+                assert.strictEqual(attempt.checking, true, 'La session doit être verrouillée');
+
+                const res2 = await QuizSession.submit(attempt, 'Réponse B (clic rapide)', {}, mockDeps);
+                assert.strictEqual(res2, null, 'Le clic concurrent doit être ignoré');
+
+                resolveAi({ isCorrect: true, explanation: 'OK' });
+                const res1 = await p1;
+                assert.strictEqual(res1.isCorrect, true);
+                assert.strictEqual(attempt.checking, false, 'Le verrou doit être libéré');
+            });
+        });
+
+        // 3. QUIZ ENGINE
+        describe('QuizEngine — Normalisation, Levenshtein & Correction', function (it) {
+            it('Normalisation de chaîne', function () {
+                assert.strictEqual(QuizEngine.normalize('  ÉlÉpHaNt  '), 'elephant');
+                assert.strictEqual(QuizEngine.normalize('Lumière   Céleste'), 'lumiere celeste');
+            });
+
+            it('Calcul de distance de Levenshtein', function () {
+                assert.strictEqual(QuizEngine.levenshtein('chat', 'chat'), 0);
+                assert.strictEqual(QuizEngine.levenshtein('chat', 'char'), 1);
+                assert.strictEqual(QuizEngine.levenshtein('pythagore', 'pitagore'), 2);
+                assert.strictEqual(QuizEngine.levenshtein('', 'abc'), 3);
+            });
+
+            it('Tolérance Fuzzy Match selon la longueur', function () {
+                assert.strictEqual(QuizEngine.isFuzzyMatch('eau', 'eau'), true);
+                assert.strictEqual(QuizEngine.isFuzzyMatch('eau', 'eaux'), false);
+                assert.strictEqual(QuizEngine.isFuzzyMatch('paris', 'pariz'), true);
+                assert.strictEqual(QuizEngine.isFuzzyMatch('paris', 'poriz'), false);
+                assert.strictEqual(QuizEngine.isFuzzyMatch('triangle', 'tryanglo'), true);
+                assert.strictEqual(QuizEngine.isFuzzyMatch('triangle', 'tryznglo'), false);
+            });
+
+            it('Protection stricte contre les injections XSS via esc()', function () {
+                const raw = '<' + 'script>alert("xss")</' + 'script>&"\'';
+                const escaped = QuizEngine.esc(raw);
+                assert.ok(!escaped.includes('<' + 'script>'));
+                assert.ok(escaped.includes('&lt;script&gt;'));
+                assert.ok(escaped.includes('&quot;'));
+                assert.ok(escaped.includes('&#39;'));
+            });
+
+            it('Correction Type QCM', function () {
+                const q = { type: 'qcm', q: 'Capitale ?', opts: ['Lyon', 'Paris', 'Marseille'], correct: 1 };
+                assert.strictEqual(QuizEngine.grade(q, 1), true);
+                assert.strictEqual(QuizEngine.grade(q, 0), false);
+            });
+
+            it('Correction Type Vrai / Faux', function () {
+                const q = { type: 'vrai_faux', q: 'La Terre est ronde.', correct: true };
+                assert.strictEqual(QuizEngine.grade(q, true), true);
+                assert.strictEqual(QuizEngine.grade(q, false), false);
+            });
+
+            it('Correction Type Réponse Courte avec tolérance', function () {
+                const q = {
+                    type: 'reponse_courte',
+                    q: 'Qui a peint la Joconde ?',
+                    accepted: ['Léonard de Vinci', 'Leonard de Vinci', 'De Vinci']
+                };
+                assert.strictEqual(QuizEngine.grade(q, 'Léonard de Vinci'), true);
+                assert.strictEqual(QuizEngine.grade(q, 'leonard de vinci'), true);
+                assert.strictEqual(QuizEngine.grade(q, 'leonard de vincy'), true);
+                assert.strictEqual(QuizEngine.grade(q, 'Michel-Ange'), false);
+            });
+
+            it('Correction Type Texte à trous', function () {
+                const q = {
+                    type: 'texte_a_trous',
+                    textWithBlanks: 'Le carré de ___ est égal à ___.',
+                    blanks: [['3', 'trois'], ['9', 'neuf']]
+                };
+                assert.strictEqual(QuizEngine.grade(q, ['3', '9']), true);
+                assert.strictEqual(QuizEngine.grade(q, ['trois', 'neuf']), true);
+                assert.strictEqual(QuizEngine.grade(q, ['trois', '8']), false);
+            });
+
+            it('Correction Type Association (Drag & Drop)', function () {
+                const q = {
+                    type: 'drag_and_drop',
+                    items: ['France', 'Italie', 'Espagne'],
+                    targets: ['Madrid', 'Paris', 'Rome'],
+                    pairs: { 'France': 'Paris', 'Italie': 'Rome', 'Espagne': 'Madrid' }
+                };
+                assert.strictEqual(QuizEngine.grade(q, { 0: 1, 1: 2, 2: 0 }), true);
+                assert.strictEqual(QuizEngine.grade(q, { 0: 0, 1: 2, 2: 1 }), false);
+            });
+        });
+
+        // 4. QUESTION BANK
+        describe('QuestionBank — PRNG & Bandes Scolaires', function (it) {
+            it('Respect strict des bandes scolaires', function () {
+                const collegeGrades = ['6eme', '5eme', '4eme', '3eme', '6ème', '5e'];
+                const lyceeGrades = ['2nde', '1ere', 'terminale', 'seconde', 'premiere', 'term'];
+
+                collegeGrades.forEach(g => {
+                    assert.strictEqual(QuestionBank.bandForNiveau(g), 'college', `Collège pour ${g}`);
+                });
+                lyceeGrades.forEach(g => {
+                    assert.strictEqual(QuestionBank.bandForNiveau(g), 'lycee', `Lycée pour ${g}`);
+                });
+            });
+
+            it('Déterminisme absolu de la génération procédurale', function () {
+                const q1 = QuestionBank.generateOne('maths', 15, '4eme', 0);
+                const q2 = QuestionBank.generateOne('maths', 15, '4eme', 0);
+                assert.strictEqual(q1.q, q2.q);
+                assert.deepEqual(q1.opts, q2.opts);
+                assert.strictEqual(q1.correct, q2.correct);
+
+                const qVar = QuestionBank.generateOne('maths', 15, '4eme', 1);
+                assert.ok(q1.q !== qVar.q || q1.correct !== qVar.correct, 'Variante distincte');
+            });
+
+            it('Génération de 20 niveaux échantillonnés sans erreur', function () {
+                for (let i = 0; i < 20; i++) {
+                    const lesson = QuestionBank.generateOne('maths', i, '3eme', 0);
+                    assert.ok(lesson && typeof lesson.q === 'string' && lesson.q.length > 0);
+                    if (lesson.opts) {
+                        assert.ok(Array.isArray(lesson.opts) && lesson.opts.length >= 2);
+                        assert.ok(lesson.correct >= 0 && lesson.correct < lesson.opts.length);
+                    }
+                }
+            });
+
+            it('Extension d\'une matière personnalisée à 100 niveaux complets', function () {
+                const dummySubject = {
+                    id: 'sciences_test',
+                    name: 'Sciences Test',
+                    lessons: [
+                        { q: 'Question 1', opts: ['A', 'B'], correct: 0 },
+                        { q: 'Question 2', opts: ['X', 'Y'], correct: 1 }
+                    ]
+                };
+                const extended = QuestionBank.extend(dummySubject, 100, '5eme');
+                assert.strictEqual(extended.lessons.length, 100, 'Doit contenir exactement 100 leçons');
+                assert.ok(extended.lessons[0].variants.length >= 3);
+            });
+        });
+
+        // 5. DB & STORAGE
+        describe('DB — Consommables, Combos & Streak', function (it) {
+            it('Ajout et consommation de boosters', function () {
+                const initial = DB.getBoosters()['boost-shield'] || 0;
+                DB.addBooster('boost-shield', 2);
+                assert.strictEqual(DB.getBoosters()['boost-shield'], initial + 2);
+                assert.strictEqual(DB.hasBooster('boost-shield'), true);
+
+                const used = DB.useBooster('boost-shield');
+                assert.strictEqual(used, true);
+                assert.strictEqual(DB.getBoosters()['boost-shield'], initial + 1);
+
+                DB.useBooster('boost-shield');
+                assert.strictEqual(DB.getBoosters()['boost-shield'], initial);
+            });
+
+            it('Progression de combo et multiplicateur', function () {
+                DB.resetStreak();
+                assert.strictEqual(DB.getCombo(), 0);
+                assert.strictEqual(DB.getMultiplier(), 1.0);
+
+                DB.recordCorrectAnswer();
+                assert.strictEqual(DB.getCombo(), 1);
+                assert.strictEqual(DB.getMultiplier(), 1.0);
+
+                DB.recordCorrectAnswer();
+                assert.strictEqual(DB.getCombo(), 2);
+                assert.strictEqual(DB.getMultiplier(), 1.2);
+
+                DB.recordCorrectAnswer();
+                assert.strictEqual(DB.getCombo(), 3);
+                assert.strictEqual(DB.getMultiplier(), 1.4);
+            });
+
+            it('Erreur protégée par bouclier conserve le combo', function () {
+                const comboBefore = DB.getCombo();
+                const res = DB.recordWrongAnswer(true);
+                assert.strictEqual(res.shieldSaved, true);
+                assert.ok(DB.getCombo() >= 1, 'Le combo ne doit pas être réinitialisé avec bouclier');
+            });
+
+            it('Erreur non protégée réinitialise combo et streak', function () {
+                const res = DB.recordWrongAnswer(false);
+                assert.strictEqual(res.shieldSaved, false);
+                assert.strictEqual(DB.getCombo(), 0);
+                assert.strictEqual(DB.getStreak(), 0);
+            });
+        });
+
+        // 6. DAILY QUESTS
+        describe('DailyQuests — Quêtes Journalières v1.26.0', function (it) {
+            it('Tirage Fisher-Yates déterministe pour une date', function () {
+                const pick1 = DailyQuests._seededPick('2026-10-17');
+                const pick2 = DailyQuests._seededPick('2026-10-17');
+                assert.strictEqual(pick1.length, 3);
+                assert.strictEqual(pick2.length, 3);
+                assert.deepEqual(pick1, pick2, 'Deux tirages pour la même date doivent être strictement identiques');
+
+                const types = new Set(pick1.map(q => q.type));
+                assert.strictEqual(types.size, 3, 'Les 3 quêtes tirées doivent avoir des types distincts');
+            });
+
+            it('Structure complète et quête de connexion pré-validée', function () {
+                const generated = DailyQuests._generate('2026-10-17');
+                assert.strictEqual(generated.date, '2026-10-17');
+                assert.strictEqual(generated.bonusClaimed, false);
+                assert.strictEqual(generated.quests.length, 4);
+
+                const loginQuest = generated.quests[0];
+                assert.strictEqual(loginQuest.id, 'q_login');
+                assert.strictEqual(loginQuest.type, 'login');
+                assert.strictEqual(loginQuest.progress, 1);
+                assert.strictEqual(loginQuest.target, 1);
+                assert.strictEqual(DailyQuests.isComplete(loginQuest), true);
+            });
+
+            it('Progression via track() sans dépassement', function () {
+                DailyQuests._setClock(() => new Date(2026, 9, 17, 10, 0, 0));
+                const delta = { xp: 100, levels: 10, perfect: 5, firstTry: 10 };
+                const newlyDone = DailyQuests.track(delta);
+                assert.ok(newlyDone.length > 0);
+
+                const data = DailyQuests.get();
+                data.quests.forEach(q => {
+                    assert.ok(q.progress <= q.target, `Le progrès (${q.progress}) ne doit pas dépasser target (${q.target})`);
+                    assert.strictEqual(DailyQuests.isComplete(q), true);
+                });
+            });
+
+            it('Réclamation avec protection anti double-claim', function () {
+                DailyQuests._setClock(() => new Date(2026, 9, 17, 10, 0, 0));
+                const data = DailyQuests.get();
+                const q = data.quests[0];
+                if (!q.claimed) {
+                    const claimed = DailyQuests.claim(q.id);
+                    assert.ok(claimed, 'Quête réclamée');
+                    assert.strictEqual(claimed.claimed, true);
+
+                    const doubleClaim = DailyQuests.claim(q.id);
+                    assert.strictEqual(doubleClaim, null, 'Pas de double réclamation possible');
+                }
+            });
+
+            it('Renouvellement lors du changement de jour', function () {
+                DailyQuests._setClock(() => new Date(2026, 9, 17, 12, 0, 0));
+                const day1 = DailyQuests.get();
+                assert.strictEqual(day1.date, '2026-10-17');
+
+                DailyQuests._setClock(() => new Date(2026, 9, 18, 9, 0, 0));
+                const day2 = DailyQuests.get();
+                assert.strictEqual(day2.date, '2026-10-18');
+                assert.strictEqual(day2.bonusClaimed, false);
+                assert.strictEqual(day2.quests[0].claimed, false, 'Quête de connexion réinitialisée pour le nouveau jour');
+            });
+        });
+
+        // =========================================================================
+        // MOTEUR D'EXÉCUTION & RENDU DE LA PAGE
+        // =========================================================================
+
+        async function runAllTests() {
+            const container = document.getElementById('suites-container');
+            container.innerHTML = '';
+
+            let totalCount = 0;
+            let passCount = 0;
+            let failCount = 0;
+            const startTime = performance.now();
+
+            const statTotal = document.getElementById('stat-total');
+            const statPassed = document.getElementById('stat-passed');
+            const statFailed = document.getElementById('stat-failed');
+            const statTime = document.getElementById('stat-time');
+            const progressBar = document.getElementById('progress-bar');
+
+            // Calcul du nombre total de tests
+            const expectedTotal = suites.reduce((acc, s) => acc + s.tests.length, 0);
+
+            for (const suite of suites) {
+                const suiteEl = document.createElement('div');
+                suiteEl.className = 'suite-card';
+
+                const headerEl = document.createElement('div');
+                headerEl.className = 'suite-header';
+
+                const titleEl = document.createElement('div');
+                titleEl.className = 'suite-title';
+                titleEl.textContent = suite.title;
+
+                const badgeEl = document.createElement('span');
+                badgeEl.className = 'suite-badge';
+                badgeEl.textContent = 'En cours...';
+
+                headerEl.appendChild(titleEl);
+                headerEl.appendChild(badgeEl);
+                suiteEl.appendChild(headerEl);
+
+                const listEl = document.createElement('ul');
+                listEl.className = 'test-list';
+                suiteEl.appendChild(listEl);
+                container.appendChild(suiteEl);
+
+                let suitePass = 0;
+                let suiteFail = 0;
+
+                for (const test of suite.tests) {
+                    totalCount++;
+                    const itemEl = document.createElement('li');
+                    itemEl.className = 'test-item';
+
+                    const t0 = performance.now();
+                    let passed = false;
+                    let errorMsg = null;
+
+                    try {
+                        await test.fn();
+                        passed = true;
+                        passCount++;
+                        suitePass++;
+                    } catch (err) {
+                        passed = false;
+                        failCount++;
+                        suiteFail++;
+                        errorMsg = err.stack || err.message || String(err);
+                    }
+                    const dt = (performance.now() - t0).toFixed(1);
+
+                    itemEl.innerHTML = `
+                        <div class="test-info">
+                            <span class="test-icon ${passed ? 'pass' : 'fail'}">${passed ? '✔' : '✖'}</span>
+                            <div>
+                                <div class="test-name">${test.title}</div>
+                                ${errorMsg ? `<div class="test-error">${QuizEngine.esc(errorMsg)}</div>` : ''}
+                            </div>
+                        </div>
+                        <span class="test-duration">${dt} ms</span>
+                    `;
+                    listEl.appendChild(itemEl);
+
+                    // Mise à jour continue des stats
+                    statTotal.textContent = totalCount;
+                    statPassed.textContent = passCount;
+                    statFailed.textContent = failCount;
+                    const pct = Math.round(((passCount + failCount) / expectedTotal) * 100);
+                    progressBar.style.width = Math.min(100, pct) + '%';
+                    if (failCount > 0) progressBar.classList.add('has-failure');
+                }
+
+                badgeEl.textContent = `${suitePass} / ${suite.tests.length} passés`;
+                if (suiteFail > 0) {
+                    badgeEl.classList.add('has-fail');
+                }
+            }
+
+            const totalDuration = (performance.now() - startTime).toFixed(1);
+            statTime.textContent = `${totalDuration} ms`;
+            progressBar.style.width = '100%';
+        }
+
+        document.getElementById('btn-rerun').addEventListener('click', runAllTests);
+
+        // Lancement automatique à l'ouverture de la page
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', runAllTests);
+        } else {
+            runAllTests();
+        }
+    })();
+    </script>
+</body>
+</html>

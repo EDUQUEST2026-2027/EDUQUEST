@@ -27,7 +27,30 @@
    Capture les erreurs fatales pour afficher une UI élégante plutôt qu'un écran blanc.
 ========================================================================== */
 function setupGlobalErrorHandler() {
-    function showErrorScreen(msg) {
+    function sanitize(str) {
+        return String(str ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function isBenignError(msg, err) {
+        const text = String(msg || '') + ' ' + String(err && err.message ? err.message : '');
+        // Erreurs non fatales fréquentes dans les navigateurs ou PWA
+        return (
+            text.includes('ResizeObserver') ||
+            text.includes('play() failed') ||
+            text.includes('NotAllowedError') ||
+            text.includes('AbortError') ||
+            text.includes('Failed to fetch') ||
+            text.includes('NetworkError') ||
+            text.includes('Script error.')
+        );
+    }
+
+    function showErrorScreen(msg, isPromise = false) {
         if (document.getElementById('eduquest-crash-screen')) return;
         const crashScreen = document.createElement('div');
         crashScreen.id = 'eduquest-crash-screen';
@@ -40,34 +63,44 @@ function setupGlobalErrorHandler() {
             padding: 20px; box-sizing: border-box;
         `;
         crashScreen.innerHTML = `
-            <div style="font-size: 4rem; margin-bottom: 20px;">⚠️</div>
-            <h1 style="color: #ff4757; margin-bottom: 15px; font-size: 2rem;">Aïe... Le jeu a trébuché !</h1>
-            <p style="color: #a4b0be; max-width: 600px; margin-bottom: 30px; line-height: 1.6;">
-                Une erreur inattendue s'est produite en coulisses.<br>
-                <code style="display: block; margin-top: 15px; padding: 10px; background: #2f3542; color: #ff6b81; border-radius: 5px; font-family: monospace; font-size: 0.9rem;">${msg}</code>
+            <div style="font-size: 3.5rem; margin-bottom: 15px;">⚠️</div>
+            <h1 style="color: #ff4757; margin-bottom: 12px; font-size: 1.8rem;">Oups... Une anicroche technique !</h1>
+            <p style="color: #a4b0be; max-width: 600px; margin-bottom: 25px; line-height: 1.5; font-size: 0.95rem;">
+                Le jeu a rencontré un problème inattendu.<br>
+                <code style="display: block; margin-top: 12px; padding: 10px; background: #2f3542; color: #ff6b81; border-radius: 6px; font-family: monospace; font-size: 0.85rem; word-break: break-all;">${sanitize(msg)}</code>
             </p>
-            <button onclick="window.location.reload(true)" style="
-                background: linear-gradient(135deg, #1e90ff, #3742fa);
-                border: none; padding: 15px 30px; color: white; font-weight: bold;
-                border-radius: 8px; cursor: pointer; font-size: 1.2rem;
-                box-shadow: 0 4px 15px rgba(30, 144, 255, 0.4);
-                transition: transform 0.2s;
-            " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                🔄 Recharger la page
-            </button>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+                <button id="eduquest-crash-reload-btn" style="
+                    background: linear-gradient(135deg, #1e90ff, #3742fa);
+                    border: none; padding: 12px 24px; color: white; font-weight: bold;
+                    border-radius: 8px; cursor: pointer; font-size: 1rem;
+                    box-shadow: 0 4px 15px rgba(30, 144, 255, 0.4);
+                ">🔄 Recharger la page</button>
+                <button id="eduquest-crash-dismiss-btn" style="
+                    background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.2);
+                    padding: 12px 20px; color: #ced6e0; font-weight: 600;
+                    border-radius: 8px; cursor: pointer; font-size: 0.95rem;
+                ">Continuer malgré tout</button>
+            </div>
         `;
         document.body.appendChild(crashScreen);
+        const reloadBtn = document.getElementById('eduquest-crash-reload-btn');
+        if (reloadBtn) reloadBtn.addEventListener('click', () => window.location.reload(true));
+        const dismissBtn = document.getElementById('eduquest-crash-dismiss-btn');
+        if (dismissBtn) dismissBtn.addEventListener('click', () => crashScreen.remove());
     }
 
     window.addEventListener('error', (event) => {
-        console.error("Global error caught:", event.error);
+        console.error("Global error caught:", event.error || event.message);
+        if (isBenignError(event.message, event.error)) return;
         showErrorScreen(event.message || "Erreur de script inconnue.");
     });
 
     window.addEventListener('unhandledrejection', (event) => {
         console.error("Unhandled promise rejection:", event.reason);
         const msg = event.reason instanceof Error ? event.reason.message : String(event.reason);
-        showErrorScreen("Erreur asynchrone : " + msg);
+        if (isBenignError(msg, event.reason)) return;
+        showErrorScreen("Erreur asynchrone : " + msg, true);
     });
 }
 setupGlobalErrorHandler();
@@ -78,7 +111,7 @@ setupGlobalErrorHandler();
    ========================================================================== */
 
 /** Version de l'application — affichée dans le footer de toutes les pages. */
-const APP_VERSION = '1.25.0';
+const APP_VERSION = '1.26.0';
 
 /**
  * Crédits du créateur (v1.20) — affichés dans le footer de toutes les pages.
@@ -131,6 +164,16 @@ function refreshFooterCredits() {
     }
 }
 
+// Synchronisation temps réel des crédits et de l'URL GitHub (inter-onglets et événements locaux)
+if (typeof window !== 'undefined') {
+    window.addEventListener('storage', (event) => {
+        if (event.key === 'eduquest_admin_data') {
+            refreshFooterCredits();
+        }
+    });
+    window.addEventListener('eduquest:credits-updated', refreshFooterCredits);
+}
+
 /*
  * RACCOURCIS VERS LA COUCHE DB.JS
  * Ces deux fonctions font le pont entre l'ancien code (qui appelait getOption/
@@ -171,9 +214,12 @@ function currentNiveau() {
  * login.html s'exécuterait tel quel dans le dashboard (XSS stocké).
  */
 function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = String(str ?? '');
-    return div.innerHTML;
+    return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 /**
@@ -266,8 +312,9 @@ function createEnvironment() {
             cloud.style.width = (Math.random() * 200 + 100) + 'px';
             cloud.style.height = (Math.random() * 60 + 40) + 'px';
 
-            // Les nuages commencent hors écran à gauche, la CSS anime leur passage
-            cloud.style.left = '-300px';
+            // Les nuages sont positionnés à gauche et animés de manière fluide
+            cloud.style.left = '0px';
+            cloud.style.animationFillMode = 'backwards';
 
             // Position verticale aléatoire dans la bande 20%-70% de l'écran
             cloud.style.top = (Math.random() * 50 + 20) + '%';
@@ -498,10 +545,15 @@ music.addEventListener('ended', () => {
 document.addEventListener('click', function initMusicOnInteraction() {
     if (globalSoundEnabled && getOption('musiqueActive') !== 'false' && !isMusicPlaying) {
         if (!music.src) music.src = playlist[currentTrack]; // Sécurité : src doit être défini
-        music.play().then(() => { isMusicPlaying = true; }).catch(e => {});
+        music.play().then(() => {
+            isMusicPlaying = true;
+            document.removeEventListener('click', initMusicOnInteraction, true);
+        }).catch(e => {
+            // Échec autoplay / interaction refusée : on conserve l'écouteur pour le prochain clic
+        });
+    } else {
+        document.removeEventListener('click', initMusicOnInteraction, true);
     }
-    // Se retire après le premier clic pour ne pas être appelée à chaque clic
-    document.removeEventListener('click', initMusicOnInteraction, true);
 }, true);
 
 /* ==========================================================================
@@ -1164,146 +1216,11 @@ const Celebrate = (() => {
 })();
 window.Celebrate = Celebrate;
 
-/**
- * Quêtes journalières — source de vérité unique (localStorage via DB).
- * Les quêtes se renouvellent à minuit (heure locale) ; 3 quêtes sont tirées
- * chaque jour dans QUEST_POOL (tirage déterministe basé sur la date), plus la
- * quête de connexion. Une quête accomplie doit être « réclamée » sur le
- * tableau de bord pour toucher sa récompense (XP + pièces).
- */
-const DailyQuests = (() => {
-    const VERSION = 2;
-    const BONUS_COINS = 50; // Coffre bonus quand toutes les quêtes sont réclamées
-
-    const QUEST_POOL = [
-        { type: 'xp',       icon: '⚡', title: 'Gagne 30 XP',                      target: 30, xp: 20, coins: 10, color: '#ffb547' },
-        { type: 'xp',       icon: '🔥', title: 'Gagne 60 XP',                      target: 60, xp: 35, coins: 15, color: '#ff6b6b' },
-        { type: 'levels',   icon: '🏝️', title: 'Réussis 2 niveaux',                target: 2,  xp: 20, coins: 10, color: '#4cc9f0' },
-        { type: 'levels',   icon: '🗺️', title: 'Réussis 4 niveaux',                target: 4,  xp: 35, coins: 20, color: '#3ddc97' },
-        { type: 'perfect',  icon: '⭐', title: 'Décroche 3 étoiles sur un niveau', target: 1,  xp: 25, coins: 15, color: '#ffd166' },
-        { type: 'firstTry', icon: '🎯', title: 'Réponds juste du 1er coup 3 fois', target: 3,  xp: 30, coins: 15, color: '#b388ff' },
-    ];
-
-    function todayKey() {
-        const d = new Date();
-        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    }
-
-    /** Tirage pseudo-aléatoire reproductible pour une date donnée. */
-    function seededPick(dateStr) {
-        let seed = 0;
-        for (const ch of dateStr) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
-        const rand = () => { seed = (seed * 1103515245 + 12345) >>> 0; return seed / 4294967296; };
-        const picked = [], usedTypes = new Set();
-        const pool = QUEST_POOL.slice().sort(() => rand() - 0.5);
-        for (const q of pool) {
-            if (usedTypes.has(q.type)) continue;
-            usedTypes.add(q.type);
-            picked.push(q);
-            if (picked.length === 3) break;
-        }
-        return picked;
-    }
-
-    function generate(date) {
-        const quests = [
-            { id: 'q_login', type: 'login', icon: '🌅', title: 'Connecte-toi aujourd\'hui', target: 1, progress: 1, xp: 10, coins: 5, color: '#6bca82', claimed: false },
-            ...seededPick(date).map((q, i) => ({ id: 'q_' + q.type + '_' + i, ...q, progress: 0, claimed: false })),
-        ];
-        return { v: VERSION, date, quests, bonusClaimed: false };
-    }
-
-    function save(data) {
-        if (typeof DB !== 'undefined' && DB.saveDailyQuests) DB.saveDailyQuests(data);
-    }
-
-    function get() {
-        const today = todayKey();
-        let data = (typeof DB !== 'undefined' && DB.getDailyQuests) ? DB.getDailyQuests() : null;
-        if (!data || data.v !== VERSION || data.date !== today || !Array.isArray(data.quests)) {
-            data = generate(today);
-            save(data);
-        }
-        return data;
-    }
-
-    const isComplete = q => q.progress >= q.target;
-
-    /**
-     * Enregistre la progression après un niveau réussi.
-     * @param {{levels?:number, perfect?:number, firstTry?:number, xp?:number}} delta
-     * @returns {Array} quêtes nouvellement accomplies
-     */
-    function track(delta) {
-        const data = get();
-        const newlyDone = [];
-        data.quests.forEach(q => {
-            const inc = delta[q.type] || 0;
-            if (!inc || isComplete(q)) return;
-            q.progress = Math.min(q.target, q.progress + inc);
-            if (isComplete(q)) newlyDone.push(q);
-        });
-        save(data);
-        if (newlyDone.length) {
-            setTimeout(() => {
-                Celebrate.confetti();
-                newlyDone.forEach(q => showNotification(`🎉 Quête accomplie : ${q.title} — récompense à réclamer !`));
-            }, 450);
-        }
-        return newlyDone;
-    }
-
-    function addRewards(xp, coins) {
-        saveOption('dash_xp', String(parseInt(getOption('dash_xp') || '0') + xp));
-        saveOption('dash_coins', String(parseInt(getOption('dash_coins') || '30') + coins));
-    }
-
-    /** Réclame la récompense d'une quête accomplie. Retourne la quête ou null. */
-    function claim(id) {
-        const data = get();
-        const q = data.quests.find(x => x.id === id);
-        if (!q || q.claimed || !isComplete(q)) return null;
-        q.claimed = true;
-        const mult = (typeof AdminStore !== 'undefined' && typeof AdminStore.getRewardsConfig === 'function')
-            ? (AdminStore.getRewardsConfig().questRewardMultiplier || 1)
-            : 1;
-        const finalXp = Math.round(q.xp * mult);
-        const finalCoins = Math.round(q.coins * mult);
-        addRewards(finalXp, finalCoins);
-        save(data);
-        return { ...q, xp: finalXp, coins: finalCoins };
-    }
-
-    function getBonusCoins() {
-        if (typeof AdminStore !== 'undefined' && typeof AdminStore.getRewardsConfig === 'function') {
-            return AdminStore.getRewardsConfig().dailyChestCoins || BONUS_COINS;
-        }
-        return BONUS_COINS;
-    }
-
-    /** Ouvre le coffre bonus (toutes les quêtes réclamées). */
-    function claimBonus() {
-        const data = get();
-        if (data.bonusClaimed || !data.quests.every(q => q.claimed)) return 0;
-        const chestCoins = getBonusCoins();
-        data.bonusClaimed = true;
-        addRewards(0, chestCoins);
-        save(data);
-        return chestCoins;
-    }
-
-    /** Temps restant avant le renouvellement (minuit local), en texte. */
-    function timeLeftLabel() {
-        const now = new Date();
-        const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-        const mins = Math.max(0, Math.ceil((midnight - now) / 60000));
-        const h = Math.floor(mins / 60), m = mins % 60;
-        return h > 0 ? `${h}h ${String(m).padStart(2, '0')}min` : `${m} min`;
-    }
-
-    return { get, track, claim, claimBonus, getBonusCoins, isComplete, timeLeftLabel, todayKey, BONUS_COINS };
-})();
-window.DailyQuests = DailyQuests;
+/* Quêtes journalières : déplacées dans js/features/daily-quests.js (v1.26).
+   Ce fichier doit être chargé AVANT app.js ; il expose window.DailyQuests. */
+if (typeof window !== 'undefined' && !window.DailyQuests) {
+    console.error('[EDUQUEST] js/features/daily-quests.js manquant : ajoutez-le avant app.js.');
+}
 
 /* ==========================================================================
    7. CARTE DES MATIÈRES (page map.html)
@@ -1453,8 +1370,21 @@ function initMap() {
     /* --- Lecture des paramètres d'URL --- */
     // Ex: map.html?matiere=Mathématiques&icon=maths.png
     const urlParams = new URLSearchParams(window.location.search);
-    const subject = urlParams.get('matiere') || 'Inconnu'; // Nom de la matière
-    const icon    = urlParams.get('icon')    || '📚';      // Emoji ou nom de fichier .png
+    let subject = urlParams.get('matiere');
+    let icon    = urlParams.get('icon');
+
+    if (!subject) {
+        const defaultSubject = (DASH_SUBJECTS && DASH_SUBJECTS[0]) ? DASH_SUBJECTS[0] : null;
+        if (defaultSubject) {
+            subject = defaultSubject.name;
+            icon = icon || defaultSubject.icon || defaultSubject.islandImg || 'Image/ile/maths.webp';
+        } else {
+            subject = 'Mathématiques';
+            icon = icon || 'Image/ile/maths.webp';
+        }
+    } else if (!icon) {
+        icon = 'Image/ile/maths.webp';
+    }
 
     // Matière correspondante côté quiz réel (DASH_SUBJECTS), si elle existe.
     // v1.19 — Recherche aussi par NOM affiché : couvre les matières renommées
@@ -1601,6 +1531,8 @@ function initMap() {
         return { x, y };
     }
 
+    let levelButtonsCache = [];
+
     /**
      * Construit la piste complète (chemin SVG + personnage + boutons de
      * niveau) et l'injecte dans #level-track. Appelée une seule fois au
@@ -1612,9 +1544,7 @@ function initMap() {
         if (!trackEl) return;
         trackEl.style.height = trackHeight + 'px';
 
-        // Chemin reliant tous les niveaux par des segments droits — avec
-        // l'ondulation sinusoïdale de levelCoords, le résultat reste visuellement
-        // fluide sans avoir besoin de courbes de Bézier calculées point par point.
+        // Chemin reliant tous les niveaux par des segments
         let pathD = '';
         for (let i = 1; i <= TOTAL_LEVELS; i++) {
             const { x, y } = levelCoords(i);
@@ -1630,8 +1560,6 @@ function initMap() {
             </button>`;
         }
 
-        // viewBox : x en 0-100 (≈ %), y en px réels de la piste (mêmes unités
-        // que le style.top des boutons/personnage — évite toute conversion).
         trackEl.innerHTML = `
             <svg class="path" viewBox="0 0 100 ${trackHeight}" preserveAspectRatio="none" aria-hidden="true" style="width:100%; height:${trackHeight}px;">
                 <path class="path-shadow" d="${pathD}"></path>
@@ -1654,6 +1582,16 @@ function initMap() {
             </div>
             ${dotsHTML}
         `;
+
+        // Cache O(1) de tous les boutons de niveau pour un rendu ultra-rapide
+        levelButtonsCache = [null]; // 1-indexé
+        trackEl.querySelectorAll('.level-dot').forEach(btn => {
+            const lvl = parseInt(btn.dataset.level, 10);
+            levelButtonsCache[lvl] = {
+                btn,
+                starsDisplay: btn.querySelector('.level-stars-display')
+            };
+        });
     }
     buildLevelTrack();
 
@@ -1773,12 +1711,7 @@ function initMap() {
     /**
      * Met à jour l'apparence visuelle de tous les boutons de niveau.
      * Appelée à chaque modification de la progression (chargement + après un niveau).
-     *
-     * Chaque bouton peut avoir un de ces états exclusifs :
-     *   - 'locked'    : niveau verrouillé (disabled + cadenas)
-     *   - 'completed' : niveau terminé avec au moins 1 étoile
-     *   - 'active'    : niveau courant (en cours)
-     *   - aucune      : débloqué mais pas encore commencé (et pas courant)
+     * Optimisé avec levelButtonsCache (évite 100 querySelector à chaque appel).
      *
      * @param {object} progress - Objet progression complet
      */
@@ -1786,11 +1719,10 @@ function initMap() {
         const currentLevel = findCurrentLevel(progress); // Trouve le niveau courant
 
         for (let i = 1; i <= TOTAL_LEVELS; i++) {
-            const btn = document.querySelector('.level-dot[data-level="' + i + '"]');
-            if (!btn) continue; // Sécurité si le bouton n'existe pas dans le HTML
-
-            const data         = progress.levels[i];
-            const starsDisplay = btn.querySelector('.level-stars-display');
+            const entry = levelButtonsCache[i];
+            if (!entry || !entry.btn) continue;
+            const { btn, starsDisplay } = entry;
+            const data = progress.levels[i];
 
             // Réinitialise toutes les classes d'état avant de les réassigner
             btn.classList.remove('locked', 'active', 'completed', 'selected');
@@ -1801,12 +1733,10 @@ function initMap() {
                 btn.classList.add('locked');
                 btn.disabled = true;
                 if (starsDisplay) starsDisplay.textContent = '🔒';
-
             } else if (data.stars > 0) {
                 // Niveau terminé avec étoiles : affiche les étoiles gagnées
                 btn.classList.add('completed');
                 if (starsDisplay) starsDisplay.textContent = renderStars(data.stars);
-
             } else {
                 // Niveau débloqué mais pas encore terminé
                 if (i === currentLevel) btn.classList.add('active'); // Niveau en cours
@@ -1827,9 +1757,14 @@ function initMap() {
     loadProgress().then(loaded => {
         progress = loaded;
         renderLevels(progress); // Met à jour l'affichage avec les données réelles
-        // Défile jusqu'au niveau courant : indispensable avec une piste de
-        // 100 niveaux, sinon le joueur arrive tout en bas (niveau 1) à chaque fois.
-        scrollToLevel(findCurrentLevel(progress), false);
+        // Défile jusqu'au niveau courant avec stabilisation rAF
+        if (typeof requestAnimationFrame === 'function') {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => scrollToLevel(findCurrentLevel(progress), false));
+            });
+        } else {
+            scrollToLevel(findCurrentLevel(progress), false);
+        }
     });
 
     /* --- Gestion de la modale de résultat de niveau --- */
@@ -1854,35 +1789,20 @@ function initMap() {
     const starsZone = document.getElementById('modal-stars-zone');
 
     /**
-     * Convertit un résultat de quiz en étoiles, sur le même principe que le
-     * dashboard : plus l'élève a eu besoin d'essais, moins il gagne d'étoiles.
+     * Convertit un résultat de quiz en étoiles — règle PURE partagée avec le
+     * dashboard (js/core/game-rules.js). v1.26 : plus aucun effet de bord ici
+     * (l'ancienne version pouvait débiter un bouclier pendant un simple rendu).
      */
     function starsFromAttempts(attempts, usedShield = false) {
-        if (attempts === 1) return 3;
-        if (attempts === 2) {
-            // Si le bouclier a déjà été consommé lors de l'erreur au 1er essai, 3 étoiles sont accordées sans redébit
-            if (usedShield) {
-                return 3;
-            }
-            // Secours si le bouclier est en réserve mais n'avait pas été consommé à la 1re tentative
-            if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster('boost-shield')) {
-                DB.useBooster('boost-shield');
-                window._lastUsedBoosterShield = true;
-                if (typeof showNotification === 'function') {
-                    showNotification('🛡️ Bouclier d\'Étoile consommé : 3 étoiles préservées !', 'info');
-                }
-                if (typeof window.checkBadges === 'function') {
-                    window.checkBadges({ usedShield: true, usedBooster: 'boost-shield', boosterId: 'boost-shield' });
-                }
-                return 3;
-            }
-            return 2;
-        }
-        return 1;
+        return GameRules.starsFor(attempts, usedShield);
     }
 
-    /** Débloque le niveau suivant et sauvegarde, commun aux deux modes. */
-    function unlockNextAndSave(starsEarned) {
+    /**
+     * Débloque le niveau suivant et sauvegarde, commun aux deux modes.
+     * @param {number} starsEarned
+     * @param {object|null} attempt  tentative du mode quiz (null en mode étoiles)
+     */
+    function unlockNextAndSave(starsEarned, attempt = null) {
         if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
         const isFirstSuccess = progress.levels[currentModalLevel].stars === 0 && starsEarned > 0;
         if (starsEarned > progress.levels[currentModalLevel].stars) {
@@ -1904,30 +1824,27 @@ function initMap() {
         if (isFirstSuccess) {
             const rewards = (typeof AdminStore !== 'undefined' && typeof AdminStore.getRewardsConfig === 'function')
                 ? AdminStore.getRewardsConfig()
-                : { xpBase: 15, coinsBase: 10, chronoBonusMaxXp: 15, dailyChestCoins: 50, firstTryBonusXp: 10, questRewardMultiplier: 1 };
+                : GameRules.DEFAULT_REWARDS;
 
-            const chronoEnabled = (typeof DB !== 'undefined' && DB.getOption('modeChrono') === 'true');
-            const chronoBonus = (chronoEnabled && (window.mapQuizTimeRemaining || 0) > 0)
-                ? Math.floor(rewards.chronoBonusMaxXp * (window.mapQuizTimeRemaining / 30))
-                : 0;
-            const firstTryBonus = (starsEarned === 3) ? (rewards.firstTryBonusXp || 0) : 0;
-
-            let baseCalcXp = rewards.xpBase + chronoBonus + firstTryBonus;
-            // Potion Double XP
-            if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster('boost-xp')) {
-                DB.useBooster('boost-xp');
-                usedDoubleXp = true;
-                baseCalcXp *= 2;
-                if (typeof showNotification === 'function') {
+            // Potion Double XP (consommée uniquement sur une 1re réussite)
+            if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster(GameRules.DOUBLE_XP_ID)) {
+                usedDoubleXp = DB.useBooster(GameRules.DOUBLE_XP_ID);
+                if (usedDoubleXp && typeof showNotification === 'function') {
                     showNotification('🧪 Potion Double XP consommée : XP doublée !', 'success');
                 }
             }
 
-            xpGained = Math.round(baseCalcXp * mult);
-            coinsGained = rewards.coinsBase;
-
-            const baseScore = 100 * starsEarned;
-            scoreGained = Math.round(baseScore * mult);
+            const gains = GameRules.computeLevelRewards({
+                stars: starsEarned,
+                multiplier: mult,
+                chronoEnabled: (typeof DB !== 'undefined' && DB.getOption('modeChrono') === 'true'),
+                timeRemaining: window.mapQuizTimeRemaining,
+                doubleXp: usedDoubleXp,
+                rewards,
+            });
+            xpGained = gains.xp;
+            coinsGained = gains.coins;
+            scoreGained = gains.score;
             const currentScore = parseInt(getOption('dash_total_score') || '0', 10);
             saveOption('dash_total_score', String(currentScore + scoreGained));
 
@@ -1943,14 +1860,12 @@ function initMap() {
         // Célébration + progression des quêtes journalières
         if (starsEarned > 0) {
             Celebrate.confetti();
-            DailyQuests.track({
-                levels:   1,
-                xp:       xpGained,
-                perfect:  starsEarned === 3 ? 1 : 0,
-                firstTry: starsEarned === 3 ? 1 : 0,
-            });
-            const usedShield = Boolean(window._lastUsedBoosterShield || (typeof currentAttempt !== 'undefined' && currentAttempt && currentAttempt.usedShield));
-            window._lastUsedBoosterShield = false;
+            DailyQuests.track(GameRules.questDelta({
+                stars: starsEarned,
+                attempts: attempt ? attempt.attempts : 0, // mode étoiles : jamais « du 1er coup »
+                xp: xpGained,
+            }));
+            const usedShield = Boolean(attempt && attempt.usedShield);
             if (typeof window.checkBadges === 'function') {
                 window.checkBadges({
                     justCompletedLevel: true,
@@ -2122,10 +2037,10 @@ function initMap() {
                 }
                 actionsEl.innerHTML = `<button class="dash-btn-primary" id="modal-quiz-continue">Continuer</button>`;
                 document.getElementById('modal-quiz-continue').addEventListener('click', () => {
-                    const res = unlockNextAndSave(starsNow);
+                    const res = unlockNextAndSave(starsNow, currentAttempt);
                     modal.hidden = true;
                     showNotification(`✓ Niveau réussi — ${'⭐'.repeat(starsNow)}${res.isFirstSuccess ? ` (+${res.xpGained} XP ${res.multiplier > 1.0 ? `[x${res.multiplier}] ` : ''}, +${res.coinsGained} pièces, +${res.scoreGained} pts)` : ''}`);
-                });
+                }, { once: true });
             } else {
                 actionsEl.innerHTML = `
                     <button class="dash-btn-ghost" id="modal-quiz-quit">Quitter</button>
@@ -2171,53 +2086,20 @@ function initMap() {
     }
 
     /**
-     * Soumission d'une réponse dans la modale de la carte — même sémantique
-     * que _dashSubmitQuiz du dashboard : correction via AiProvider (serveur
-     * en mode IA, QuizEngine en repli local), fusion de la clé de correction
-     * dans la leçon pour que reveal() surligne la bonne réponse.
+     * Soumission d'une réponse dans la modale de la carte.
+     * v1.26 : délègue au pipeline partagé QuizSession.submit (même code que le
+     * dashboard) — correction, combo et Bouclier d'Étoile (1 seul par question).
      */
     async function _mapSubmitQuiz(rawAnswer) {
         if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
         const attempt = currentAttempt;
-        attempt.submitted = rawAnswer;
-        attempt.attempts += 1;
-        attempt.checking = true;
-        renderModalQuiz();
-
-        const result = await AiProvider.submitAnswer(attempt.questionId, attempt.lesson, rawAnswer);
-        // La modale a pu être fermée (ou un autre niveau ouvert) pendant l'attente :
-        // on n'applique le résultat que si c'est toujours la même tentative.
-        if (currentAttempt !== attempt || modal.hidden) return;
-
-        attempt.checking = false;
-        attempt.answered = true;
-        attempt.isCorrect = result.isCorrect;
-        attempt.explanation = (rawAnswer === 'TEMPS_ECOULE')
-            ? "Temps écoulé ! Tu as dépassé les 30 secondes accordées."
-            : result.explanation;
-        attempt.lesson = { ...attempt.lesson, ...result.answerKey };
-
-        if (result.isCorrect) {
-            if (typeof DB !== 'undefined' && DB.recordCorrectAnswer) {
-                DB.recordCorrectAnswer();
-            }
-        } else {
-            let shieldSaved = false;
-            if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster('boost-shield')) {
-                DB.useBooster('boost-shield');
-                shieldSaved = true;
-                attempt.usedShield = true;
-                window._lastUsedBoosterShield = true;
-                if (typeof showNotification === 'function') {
-                    showNotification('🛡️ Bouclier d\'Étoile consommé : Série et 3 étoiles protégées !', 'info');
-                }
-            }
-            if (typeof DB !== 'undefined' && DB.recordWrongAnswer) {
-                DB.recordWrongAnswer(shieldSaved);
-            }
-        }
-        renderMapHeaderStreak();
-        renderModalQuiz();
+        if (!attempt) return;
+        const res = await QuizSession.submit(attempt, rawAnswer, {
+            render: renderModalQuiz,
+            // La modale a pu être fermée (ou un autre niveau ouvert) pendant l'attente
+            isStale: () => currentAttempt !== attempt || modal.hidden,
+        });
+        if (res) renderMapHeaderStreak();
     }
 
     /**
@@ -3456,19 +3338,22 @@ function initDashboard() {
                 ` : ''}
             </div>`;
             if (isCorrect) {
-                const rewards = (typeof AdminStore !== 'undefined' && typeof AdminStore.getRewardsConfig === 'function')
-                    ? AdminStore.getRewardsConfig()
-                    : { xpBase: 15, coinsBase: 10, chronoBonusMaxXp: 15, firstTryBonusXp: 10 };
-                const chronoEnabled = (typeof DB !== 'undefined' && DB.getOption('modeChrono') === 'true');
-                const chronoBonus = (chronoEnabled && (window.quizTimeRemaining || 0) > 0)
-                    ? Math.floor(rewards.chronoBonusMaxXp * (window.quizTimeRemaining / 30))
-                    : 0;
-                const hasShieldBonus = (state.quiz.attempts === 1 || Boolean(state.quiz.usedShield));
-                const baseTotalXp = rewards.xpBase + chronoBonus + (hasShieldBonus ? (rewards.firstTryBonusXp || 0) : 0);
-                const totalXp = Math.round(baseTotalXp * multiplier);
-                const baseScore = 100 * (hasShieldBonus ? 3 : (state.quiz.attempts === 2 ? 2 : 1));
-                const earnedScore = Math.round(baseScore * multiplier);
-                feedback += `<div class="dash-reward-line"><span>+${totalXp} XP ${multiplier > 1.0 ? `<b style="color:#ffa502;">(x${multiplier.toFixed(1)})</b>` : ''}</span><span>+${rewards.coinsBase} <span class="dash-coin-dot" style="display:inline-block; width:10px;height:10px; vertical-align:middle;"></span></span><span style="color:#ffbe0b; font-weight:700;">+${earnedScore} pts</span></div>`;
+                const isFirstSuccess = state.quiz.lessonIndex === (state.progress[subjectId] || 0);
+                if (isFirstSuccess) {
+                    // Aperçu calculé EXACTEMENT comme le crédit final (_dashFinishQuiz)
+                    const preview = GameRules.computeLevelRewards({
+                        stars: GameRules.starsFor(state.quiz.attempts, state.quiz.usedShield),
+                        multiplier,
+                        chronoEnabled: (typeof DB !== 'undefined' && DB.getOption('modeChrono') === 'true'),
+                        timeRemaining: window.quizTimeRemaining,
+                        doubleXp: (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster(GameRules.DOUBLE_XP_ID)),
+                        rewards: (typeof AdminStore !== 'undefined' && typeof AdminStore.getRewardsConfig === 'function')
+                            ? AdminStore.getRewardsConfig() : null,
+                    });
+                    feedback += `<div class="dash-reward-line"><span>+${preview.xp} XP ${multiplier > 1.0 ? `<b style="color:#ffa502;">(x${multiplier.toFixed(1)})</b>` : ''}</span><span>+${preview.coins} <span class="dash-coin-dot" style="display:inline-block; width:10px;height:10px; vertical-align:middle;"></span></span><span style="color:#ffbe0b; font-weight:700;">+${preview.score} pts</span></div>`;
+                } else {
+                    feedback += `<div class="dash-reward-line"><span>Niveau déjà réussi : entraînement sans récompense.</span></div>`;
+                }
             }
         }
 
@@ -3689,97 +3574,64 @@ function initDashboard() {
         renderQuizModal();
     };
 
+    /* v1.26 : pipeline partagé avec la carte (js/core/quiz-session.js) */
     window._dashSubmitQuiz = async function (rawAnswer) {
         if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
         const quiz = state.quiz;
-        quiz.submitted = rawAnswer;
-        quiz.attempts += 1;
-        quiz.checking = true;
-        renderQuizModal();
-
-        const result = await AiProvider.submitAnswer(quiz.questionId, quiz.lesson, rawAnswer);
-        if (state.quiz !== quiz) return;
-
-        quiz.checking = false;
-        quiz.answered = true;
-        quiz.isCorrect = result.isCorrect;
-        quiz.explanation = (rawAnswer === 'TEMPS_ECOULE')
-            ? "Temps écoulé ! Tu as dépassé les 30 secondes accordées."
-            : result.explanation;
-        quiz.lesson = { ...quiz.lesson, ...result.answerKey };
-
-        if (result.isCorrect) {
-            if (typeof DB !== 'undefined' && DB.recordCorrectAnswer) {
-                DB.recordCorrectAnswer();
-            }
-        } else {
-            let shieldSaved = false;
-            if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster('boost-shield')) {
-                DB.useBooster('boost-shield');
-                shieldSaved = true;
-                quiz.usedShield = true;
-                window._lastUsedBoosterShield = true;
-                showNotification('🛡️ Bouclier d\'Étoile consommé : Série et 3 étoiles protégées !', 'info');
-            }
-            if (typeof DB !== 'undefined' && DB.recordWrongAnswer) {
-                DB.recordWrongAnswer(shieldSaved);
-            }
-        }
-        renderQuizModal();
+        if (!quiz) return;
+        await QuizSession.submit(quiz, rawAnswer, {
+            render: renderQuizModal,
+            isStale: () => state.quiz !== quiz,
+        });
     };
 
     window._dashFinishQuiz = function () {
         if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
+        if (!state.quiz || !state.quiz.isCorrect) return; // double clic / appel parasite
         const { subjectId, lessonIndex, attempts } = state.quiz;
+        const usedShield = Boolean(state.quiz.usedShield);
+        const stars = GameRules.starsFor(attempts, usedShield);
         const streakRes = (typeof DB !== 'undefined' && DB.recordLevelVictory) ? DB.recordLevelVictory() : { streak: 1, combo: 0, multiplier: 1.0 };
         const mult = (streakRes && streakRes.multiplier) || ((typeof DB !== 'undefined' && DB.getMultiplier) ? DB.getMultiplier() : 1.0);
         let xpGained = 0;
         let coinsGained = 0;
         let scoreGained = 0;
-        
-        let usedShield = Boolean(state.quiz && state.quiz.usedShield);
+
         if (lessonIndex === (state.progress[subjectId] || 0)) {
             state.progress[subjectId] = (state.progress[subjectId] || 0) + 1;
-            
+
             const rewards = (typeof AdminStore !== 'undefined' && typeof AdminStore.getRewardsConfig === 'function')
                 ? AdminStore.getRewardsConfig()
-                : { xpBase: 15, coinsBase: 10, chronoBonusMaxXp: 15, dailyChestCoins: 50, firstTryBonusXp: 10, questRewardMultiplier: 1 };
+                : GameRules.DEFAULT_REWARDS;
 
-            const chronoEnabled = (typeof DB !== 'undefined' && DB.getOption('modeChrono') === 'true');
-            const chronoBonus = (chronoEnabled && (window.quizTimeRemaining || 0) > 0)
-                ? Math.floor(rewards.chronoBonusMaxXp * (window.quizTimeRemaining / 30))
-                : 0;
+            // Potion Double XP (v1.26 : plus de débit tardif du bouclier ici,
+            // il n'est consommé qu'au moment de la 1re erreur — QuizSession)
             let usedDoubleXp = false;
-            if (!usedShield && attempts === 2 && typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster('boost-shield')) {
-                DB.useBooster('boost-shield');
-                usedShield = true;
-                showNotification('🛡️ Bouclier d\'Étoile consommé : 3 étoiles préservées !', 'info');
-            }
-            const firstTryBonus = (attempts === 1 || usedShield) ? (rewards.firstTryBonusXp || 0) : 0;
-            
-            let baseCalcXp = rewards.xpBase + chronoBonus + firstTryBonus;
-            // Potion Double XP
-            if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster('boost-xp')) {
-                DB.useBooster('boost-xp');
-                usedDoubleXp = true;
-                baseCalcXp *= 2;
-                showNotification('🧪 Potion Double XP consommée : XP doublée !', 'success');
+            if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster(GameRules.DOUBLE_XP_ID)) {
+                usedDoubleXp = DB.useBooster(GameRules.DOUBLE_XP_ID);
+                if (usedDoubleXp) showNotification('🧪 Potion Double XP consommée : XP doublée !', 'success');
             }
 
-            xpGained = Math.round(baseCalcXp * mult);
-            coinsGained = rewards.coinsBase;
-
-            const baseScore = 100 * ((attempts === 1 || usedShield) ? 3 : (attempts === 2 ? 2 : 1));
-            scoreGained = Math.round(baseScore * mult);
+            const gains = GameRules.computeLevelRewards({
+                stars,
+                multiplier: mult,
+                chronoEnabled: (typeof DB !== 'undefined' && DB.getOption('modeChrono') === 'true'),
+                timeRemaining: window.quizTimeRemaining,
+                doubleXp: usedDoubleXp,
+                rewards,
+            });
+            xpGained = gains.xp;
+            coinsGained = gains.coins;
+            scoreGained = gains.score;
             const currentScore = parseInt(getOption('dash_total_score') || '0', 10);
             saveOption('dash_total_score', String(currentScore + scoreGained));
 
             state.xp += xpGained;
             state.coins += coinsGained;
             triggerBadgesCheck({
-                justAnsweredFirstTry: (attempts === 1 || usedShield),
+                justAnsweredFirstTry: stars === 3,
                 justCompletedLevel: true,
-                starsEarned: (attempts === 1 || usedShield) ? 3 : (attempts === 2 ? 2 : 1),
+                starsEarned: stars,
                 subjectId,
                 usedDoubleXp,
                 usedShield,
@@ -3797,12 +3649,7 @@ function initDashboard() {
         persistState();
 
         Celebrate.confetti();
-        DailyQuests.track({
-            levels:   1,
-            xp:       xpGained,
-            perfect:  (attempts === 1 || usedShield) ? 1 : 0,
-            firstTry: (attempts === 1 || usedShield) ? 1 : 0,
-        });
+        DailyQuests.track(GameRules.questDelta({ stars, attempts, xp: xpGained }));
 
         render();
         if (xpGained > 0) {

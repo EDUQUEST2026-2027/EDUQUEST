@@ -1,9 +1,10 @@
 {
   "name": "eduquest-advanced",
-  "version": "1.25.0",
+  "version": "1.26.0",
   "description": "EDUQUEST — application française de révision gamifiée (6e → Terminale)",
   "private": true,
   "scripts": {
-    "test": "node --check app.js db.js quiz-engine.js question-bank.js admin.js admin-store.js"
+    "test": "node --test tests/*.test.js",
+    "check": "node --check app.js db.js quiz-engine.js question-bank.js admin.js admin-store.js js/core/game-rules.js js/core/quiz-session.js js/features/daily-quests.js"
   }
 }

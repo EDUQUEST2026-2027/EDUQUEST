@@ -1233,8 +1233,9 @@
 
 .level-dot.locked .level-number { color: #777; text-shadow: none; }
 
-/* Tremble si on essaie de cliquer sur un verrouillé */
-.level-dot.locked:hover {
+/* Tremble si on clique sur un verrouillé (évite la boucle de clignotement au survol) */
+.level-dot.locked:active,
+.level-dot.locked.is-shaking {
     transform: translate(-50%, -50%);
     filter: grayscale(80%) brightness(0.6);
     animation: locked-shake 0.4s ease;
@@ -1306,8 +1307,10 @@
     max-width: 480px;
     width: 90%;
     max-height: 88vh;
+    max-height: 88dvh;
     overflow-y: auto;
     overflow-x: hidden;
+    overscroll-behavior: contain;
     scrollbar-width: thin;
     scrollbar-color: rgba(200, 168, 75, 0.5) rgba(15, 23, 42, 0.6);
     animation: modal-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1);
@@ -1569,10 +1572,10 @@
     .character-hat::before { font-size: 8px; top: 10px; }
     .character-cape { width: 24px; height: 14px; }
 
-    .modal { padding: 20px 16px; border-radius: 16px; width: calc(100% - 24px); }
+    .modal { padding: 20px 16px; border-radius: 16px; width: calc(100% - 24px); max-height: 90vh; max-height: 90dvh; overscroll-behavior: contain; }
     .modal-stars-choice { flex-direction: column; }
-    .modal-close-btn { min-height: 44px; display: flex; align-items: center; justify-content: center; }
-    .modal-reset-btn { min-height: 40px; display: flex; align-items: center; justify-content: center; }
+    .modal-close-btn { min-height: 48px; display: flex; align-items: center; justify-content: center; }
+    .modal-reset-btn { min-height: 48px; display: flex; align-items: center; justify-content: center; }
 }
 
 
@@ -1853,7 +1856,7 @@
 }
 
 .dash-subject-card:hover .dash-subject-island {
-    transform: scale(1.1) translateY(-5px);
+    scale: 1.1;
     filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.65)) drop-shadow(0 0 12px rgba(255, 209, 102, 0.4));
 }
 
@@ -2506,9 +2509,11 @@
     }
     .dash-modal {
         width: calc(100% - 20px);
-        max-height: 92vh;
+        max-height: 90vh;
+        max-height: 90dvh;
         padding: 20px 16px;
         border-radius: 16px;
+        overscroll-behavior: contain;
     }
     .dash-modal-actions {
         flex-direction: column-reverse;
@@ -2519,7 +2524,7 @@
     .dash-modal-actions .dash-btn-primary,
     .dash-modal-actions .dash-btn-ghost {
         width: 100%;
-        min-height: 46px;
+        min-height: 48px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -2530,13 +2535,13 @@
     }
     .dash-option-btn {
         padding: 12px 14px;
-        min-height: 46px;
+        min-height: 48px;
         font-size: 13.5px;
         display: flex;
         align-items: center;
     }
     .dash-vf-btn {
-        min-height: 46px;
+        min-height: 48px;
         display: inline-flex;
         align-items: center;
         justify-content: center;

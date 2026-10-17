@@ -406,22 +406,33 @@ const DB = (() => {
        Valeurs possibles : '6eme', '5eme', '4eme', '3eme', '2nde', '1ere', 'terminale'
     ----------------------------------------------------------------------- */
 
-    /**
-     * Retourne le niveau scolaire actuellement sélectionné.
-     * @returns {string|null} Ex: '6eme', ou null si aucun niveau sélectionné
-     */
-    function getNiveau() {
-        return localStorage.getItem(KEYS.NIVEAU) || null;
+    function _niveauKey() {
+        return 'eduquest_niveau_' + _userScope();
     }
 
     /**
-     * Sauvegarde le niveau scolaire sélectionné.
+     * Retourne le niveau scolaire actuellement sélectionné pour l'utilisateur courant.
+     * @returns {string|null} Ex: '6eme', ou null si aucun niveau sélectionné
+     */
+    function getNiveau() {
+        try {
+            return localStorage.getItem(_niveauKey()) || localStorage.getItem(KEYS.NIVEAU) || null;
+        } catch { return null; }
+    }
+
+    /**
+     * Sauvegarde le niveau scolaire sélectionné (isolé par utilisateur).
      * En mode API, synchronise aussi l'option 'niveau_actuel' vers le serveur.
      *
      * @param {string} niveau - Ex: '6eme', '5eme'
      */
     function setNiveau(niveau) {
-        localStorage.setItem(KEYS.NIVEAU, niveau); // Sauvegarde locale immédiate
+        try {
+            localStorage.setItem(_niveauKey(), niveau);
+            if (_userScope() === 'guest') {
+                localStorage.setItem(KEYS.NIVEAU, niveau);
+            }
+        } catch { }
         if (USE_API) {
             // Synchronisation optionnelle vers le serveur
             saveOptionAsync('niveau_actuel', niveau).catch(() => { });
@@ -815,10 +826,23 @@ const DB = (() => {
      * @returns {Promise<string>} Ex: 'sh_a3f2c...'
      */
     async function _secureHash(str) {
-        const encoded = new TextEncoder().encode(String(str || ''));
-        const buf = await crypto.subtle.digest('SHA-256', encoded);
-        const hex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-        return 'sh_' + hex;
+        if (typeof crypto !== 'undefined' && crypto.subtle && typeof crypto.subtle.digest === 'function') {
+            try {
+                const encoded = new TextEncoder().encode(String(str || ''));
+                const buf = await crypto.subtle.digest('SHA-256', encoded);
+                const hex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+                return 'sh_' + hex;
+            } catch { }
+        }
+        // Repli déterministe si le navigateur est en contexte non sécurisé (HTTP local intranet)
+        let h1 = 0x811c9dc5, h2 = 0x6c62272e;
+        const s = String(str || '');
+        for (let i = 0; i < s.length; i++) {
+            const ch = s.charCodeAt(i);
+            h1 = Math.imul(h1 ^ ch, 0x01000193);
+            h2 = Math.imul(h2 ^ (ch + i), 0x5bd1e995);
+        }
+        return 'sh_fb_' + (h1 >>> 0).toString(16).padStart(8, '0') + (h2 >>> 0).toString(16).padStart(8, '0');
     }
 
     /**
@@ -996,6 +1020,36 @@ const DB = (() => {
        Les fonctions préfixées par _ (ex: _getSession, _simpleHash) sont privées
        et ne doivent pas être appelées directement depuis app.js.
     ----------------------------------------------------------------------- */
+    function _questsKey() {
+        return 'eduquest_quests_' + _userScope();
+    }
+
+    function getDailyQuests() {
+        try {
+            const key = _questsKey();
+            let raw = localStorage.getItem(key);
+            if (!raw && _userScope() === 'guest') {
+                raw = localStorage.getItem(KEYS.QUESTS);
+                if (raw) {
+                    try { localStorage.setItem(key, raw); } catch { }
+                }
+            }
+            return raw ? JSON.parse(raw) : null;
+        } catch { return null; }
+    }
+
+    function saveDailyQuests(questsObj) {
+        try {
+            localStorage.setItem(_questsKey(), JSON.stringify(questsObj));
+            if (_userScope() === 'guest') {
+                localStorage.setItem(KEYS.QUESTS, JSON.stringify(questsObj));
+            }
+        } catch { }
+    }
+
+    /* -----------------------------------------------------------------------
+       EXPORT PUBLIC — Interface de DB accessible depuis app.js et les pages HTML
+       ----------------------------------------------------------------------- */
     return {
         // --- Options du jeu ---
         getOption,              // Lecture synchrone (utilise le cache)
@@ -1048,14 +1102,9 @@ const DB = (() => {
         recordLevelVictory,     // Enregistre un niveau réussi (+1 streak)
         resetStreak,            // Réinitialise série et combo
 
-        // --- Quêtes (Phase 3.2) ---
-        getDailyQuests: () => {
-            try { return JSON.parse(localStorage.getItem(KEYS.QUESTS)) || null; }
-            catch { return null; }
-        },
-        saveDailyQuests: (questsObj) => {
-            localStorage.setItem(KEYS.QUESTS, JSON.stringify(questsObj));
-        },
+        // --- Quêtes (Phase 3.2 — isolées par compte) ---
+        getDailyQuests,
+        saveDailyQuests,
 
         // --- Membres / comptes locaux (panneau d'administration) ---
         listLocalMembers,       // Liste des comptes locaux (email, pseudo, rôle, date)
@@ -1071,6 +1120,8 @@ const DB = (() => {
 
 })();
 
-if (typeof window !== 'undefined') {
-    window.DB = DB;
-}
+if (typeof window !== 'undefined') window.DB = DB;
+if (typeof globalThis !== 'undefined') globalThis.DB = DB;
+if (typeof module !== 'undefined' && module.exports) module.exports = DB;
+
+

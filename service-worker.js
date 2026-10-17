@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eduquest-cache-v1.25.0';
+const CACHE_NAME = 'eduquest-cache-v1.26.0';
 
 const PRECACHE_URLS = [
   './',
@@ -19,6 +19,9 @@ const PRECACHE_URLS = [
   'cookies.js',
   'question-bank.js',
   'quiz-engine.js',
+  'js/core/game-rules.js',
+  'js/core/quiz-session.js',
+  'js/features/daily-quests.js',
   'manifest.webmanifest',
   'Image/logo.webp',
   'Image/personnages/robot.webp',

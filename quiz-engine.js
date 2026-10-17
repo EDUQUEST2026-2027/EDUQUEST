@@ -41,9 +41,12 @@ const QuizEngine = (() => {
      * (Doublon local de escapeHtml() de app.js, chargé après ce fichier.)
      */
     function esc(str) {
-        const div = document.createElement('div');
-        div.textContent = String(str ?? '');
-        return div.innerHTML;
+        return String(str ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     /** Normalise une chaîne pour comparaison (accents, casse, espaces). */
@@ -463,5 +466,15 @@ const QuizEngine = (() => {
         reveal(container, question, submitted) {
             engineFor(question).reveal(container, question, submitted);
         },
+        /** Algorithmes de comparaison exposés pour les tests et extensions */
+        levenshtein,
+        isFuzzyMatch,
+        normalize,
+        esc,
     };
 })();
+
+if (typeof window !== 'undefined') window.QuizEngine = QuizEngine;
+if (typeof globalThis !== 'undefined') globalThis.QuizEngine = QuizEngine;
+if (typeof module !== 'undefined' && module.exports) module.exports = QuizEngine;
+
