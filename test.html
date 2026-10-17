@@ -918,6 +918,7 @@
             it('Validation des leçons écrites (QCM, texte à trous, etc.)', function () {
                 assert.strictEqual(AdminStore.validateLesson({ type: 'qcm', q: 'Q ?', opts: ['1', '2'], correct: 0 }), null);
                 assert.notStrictEqual(AdminStore.validateLesson({ type: 'qcm', q: 'Q ?', opts: ['1', '1'], correct: 0 }), null);
+                assert.strictEqual(AdminStore.validateLesson({ type: 'texte_a_choix', textWithBlanks: 'A [___] B', choices: [['1','2']] }), null);
             });
 
             it('Création de matière personnalisée et génération d\'identifiant slug', function () {

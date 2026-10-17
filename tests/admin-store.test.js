@@ -82,6 +82,16 @@ test('AdminStore - Validation des leçons et types de questions', async (t) => {
         });
         assert.equal(valid, null);
     });
+
+    await t.test('Texte à choix déroulant valide', () => {
+        const valid = AdminStore.validateLesson({
+            type: 'texte_a_choix',
+            textWithBlanks: 'Il fait beau [___] je sors.',
+            choices: [['donc', 'mais', 'car']],
+            correct: [0],
+        });
+        assert.equal(valid, null);
+    });
 });
 
 test('AdminStore - Matières personnalisées et surcharges', async (t) => {

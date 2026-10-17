@@ -6,8 +6,8 @@
 -- RÔLE :
 -- Schéma relationnel complet pour le mode serveur (backend d'établissement).
 -- Il prend en charge l'authentification (élèves & administrateurs), les 13 matières
--- (100 niveaux chacune), les paramètres d'options (accessibilité, défi chrono, éco-énergie),
--- les quêtes journalières et l'inventaire des consommables/avatars/halos de la boutique.
+-- et leurs rattachements de cycles/classes, la configuration intégrale du site et de l'IA,
+-- les leçons manuelles, les options, quêtes journalières et l'inventaire boutique.
 --
 -- COMPATIBILITÉ MOTEURS :
 --   - MySQL 8.0+ / MariaDB 10.5+ : syntaxe native directe
@@ -48,19 +48,6 @@ CREATE INDEX IF NOT EXISTS idx_joueurs_role  ON joueurs(role);
 -- =============================================================================
 -- 2. TABLE : parametres (Options et préférences par joueur)
 -- =============================================================================
--- Options supportées :
---   - 'volumeMusique'     : 0 à 100
---   - 'volumeEffets'      : 0 à 100
---   - 'sonsActifs'        : 'true' / 'false'
---   - 'musiqueActive'     : 'true' / 'false'
---   - 'effetsActifs'      : 'true' / 'false'
---   - 'pleinEcran'        : 'true' / 'false'
---   - 'particules'        : 'true' / 'false' (effets visuels célestes)
---   - 'animationsActives' : 'true' / 'false' (ondulations & flottements)
---   - 'ecoMode'           : 'true' / 'false' (économie de batterie mobile)
---   - 'modeChrono'        : 'true' / 'false' (défi chronométré 30s)
---   - 'niveau_actuel'     : '6eme', '5eme', '4eme', '3eme', '2nde', '1ere', 'terminale'
--- =============================================================================
 CREATE TABLE IF NOT EXISTS parametres (
     id          INT AUTO_INCREMENT PRIMARY KEY,
     joueur_id   INT          NOT NULL,
@@ -74,11 +61,60 @@ CREATE TABLE IF NOT EXISTS parametres (
 CREATE INDEX IF NOT EXISTS idx_parametres_joueur ON parametres(joueur_id);
 
 -- =============================================================================
--- 3. TABLE : progression (Parcours des 13 matières et 100 niveaux)
+-- 3. TABLE : configuration_site (Paramètres généraux du site gérés par l'admin)
 -- =============================================================================
--- Matières officielles :
---   'mathematiques', 'francais', 'histoire', 'geo', 'svt', 'anglais',
---   'physique', 'chimie', 'technologie', 'philo', 'emc', 'nsi', 'ses'
+CREATE TABLE IF NOT EXISTS configuration_site (
+    cle         VARCHAR(100) PRIMARY KEY,
+    valeur      TEXT         NOT NULL,
+    description VARCHAR(255) DEFAULT NULL,
+    modifie_le  DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- =============================================================================
+-- 4. TABLE : configuration_ia (Webhooks Make.com et paramètres d'agents IA)
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS configuration_ia (
+    cle         VARCHAR(100) PRIMARY KEY,
+    valeur      TEXT         NOT NULL,
+    description VARCHAR(255) DEFAULT NULL,
+    modifie_le  DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- =============================================================================
+-- 5. TABLE : matieres_config (Configuration des matières et niveaux scolaires)
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS matieres_config (
+    id           VARCHAR(50)  PRIMARY KEY,
+    nom          VARCHAR(100) NOT NULL,
+    icone        VARCHAR(100) NOT NULL,
+    bande        VARCHAR(50)  NOT NULL DEFAULT 'tous', -- 'college', 'lycee', 'primaire', 'superieur', 'tous'
+    classes_json JSON         NOT NULL,                -- Ex: '["6eme", "5eme", "4eme", "3eme"]'
+    active       BOOLEAN      NOT NULL DEFAULT TRUE,
+    est_custom   BOOLEAN      NOT NULL DEFAULT FALSE,
+    description  TEXT         DEFAULT NULL,
+    modifie_le   DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- =============================================================================
+-- 6. TABLE : lecons_manuelles (Questions personnalisées saisies par l'enseignant)
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS lecons_manuelles (
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    matiere_id     VARCHAR(50)  NOT NULL,
+    niveau_scolaire VARCHAR(50) DEFAULT NULL,          -- Ex: '6eme', 'college', 'tous'
+    ordre          INT          NOT NULL DEFAULT 1,
+    type           VARCHAR(50)  NOT NULL DEFAULT 'qcm', -- 'qcm', 'vrai_faux', 'reponse_courte', 'texte_a_trous', 'texte_a_choix', 'drag_and_drop'
+    titre          VARCHAR(255) NOT NULL,
+    contenu_json   JSON         NOT NULL,               -- Structure complète de la question
+    cree_le        DATETIME     DEFAULT CURRENT_TIMESTAMP,
+    modifie_le     DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (matiere_id) REFERENCES matieres_config(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_lecons_matiere ON lecons_manuelles(matiere_id);
+
+-- =============================================================================
+-- 7. TABLE : progression (Parcours des 13 matières et 100 niveaux)
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS progression (
     id           INT AUTO_INCREMENT PRIMARY KEY,
@@ -98,7 +134,7 @@ CREATE INDEX IF NOT EXISTS idx_progression_joueur  ON progression(joueur_id);
 CREATE INDEX IF NOT EXISTS idx_progression_mat_niv ON progression(joueur_id, matiere, niveau);
 
 -- =============================================================================
--- 4. TABLE : quetes_journalieres (Suivi des quêtes quotidiennes à minuit)
+-- 8. TABLE : quetes_journalieres (Suivi des quêtes quotidiennes à minuit)
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS quetes_journalieres (
     id            INT AUTO_INCREMENT PRIMARY KEY,
@@ -114,7 +150,7 @@ CREATE TABLE IF NOT EXISTS quetes_journalieres (
 CREATE INDEX IF NOT EXISTS idx_quetes_joueur_date ON quetes_journalieres(joueur_id, date_quete);
 
 -- =============================================================================
--- 5. TABLE : inventaire (Consommables, Halos, Avatars, Titres et Thèmes)
+-- 9. TABLE : inventaire (Consommables, Halos, Avatars, Titres et Thèmes)
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS inventaire (
     id         INT AUTO_INCREMENT PRIMARY KEY,
@@ -131,7 +167,7 @@ CREATE TABLE IF NOT EXISTS inventaire (
 CREATE INDEX IF NOT EXISTS idx_inventaire_joueur ON inventaire(joueur_id);
 
 -- =============================================================================
--- 6. VUES ANALYTIQUES
+-- 10. VUES ANALYTIQUES
 -- =============================================================================
 
 -- Vue 1 : Progression détaillée par joueur
@@ -183,7 +219,7 @@ GROUP BY j.id, j.username, j.role, j.xp, j.coins, j.streak, j.max_streak
 ORDER BY j.xp DESC, total_etoiles DESC;
 
 -- =============================================================================
--- 7. DONNÉES DE DÉMONSTRATION & AMORÇAGE
+-- 11. DONNÉES DE DÉMONSTRATION & AMORÇAGE
 -- =============================================================================
 
 -- Joueur élève de test
@@ -207,6 +243,40 @@ INSERT IGNORE INTO parametres (joueur_id, cle, valeur) VALUES
     (1, 'modeChrono',        'false'),
     (1, 'pleinEcran',        'false'),
     (1, 'niveau_actuel',     '6eme');
+
+-- Configuration globale du site (synchronisée avec AdminStore.getSiteConfig)
+INSERT IGNORE INTO configuration_site (cle, valeur, description) VALUES
+    ('siteTitle',            'EDUQUEST — Révision Gamifiée',       'Titre principal affiché dans l’en-tête'),
+    ('tagline',              'Explore les îles du savoir !',       'Slogan affiché sur la page d’accueil'),
+    ('chronoQuestionSeconds','30',                                 'Durée en secondes du défi chronométré'),
+    ('xpMultiplier',         '1.0',                                'Multiplicateur global d’expérience'),
+    ('coinsMultiplier',      '1.0',                                'Multiplicateur global de pièces'),
+    ('soundVolume',          '80',                                 'Volume par défaut des effets sonores'),
+    ('musicVolume',          '70',                                 'Volume par défaut de la musique d’ambiance'),
+    ('allowRegistration',    'true',                               'Autoriser l’auto-inscription des élèves');
+
+-- Configuration de l’IA et Webhooks Make.com (synchronisée avec AdminStore.getAiConfig)
+INSERT IGNORE INTO configuration_ia (cle, valeur, description) VALUES
+    ('generateWebhookUrl',   '',                                   'Webhook Make pour la génération de questions par IA'),
+    ('validateWebhookUrl',   '',                                   'Webhook Make pour la validation de réponses ouvertes'),
+    ('fetchTimeoutMs',       '8000',                               'Délai d’attente réseau maximal en millisecondes'),
+    ('fallbackToOffline',    'true',                               'Basculer automatiquement sur la banque locale en cas d’erreur');
+
+-- Configuration des 13 matières de base avec leurs cycles et classes autorisées
+INSERT IGNORE INTO matieres_config (id, nom, icone, bande, classes_json, active, est_custom, description) VALUES
+    ('mathematiques', 'Mathématiques', '📐', 'tous',    '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]', TRUE, FALSE, 'Algèbre, géométrie et logique'),
+    ('francais',      'Français',      '📖', 'tous',    '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]', TRUE, FALSE, 'Grammaire, littérature et orthographe'),
+    ('histoire',      'Histoire',      '🏛️', 'tous',    '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]', TRUE, FALSE, 'Grandes époques et repères historiques'),
+    ('geo',           'Géographie',    '🌍', 'tous',    '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]', TRUE, FALSE, 'Territoires, mondialisation et cartes'),
+    ('svt',           'SVT',           '🧬', 'tous',    '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]', TRUE, FALSE, 'Sciences de la Vie et de la Terre'),
+    ('anglais',       'Anglais',       '🇬🇧', 'tous',    '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]', TRUE, FALSE, 'Vocabulaire, verbes irréguliers et grammaire'),
+    ('physique',      'Physique',      '⚡', 'tous',    '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]', TRUE, FALSE, 'Électricité, mécanique et optique'),
+    ('chimie',        'Chimie',        '🧪', 'tous',    '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]', TRUE, FALSE, 'Atomes, molécules et réactions chimiques'),
+    ('technologie',   'Technologie',   '⚙️', 'college', '["6eme","5eme","4eme","3eme"]',                           TRUE, FALSE, 'Algorithmique, capteurs et réseaux du collège'),
+    ('nsi',           'NSI Numérique', '💻', 'lycee',   '["2nde","1ere","terminale"]',                             TRUE, FALSE, 'Informatique, Python, web et bases de données'),
+    ('ses',           'SES Économie',  '📊', 'lycee',   '["2nde","1ere","terminale"]',                             TRUE, FALSE, 'Économie, sociologie et sciences politiques'),
+    ('philo',         'Philosophie',   '🧠', 'lycee',   '["terminale"]',                                            TRUE, FALSE, 'Concepts et réflexions de Terminale'),
+    ('emc',           'EMC Citoyen',   '⚖️', 'tous',    '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]', TRUE, FALSE, 'Enseignement Moral et Civique');
 
 -- Inventaire initial de l'élève
 INSERT IGNORE INTO inventaire (joueur_id, item_id, categorie, quantite, equipe) VALUES

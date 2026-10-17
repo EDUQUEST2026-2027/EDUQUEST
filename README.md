@@ -42,10 +42,12 @@ Puis ouvrez l'URL affichée (ex. `http://localhost:8080`).
   - **Potion Double XP :** Multiplie par 2 l'XP gagnée au prochain niveau réussi.
   - **Bouclier d'Étoile :** Préserve le score 3 étoiles ainsi que la série de combos en cas de première erreur.
   - Réachats illimités et historique d'inventaire complet par utilisateur.
-- **🏛️ Matières enrichies (13 matières) & cycle adapté :**
-  - **Technologie :** Réservée aux niveaux collège (6e, 5e, 4e, 3e) avec algorithmique, capteurs, matériaux et réseaux.
-  - **NSI & Numérique :** Dédiée aux niveaux lycée (2nde SNT, 1ère & Terminale NSI) avec programmation Python, SQL, protocoles réseaux, complexité et arbres binaires, accompagnée de son îlot flottant cybernétique vectoriel (`nsi.svg`).
-  - **SES (Sciences Économiques & Sociales) :** Marché, création monétaire, PIB, socialisation et commerce international, avec son îlot boursier doré vectoriel (`ses.svg`).
+- **🏛️ 13 Matières adaptées au cycle & filtrage par niveau d'étude :**
+  - **Rattachement par cycle scolaire :** Chaque matière est associée à un cycle (`band` : Collège, Lycée, Primaire, Supérieur ou Tous) et à des classes autorisées spécifiques (`allowedNiveaux`).
+  - **Filtrage automatique :** La carte de l'aventure (`map.html`) et le tableau de bord vérifient l'admissibilité de l'élève et masquent/avertissent si la matière n'est pas au programme de son niveau d'étude actuel.
+  - **Technologie :** Réservée aux niveaux collège (6e, 5e, 4e, 3e).
+  - **NSI & Numérique :** Dédiée aux niveaux lycée (2nde, 1ère, Terminale) avec son îlot vectoriel cybernétique (`nsi.svg`).
+  - **SES (Sciences Économiques & Sociales) :** Marché, création monétaire, PIB et socialisation avec son îlot vectoriel doré (`ses.svg`).
   - **Philosophie & EMC :** Îlots dédiés (`philo.svg`, `emc.svg`) et questions de réflexion éthique, citoyenne et républicaine.
   - **Chimie dédiée :** Scission définitive avec questions et banque propres.
 - **🏝️ Îles flottantes & personnalisation graphique :** Remplacement des symboles textuels par de véritables îles flottantes animées, support d'upload d'illustrations locales (avec compression Canvas automatique) et choix d'icônes dans le panneau d'administration.
@@ -69,7 +71,7 @@ Puis ouvrez l'URL affichée (ex. `http://localhost:8080`).
   - **Thèmes cosmiques & Potions magiques.**
 - **🏆 Succès & Badges déblocables :** Système de trophées récompensant chaque grand palier (premier quiz, sans faute, score parfait, séries de victoires, maître du combo, maître des îles...).
 - **🎉 Célébrations & Confettis natifs :** Moteur de confettis Canvas autonome (`Celebrate`), 100 % hors-ligne sans CDN, célébrant les 3 étoiles, les montées de niveau, la réussite des quêtes et l'ouverture du coffre.
-- **🤖 Mode IA optionnel :** Génération et correction dynamique des questions via scénarios Make (`ai-provider.js`), avec repli local transparent.
+- **🤖 Mode IA configurable :** Génération et correction dynamique des questions via scénarios Make (`ai-provider.js`), paramétrables dans le panneau d'administration, avec repli local transparent.
 - **🔒 Respect de la vie privée & RGPD :** Zéro publicité, zéro traceur tiers intrusif, bandeau de cookies conforme CNIL (`cookies.js`) et mentions légales complètes (`legal.html`).
 
 ---
@@ -84,7 +86,7 @@ Puis ouvrez l'URL affichée (ex. `http://localhost:8080`).
 │   ├── core/     → game-rules.js, quiz-session.js
 │   └── features/ → daily-quests.js
 ├── docs/  → ARCHITECTURE.md, GUIDE_CONTRIBUTION.md, API_PERSISTENCE.md
-└── tests/ → daily-quests, db, game-rules-and-session, question-bank, quiz-engine (.test.js)
+└── tests/ → admin-store, cookies, daily-quests, db, game-rules-and-session, question-bank, quiz-engine (.test.js), test-helper.js
 ```
 
 | Fichier / Dossier | Rôle |
@@ -94,7 +96,7 @@ Puis ouvrez l'URL affichée (ex. `http://localhost:8080`).
 | `map.html` | Carte interactive d'une matière : parcours des îles, niveaux jouables (1 à 100), modale de quiz avec combo et timer chrono |
 | `admin.html` | **Panneau d'administration unifié** : interface d'administration avec navigation par onglets |
 | `legal.html` | Mentions légales, politique de confidentialité RGPD et gestion des cookies |
-| `test.html` | **Banc de tests navigateur autonome** : interface d'évaluation complète avec retour visuel immédiat |
+| `test.html` | **Banc de tests navigateur autonome** : interface d'évaluation complète avec retour visuel immédiat, benchmark et banc interactif |
 | `css/` | Feuilles de style modulaires : `global.css`, `style.css`, `quests.css` et `admin.css` |
 | `js/app.js` | Contrôleur principal de jeu : gestionnaire de vues, audio, HUD, boutique, confettis Canvas |
 | `js/db.js` | Couche d'accès aux données : persistance locale isolée par utilisateur (`localStorage`) ou API SQL optionnelle |
@@ -104,11 +106,11 @@ Puis ouvrez l'URL affichée (ex. `http://localhost:8080`).
 | `js/core/quiz-session.js` | Pipeline unifié de soumission des quiz et consommation sécurisée des boosters |
 | `js/features/daily-quests.js` | Moteur de quêtes journalières déterministes (tirage Fisher-Yates, renouvellement minuit) |
 | `js/ai-provider.js` | Adaptateur IA : communication avec Make/webhooks pour génération/correction à la volée avec repli local |
-| `js/admin-store.js` | Configuration centrale du panneau d'administration (niveaux, leçons, boutique, récompenses) |
+| `js/admin-store.js` | Configuration centrale du panneau d'administration (niveaux, leçons, configuration site & IA, boutique, récompenses) |
 | `js/admin.js` | Moteur et interface utilisateur du panneau d'administration |
 | `js/cookies.js` | Bandeau de consentement RGPD conforme CNIL (mémorisation du choix 12 mois) |
 | `service-worker.js` | PWA et mise en cache hors-ligne intégrale de l'application (v1.26.0) |
-| `schema.sql` | Schéma MySQL pour le déploiement avec serveur backend optionnel |
+| `schema.sql` | Schéma relationnel complet pour le déploiement avec serveur backend optionnel |
 | `docs/` | Guides techniques approfondis : [Architecture](docs/ARCHITECTURE.md), [Guide de contribution](docs/GUIDE_CONTRIBUTION.md), [Persistance des données](docs/API_PERSISTENCE.md) |
 
 ---
@@ -117,14 +119,22 @@ Puis ouvrez l'URL affichée (ex. `http://localhost:8080`).
 
 Accessible depuis le lien « 🔐 Administration » en bas de page ou directement via `admin.html` :
 
+- **⚙️ Réglages Généraux & IA :**
+  - **Configuration du site :** Titre, slogan, durée par défaut du défi chronométré, multiplicateurs d'XP et de pièces, volumes sonores par défaut et bascule d'autorisation des inscriptions directes.
+  - **Configuration de l'IA :** Paramétrage direct des Webhooks Make.com pour la génération de quiz et la correction de réponses libres, délai d'expiration (timeout) réseau et bascule de repli hors-ligne.
 - **👥 Membres :** Création, modification de mot de passe, attribution des rôles (`eleve` / `admin`) ou suppression de comptes locaux avec sessions isolées.
 - **🎓 Niveaux scolaires :** Ajout, modification, réorganisation et suppression des niveaux/classes (6ème, 5ème, 4ème, 3ème, 2nde, 1ère, Terminale, classes personnalisées).
-- **📚 Matières & Leçons :** Personnalisation des intitulés, des icônes et création de questions personnalisées (parmi les 6 types disponibles).
+- **📚 Matières & Leçons :**
+  - Rattachement du cycle d'étude (`Collège`, `Lycée`, `Primaire`, `Supérieur` ou `Tous`) et sélection fine des classes autorisées.
+  - Détection automatique et avertissement en cas d'incohérence avec le niveau de l'élève.
+  - **🎲 Aperçu procédural & questions aléatoires :** Visualisation immédiate des questions générées dynamiquement selon le niveau d'étude choisi, avec tirage de nouvelles variantes aléatoires.
+  - **📋 Importer en leçon :** Clonage et importation instantanée d'une question aléatoire directement dans la liste des leçons éditables par l'enseignant.
+  - **🧪 Tester en direct :** Modale de test interactive permettant d'essayer la question exactement telle que l'élève la verra, avec saisie et validation immédiate.
 - **🛍️ Boutique :** Création et gestion complète des articles (halos, personnages, titres, thèmes, boosters), prix en pièces, visuels et descriptions.
 - **🏆 Succès & Badges :** Édition, activation et attribution/retrait manuel des badges et succès élèves.
 - **🎁 Récompenses :** Configuration des barèmes de gains (XP et pièces pour leçons réussies, 3 étoiles, quêtes quotidiennes, coffre bonus, premier sans faute, multiplicateur chrono).
 - **✨ Crédits :** Personnalisation des mentions de l'éditeur, coordonnées et crédits affichés en pied de page et sur `legal.html`.
-- **💾 Sauvegarde & Export :** Export et import complet de la configuration au format JSON avec validation d'intégrité.
+- **💾 Sauvegarde & Export :** Export et import complet de la configuration au format JSON avec validation d'intégrité, et réinitialisation ciblée des données de jeu.
 
 ---
 
@@ -133,14 +143,11 @@ Accessible depuis le lien « 🔐 Administration » en bas de page ou directemen
 Par défaut, les questions proviennent de la banque intégrée déterministe (`js/question-bank.js`).
 
 Pour connecter un agent IA génératif (ex. via Make ou webhook direct) :
-1. Renseignez vos endpoints webhooks dans `js/ai-provider.js` :
-
-```javascript
-const GENERATE_WEBHOOK_URL = 'https://hook.eu2.make.com/xxxxxxxx';
-const VALIDATE_WEBHOOK_URL = 'https://hook.eu2.make.com/yyyyyyyy';
-```
-
-En cas de perte de connexion ou d'erreur réseau, l'application bascule automatiquement et de manière transparente sur la banque locale.
+1. Rendez-vous dans le panneau d'administration (`admin.html`), onglet **⚙️ Réglages**.
+2. Renseignez directement les URL de vos scénarios Make dans la section **Génération & Validation IA** :
+   - Webhook de génération : `https://hook.eu2.make.com/xxxxxxxx`
+   - Webhook de validation : `https://hook.eu2.make.com/yyyyyyyy`
+3. En cas de perte de connexion ou d'erreur réseau, l'application bascule automatiquement et de manière transparente sur la banque locale déterministe.
 
 ---
 
@@ -148,20 +155,24 @@ En cas de perte de connexion ou d'erreur réseau, l'application bascule automati
 
 Par défaut, l'application fonctionne intégralement dans le navigateur (`localStorage`).
 Pour activer la sauvegarde centralisée sur une base de données MySQL :
-1. Déployez le script `schema.sql` sur votre serveur MySQL.
-2. Décommentez et configurez la variable `API_URL` dans `js/db.js` vers votre API backend (voir [Guide de Persistance](docs/API_PERSISTENCE.md)).
+1. Déployez le script [schema.sql](file:///schema.sql) sur votre serveur MySQL.
+2. Décommentez et configurez la variable `API_URL` dans [js/db.js](file:///js/db.js) vers votre API backend (voir [Guide de Persistance](docs/API_PERSISTENCE.md)).
 
 ---
 
 ## 🧪 Validation & Tests Automatisés
 
-Le projet dispose d'une couverture de tests complète (45 tests unitaires) sans dépendance externe :
+Le projet dispose d'une couverture de tests complète (**68 tests unitaires**) sans dépendance externe :
 
 ### 1. Tests unitaires Node.js (CLI)
 ```bash
+node --test tests/*.test.js
+```
+*Ou via npm :*
+```bash
 npm test
 ```
-*Vérifie le déterminisme du PRNG, les bandes scolaires 6e-Terminale, les paliers de combo, la protection du bouclier, les quêtes journalières et les algorithmes de correction Levenshtein.*
+*Vérifie le déterminisme du PRNG, les bandes scolaires 6e-Terminale, les paliers de combo, la protection du bouclier, les quêtes journalières, les algorithmes de correction Levenshtein, les 6 types de questions et la configuration globale/IA d'AdminStore.*
 
 ### 2. Contrôle de syntaxe JavaScript
 ```bash
@@ -169,7 +180,7 @@ npm run check
 ```
 
 ### 3. Banc de tests visuel en navigateur
-Ouvrez simplement `test.html` dans un navigateur pour exécuter la suite de tests en environnement web réel.
+Ouvrez simplement [test.html](file:///test.html) dans un navigateur moderne pour exécuter la suite de tests en environnement web réel, exécuter des benchmarks de vitesse ou tester interactivement des questions.
 
 ---
 
@@ -179,4 +190,3 @@ Ouvrez simplement `test.html` dans un navigateur pour exécuter la suite de test
 - Support du mode plein écran via l'API Fullscreen du navigateur.
 - Prise en charge des préférences d'accessibilité (`prefers-reduced-motion` pour neutraliser les animations et confettis si demandé par l'utilisateur).
 - Mode économie d'énergie disponible dans les options de jeu.
-

@@ -33,8 +33,9 @@ combos en chaîne avec multiplicateur de score et d'XP dynamique (x1.0 à x2.5),
 (halos, avatars historiques, titres, thème astral d'origine offert, thèmes visuels, boosters)
 et mode chronométré maintiennent une motivation constante. 13 matières adaptées au cycle scolaire
 (Technologie au collège, NSI & Numérique et SES au lycée, Philosophie, EMC, Chimie dédiée), 100 niveaux par matière,
-îlots flottants vectoriels animés, barre de navigation mobile basse, contrôle des animations d'interface,
-contenus, boutique, succès, crédits GitHub et récompenses ajustables via un panneau d'administration autonome.
+îlots flottants vectoriels animés, barre de navigation mobile basse, contrôle des animations d'interface.
+Contenus, matières, niveaux d'étude autorisés, boutique, succès, crédits GitHub, configuration générale du site et IA
+ajustables via un panneau d'administration unifié et complet.
 
 ## Mots-clés
 
@@ -55,14 +56,14 @@ apprentissage gamifié, streak, combo, éducation nationale, gratuit, pwa, offli
 
 | Route | Rôle |
 |-------|------|
-| `admin.html` | Panneau d'administration (gestion membres, niveaux, leçons, boutique, récompenses) |
-| `test.html` | Banc de tests automatisés autonome exécutable directement dans le navigateur |
+| `admin.html` | Panneau d'administration unifié (membres, niveaux, matières, cycles, leçons manuelles & procédurales, boutique, succès, réglages généraux & IA) |
+| `test.html` | Banc de tests automatisés autonome (68 tests, runner visuel, benchmark de performance et banc interactif en direct) |
 
 ## Architecture technique
 
 | Fichier / Dossier | Rôle |
 |-------------------|------|
-| `js/app.js` | Contrôleur principal du jeu, gestionnaire d'état, HUD, boutique, confettis |
+| `js/app.js` | Contrôleur principal du jeu, gestionnaire d'état, HUD, boutique, confettis Canvas |
 | `js/db.js` | Couche d'accès aux données isolée par utilisateur (localStorage / API SQL optionnelle) |
 | `js/question-bank.js` | Banque de questions et générateur procédural déterministe (100 niveaux par matière) |
 | `js/quiz-engine.js` | Moteur de rendu et validation des 6 types de questions avec tolérance Levenshtein |
@@ -70,7 +71,7 @@ apprentissage gamifié, streak, combo, éducation nationale, gratuit, pwa, offli
 | `js/core/quiz-session.js` | Pipeline unifié de soumission des quiz et consommation des boosters |
 | `js/features/daily-quests.js` | Moteur de quêtes journalières déterministes (PRNG, tirage Fisher-Yates, minuit) |
 | `js/ai-provider.js` | Pont IA (Make webhook) avec repli transparent sur la banque locale |
-| `js/admin-store.js` | Configuration centrale du panneau d'administration |
+| `js/admin-store.js` | Configuration centrale du panneau d'administration (niveaux, matières, leçons, réglages site & IA) |
 | `js/admin.js` | Interface et moteur du panneau d'administration |
 | `js/cookies.js` | Bandeau de consentement RGPD/CNIL (mémorisation 12 mois) |
 | `css/global.css` | Design system, polices locales, univers spatial et utilitaires |
@@ -78,7 +79,8 @@ apprentissage gamifié, streak, combo, éducation nationale, gratuit, pwa, offli
 | `css/quests.css` | Styles des cartes de quêtes journalières et conteneur de confettis |
 | `css/admin.css` | Thème glassmorphism pour le panneau d'administration |
 | `service-worker.js` | PWA et mise en cache hors-ligne intégrale (v1.26.0) |
-| `tests/` | Suite de tests automatisés native Node.js (`node --test tests/*.test.js`) |
+| `schema.sql` | Schéma relationnel complet SQL (tables utilisateurs, configuration site, IA, matières, leçons manuelles) |
+| `tests/` | Suite de 68 tests automatisés native Node.js (`node --test tests/*.test.js`) |
 
 ## Données personnelles & Confidentialité
 

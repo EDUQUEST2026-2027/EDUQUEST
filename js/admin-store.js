@@ -1,27 +1,20 @@
 /* =============================================================================
    ADMIN-STORE.JS — EDUQUEST v1.26.0
-   Couche de configuration du panneau d'administration (admin.html).
+   Couche de configuration centrale du panneau d'administration (admin.html).
 
    RÔLE :
-   Ce fichier stocke, valide et applique les personnalisations faites depuis
-   le panneau d'administration SANS modifier le code du jeu :
-     - Niveaux scolaires  → liste des classes (6ème → Terminale par défaut),
-                            modifiable (ajout/renommage/bande collège-lycée).
-     - Matières & leçons  → surcharge du nom/icône d'une matière existante,
-                            création de matières personnalisées, édition des
-                            leçons (niveaux) écrites à la main.
+   Ce fichier stocke, valide et synchronise l'ensemble des personnalisations
+   administratives sans altérer le moteur de jeu :
+     - Niveaux scolaires  → Liste des classes et cycles d'étude (6e → Terminale).
+     - Matières & Leçons  → Rattachement des cycles (band) et classes autorisées,
+                            questions manuelles & variantes procédurales aléatoires.
+     - Configuration site → Titre, slogan, chrono, multiplicateurs XP/pièces, sons.
+     - Configuration IA   → Webhooks Make.com de génération/validation et timeouts.
+     - Boutique & Succès  → Articles, prix, visuels et attribution des récompenses.
 
-   FONCTIONNEMENT :
-   Tout est stocké sous UNE SEULE clé localStorage : 'eduquest_admin_data'.
-   - Les valeurs par défaut (7 niveaux scolaires) vivent dans ce fichier.
-   - Les leçons par défaut des matières ne sont PAS dupliquées ici : elles
-     sont « enregistrées » à l'exécution par app.js (registerDefaults) puis
-     servies telles quelles tant que l'administrateur n'a pas écrit sa propre
-     version (surcharge par matière, clé 'overrides').
-   - app.js appelle AdminStore.applyOverrides(RAW_DASH_SUBJECTS) pour
-     construire DASH_SUBJECTS avec les personnalisations appliquées.
-
-   DÉPENDANCE : aucune (localStorage uniquement). À charger AVANT app.js.
+   PERSISTANCE :
+   Tout est unifié sous la clé localStorage 'eduquest_admin_data' et synchronisable
+   avec les tables SQL du serveur (configuration_site, configuration_ia, matieres_config).
    ============================================================================= */
 
 const AdminStore = (() => {
@@ -47,7 +40,7 @@ const AdminStore = (() => {
     ];
 
     // Types de leçons pris en charge par quiz-engine.js
-    const LESSON_TYPES = ['qcm', 'vrai_faux', 'reponse_courte', 'texte_a_trous', 'drag_and_drop'];
+    const LESSON_TYPES = ['qcm', 'vrai_faux', 'reponse_courte', 'texte_a_trous', 'texte_a_choix', 'drag_and_drop'];
 
     // Catalogue des articles par défaut de la boutique (Halos, Personnages, Titres, Thèmes, Boosters)
     const DEFAULT_SHOP_ITEMS = [
@@ -279,10 +272,13 @@ const AdminStore = (() => {
                 return 'Précisez au moins une réponse acceptée (réponse courte).';
             return null;
         }
-        if (type === 'texte_a_trous') {
+        if (type === 'texte_a_trous' || type === 'texte_a_choix') {
             if (!nonEmpty(lesson.textWithBlanks)) return 'La phrase à compléter ne peut pas être vide.';
-            const count = (lesson.textWithBlanks.match(/_{3,}/g) || []).length;
+            const count = (lesson.textWithBlanks.match(/_{3,}|\[_{3,}\]/g) || []).length;
             if (count === 0) return 'La phrase doit contenir au moins un trou (___).';
+            if (type === 'texte_a_choix') {
+                if (Array.isArray(lesson.choices) && lesson.choices.length > 0) return null;
+            }
             if (!Array.isArray(lesson.blanks) || lesson.blanks.length !== count)
                 return 'Il faut exactement ' + count + ' groupe(s) de réponses (un par trou ___ ).';
             if (lesson.blanks.some(b => !Array.isArray(b) || b.length === 0 || b.some(a => !nonEmpty(a))))
