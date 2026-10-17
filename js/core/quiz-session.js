@@ -8,7 +8,7 @@
    Dépendances résolues À L'APPEL (pas au chargement) via `deps` ou globalThis :
      AiProvider.submitAnswer, DB.{hasBooster,useBooster,recordCorrectAnswer,
      recordWrongAnswer}, GameRules, showNotification (optionnelle).
-   → testable en Node avec des doublures (tests/quiz-session.test.js).
+   → testable en Node avec des doublures (tests/game-rules-and-session.test.js).
    ============================================================================= */
 (function (root, factory) {
     const api = factory(root);

@@ -1,5 +1,5 @@
 /* =============================================================================
-   QUIZ-ENGINE.JS — EDUQUEST v2.1
+   QUIZ-ENGINE.JS — EDUQUEST v1.26.0
    Moteur de rendu et de correction pour les questions du dashboard.
 
    RÔLE :
@@ -122,7 +122,7 @@ const QuizEngine = (() => {
             btn.addEventListener('click', () => {
                 container.querySelectorAll('[data-choice]').forEach(b => b.classList.remove('selected'));
                 btn.classList.add('selected');
-                onSubmit(parseInt(btn.dataset.choice));
+                onSubmit(parseInt(btn.dataset.choice, 10));
             });
         });
     }
@@ -132,12 +132,12 @@ const QuizEngine = (() => {
     function freezeQCM(container, question, submitted) {
         container.querySelectorAll('[data-choice]').forEach(btn => {
             btn.disabled = true;
-            if (parseInt(btn.dataset.choice) === submitted) btn.classList.add('selected');
+            if (parseInt(btn.dataset.choice, 10) === submitted) btn.classList.add('selected');
         });
     }
     function revealQCM(container, question, submitted) {
         container.querySelectorAll('[data-choice]').forEach(btn => {
-            const i = parseInt(btn.dataset.choice);
+            const i = parseInt(btn.dataset.choice, 10);
             btn.disabled = true;
             if (i === submitted) btn.classList.add('selected');
             if (i === question.correct) btn.classList.add('correct');

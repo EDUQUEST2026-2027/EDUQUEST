@@ -881,11 +881,18 @@ const AdminStore = (() => {
      */
     function clearLocalGameData() {
         const remove = [];
+        const preserved = new Set(['eduquest_local_users', 'eduquest_session', 'eduquest_admin_data', 'eduquest_cookie_consent']);
         try {
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
-                if (!key) continue;
-                if (key === 'eduquest_options' || key === 'eduquest_niveau' || /^eduquest_.*_progress$/.test(key)) {
+                if (!key || preserved.has(key)) continue;
+                if (
+                    key === 'eduquest_options' || key === 'eduquest_niveau' || key === 'eduquest_daily_quests' ||
+                    key.startsWith('eduquest_opts_') || key.startsWith('eduquest_prog_') ||
+                    key.startsWith('eduquest_niveau_') || key.startsWith('eduquest_quests_') ||
+                    key.startsWith('eduquest_boosters_') || key.startsWith('eduquest_streak_') ||
+                    /^eduquest_.*_progress$/.test(key)
+                ) {
                     remove.push(key);
                 }
             }

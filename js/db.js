@@ -192,7 +192,7 @@ const DB = (() => {
     function getOption(name) {
         if (USE_API) {
             const cache = _getOptionsCache();
-            return (cache && cache.hasOwnProperty(name)) ? cache[name] : null;
+            return (cache && Object.prototype.hasOwnProperty.call(cache, name)) ? cache[name] : null;
         }
         try {
             const key = _optionsKey();
@@ -205,7 +205,7 @@ const DB = (() => {
                 }
             }
             const options = JSON.parse(raw || '{}');
-            return options.hasOwnProperty(name) ? options[name] : null;
+            return Object.prototype.hasOwnProperty.call(options, name) ? options[name] : null;
         } catch { return null; }
     }
 
@@ -995,7 +995,7 @@ const DB = (() => {
      */
     function getMusicState() {
         return {
-            track: parseInt(localStorage.getItem(KEYS.TRACK) || '0'),
+            track: parseInt(localStorage.getItem(KEYS.TRACK) || '0', 10),
             time: parseFloat(localStorage.getItem(KEYS.MUSIC_TIME) || '0'),
         };
     }

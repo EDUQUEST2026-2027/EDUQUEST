@@ -1,7 +1,7 @@
 {
   "name": "EDUQUEST",
   "short_name": "EDUQUEST",
-  "description": "Le jeu de révision pour le collège et le lycée. 10 matières, des centaines de niveaux.",
+  "description": "Le jeu de révision pour le collège et le lycée. 13 matières officielles, 100 niveaux par matière.",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#070b1a",

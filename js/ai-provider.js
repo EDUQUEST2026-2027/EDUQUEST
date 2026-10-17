@@ -1,5 +1,5 @@
 /* =============================================================================
-   AI-PROVIDER.JS — EDUQUEST v2.7
+   AI-PROVIDER.JS — EDUQUEST v1.26.0
    Pont entre le jeu et l'agent IA hébergé sur Make (voir MAKE_BLUEPRINT.md).
 
    TANT QUE LES DEUX URLS CI-DESSOUS SONT VIDES, ce fichier ne fait rien

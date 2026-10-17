@@ -10,7 +10,7 @@
      - un 2e bouclier pouvait être consommé sur la même question ;
      - un bouclier pouvait être débité « après coup » pendant un simple rendu.
    Toutes les règles vivent désormais ici, une seule fois, et sont testées
-   (voir tests/game-rules.test.js).
+   (voir tests/game-rules-and-session.test.js).
 
    CHARGEMENT : script classique (double-clic sur index.html OK) ou
    require() Node pour les tests. Expose window.GameRules / globalThis.GameRules.

@@ -1,5 +1,5 @@
 /* =============================================================================
-   QUESTION-BANK.JS — EDUQUEST v3.0
+   QUESTION-BANK.JS — EDUQUEST v1.26.0
    Banque de questions et générateur procédural adaptés par NIVEAU SCOLAIRE :
    - 6ème, 5ème, 4ème, 3ème (Collège)
    - 2nde, 1ère, Terminale (Lycée)
