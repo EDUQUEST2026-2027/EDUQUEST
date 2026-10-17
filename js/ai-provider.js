@@ -24,19 +24,38 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
     'use strict';
 
-    // ⚠️ À renseigner une fois les deux scénarios Make publiés.
+    // Webhooks de repli par défaut (si non saisis dans le panneau d'administration)
     const GENERATE_WEBHOOK_URL = ''; // ex: 'https://hook.eu2.make.com/xxxxxxxx'
     const VALIDATE_WEBHOOK_URL = ''; // ex: 'https://hook.eu2.make.com/yyyyyyyy'
 
     const FETCH_TIMEOUT_MS = 6000;
 
-    function isConfigured() {
-        return Boolean(GENERATE_WEBHOOK_URL && VALIDATE_WEBHOOK_URL);
+    function getUrls() {
+        if (typeof AdminStore !== 'undefined' && typeof AdminStore.getAiConfig === 'function') {
+            const conf = AdminStore.getAiConfig();
+            if (conf) {
+                return {
+                    generate: conf.generateWebhookUrl || GENERATE_WEBHOOK_URL,
+                    validate: conf.validateWebhookUrl || VALIDATE_WEBHOOK_URL,
+                    timeout: conf.fetchTimeoutMs || conf.timeoutMs || FETCH_TIMEOUT_MS,
+                };
+            }
+        }
+        return {
+            generate: GENERATE_WEBHOOK_URL,
+            validate: VALIDATE_WEBHOOK_URL,
+            timeout: FETCH_TIMEOUT_MS,
+        };
     }
 
-    async function postJSON(url, body) {
+    function isConfigured() {
+        const u = getUrls();
+        return Boolean(u.generate && u.validate);
+    }
+
+    async function postJSON(url, body, timeoutMs = FETCH_TIMEOUT_MS) {
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
         try {
             const res = await fetch(url, {
                 method: 'POST',
@@ -72,9 +91,10 @@
             ? QuestionBank.bandForNiveau(norm)
             : 'college';
 
+        const urls = getUrls();
         if (isConfigured()) {
             try {
-                const data = await postJSON(GENERATE_WEBHOOK_URL, { subjectId, index, niveau: norm, niveauBand });
+                const data = await postJSON(urls.generate, { subjectId, index, niveau: norm, niveauBand }, urls.timeout);
                 if (data && data.lesson) {
                     return { lesson: data.lesson, questionId: data.questionId || null, source: 'ai' };
                 }
@@ -99,9 +119,10 @@
      * @returns {Promise<{isCorrect: boolean, explanation: string, answerKey: object}>}
      */
     async function submitAnswer(questionId, lesson, rawAnswer) {
+        const urls = getUrls();
         if (questionId && isConfigured()) {
             try {
-                const data = await postJSON(VALIDATE_WEBHOOK_URL, { questionId, answer: rawAnswer });
+                const data = await postJSON(urls.validate, { questionId, answer: rawAnswer }, urls.timeout);
                 if (data && typeof data.isCorrect === 'boolean') {
                     return { isCorrect: data.isCorrect, explanation: data.explanation || '', answerKey: data.answerKey || {} };
                 }

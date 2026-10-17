@@ -463,3 +463,189 @@ body > * { position: relative; z-index: 1; }
     .adm-opt-row { flex-wrap: wrap; }
     .adm-opt-row .adm-btn { width: 100%; }
 }
+
+/* ==========================================================================
+   NOUVELLES FONCTIONNALITÉS : NIVEAUX D'ÉTUDE, QUESTIONS ALÉATOIRES & MODALE
+   ========================================================================== */
+
+/* Sous-onglets internes (leçons manuelles vs générateur procédural) */
+.adm-subtabs {
+    display: flex;
+    gap: 8px;
+    margin: 14px 0 16px;
+    border-bottom: 1px solid rgba(200, 168, 75, 0.25);
+    padding-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.adm-subtab {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(200, 168, 75, 0.2);
+    color: var(--muted);
+    padding: 6px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.15s ease;
+}
+
+.adm-subtab:hover {
+    color: var(--ink);
+    border-color: var(--gold);
+}
+
+.adm-subtab.active {
+    background: rgba(200, 168, 75, 0.18);
+    border-color: var(--gold);
+    color: var(--gold-soft);
+    box-shadow: 0 0 10px rgba(200, 168, 75, 0.2);
+}
+
+/* Pills de sélection de niveau d'étude */
+.adm-grade-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.adm-grade-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(26, 37, 82, 0.6);
+    border: 1px solid rgba(200, 168, 75, 0.25);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.15s ease;
+}
+
+.adm-grade-pill:hover {
+    border-color: var(--cyan);
+}
+
+.adm-grade-pill.checked {
+    background: rgba(95, 212, 230, 0.15);
+    border-color: var(--cyan);
+    color: #fff;
+}
+
+/* Cartes de prévisualisation des questions procédurales */
+.adm-procedural-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.adm-q-card {
+    background: rgba(14, 23, 52, 0.7);
+    border: 1px solid rgba(200, 168, 75, 0.22);
+    border-radius: 10px;
+    padding: 14px 16px;
+    transition: border-color 0.15s ease;
+}
+
+.adm-q-card:hover {
+    border-color: rgba(200, 168, 75, 0.45);
+}
+
+.adm-q-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.adm-q-title {
+    font-weight: 700;
+    color: var(--gold-soft);
+    font-size: 1rem;
+}
+
+.adm-q-text {
+    font-size: 1.05rem;
+    color: #fff;
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+
+.adm-q-choices {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.adm-q-choice {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+
+.adm-q-choice.is-correct {
+    background: rgba(102, 187, 106, 0.15);
+    border-color: var(--green);
+    color: #a5d6a7;
+    font-weight: 700;
+}
+
+.adm-q-exp {
+    font-size: 0.85rem;
+    color: #8fa1d0;
+    border-left: 3px solid var(--cyan);
+    padding-left: 8px;
+    margin-bottom: 8px;
+    font-style: italic;
+}
+
+/* Modale de test interactif */
+.adm-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 7, 18, 0.82);
+    backdrop-filter: blur(8px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.adm-modal-card {
+    background: rgba(13, 19, 48, 0.98);
+    border: 1px solid var(--gold);
+    border-radius: 16px;
+    width: min(640px, 100%);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+    padding: 24px;
+    color: var(--ink);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.adm-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(200, 168, 75, 0.25);
+}
+
+.adm-modal-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.25rem;
+    color: var(--gold-soft);
+}
+

@@ -2344,12 +2344,22 @@ function getEffectiveSubjects(niveau) {
 
     const raw = (typeof AdminStore !== 'undefined' ? AdminStore.applyOverrides(RAW_DASH_SUBJECTS) : RAW_DASH_SUBJECTS);
 
-    // Filtrage des matières selon le cycle scolaire :
-    // - "techno" (Technologie) est uniquement réservé aux niveaux collège (6e, 5e, 4e, 3e)
-    // - "nsi" (NSI & Numérique) est uniquement réservé aux niveaux lycée (2nde, 1ère, Terminale)
+    // Filtrage dynamique selon la configuration de chaque matière (AdminStore) :
+    // - s.enabled !== false (la matière est active pour les élèves)
+    // - s.allowedNiveaux : classes spécifiques ciblées (ex: ['6eme', '5eme'])
+    // - s.band : 'all' (tous cycles), 'college' (collège uniquement), 'lycee' (lycée uniquement)
     const filtered = raw.filter(s => {
-        if (s.id === 'techno' && band !== 'college') return false;
-        if (s.id === 'nsi' && band !== 'lycee') return false;
+        if (s.enabled === false) return false;
+
+        // Restriction à des classes spécifiques configurées dans le panneau admin
+        if (Array.isArray(s.allowedNiveaux) && s.allowedNiveaux.length > 0) {
+            return s.allowedNiveaux.includes(currentNiv);
+        }
+
+        // Restriction par cycle (collège / lycée)
+        const subBand = s.band || (s.id === 'techno' ? 'college' : (s.id === 'nsi' || s.id === 'ses' ? 'lycee' : 'all'));
+        if (subBand === 'college' && band !== 'college') return false;
+        if (subBand === 'lycee' && band !== 'lycee') return false;
         return true;
     });
 

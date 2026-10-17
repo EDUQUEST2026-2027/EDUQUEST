@@ -102,6 +102,34 @@ const AdminStore = (() => {
         questRewardMultiplier: 1,// Multiplicateur récompenses des quêtes
     };
 
+    // Configuration par défaut globale du site (v1.26.0+)
+    const DEFAULT_SITE_CONFIG = {
+        title: 'EDUQUEST',
+        siteTitle: 'EDUQUEST',
+        tagline: 'Le jeu de révision pour le collège et le lycée',
+        announcement: '',
+        quizTimerSeconds: 45,         // Durée standard en secondes du compte à rebours chrono
+        xpMultiplier: 1.0,            // Multiplicateur global d'XP
+        coinMultiplier: 1.0,          // Multiplicateur global de pièces
+        coinsMultiplier: 1.0,
+        sfxVolume: 0.6,
+        musicVolume: 0.35,
+        defaultBgmVolume: 35,         // Volume musique par défaut (0-100)
+        defaultSfxVolume: 60,         // Volume effets sonores par défaut (0-100)
+        soundEnabledByDefault: true,  // Son actif par défaut
+        allowRegistration: true,      // Autoriser de nouveaux élèves à créer un compte
+    };
+
+    // Configuration par défaut de l'intégration IA (Make.com)
+    const DEFAULT_AI_CONFIG = {
+        generateWebhookUrl: '',       // Webhook POST de génération (Make)
+        validateWebhookUrl: '',       // Webhook POST de validation (Make)
+        fetchTimeoutMs: 8000,         // Délai avant repli local en millisecondes
+        timeoutMs: 8000,
+        fallbackToOffline: true,      // Repli automatique sur QuestionBank si indisponible
+        fallbackToLocal: true,
+    };
+
     // Catalogue des 24 succès / badges par défaut d'EDUQUEST
     const DEFAULT_BADGES = [
         { id: 'premier_quiz', icon: '🎯', name: 'Premier pas', desc: 'Réussis ta toute première question.', category: 'progression', condition: 'totalCompleted >= 1' },
@@ -161,10 +189,14 @@ const AdminStore = (() => {
             if (!d.shop) d.shop = { overrides: {}, customs: [] };
             if (!d.rewards) d.rewards = null;
             if (!d.badges) d.badges = { overrides: {}, customs: [] };
+            if (!d.siteConfig) d.siteConfig = null;
+            if (!d.aiConfig) d.aiConfig = null;
             cache = d;
         } else {
             cache = {
                 v: 1,
+                siteConfig: null,
+                aiConfig: null,
                 levels: null,
                 subjects: { overrides: {}, customs: [] },
                 credits: {},
@@ -431,6 +463,10 @@ const AdminStore = (() => {
                 id: s.id,
                 name: s.name,
                 icon: s.icon,
+                band: s.band || (s.id === 'techno' ? 'college' : (s.id === 'nsi' || s.id === 'ses' ? 'lycee' : 'all')),
+                allowedNiveaux: Array.isArray(s.allowedNiveaux) ? _clone(s.allowedNiveaux) : [],
+                enabled: s.enabled !== false,
+                description: s.description || '',
                 lessons: _clone(s.lessons || []),
             };
         });
@@ -449,7 +485,7 @@ const AdminStore = (() => {
         return _data().subjects.customs.some(c => c.id === id);
     }
 
-    /** true si une surcharge (nom/icône/leçons) existe pour cette matière. */
+    /** true si une surcharge (nom/icône/leçons/niveaux) existe pour cette matière. */
     function hasOverride(id) {
         return Object.prototype.hasOwnProperty.call(_data().subjects.overrides, id);
     }
@@ -468,12 +504,16 @@ const AdminStore = (() => {
      */
     function applyOverrides(rawSubjects) {
         const data = _data();
-        const result = rawSubjects.map(raw => {
+        const result = (Array.isArray(rawSubjects) ? rawSubjects : []).map(raw => {
             const ov = data.subjects.overrides[raw.id];
             if (!ov) return raw; // matière non personnalisée → telle quelle
             const out = _clone(raw);
             if (typeof ov.name === 'string' && ov.name.trim()) out.name = ov.name.trim();
             if (typeof ov.icon === 'string' && ov.icon.trim()) out.icon = ov.icon.trim();
+            if (ov.band) out.band = ov.band;
+            if (Array.isArray(ov.allowedNiveaux)) out.allowedNiveaux = _clone(ov.allowedNiveaux);
+            if (typeof ov.enabled === 'boolean') out.enabled = ov.enabled;
+            if (typeof ov.description === 'string') out.description = ov.description;
             if (Array.isArray(ov.lessons) && ov.lessons.length) out.lessons = _clone(ov.lessons);
             return out;
         });
@@ -482,6 +522,10 @@ const AdminStore = (() => {
                 id: c.id,
                 name: c.name,
                 icon: c.icon,
+                band: c.band || 'all',
+                allowedNiveaux: _clone(c.allowedNiveaux || []),
+                enabled: c.enabled !== false,
+                description: c.description || '',
                 lessons: _clone(c.lessons),
                 _custom: true,
             });
@@ -495,17 +539,21 @@ const AdminStore = (() => {
 
     /**
      * Liste « éditable » : matières par défaut + personnalisées, chacune avec
-     * ses leçons effectives (surchargées si l'admin les a modifiées). Chaque
-     * entrée : { id, name, icon, isCustom, customized, lessons }.
+     * ses leçons effectives (surchargées si l'admin les a modifiées).
      */
     function listEditable(rawSubjects) {
         const data = _data();
         const out = (Array.isArray(rawSubjects) ? rawSubjects : []).map(raw => {
             const ov = data.subjects.overrides[raw.id];
+            const defBand = raw.band || (raw.id === 'techno' ? 'college' : (raw.id === 'nsi' || raw.id === 'ses' ? 'lycee' : 'all'));
             return {
                 id: raw.id,
                 name: ov && ov.name ? ov.name : raw.name,
                 icon: ov && ov.icon ? ov.icon : raw.icon,
+                band: ov && ov.band ? ov.band : defBand,
+                allowedNiveaux: ov && Array.isArray(ov.allowedNiveaux) ? _clone(ov.allowedNiveaux) : _clone(raw.allowedNiveaux || []),
+                enabled: ov && typeof ov.enabled === 'boolean' ? ov.enabled : (raw.enabled !== false),
+                description: ov && typeof ov.description === 'string' ? ov.description : (raw.description || ''),
                 isCustom: false,
                 customized: Boolean(ov),
                 lessons: ov && Array.isArray(ov.lessons) && ov.lessons.length ? _clone(ov.lessons) : _clone(raw.lessons || []),
@@ -516,6 +564,10 @@ const AdminStore = (() => {
                 id: c.id,
                 name: c.name,
                 icon: c.icon,
+                band: c.band || 'all',
+                allowedNiveaux: _clone(c.allowedNiveaux || []),
+                enabled: c.enabled !== false,
+                description: c.description || '',
                 isCustom: true,
                 customized: true,
                 lessons: _clone(c.lessons),
@@ -524,27 +576,38 @@ const AdminStore = (() => {
         return out;
     }
 
-    /** Applique un renommage / changement d'icône (matière système ou personnalisée). */
-    function saveSubjectMeta(id, { name, icon } = {}) {
+    /** Applique un renommage / changement d'icône / cycle / niveaux / visibilité. */
+    function saveSubjectMeta(id, patch = {}) {
         if (!id) return { ok: false, error: 'Identifiant de matière manquant.' };
         const data = _data();
-        const nameV = typeof name === 'string' ? name.trim() : '';
-        const iconV = typeof icon === 'string' ? icon.trim() : '';
-        if (nameV === '' && iconV === '') return { ok: false, error: 'Renseignez au moins un nom ou une icône.' };
+        const nameV = typeof patch.name === 'string' ? patch.name.trim() : '';
+        const iconV = typeof patch.icon === 'string' ? patch.icon.trim() : '';
+        const bandV = (patch.band === 'college' || patch.band === 'lycee' || patch.band === 'all') ? patch.band : undefined;
+        const allowedNiveaux = Array.isArray(patch.allowedNiveaux) ? patch.allowedNiveaux.map(String) : undefined;
+        const enabled = typeof patch.enabled === 'boolean' ? patch.enabled : undefined;
+        const descV = typeof patch.description === 'string' ? patch.description.trim() : undefined;
 
         const custom = data.subjects.customs.find(c => c.id === id);
         if (custom) {
             if (nameV) custom.name = nameV;
             if (iconV) custom.icon = iconV;
+            if (bandV !== undefined) custom.band = bandV;
+            if (allowedNiveaux !== undefined) custom.allowedNiveaux = allowedNiveaux;
+            if (enabled !== undefined) custom.enabled = enabled;
+            if (descV !== undefined) custom.description = descV;
             _save();
-            return { ok: true };
+            return { ok: true, subject: _clone(custom) };
         }
         // Matière système → on travaille dans les surcharges
         const ov = data.subjects.overrides[id] || (data.subjects.overrides[id] = {});
         if (nameV) ov.name = nameV;
         if (iconV) ov.icon = iconV;
+        if (bandV !== undefined) ov.band = bandV;
+        if (allowedNiveaux !== undefined) ov.allowedNiveaux = allowedNiveaux;
+        if (enabled !== undefined) ov.enabled = enabled;
+        if (descV !== undefined) ov.description = descV;
         _save();
-        return { ok: true };
+        return { ok: true, override: _clone(ov) };
     }
 
     /** Enregistre la liste complète des leçons d'une matière (système ou personnalisée). */
@@ -567,8 +630,8 @@ const AdminStore = (() => {
         return { ok: true, lessons: clean };
     }
 
-    /** Crée une matière personnalisée (avec une première leçon vide à compléter). */
-    function createCustomSubject(name, icon, firstLesson) {
+    /** Crée une matière personnalisée (avec son cycle d'études, ses niveaux et sa première leçon). */
+    function createCustomSubject(name, icon, firstLesson, meta = {}) {
         const nameV = typeof name === 'string' ? name.trim() : '';
         if (!nameV) return { ok: false, error: 'Donnez un nom à la matière.' };
         const data = _data();
@@ -587,7 +650,22 @@ const AdminStore = (() => {
         const clean = normalizeLesson(lesson);
         const err = validateLesson(clean);
         if (err) return { ok: false, error: err };
-        data.subjects.customs.push({ id, name: nameV, icon: (icon || '📘').trim(), lessons: [clean] });
+
+        const band = (meta && (meta.band === 'college' || meta.band === 'lycee')) ? meta.band : 'all';
+        const allowedNiveaux = (meta && Array.isArray(meta.allowedNiveaux)) ? meta.allowedNiveaux : [];
+        const enabled = (meta && typeof meta.enabled === 'boolean') ? meta.enabled : true;
+        const description = (meta && typeof meta.description === 'string') ? meta.description.trim() : '';
+
+        data.subjects.customs.push({
+            id,
+            name: nameV,
+            icon: (icon || '📘').trim(),
+            band,
+            allowedNiveaux,
+            enabled,
+            description,
+            lessons: [clean]
+        });
         _save();
         return { ok: true, id };
     }
@@ -812,6 +890,124 @@ const AdminStore = (() => {
     }
 
     /* -----------------------------------------------------------------------
+       CONFIGURATION GLOBALE DU SITE & IA
+       ----------------------------------------------------------------------- */
+
+    /** Configuration effective du site (paramètres généraux, chrono, multiplicateurs). */
+    function getSiteConfig() {
+        const data = _data();
+        return Object.assign(_clone(DEFAULT_SITE_CONFIG), data.siteConfig || {});
+    }
+
+    /** Sauvegarde la configuration globale du site. */
+    function saveSiteConfig(values) {
+        if (!values || typeof values !== 'object') return { ok: false, error: 'Configuration invalide.' };
+        const cur = getSiteConfig();
+        const title = (typeof values.title === 'string' && values.title.trim()) ? values.title.trim()
+            : (typeof values.siteTitle === 'string' && values.siteTitle.trim()) ? values.siteTitle.trim() : cur.title;
+        const tagline = (typeof values.tagline === 'string') ? values.tagline.trim() : cur.tagline;
+        const announcement = (typeof values.announcement === 'string') ? values.announcement.trim() : (cur.announcement || '');
+        const timerSec = values.quizTimerSeconds != null ? Math.max(0, parseInt(values.quizTimerSeconds, 10) || 0) : cur.quizTimerSeconds;
+        const xpMult = values.xpMultiplier != null ? Math.max(0.1, parseFloat(values.xpMultiplier) || 1.0) : cur.xpMultiplier;
+        const coinMult = values.coinMultiplier != null ? Math.max(0.1, parseFloat(values.coinMultiplier) || 1.0)
+            : values.coinsMultiplier != null ? Math.max(0.1, parseFloat(values.coinsMultiplier) || 1.0) : cur.coinMultiplier;
+        const sfx = values.sfxVolume != null ? Math.min(1, Math.max(0, parseFloat(values.sfxVolume) || 0))
+            : values.defaultSfxVolume != null ? (parseInt(values.defaultSfxVolume, 10) || 60) / 100 : cur.sfxVolume;
+        const mus = values.musicVolume != null ? Math.min(1, Math.max(0, parseFloat(values.musicVolume) || 0))
+            : values.defaultBgmVolume != null ? (parseInt(values.defaultBgmVolume, 10) || 35) / 100 : cur.musicVolume;
+        const soundDef = typeof values.soundEnabledByDefault === 'boolean' ? values.soundEnabledByDefault : cur.soundEnabledByDefault;
+        const allowReg = typeof values.allowRegistration === 'boolean' ? values.allowRegistration : cur.allowRegistration;
+
+        const clean = {
+            title,
+            siteTitle: title,
+            tagline,
+            announcement,
+            quizTimerSeconds: timerSec,
+            xpMultiplier: xpMult,
+            coinMultiplier: coinMult,
+            coinsMultiplier: coinMult,
+            sfxVolume: sfx,
+            musicVolume: mus,
+            defaultSfxVolume: Math.round(sfx * 100),
+            defaultBgmVolume: Math.round(mus * 100),
+            soundEnabledByDefault: soundDef,
+            allowRegistration: allowReg,
+        };
+        const data = _data();
+        data.siteConfig = clean;
+        _save();
+        return { ok: true, siteConfig: getSiteConfig() };
+    }
+
+    /** Rétablit la configuration globale par défaut. */
+    function resetSiteConfig() {
+        const data = _data();
+        data.siteConfig = null;
+        _save();
+        return { ok: true, siteConfig: getSiteConfig() };
+    }
+
+    /** Configuration effective de l'intégration IA. */
+    function getAiConfig() {
+        const data = _data();
+        return Object.assign(_clone(DEFAULT_AI_CONFIG), data.aiConfig || {});
+    }
+
+    /** Sauvegarde la configuration de l'IA (webhooks Make.com et délai). */
+    function saveAiConfig(values) {
+        if (!values || typeof values !== 'object') return { ok: false, error: 'Configuration invalide.' };
+        const cur = getAiConfig();
+        const timeout = values.fetchTimeoutMs != null ? Math.max(1000, parseInt(values.fetchTimeoutMs, 10) || 8000)
+            : values.timeoutMs != null ? Math.max(1000, parseInt(values.timeoutMs, 10) || 8000) : cur.fetchTimeoutMs;
+        const fallback = typeof values.fallbackToOffline === 'boolean' ? values.fallbackToOffline
+            : typeof values.fallbackToLocal === 'boolean' ? values.fallbackToLocal : cur.fallbackToOffline;
+
+        const clean = {
+            generateWebhookUrl: (typeof values.generateWebhookUrl === 'string') ? values.generateWebhookUrl.trim() : (cur.generateWebhookUrl || ''),
+            validateWebhookUrl: (typeof values.validateWebhookUrl === 'string') ? values.validateWebhookUrl.trim() : (cur.validateWebhookUrl || ''),
+            fetchTimeoutMs: timeout,
+            timeoutMs: timeout,
+            fallbackToOffline: fallback,
+            fallbackToLocal: fallback,
+        };
+        const data = _data();
+        data.aiConfig = clean;
+        _save();
+        return { ok: true, aiConfig: getAiConfig() };
+    }
+
+    /** Rétablit la configuration de l'IA par défaut. */
+    function resetAiConfig() {
+        const data = _data();
+        data.aiConfig = null;
+        _save();
+        return { ok: true, aiConfig: getAiConfig() };
+    }
+
+    /**
+     * Récupère la liste des questions pour une matière et un niveau d'étude donné.
+     * Pour une matière système, combine les leçons manuelles écrites et des
+     * aperçus procéduraux adaptés à la classe choisie.
+     */
+    function getSubjectQuestionsForGrade(subjectId, niveau = '6eme', variant = 0, count = 8) {
+        const all = listEditable(getDefaultSubjects());
+        const sub = all.find(s => s.id === subjectId);
+        if (!sub) return { manual: [], generated: [] };
+        const manual = (sub.lessons || []).map((l, idx) => ({ ...l, levelIndex: idx + 1, source: 'manual' }));
+        const generated = [];
+        if (!sub.isCustom && typeof QuestionBank !== 'undefined' && typeof QuestionBank.generateOne === 'function') {
+            const norm = QuestionBank.normalizeNiveau ? QuestionBank.normalizeNiveau(niveau) : niveau;
+            const limit = Math.min(20, Math.max(1, parseInt(count, 10) || 8));
+            for (let i = 0; i < limit; i++) {
+                const q = QuestionBank.generateOne(subjectId, i, norm, variant);
+                generated.push({ ...q, levelIndex: i + 1, source: 'procedural', grade: norm, variant });
+            }
+        }
+        return { manual, generated };
+    }
+
+    /* -----------------------------------------------------------------------
        EXPORT / IMPORT / RÉINITIALISATION
        ----------------------------------------------------------------------- */
 
@@ -864,6 +1060,12 @@ const AdminStore = (() => {
         if (parsed.rewards && typeof parsed.rewards === 'object') {
             _data().rewards = _clone(parsed.rewards);
         }
+        if (parsed.siteConfig && typeof parsed.siteConfig === 'object') {
+            _data().siteConfig = _clone(parsed.siteConfig);
+        }
+        if (parsed.aiConfig && typeof parsed.aiConfig === 'object') {
+            _data().aiConfig = _clone(parsed.aiConfig);
+        }
         _save();
         return { ok: true };
     }
@@ -910,6 +1112,8 @@ const AdminStore = (() => {
         DEFAULT_LEVELS: _clone(DEFAULT_LEVELS),
         DEFAULT_SHOP_ITEMS: _clone(DEFAULT_SHOP_ITEMS),
         DEFAULT_REWARDS: _clone(DEFAULT_REWARDS),
+        DEFAULT_SITE_CONFIG: _clone(DEFAULT_SITE_CONFIG),
+        DEFAULT_AI_CONFIG: _clone(DEFAULT_AI_CONFIG),
         LESSON_TYPES: LESSON_TYPES.slice(),
 
         // Utilitaires
@@ -950,6 +1154,7 @@ const AdminStore = (() => {
         createCustomSubject,
         deleteCustomSubject,
         resetSubject,
+        getSubjectQuestionsForGrade,
 
         // Boutique & Récompenses
         getShopItems,
@@ -960,6 +1165,14 @@ const AdminStore = (() => {
         getRewardsConfig,
         saveRewardsConfig,
         resetRewardsConfig,
+
+        // Configuration Globale du Site & IA
+        getSiteConfig,
+        saveSiteConfig,
+        resetSiteConfig,
+        getAiConfig,
+        saveAiConfig,
+        resetAiConfig,
 
         // Succès / Badges
         DEFAULT_BADGES,

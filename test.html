@@ -942,6 +942,89 @@
                 assert.ok(count >= 2);
                 assert.notStrictEqual(localStorage.getItem('eduquest_local_users'), null);
             });
+
+            it('Configuration globale du site (get, save, reset)', function () {
+                const def = AdminStore.getSiteConfig();
+                assert.strictEqual(def.title, 'EDUQUEST');
+                assert.strictEqual(def.quizTimerSeconds, 45);
+
+                const saved = AdminStore.saveSiteConfig({
+                    title: 'Collège & Lycée Quest',
+                    quizTimerSeconds: 60,
+                    xpMultiplier: 1.5,
+                    coinMultiplier: 2.0,
+                    allowRegistration: false,
+                });
+                assert.strictEqual(saved.ok, true);
+
+                const updated = AdminStore.getSiteConfig();
+                assert.strictEqual(updated.title, 'Collège & Lycée Quest');
+                assert.strictEqual(updated.quizTimerSeconds, 60);
+                assert.strictEqual(updated.xpMultiplier, 1.5);
+                assert.strictEqual(updated.coinMultiplier, 2.0);
+                assert.strictEqual(updated.allowRegistration, false);
+
+                AdminStore.resetSiteConfig();
+                const restored = AdminStore.getSiteConfig();
+                assert.strictEqual(restored.title, 'EDUQUEST');
+                assert.strictEqual(restored.quizTimerSeconds, 45);
+            });
+
+            it('Configuration de l\'IA et Webhooks Make (get, save, reset)', function () {
+                const defAi = AdminStore.getAiConfig();
+                assert.strictEqual(defAi.fetchTimeoutMs, 8000);
+
+                const savedAi = AdminStore.saveAiConfig({
+                    generateWebhookUrl: 'https://hook.eu1.make.com/gen-test',
+                    validateWebhookUrl: 'https://hook.eu1.make.com/val-test',
+                    fetchTimeoutMs: 5000,
+                    fallbackToOffline: true,
+                });
+                assert.strictEqual(savedAi.ok, true);
+
+                const updatedAi = AdminStore.getAiConfig();
+                assert.strictEqual(updatedAi.generateWebhookUrl, 'https://hook.eu1.make.com/gen-test');
+                assert.strictEqual(updatedAi.validateWebhookUrl, 'https://hook.eu1.make.com/val-test');
+                assert.strictEqual(updatedAi.fetchTimeoutMs, 5000);
+
+                AdminStore.resetAiConfig();
+                const restoredAi = AdminStore.getAiConfig();
+                assert.strictEqual(restoredAi.generateWebhookUrl, '');
+                assert.strictEqual(restoredAi.fetchTimeoutMs, 8000);
+            });
+
+            it('Gestion des cycles et niveaux autorisés par matière', function () {
+                const subRes = AdminStore.createCustomSubject('Sciences Numériques', '💻', null, {
+                    band: 'lycee',
+                    allowedNiveaux: ['2de', '1re', 'tle'],
+                    enabled: true,
+                    description: 'Option lycée',
+                });
+                assert.strictEqual(subRes.ok, true);
+                const subId = subRes.id;
+
+                const modRes = AdminStore.saveSubjectMeta(subId, {
+                    band: 'college',
+                    allowedNiveaux: ['4eme', '3eme'],
+                    enabled: false,
+                    description: 'Initiation collège',
+                });
+                assert.strictEqual(modRes.ok, true);
+
+                const list = AdminStore.listEditable([]);
+                const found = list.find(s => s.id === subId);
+                assert.ok(found);
+                assert.strictEqual(found.band, 'college');
+                assert.strictEqual(found.allowedNiveaux.length, 2);
+                assert.strictEqual(found.enabled, false);
+            });
+
+            it('Questions par niveau d\'étude et générateur de variantes', function () {
+                const q6e = AdminStore.getSubjectQuestionsForGrade('maths', '6eme', 0, 4);
+                assert.ok(Array.isArray(q6e.generated));
+                const qTle = AdminStore.getSubjectQuestionsForGrade('maths', 'terminale', 1, 4);
+                assert.ok(Array.isArray(qTle.generated));
+            });
         });
 
         // --- SUITE 8 : CONSENTEMENT COOKIES (EduCookies) ---

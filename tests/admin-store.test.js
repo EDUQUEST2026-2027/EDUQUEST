@@ -3,7 +3,12 @@ const assert = require('node:assert/strict');
 const { setupTestEnv } = require('./test-helper.js');
 
 setupTestEnv();
+const QuestionBank = require('../js/question-bank.js');
+global.QuestionBank = QuestionBank;
 const AdminStore = require('../js/admin-store.js');
+AdminStore.registerDefaults([
+    { id: 'maths', name: 'Mathématiques', icon: '📐', lessons: [{ type: 'qcm', q: '1+1', opts: ['2', '3'], correct: 0 }] }
+]);
 
 test('AdminStore - Validation des leçons et types de questions', async (t) => {
     await t.test('QCM valide', () => {
@@ -110,5 +115,93 @@ test('AdminStore - Matières personnalisées et surcharges', async (t) => {
         const deleted = AdminStore.clearLocalGameData();
         assert.ok(deleted >= 2);
         assert.notEqual(localStorage.getItem('eduquest_local_users'), null, 'Les comptes doivent être préservés');
+    });
+
+    await t.test('Configuration globale du site (get, save, reset)', () => {
+        const def = AdminStore.getSiteConfig();
+        assert.equal(def.title, 'EDUQUEST');
+        assert.equal(def.quizTimerSeconds, 45);
+
+        const saved = AdminStore.saveSiteConfig({
+            title: 'Collège & Lycée Quest',
+            quizTimerSeconds: 60,
+            xpMultiplier: 1.5,
+            coinMultiplier: 2.0,
+            allowRegistration: false,
+        });
+        assert.equal(saved.ok, true);
+
+        const updated = AdminStore.getSiteConfig();
+        assert.equal(updated.title, 'Collège & Lycée Quest');
+        assert.equal(updated.quizTimerSeconds, 60);
+        assert.equal(updated.xpMultiplier, 1.5);
+        assert.equal(updated.coinMultiplier, 2.0);
+        assert.equal(updated.allowRegistration, false);
+
+        AdminStore.resetSiteConfig();
+        const restored = AdminStore.getSiteConfig();
+        assert.equal(restored.title, 'EDUQUEST');
+        assert.equal(restored.quizTimerSeconds, 45);
+    });
+
+    await t.test('Configuration de l\'IA et Webhooks Make (get, save, reset)', () => {
+        const defAi = AdminStore.getAiConfig();
+        assert.equal(defAi.fetchTimeoutMs, 8000);
+
+        const savedAi = AdminStore.saveAiConfig({
+            generateWebhookUrl: 'https://hook.eu1.make.com/gen-test',
+            validateWebhookUrl: 'https://hook.eu1.make.com/val-test',
+            fetchTimeoutMs: 5000,
+            fallbackToOffline: true,
+        });
+        assert.equal(savedAi.ok, true);
+
+        const updatedAi = AdminStore.getAiConfig();
+        assert.equal(updatedAi.generateWebhookUrl, 'https://hook.eu1.make.com/gen-test');
+        assert.equal(updatedAi.validateWebhookUrl, 'https://hook.eu1.make.com/val-test');
+        assert.equal(updatedAi.fetchTimeoutMs, 5000);
+
+        AdminStore.resetAiConfig();
+        const restoredAi = AdminStore.getAiConfig();
+        assert.equal(restoredAi.generateWebhookUrl, '');
+        assert.equal(restoredAi.fetchTimeoutMs, 8000);
+    });
+
+    await t.test('Gestion des cycles et niveaux autorisés par matière', () => {
+        const subRes = AdminStore.createCustomSubject('Sciences Numériques', '💻', null, {
+            band: 'lycee',
+            allowedNiveaux: ['2de', '1re', 'tle'],
+            enabled: true,
+            description: 'Option informatique lycée',
+        });
+        assert.equal(subRes.ok, true);
+        const subId = subRes.id;
+
+        // Modification des métadonnées
+        const modRes = AdminStore.saveSubjectMeta(subId, {
+            band: 'college',
+            allowedNiveaux: ['4eme', '3eme'],
+            enabled: false,
+            description: 'Initiation collège',
+        });
+        assert.equal(modRes.ok, true);
+
+        const list = AdminStore.listEditable([]);
+        const found = list.find(s => s.id === subId);
+        assert.ok(found);
+        assert.equal(found.band, 'college');
+        assert.deepEqual(found.allowedNiveaux, ['4eme', '3eme']);
+        assert.equal(found.enabled, false);
+        assert.equal(found.description, 'Initiation collège');
+    });
+
+    await t.test('Questions par niveau d\'étude et générateur de variantes', () => {
+        const questions6e = AdminStore.getSubjectQuestionsForGrade('maths', '6eme', 0, 4);
+        assert.ok(Array.isArray(questions6e.generated));
+        assert.ok(questions6e.generated.length > 0);
+
+        const questionsTle = AdminStore.getSubjectQuestionsForGrade('maths', 'terminale', 1, 4);
+        assert.ok(Array.isArray(questionsTle.generated));
+        assert.ok(questionsTle.generated.length > 0);
     });
 });

@@ -81,6 +81,12 @@
         members: [],                   // cache des comptes locaux
         err: '',
         modeApi: false,
+        studyGrade: '6eme',            // niveau d'étude sélectionné pour prévisualiser/tester
+        questionVariant: 0,            // graine / index de variante aléatoire
+        subjectSubTab: 'manual',       // 'manual' | 'procedural'
+        testModalQuestion: null,       // question en cours de test interactif
+        testModalAnswer: null,         // réponse saisie par l'administrateur
+        testModalResult: null,         // résultat de correction { isCorrect, exp, correctStr }
     };
 
     const app = document.getElementById('admApp');
@@ -233,6 +239,7 @@
                     <button class="adm-tab${S.tab === t.id ? ' active' : ''}" onclick="ADM.tab('${t.id}')">${t.icon} ${t.label}</button>`).join('')}
             </div>
             <div id="admTab">${renderTab()}</div>
+            <div id="admModalWrap">${S.testModalQuestion ? renderTestModal() : ''}</div>
             <p class="adm-hint" style="margin-top:18px; text-align:center;">
                 Rechargez la page du jeu (F5) pour voir vos modifications appliquées.<br>
                 <a href="legal.html" target="_blank">Mentions légales, confidentialité &amp; cookies</a>
@@ -346,18 +353,35 @@
                     <div class="adm-card">
                         <h2>Matières</h2>
                         <div class="adm-subject-list">
-                            ${list.map(x => `
+                            ${list.map(x => {
+                                const bandLabel = x.band === 'college' ? 'Collège' : x.band === 'lycee' ? 'Lycée' : 'Tous';
+                                return `
                                 <button class="adm-subject-item${S.subjectId === x.id ? ' active' : ''}" onclick="ADM.openSubject('${x.id}')">
                                     <span class="icon">${renderSubjectIcon(x.icon, x.name)}</span>
-                                    <span class="name">${esc(x.name || x.id)}</span>
-                                    <span class="count">${x.lessons.length}</span>
-                                </button>`).join('')}
+                                    <span class="name">
+                                        <span style="display:block; font-weight:600;">${esc(x.name || x.id)}</span>
+                                        <span style="display:inline-flex; gap:4px; margin-top:2px; font-size:0.75rem;">
+                                            <span class="adm-badge adm-badge-type" style="padding:1px 6px; font-size:0.72rem;">${bandLabel}</span>
+                                            ${x.enabled === false ? '<span class="adm-badge danger" style="padding:1px 6px; font-size:0.72rem;">Masquée</span>' : ''}
+                                        </span>
+                                    </span>
+                                    <span class="count" title="${x.lessons.length} leçon(s) écrite(s)">${x.lessons.length}</span>
+                                </button>`;
+                            }).join('')}
                         </div>
                         <div style="margin-top:14px; border-top:1px dashed rgba(154,167,216,.2); padding-top:12px;">
                             <div class="adm-form" style="display:flex; flex-direction:column; gap:8px;">
                                 <div class="adm-field">
                                     <label>Nom de la nouvelle matière</label>
                                     <input class="adm-input" id="admNewName" placeholder="Ex: Musique, SES, NSI...">
+                                </div>
+                                <div class="adm-field">
+                                    <label>Cycle d'enseignement</label>
+                                    <select class="adm-select" id="admNewBand">
+                                        <option value="all">🌐 Tous cycles (Collège &amp; Lycée)</option>
+                                        <option value="college">🏫 Collège uniquement (6e → 3e)</option>
+                                        <option value="lycee">🏛️ Lycée uniquement (2de → Tle)</option>
+                                    </select>
                                 </div>
                                 <div class="adm-field">
                                     <label>Illustration / Île officielle</label>
@@ -380,14 +404,13 @@
                                 </div>
                                 <button class="adm-btn adm-btn-ok" style="margin-top:4px;" onclick="ADM.createSubject()">+ Créer la matière</button>
                             </div>
-                            <p class="adm-hint" style="margin-top:8px;">Les matières personnalisées n'ont que les leçons que
-                            vous écrivez (aucune génération automatique).</p>
+                            <p class="adm-hint" style="margin-top:8px;">Les matières personnalisées créées apparaissent immédiatement dans le jeu selon leur cycle et leurs classes autorisées.</p>
                         </div>
                     </div>
                 </div>
                 <div>
                     ${open ? renderSubjectDetail(open) : `
-                        <div class="adm-card"><div class="adm-empty">Sélectionnez une matière pour éditer ses leçons.</div></div>`}
+                        <div class="adm-card"><div class="adm-empty">Sélectionnez une matière pour éditer ses leçons et son niveau d'étude.</div></div>`}
                 </div>
             </div>`;
     }
@@ -398,17 +421,26 @@
         const lessons = fresh.lessons || [];
         const isCustom = typeof AdminStore !== 'undefined' && AdminStore.isCustom(sub.id);
         const customized = isCustom || (typeof AdminStore !== 'undefined' && AdminStore.hasOverride(sub.id));
+        const levels = typeof AdminStore !== 'undefined' ? AdminStore.getLevels() : [];
 
+        // Niveaux autorisés : si vide, tous les niveaux correspondant à la bande
+        const allowedNiveaux = Array.isArray(fresh.allowedNiveaux) ? fresh.allowedNiveaux : [];
+
+        // Sous-onglet actif : 'manual' | 'procedural'
+        const subTab = S.subjectSubTab || 'manual';
+
+        // Lignes de leçons manuelles avec bouton de test 🧪
         const lessonRows = lessons.map((l, i) => `
             <div class="adm-lesson-row">
                 <div class="head">
                     <span class="num" style="color:var(--gold); font-weight:700;">${i + 1}</span>
                     <span class="t">${esc(l.title || ('Niveau ' + (i + 1)))}</span>
                     <span class="adm-badge adm-badge-type">${esc(typeLabel(l.type))}</span>
-                    <span class="q">${esc(clip(l.q || l.textWithBlanks || l.q, 80))}</span>
+                    <span class="q">${esc(clip(l.q || l.textWithBlanks || l.q, 75))}</span>
                     <div class="adm-row-actions">
                         <button class="adm-ico-btn" title="Monter" ${i === 0 ? 'disabled' : ''} onclick="ADM.lessonMove(${i},-1)">↑</button>
                         <button class="adm-ico-btn" title="Descendre" ${i === lessons.length - 1 ? 'disabled' : ''} onclick="ADM.lessonMove(${i},1)">↓</button>
+                        <button class="adm-ico-btn" title="Tester cette leçon" onclick="ADM.testLesson(${i})">🧪</button>
                         <button class="adm-ico-btn" title="Modifier" onclick="ADM.editLesson(${i})">✏️</button>
                         <button class="adm-ico-btn danger" title="Supprimer" onclick="ADM.deleteLesson(${i})">🗑</button>
                     </div>
@@ -421,60 +453,307 @@
         const currentIcon = fresh.icon || '';
         const matchingIsland = OFFICIAL_ISLANDS.find(isl => isl.value === currentIcon || (currentIcon && currentIcon.endsWith(isl.value.replace('Image/ile/', ''))));
 
+        // Questions procédurales adaptées à la classe sélectionnée
+        const gradeQuestions = typeof AdminStore !== 'undefined'
+            ? AdminStore.getSubjectQuestionsForGrade(fresh.id, S.studyGrade, S.questionVariant, 8)
+            : { manual: [], generated: [] };
+
+        const proceduralCards = (gradeQuestions.generated || []).map((q, idx) => {
+            const type = q.type || 'qcm';
+            let previewChoices = '';
+            if (type === 'qcm' && Array.isArray(q.opts)) {
+                previewChoices = `
+                    <div class="adm-q-choices">
+                        ${q.opts.map((opt, i) => `
+                            <div class="adm-q-choice ${i === Number(q.correct) ? 'is-correct' : ''}">
+                                ${String.fromCharCode(65 + i)}. ${esc(opt)} ${i === Number(q.correct) ? '✔' : ''}
+                            </div>
+                        `).join('')}
+                    </div>`;
+            } else if (type === 'vrai_faux') {
+                previewChoices = `
+                    <div class="adm-q-choices">
+                        <div class="adm-q-choice ${q.correct === true ? 'is-correct' : ''}">Vrai ${q.correct === true ? '✔' : ''}</div>
+                        <div class="adm-q-choice ${q.correct === false ? 'is-correct' : ''}">Faux ${q.correct === false ? '✔' : ''}</div>
+                    </div>`;
+            } else if (type === 'reponse_courte') {
+                previewChoices = `<div class="adm-hint" style="margin-bottom:6px;">Réponse(s) acceptée(s) : <b>${esc((q.accepted || []).join(', '))}</b></div>`;
+            } else if (type === 'texte_a_trous') {
+                previewChoices = `<div class="adm-hint" style="margin-bottom:6px;">Trou(s) : <b>${esc((q.blanks || []).map(b => (b || []).join('/')).join(', '))}</b></div>`;
+            }
+
+            return `
+                <div class="adm-q-card">
+                    <div class="adm-q-head">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span class="adm-badge" style="background:rgba(200,168,75,0.2); color:var(--gold-soft); font-weight:700;">Question ${idx + 1}</span>
+                            <span class="adm-badge adm-badge-type">${esc(typeLabel(type))}</span>
+                            <span class="adm-badge" style="background:rgba(95,212,230,0.15); color:var(--cyan);">${esc(S.studyGrade.toUpperCase())}</span>
+                        </div>
+                        <div class="adm-row-actions">
+                            <button class="adm-btn adm-btn-ok" style="padding:4px 10px; font-size:0.8rem;" onclick="ADM.importProceduralQuestion(${idx})">📋 Importer en leçon manuelle</button>
+                            <button class="adm-btn adm-btn-ghost" style="padding:4px 10px; font-size:0.8rem;" onclick="ADM.testProceduralQuestion(${idx})">🧪 Tester</button>
+                        </div>
+                    </div>
+                    <div class="adm-q-text">${esc(q.q || q.title || 'Question')}</div>
+                    ${previewChoices}
+                    ${q.exp ? `<div class="adm-q-exp">💡 Explication : ${esc(q.exp)}</div>` : ''}
+                </div>`;
+        }).join('');
+
         return `
             <div class="adm-card">
                 <div class="adm-toolbar">
-                    <h2 style="margin:0; display:flex; align-items:center; gap:10px;">${renderSubjectIcon(fresh.icon, fresh.name, 'adm-title-img')} ${esc(fresh.name)}</h2>
-                    <span class="adm-badge ${isCustom ? 'adm-badge-custom' : 'adm-badge-system'}">${isCustom ? 'Personnalisée' : 'Matière du jeu'}</span>
+                    <h2 style="margin:0; display:flex; align-items:center; gap:10px;">
+                        ${renderSubjectIcon(fresh.icon, fresh.name, 'adm-title-img')} ${esc(fresh.name)}
+                    </h2>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <span class="adm-badge ${isCustom ? 'adm-badge-custom' : 'adm-badge-system'}">${isCustom ? 'Matière personnalisée' : 'Matière du jeu'}</span>
+                        <span class="adm-badge ${fresh.enabled !== false ? 'adm-badge-type' : 'danger'}">${fresh.enabled !== false ? 'Visible' : 'Masquée'}</span>
+                    </div>
                 </div>
+
                 <div class="adm-note">
                     ${isCustom
-                ? `Matière créée dans le panneau : seuls vos niveaux existent (${lessons.length} leçon(s)). Ajoutez des leçons pour créer de nouveaux niveaux.`
-                : `Les niveaux 1 à ${lessons.length} (écrits à la main${customized ? ', partiellement modifiés' : ''}) sont modifiables ici ; au-delà, le contenu est généré automatiquement (100 niveaux au total).`}
+                ? `Matière personnalisée : vous pouvez choisir à quels niveaux d'étude et cycles elle est rattachée (${lessons.length} leçon(s) manuelle(s)).`
+                : `Matière officielle : adaptable par niveau d'étude (${fresh.band || 'all'}). Vous pouvez surcharger les premières leçons manuellement ou laisser le générateur adapter le contenu automatiquement.`}
                 </div>
 
-                <div class="adm-form-row" style="margin-bottom:14px; align-items:flex-end; gap:12px; flex-wrap:wrap;">
-                    <div class="adm-field" style="flex:1; min-width:180px;">
-                        <label>Nom de la matière</label>
-                        <input class="adm-input" id="admMetaName" value="${esc(fresh.name)}">
-                    </div>
-                    <div class="adm-field" style="flex:1; min-width:200px;">
-                        <label>Illustration / Île officielle</label>
-                        <select class="adm-select" id="admMetaIslandSelect" onchange="ADM.onSubjectIslandSelect(this.value, 'admMetaIcon', 'admMetaPreview')">
-                            <option value="">— Emoji ou URL personnalisée —</option>
-                            ${OFFICIAL_ISLANDS.map(isl => `<option value="${isl.value}"${matchingIsland && matchingIsland.value === isl.value ? ' selected' : ''}>${isl.label}</option>`).join('')}
-                        </select>
-                    </div>
-                    <div class="adm-field" style="flex:1; min-width:180px;">
-                        <label>Icône (URL, fichier ou emoji)</label>
-                        <div style="display:flex; gap:6px; align-items:center;">
-                            <input class="adm-input" id="admMetaIcon" value="${esc(fresh.icon)}" placeholder="Ex: Image/ile/maths.webp ou 📐" oninput="ADM.updateSubjectIconPreview('admMetaIcon', 'admMetaPreview')">
-                            <label class="adm-ico-btn" style="cursor:pointer; display:flex; align-items:center; padding:6px 9px;" title="Charger une image locale (PNG, SVG, WebP, JPG)">
-                                📁<input type="file" accept="image/*" style="display:none;" onchange="ADM.handleSubjectImageUpload(this, 'admMetaIcon', 'admMetaPreview')">
-                            </label>
+                <!-- FORMULAIRE MÉTA-DONNÉES & CYCLE D'ÉTUDE -->
+                <div class="adm-form" style="margin-bottom:14px; background:rgba(255,255,255,0.02); border:1px solid rgba(200,168,75,0.18); border-radius:10px; padding:14px;">
+                    <div class="adm-grid-2" style="margin-bottom:10px;">
+                        <div class="adm-field">
+                            <label>Nom de la matière</label>
+                            <input class="adm-input" id="admMetaName" value="${esc(fresh.name)}">
+                        </div>
+                        <div class="adm-field">
+                            <label>Cycle d'enseignement rattaché</label>
+                            <select class="adm-select" id="admMetaBand" onchange="ADM.onBandChange(this.value)">
+                                <option value="all"${(fresh.band || 'all') === 'all' ? ' selected' : ''}>🌐 Tous niveaux (Collège &amp; Lycée)</option>
+                                <option value="college"${fresh.band === 'college' ? ' selected' : ''}>🏫 Collège uniquement (6e → 3e)</option>
+                                <option value="lycee"${fresh.band === 'lycee' ? ' selected' : ''}>🏛️ Lycée uniquement (2de → Tle)</option>
+                            </select>
                         </div>
                     </div>
-                    <div class="adm-field" style="width:auto;">
-                        <label style="text-align:center;">Aperçu</label>
-                        <div id="admMetaPreview" class="adm-subj-preview">
-                            ${renderSubjectIcon(fresh.icon, fresh.name)}
+
+                    <!-- NIVEAUX SCOLAIRES AUTORISÉS (CLASSES) -->
+                    <div class="adm-field" style="margin-bottom:10px;">
+                        <label style="display:flex; justify-content:space-between; align-items:center;">
+                            <span>Niveaux d'étude autorisés pour cette matière :</span>
+                            <span style="font-size:0.8rem; font-weight:normal; color:var(--muted);">
+                                ${allowedNiveaux.length === 0 ? 'Toutes les classes du cycle sont autorisées' : allowedNiveaux.length + ' classe(s) sélectionnée(s)'}
+                            </span>
+                        </label>
+                        <div class="adm-grade-pills">
+                            ${levels.map(l => {
+                                const isChecked = allowedNiveaux.length === 0 || allowedNiveaux.includes(l.id);
+                                return `<button type="button" class="adm-grade-pill ${isChecked ? 'checked' : ''}" onclick="ADM.toggleSubjectGrade('${l.id}')">
+                                    ${isChecked ? '✓' : '○'} ${esc(l.label || l.id)}
+                                </button>`;
+                            }).join('')}
+                            <button type="button" class="adm-btn adm-btn-ghost" style="padding:3px 8px; font-size:0.75rem;" onclick="ADM.setAllSubjectGrades(true)">Tout cocher</button>
+                            <button type="button" class="adm-btn adm-btn-ghost" style="padding:3px 8px; font-size:0.75rem;" onclick="ADM.setAllSubjectGrades(false)">Tout décocher</button>
+                        </div>
+                        <p class="adm-hint" style="margin-top:4px;">Seuls les élèves connectés dans les classes cochées auront accès à cette matière.</p>
+                    </div>
+
+                    <div class="adm-form-row" style="align-items:flex-end; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
+                        <div class="adm-field" style="flex:1; min-width:200px;">
+                            <label>Illustration / Île officielle</label>
+                            <select class="adm-select" id="admMetaIslandSelect" onchange="ADM.onSubjectIslandSelect(this.value, 'admMetaIcon', 'admMetaPreview')">
+                                <option value="">— Emoji ou URL personnalisée —</option>
+                                ${OFFICIAL_ISLANDS.map(isl => `<option value="${isl.value}"${matchingIsland && matchingIsland.value === isl.value ? ' selected' : ''}>${isl.label}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="adm-field" style="flex:1; min-width:180px;">
+                            <label>Icône (URL, fichier ou emoji)</label>
+                            <div style="display:flex; gap:6px; align-items:center;">
+                                <input class="adm-input" id="admMetaIcon" value="${esc(fresh.icon)}" placeholder="Ex: Image/ile/maths.webp ou 📐" oninput="ADM.updateSubjectIconPreview('admMetaIcon', 'admMetaPreview')">
+                                <label class="adm-ico-btn" style="cursor:pointer; display:flex; align-items:center; padding:6px 9px;" title="Charger une image locale (PNG, SVG, WebP, JPG)">
+                                    📁<input type="file" accept="image/*" style="display:none;" onchange="ADM.handleSubjectImageUpload(this, 'admMetaIcon', 'admMetaPreview')">
+                                </label>
+                            </div>
+                        </div>
+                        <div class="adm-field" style="width:auto;">
+                            <label style="text-align:center;">Aperçu</label>
+                            <div id="admMetaPreview" class="adm-subj-preview">
+                                ${renderSubjectIcon(fresh.icon, fresh.name)}
+                            </div>
                         </div>
                     </div>
-                    <button class="adm-btn adm-btn-ok" onclick="ADM.saveMeta()">💾 Enregistrer</button>
-                    ${isCustom
-                ? `<button class="adm-btn adm-btn-danger" onclick="ADM.deleteSubject()">Supprimer la matière</button>`
-                : `<button class="adm-btn adm-btn-ghost" onclick="ADM.resetSubject()" title="Retirer toutes les modifications de cette matière">Rétablir l'original</button>`}
+
+                    <div class="adm-grid-2" style="margin-bottom:10px;">
+                        <div class="adm-field">
+                            <label>Description pédagogique (optionnelle)</label>
+                            <input class="adm-input" id="admMetaDesc" value="${esc(fresh.description || '')}" placeholder="Ex: Notions clés, exercices et défis pour progresser">
+                        </div>
+                        <div class="adm-field" style="display:flex; align-items:center; gap:8px; margin-top:22px;">
+                            <input type="checkbox" id="admMetaEnabled" ${fresh.enabled !== false ? 'checked' : ''} style="width:18px; height:18px; cursor:pointer;">
+                            <label for="admMetaEnabled" style="margin:0; cursor:pointer; font-weight:600;">Matière active et visible sur le dashboard élève</label>
+                        </div>
+                    </div>
+
+                    <div class="adm-toolbar">
+                        <button class="adm-btn adm-btn-ok" onclick="ADM.saveMeta()">💾 Enregistrer les réglages de la matière</button>
+                        ${isCustom
+                ? `<button class="adm-btn adm-btn-danger adm-right" onclick="ADM.deleteSubject()">Supprimer la matière</button>`
+                : `<button class="adm-btn adm-btn-ghost adm-right" onclick="ADM.resetSubject()" title="Retirer toutes les modifications de cette matière">Rétablir l'original</button>`}
+                    </div>
                 </div>
 
-                ${editor}
-
-                <div class="adm-toolbar">
-                    <button class="adm-btn" onclick="ADM.newLesson()">+ Ajouter une leçon (niveau ${lessons.length + 1})</button>
-                    <button class="adm-btn adm-btn-ghost" onclick="ADM.openSubject('')">‹ Retour à la liste</button>
+                <!-- SOUS-ONGLETS DE CONTENU : LEÇONS MANUELLES vs QUESTIONS PAR NIVEAU / ALÉATOIRE -->
+                <div class="adm-subtabs">
+                    <button class="adm-subtab ${subTab !== 'procedural' ? 'active' : ''}" onclick="ADM.setSubjectSubTab('manual')">
+                        📝 Leçons manuelles (${lessons.length})
+                    </button>
+                    <button class="adm-subtab ${subTab === 'procedural' ? 'active' : ''}" onclick="ADM.setSubjectSubTab('procedural')">
+                        🎲 Questions par niveau d'étude &amp; Aléatoire
+                    </button>
                 </div>
 
-                ${lessons.length ? `<div class="adm-lesson-preview">${lessons.length} leçon(s) — cliquez sur ✏️ pour éditer.</div>` : '<div class="adm-empty">Aucune leçon pour l\'instant.</div>'}
-                ${lessonRows}
+                ${subTab === 'manual' ? `
+                    <!-- VUE 1 : LEÇONS MANUELLES -->
+                    ${editor}
+                    <div class="adm-toolbar" style="margin-top:10px;">
+                        <button class="adm-btn" onclick="ADM.newLesson()">+ Ajouter une leçon (niveau ${lessons.length + 1})</button>
+                        <button class="adm-btn adm-btn-ghost" onclick="ADM.openSubject('')">‹ Retour à la liste</button>
+                    </div>
+                    ${lessons.length ? `<div class="adm-lesson-preview">${lessons.length} leçon(s) manuelle(s) — cliquez sur ✏️ pour éditer ou 🧪 pour tester.</div>` : '<div class="adm-empty">Aucune leçon manuelle écrite pour l\'instant.</div>'}
+                    ${lessonRows}
+                ` : `
+                    <!-- VUE 2 : QUESTIONS PAR NIVEAU & GÉNÉRATEUR ALÉATOIRE -->
+                    <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(95,212,230,0.25); border-radius:10px; padding:14px; margin-top:10px;">
+                        <div class="adm-grid-2" style="align-items:center;">
+                            <div class="adm-field">
+                                <label>Niveau d'étude à prévisualiser :</label>
+                                <select class="adm-select" id="admStudyGradeSelect" onchange="ADM.changeStudyGrade(this.value)">
+                                    ${levels.map(l => `<option value="${l.id}"${S.studyGrade === l.id ? ' selected' : ''}>${l.label || l.id} (${l.band === 'lycee' ? 'Lycée' : 'Collège'})</option>`).join('')}
+                                </select>
+                            </div>
+                            <div style="display:flex; gap:8px; align-items:flex-end;">
+                                <div style="flex:1;">
+                                    <label>Variante aléatoire active :</label>
+                                    <div style="font-size:0.95rem; font-weight:700; color:var(--gold-soft); padding:8px 0;">
+                                        🎲 Graine / Variante n° ${S.questionVariant}
+                                    </div>
+                                </div>
+                                <button class="adm-btn adm-btn-ok" style="white-space:nowrap;" onclick="ADM.nextQuestionVariant()">🎲 Tirer une autre variante</button>
+                                <button class="adm-btn adm-btn-ghost" onclick="ADM.resetQuestionVariant()">🔄 Réinitialiser</button>
+                            </div>
+                        </div>
+                        <p class="adm-hint" style="margin-top:8px;">
+                            Ces questions sont adaptées en temps réel au niveau d'étude choisi (<b>${esc(S.studyGrade.toUpperCase())}</b>) et à la variante aléatoire active.
+                            Vous pouvez tester n'importe quelle question en direct (🧪) ou l'importer en 1 clic (📋) dans vos leçons manuelles pour la retravailler !
+                        </p>
+                    </div>
+
+                    <div class="adm-procedural-list">
+                        ${isCustom ? `
+                            <div class="adm-empty">
+                                Les matières personnalisées créées par l'enseignant utilisent uniquement vos leçons manuelles.<br>
+                                <button class="adm-btn adm-btn-ok" style="margin-top:10px;" onclick="ADM.setSubjectSubTab('manual')">Ajouter une leçon manuelle</button>
+                            </div>
+                        ` : (proceduralCards || '<div class="adm-empty">Aucune question disponible pour ce niveau.</div>')}
+                    </div>
+                `}
+            </div>`;
+    }
+
+    function renderTestModal() {
+        const q = S.testModalQuestion;
+        if (!q) return '';
+        const res = S.testModalResult;
+        const type = q.type || 'qcm';
+
+        let interactiveHtml = '';
+        if (type === 'qcm') {
+            const opts = Array.isArray(q.opts) ? q.opts : [];
+            interactiveHtml = `
+                <div class="adm-test-options" style="display:flex; flex-direction:column; gap:8px; margin:16px 0;">
+                    ${opts.map((opt, i) => {
+                        const sel = S.testModalAnswer === i;
+                        return `<button type="button" class="adm-btn ${sel ? 'adm-btn-ok' : 'adm-btn-ghost'}" style="text-align:left; justify-content:flex-start;" onclick="ADM.selectTestAnswer(${i})">
+                            <b style="min-width:24px;">${String.fromCharCode(65 + i)}.</b> ${esc(opt)}
+                        </button>`;
+                    }).join('')}
+                </div>`;
+        } else if (type === 'vrai_faux') {
+            interactiveHtml = `
+                <div style="display:flex; gap:12px; margin:16px 0;">
+                    <button type="button" class="adm-btn ${S.testModalAnswer === true ? 'adm-btn-ok' : 'adm-btn-ghost'}" style="flex:1;" onclick="ADM.selectTestAnswer(true)">
+                        ✓ Vrai
+                    </button>
+                    <button type="button" class="adm-btn ${S.testModalAnswer === false ? 'adm-btn-ok' : 'adm-btn-ghost'}" style="flex:1;" onclick="ADM.selectTestAnswer(false)">
+                        ✗ Faux
+                    </button>
+                </div>`;
+        } else if (type === 'reponse_courte') {
+            interactiveHtml = `
+                <div style="margin:16px 0;">
+                    <label class="adm-hint" style="display:block; margin-bottom:6px;">Saisissez votre réponse :</label>
+                    <input class="adm-input" id="admTestShortInput" value="${esc(S.testModalAnswer || '')}" placeholder="Tapez votre réponse ici..." oninput="ADM.selectTestAnswer(this.value)" style="font-size:1.05rem; padding:10px 14px;">
+                </div>`;
+        } else if (type === 'texte_a_trous') {
+            const text = q.textWithBlanks || q.q || '';
+            interactiveHtml = `
+                <div style="margin:16px 0; font-size:1.05rem; line-height:1.6;">
+                    <p style="background:rgba(255,255,255,0.03); padding:10px; border-radius:8px;">${esc(text)}</p>
+                    <label class="adm-hint" style="display:block; margin:8px 0 4px;">Saisissez les mots manquants (séparés par une virgule) :</label>
+                    <input class="adm-input" id="admTestBlanksInput" value="${esc(Array.isArray(S.testModalAnswer) ? S.testModalAnswer.join(', ') : (S.testModalAnswer || ''))}" placeholder="ex: mot1, mot2..." oninput="ADM.selectTestAnswer(this.value.split(',').map(s=>s.trim()))">
+                </div>`;
+        } else { // drag_and_drop
+            const items = q.items || [];
+            const targets = q.targets || [];
+            interactiveHtml = `
+                <div style="margin:16px 0;">
+                    <p class="adm-hint">Paires à valider :</p>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                        <div>${items.map((it, idx) => `<div style="padding:8px; background:rgba(255,255,255,0.05); border-radius:6px; margin-bottom:6px;"><b>${idx + 1}.</b> ${esc(it)}</div>`).join('')}</div>
+                        <div>${targets.map((tg, idx) => `<div style="padding:8px; background:rgba(255,255,255,0.05); border-radius:6px; margin-bottom:6px; color:var(--gold-soft);">→ ${esc(tg)}</div>`).join('')}</div>
+                    </div>
+                </div>`;
+        }
+
+        let resultBanner = '';
+        if (res) {
+            if (res.isCorrect) {
+                resultBanner = `
+                    <div class="adm-note ok" style="margin-top:14px; border-left-color:var(--green); background:rgba(102,187,106,0.15);">
+                        <div style="color:#a5d6a7; font-weight:700; font-size:1.05rem;">🎉 Réponse correcte !</div>
+                        ${res.exp ? `<p style="margin:6px 0 0; color:#dcedc8; font-size:0.9rem;">💡 ${esc(res.exp)}</p>` : ''}
+                    </div>`;
+            } else {
+                resultBanner = `
+                    <div class="adm-note warn" style="margin-top:14px;">
+                        <div style="color:#ffb74d; font-weight:700; font-size:1.05rem;">❌ Réponse incorrecte</div>
+                        <p style="margin:6px 0 0; font-size:0.95rem;">Attendu : <b>${esc(res.correctStr || '')}</b></p>
+                        ${res.exp ? `<p style="margin:6px 0 0; font-size:0.85rem; color:#8fa1d0;">💡 ${esc(res.exp)}</p>` : ''}
+                    </div>`;
+            }
+        }
+
+        return `
+            <div class="adm-modal-backdrop" onclick="if(event.target===this)ADM.closeTestModal()">
+                <div class="adm-modal-card">
+                    <div class="adm-modal-header">
+                        <h3 style="margin:0; display:flex; align-items:center; gap:8px;">
+                            🧪 Test interactif de la question
+                            <span class="adm-badge adm-badge-type">${esc(typeLabel(type))}</span>
+                        </h3>
+                        <button class="adm-ico-btn" onclick="ADM.closeTestModal()" title="Fermer">✕</button>
+                    </div>
+                    <div style="margin-top:14px;">
+                        <p style="font-size:1.15rem; font-weight:600; color:#fff; margin-bottom:12px; line-height:1.4;">
+                            ${esc(q.q || q.title || 'Question')}
+                        </p>
+                        ${interactiveHtml}
+                        ${resultBanner}
+                        <div class="adm-toolbar" style="margin-top:16px; border-top:1px dashed rgba(154,167,216,0.2); padding-top:12px;">
+                            <button class="adm-btn adm-btn-ok" onclick="ADM.submitTestAnswer()">Valider la réponse</button>
+                            <button class="adm-btn adm-btn-ghost" onclick="ADM.closeTestModal()">Fermer</button>
+                        </div>
+                    </div>
+                </div>
             </div>`;
     }
 
@@ -1062,43 +1341,141 @@
     /* ============================== ONGLET : RÉGLAGES ============================== */
 
     function renderSettings() {
+        const siteCfg = (typeof AdminStore !== 'undefined') ? AdminStore.getSiteConfig() : {};
+        const aiCfg = (typeof AdminStore !== 'undefined') ? AdminStore.getAiConfig() : {};
+
         return `
             <div class="adm-card">
-                <h2>ℹ️ À propos de l'accès</h2>
-                <p class="adm-hint" style="margin:0;">
-                    Le panneau s'ouvre <b>sans mot de passe</b> pour l'instant : toute personne qui ouvre
-                    <b>admin.html</b> (ou clique sur « 🔐 Administration » depuis la page d'accueil) peut
-                    modifier les niveaux, les matières et les comptes de ce navigateur. Réactivez une page de
-                    connexion (rôle « admin ») avant une mise en ligne.
-                </p>
+                <div class="adm-toolbar">
+                    <h2 style="margin:0;">⚙️ Configuration Générale &amp; Gameplay du Site</h2>
+                    <span class="adm-badge adm-badge-system">v1.26.0</span>
+                </div>
+                <p class="adm-hint">Personnalisez ici tous les paramètres globaux de la plateforme EDUQUEST : titre, slogans, durée du chronomètre, multiplicateurs d'XP et de pièces, audio et inscriptions.</p>
+
+                <div class="adm-form" style="margin-top:14px;">
+                    <div class="adm-grid-2">
+                        <div class="adm-field">
+                            <label>Nom de la plateforme / Titre du site</label>
+                            <input class="adm-input" id="admSiteTitle" value="${esc(siteCfg.title || 'EDUQUEST')}" placeholder="EDUQUEST">
+                        </div>
+                        <div class="adm-field">
+                            <label>Slogan (Tagline)</label>
+                            <input class="adm-input" id="admSiteTagline" value="${esc(siteCfg.tagline || 'L\'aventure éducative gamifiée')}" placeholder="L'aventure éducative gamifiée">
+                        </div>
+                    </div>
+
+                    <div class="adm-field">
+                        <label>Annonce d'accueil / Message d'alerte (affiché sur l'accueil, optionnel)</label>
+                        <input class="adm-input" id="admSiteAnnouncement" value="${esc(siteCfg.announcement || '')}" placeholder="Ex: Bienvenue pour la rentrée ! Nouveaux quiz et défis disponibles.">
+                    </div>
+
+                    <div class="adm-grid-3">
+                        <div class="adm-field">
+                            <label>Chronomètre de quiz (secondes)</label>
+                            <input class="adm-input" type="number" id="admSiteTimer" min="10" max="300" value="${siteCfg.quizTimerSeconds || 45}">
+                        </div>
+                        <div class="adm-field">
+                            <label>Multiplicateur global d'XP</label>
+                            <input class="adm-input" type="number" step="0.1" min="0.1" max="10" id="admSiteXpMult" value="${siteCfg.xpMultiplier || 1}">
+                        </div>
+                        <div class="adm-field">
+                            <label>Multiplicateur global de pièces 🪙</label>
+                            <input class="adm-input" type="number" step="0.1" min="0.1" max="10" id="admSiteCoinMult" value="${siteCfg.coinMultiplier || 1}">
+                        </div>
+                    </div>
+
+                    <div class="adm-grid-2">
+                        <div class="adm-field">
+                            <label>Volume des effets sonores (%)</label>
+                            <input class="adm-input" type="range" id="admSiteSfxVol" min="0" max="100" value="${Math.round((siteCfg.sfxVolume ?? 0.7) * 100)}" oninput="document.getElementById('admSiteSfxVal').textContent=this.value+'%'">
+                            <span id="admSiteSfxVal" class="adm-hint">${Math.round((siteCfg.sfxVolume ?? 0.7) * 100)}%</span>
+                        </div>
+                        <div class="adm-field">
+                            <label>Volume de la musique d'ambiance (%)</label>
+                            <input class="adm-input" type="range" id="admSiteMusVol" min="0" max="100" value="${Math.round((siteCfg.musicVolume ?? 0.4) * 100)}" oninput="document.getElementById('admSiteMusVal').textContent=this.value+'%'">
+                            <span id="admSiteMusVal" class="adm-hint">${Math.round((siteCfg.musicVolume ?? 0.4) * 100)}%</span>
+                        </div>
+                    </div>
+
+                    <div class="adm-grid-2">
+                        <div class="adm-field" style="display:flex; align-items:center; gap:8px;">
+                            <input type="checkbox" id="admSiteAllowReg" ${siteCfg.allowRegistration !== false ? 'checked' : ''} style="width:18px; height:18px; cursor:pointer;">
+                            <label for="admSiteAllowReg" style="margin:0; cursor:pointer;">Autoriser la création de nouveaux comptes élèves</label>
+                        </div>
+                        <div class="adm-field" style="display:flex; align-items:center; gap:8px;">
+                            <input type="checkbox" id="admSiteSoundDef" ${siteCfg.soundEnabledByDefault ? 'checked' : ''} style="width:18px; height:18px; cursor:pointer;">
+                            <label for="admSiteSoundDef" style="margin:0; cursor:pointer;">Son activé par défaut à la première visite</label>
+                        </div>
+                    </div>
+
+                    <div class="adm-toolbar" style="margin-top:14px;">
+                        <button class="adm-btn adm-btn-ok" onclick="ADM.saveSiteSettings()">💾 Enregistrer la configuration du site</button>
+                        <button class="adm-btn adm-btn-ghost" onclick="ADM.resetSiteSettings()">Rétablir les valeurs de jeu par défaut</button>
+                    </div>
+                </div>
             </div>
 
             <div class="adm-card">
-                <h2>🗄️ Sauvegarde &amp; restauration de la configuration</h2>
-                <p class="adm-hint">Exportez la configuration du panneau (niveaux scolaires + matières + leçons)
-                pour la conserver ou l'importer sur un autre poste.</p>
                 <div class="adm-toolbar">
-                    <button class="adm-btn" onclick="ADM.exportConfig()">⬇️ Exporter</button>
+                    <h2 style="margin:0;">🤖 Configuration de l'IA &amp; Webhooks Make.com</h2>
+                    <span class="adm-badge adm-badge-type">Intégration Enseignant</span>
+                </div>
+                <p class="adm-hint">Configurez les webhooks Make pour la génération dynamique et la correction des questions par Intelligence Artificielle. En cas d'indisponibilité ou d'erreur réseau, le repli hors-ligne garantit une expérience fluide pour les élèves.</p>
+
+                <div class="adm-form" style="margin-top:14px;">
+                    <div class="adm-field">
+                        <label>Webhook de génération de questions (POST URL)</label>
+                        <input class="adm-input" id="admAiGenUrl" value="${esc(aiCfg.generateWebhookUrl || '')}" placeholder="https://hook.eu1.make.com/...">
+                    </div>
+                    <div class="adm-field">
+                        <label>Webhook de validation de questions (POST URL)</label>
+                        <input class="adm-input" id="admAiValUrl" value="${esc(aiCfg.validateWebhookUrl || '')}" placeholder="https://hook.eu1.make.com/...">
+                    </div>
+                    <div class="adm-grid-2">
+                        <div class="adm-field">
+                            <label>Timeout des requêtes IA (ms)</label>
+                            <input class="adm-input" type="number" id="admAiTimeout" min="1000" max="30000" step="500" value="${aiCfg.fetchTimeoutMs || 8000}">
+                        </div>
+                        <div class="adm-field" style="display:flex; align-items:center; gap:8px; margin-top:22px;">
+                            <input type="checkbox" id="admAiFallback" ${aiCfg.fallbackToOffline !== false ? 'checked' : ''} style="width:18px; height:18px; cursor:pointer;">
+                            <label for="admAiFallback" style="margin:0; cursor:pointer;">Repli automatique sur les questions hors-ligne</label>
+                        </div>
+                    </div>
+
+                    <div class="adm-toolbar" style="margin-top:14px;">
+                        <button class="adm-btn adm-btn-ok" onclick="ADM.saveAiSettings()">💾 Enregistrer les webhooks IA</button>
+                        <button class="adm-btn adm-btn-ghost" onclick="ADM.testAiSettings()">🧪 Tester la connexion IA</button>
+                        <button class="adm-btn adm-btn-ghost adm-right" onclick="ADM.resetAiSettings()">Rétablir par défaut</button>
+                    </div>
+                    <div id="admAiTestResult" style="margin-top:10px;"></div>
+                </div>
+            </div>
+
+            <div class="adm-card">
+                <h2>🗄️ Sauvegarde &amp; Restauration Intégrale du Site</h2>
+                <p class="adm-hint">Exportez l'intégralité des données du site (niveaux scolaires, matières, leçons manuelles, boutique, succès, récompenses économiques, crédits, configuration du site et IA) en un seul fichier JSON universel.</p>
+                <div class="adm-toolbar">
+                    <button class="adm-btn" onclick="ADM.exportConfig()">⬇️ Exporter toute la configuration</button>
                     <button class="adm-btn adm-btn-ghost" onclick="ADM.downloadConfig()">💾 Télécharger (.json)</button>
                 </div>
-                <textarea class="adm-textarea" id="admExportArea" readonly placeholder="Cliquez sur « Exporter » pour afficher le JSON ici…" rows="5"></textarea>
-                <div style="margin-top:10px;">
-                    <button class="adm-btn" onclick="ADM.importConfig()">⬆️ Importer</button>
-                    <textarea class="adm-textarea" id="admImportArea" placeholder="Collez ici un JSON exporté puis cliquez sur Importer…" rows="5"></textarea>
+                <textarea class="adm-textarea" id="admExportArea" readonly placeholder="Cliquez sur « Exporter toute la configuration » pour afficher le JSON ici…" rows="5"></textarea>
+                <div style="margin-top:12px;">
+                    <button class="adm-btn" onclick="ADM.importConfig()">⬆️ Importer la configuration</button>
+                    <textarea class="adm-textarea" id="admImportArea" placeholder="Collez ici un JSON exporté puis cliquez sur « Importer la configuration »…" rows="5" style="margin-top:6px;"></textarea>
                 </div>
             </div>
 
             <div class="adm-card">
-                <h2 style="color:#ffab91;">☢️ Zone sensible</h2>
-                <div class="adm-toolbar">
-                    <button class="adm-btn adm-btn-danger" onclick="ADM.resetAdminConfig()">Réinitialiser niveaux &amp; matières</button>
-                    <button class="adm-btn adm-btn-danger" onclick="ADM.resetProgress()">Réinitialiser la progression (appareil)</button>
+                <h2 style="color:#ffab91;">☢️ Zone sensible &amp; Réinitialisations</h2>
+                <p class="adm-hint">Réinitialisez des modules individuels ou effacez les caches locaux de cet appareil.</p>
+                <div class="adm-toolbar" style="flex-wrap:wrap; gap:8px;">
+                    <button class="adm-btn adm-btn-danger" onclick="ADM.resetAdminConfig()">Réinitialiser TOUT le panneau</button>
+                    <button class="adm-btn adm-btn-ghost" onclick="ADM.levelsReset()">Niveaux scolaires par défaut</button>
+                    <button class="adm-btn adm-btn-ghost" onclick="ADM.resetShopItems()">Boutique par défaut</button>
+                    <button class="adm-btn adm-btn-ghost" onclick="ADM.resetBadgesCatalog()">Succès par défaut</button>
+                    <button class="adm-btn adm-btn-ghost" onclick="ADM.rewardsReset()">Récompenses par défaut</button>
+                    <button class="adm-btn adm-btn-danger adm-right" onclick="ADM.resetProgress()">Effacer la progression joueur (appareil)</button>
                 </div>
-                <p class="adm-hint" style="margin-top:8px;">
-                    « Réinitialiser niveaux &amp; matières » retire toutes les personnalisations du panneau.
-                    « Réinitialiser la progression » efface progression, XP, pièces et badges de CET appareil
-                    (les comptes sont conservés). Aucune de ces actions n'est réversible.
-                </p>
             </div>`;
     }
 
@@ -1307,7 +1684,8 @@
         createSubject() {
             const name = (document.getElementById('admNewName') || {}).value || '';
             const icon = (document.getElementById('admNewIcon') || {}).value || '';
-            const r = AdminStore.createCustomSubject(name, icon);
+            const band = (document.getElementById('admNewBand') || {}).value || 'all';
+            const r = AdminStore.createCustomSubject(name, icon, null, { band });
             if (!r.ok) { toast(r.error || 'Création impossible.', 'err'); return; }
             S.subjectList = [];
             S.subjectId = r.id;
@@ -1318,11 +1696,185 @@
             if (!S.subjectId) return;
             const name = (document.getElementById('admMetaName') || {}).value || '';
             const icon = (document.getElementById('admMetaIcon') || {}).value || '';
-            const r = AdminStore.saveSubjectMeta(S.subjectId, { name, icon });
+            const band = (document.getElementById('admMetaBand') || {}).value || 'all';
+            const enabled = Boolean((document.getElementById('admMetaEnabled') || {}).checked);
+            const description = (document.getElementById('admMetaDesc') || {}).value || '';
+
+            const sub = subjectList().find(x => x.id === S.subjectId);
+            const allowedNiveaux = sub ? (sub.allowedNiveaux || []) : [];
+
+            const r = AdminStore.saveSubjectMeta(S.subjectId, { name, icon, band, enabled, description, allowedNiveaux });
             if (!r.ok) { toast(r.error || 'Enregistrement impossible.', 'err'); return; }
             S.subjectList = [];
             renderTabContent();
-            toast('Matière mise à jour ✔', 'ok');
+            toast('Matière et réglages de niveaux enregistrés ✔', 'ok');
+        },
+        onBandChange(band) {
+            if (!S.subjectId) return;
+            const sub = subjectList().find(x => x.id === S.subjectId);
+            if (!sub) return;
+            sub.band = band;
+            const allLevels = AdminStore.getLevels();
+            if (band === 'college') {
+                sub.allowedNiveaux = allLevels.filter(l => l.band === 'college').map(l => l.id);
+            } else if (band === 'lycee') {
+                sub.allowedNiveaux = allLevels.filter(l => l.band === 'lycee').map(l => l.id);
+            } else {
+                sub.allowedNiveaux = allLevels.map(l => l.id);
+            }
+            AdminStore.saveSubjectMeta(S.subjectId, { band, allowedNiveaux: sub.allowedNiveaux });
+            S.subjectList = [];
+            renderTabContent();
+            toast('Cycle mis à jour : ' + (band === 'college' ? 'Collège' : band === 'lycee' ? 'Lycée' : 'Tous cycles'), 'ok');
+        },
+        toggleSubjectGrade(gradeId) {
+            if (!S.subjectId) return;
+            const sub = subjectList().find(x => x.id === S.subjectId);
+            if (!sub) return;
+            const allLevels = AdminStore.getLevels();
+            let current = Array.isArray(sub.allowedNiveaux) && sub.allowedNiveaux.length ? sub.allowedNiveaux.slice() : allLevels.map(l => l.id);
+            if (current.includes(gradeId)) {
+                current = current.filter(id => id !== gradeId);
+            } else {
+                current.push(gradeId);
+            }
+            sub.allowedNiveaux = current;
+            AdminStore.saveSubjectMeta(S.subjectId, { allowedNiveaux: current });
+            S.subjectList = [];
+            renderTabContent();
+        },
+        setAllSubjectGrades(checked) {
+            if (!S.subjectId) return;
+            const sub = subjectList().find(x => x.id === S.subjectId);
+            if (!sub) return;
+            const allLevels = AdminStore.getLevels();
+            const current = checked ? allLevels.map(l => l.id) : [];
+            sub.allowedNiveaux = current;
+            AdminStore.saveSubjectMeta(S.subjectId, { allowedNiveaux: current });
+            S.subjectList = [];
+            renderTabContent();
+        },
+        setSubjectSubTab(tab) {
+            S.subjectSubTab = tab;
+            renderTabContent();
+        },
+        changeStudyGrade(grade) {
+            S.studyGrade = grade;
+            renderTabContent();
+        },
+        nextQuestionVariant() {
+            S.questionVariant = (S.questionVariant || 0) + 1;
+            renderTabContent();
+            toast('Nouvelle variante n° ' + S.questionVariant + ' générée 🎲', 'ok');
+        },
+        resetQuestionVariant() {
+            S.questionVariant = 0;
+            renderTabContent();
+            toast('Variante aléatoire réinitialisée.', 'ok');
+        },
+        importProceduralQuestion(idx) {
+            if (!S.subjectId) return;
+            const sub = subjectList().find(x => x.id === S.subjectId);
+            if (!sub) return;
+            const generated = (AdminStore.getSubjectQuestionsForGrade(sub.id, S.studyGrade, S.questionVariant, 8) || {}).generated || [];
+            const q = generated[idx];
+            if (!q) { toast('Question introuvable.', 'err'); return; }
+            const lessons = JSON.parse(JSON.stringify(sub.lessons || []));
+            const clean = AdminStore.normalizeLesson({
+                type: q.type || 'qcm',
+                title: q.title || `Niveau ${lessons.length + 1} (${esc(S.studyGrade.toUpperCase())})`,
+                q: q.q || '',
+                opts: q.opts,
+                correct: q.correct,
+                accepted: q.accepted,
+                textWithBlanks: q.textWithBlanks,
+                blanks: q.blanks,
+                items: q.items,
+                targets: q.targets,
+                pairs: q.pairs,
+                exp: q.exp || '',
+            });
+            lessons.push(clean);
+            const r = AdminStore.saveLessons(sub.id, lessons);
+            if (!r.ok) { toast(r.error || 'Erreur lors de l\'import.', 'err'); return; }
+            S.subjectList = [];
+            S.subjectSubTab = 'manual';
+            renderTabContent();
+            toast('Question importée avec succès comme leçon manuelle (niveau ' + lessons.length + ') ✔', 'ok');
+        },
+        testLesson(i) {
+            if (!S.subjectId) return;
+            const sub = subjectList().find(x => x.id === S.subjectId);
+            if (!sub || !sub.lessons[i]) return;
+            S.testModalQuestion = JSON.parse(JSON.stringify(sub.lessons[i]));
+            S.testModalAnswer = null;
+            S.testModalResult = null;
+            renderTabContent();
+        },
+        testProceduralQuestion(idx) {
+            if (!S.subjectId) return;
+            const generated = (AdminStore.getSubjectQuestionsForGrade(S.subjectId, S.studyGrade, S.questionVariant, 8) || {}).generated || [];
+            const q = generated[idx];
+            if (!q) return;
+            S.testModalQuestion = JSON.parse(JSON.stringify(q));
+            S.testModalAnswer = null;
+            S.testModalResult = null;
+            renderTabContent();
+        },
+        closeTestModal() {
+            S.testModalQuestion = null;
+            S.testModalAnswer = null;
+            S.testModalResult = null;
+            renderTabContent();
+        },
+        selectTestAnswer(ans) {
+            S.testModalAnswer = ans;
+            renderTabContent();
+        },
+        submitTestAnswer() {
+            const q = S.testModalQuestion;
+            if (!q) return;
+            if (S.testModalAnswer === null || S.testModalAnswer === undefined || S.testModalAnswer === '') {
+                toast('Veuillez sélectionner ou saisir une réponse.', 'err');
+                return;
+            }
+            let isCorrect = false;
+            let correctStr = '';
+            const type = q.type || 'qcm';
+
+            if (typeof QuizEngine !== 'undefined' && typeof QuizEngine.grade === 'function') {
+                isCorrect = QuizEngine.grade(q, S.testModalAnswer);
+            } else {
+                if (type === 'qcm') isCorrect = Number(S.testModalAnswer) === Number(q.correct);
+                else if (type === 'vrai_faux') isCorrect = Boolean(S.testModalAnswer) === Boolean(q.correct);
+                else if (type === 'reponse_courte') {
+                    const acc = (q.accepted || []).map(s => String(s).trim().toLowerCase());
+                    isCorrect = acc.includes(String(S.testModalAnswer).trim().toLowerCase());
+                } else {
+                    isCorrect = true;
+                }
+            }
+
+            if (type === 'qcm') {
+                const opts = Array.isArray(q.opts) ? q.opts : [];
+                const cIdx = Number(q.correct);
+                correctStr = opts[cIdx] ? `${String.fromCharCode(65 + cIdx)}. ${opts[cIdx]}` : `Option ${String.fromCharCode(65 + cIdx)}`;
+            } else if (type === 'vrai_faux') {
+                correctStr = q.correct === true ? 'Vrai' : 'Faux';
+            } else if (type === 'reponse_courte') {
+                correctStr = (q.accepted || []).join(' ou ');
+            } else if (type === 'texte_a_trous') {
+                correctStr = (q.blanks || []).map(b => (b || []).join('/')).join(', ');
+            } else {
+                correctStr = 'Association conforme';
+            }
+
+            S.testModalResult = {
+                isCorrect,
+                correctStr,
+                exp: q.exp || '',
+            };
+            renderTabContent();
         },
         deleteSubject() {
             if (!S.subjectId) return;
@@ -1607,6 +2159,80 @@
             renderPanel();
             toast('Profil mis à jour ✔', 'ok');
         },
+        saveSiteSettings() {
+            const title = (document.getElementById('admSiteTitle') || {}).value;
+            const tagline = (document.getElementById('admSiteTagline') || {}).value;
+            const announcement = (document.getElementById('admSiteAnnouncement') || {}).value;
+            const quizTimerSeconds = parseInt((document.getElementById('admSiteTimer') || {}).value, 10);
+            const xpMultiplier = parseFloat((document.getElementById('admSiteXpMult') || {}).value);
+            const coinMultiplier = parseFloat((document.getElementById('admSiteCoinMult') || {}).value);
+            const sfxVol = parseInt((document.getElementById('admSiteSfxVol') || {}).value, 10);
+            const musVol = parseInt((document.getElementById('admSiteMusVol') || {}).value, 10);
+            const allowRegistration = Boolean((document.getElementById('admSiteAllowReg') || {}).checked);
+            const soundEnabledByDefault = Boolean((document.getElementById('admSiteSoundDef') || {}).checked);
+
+            const r = AdminStore.saveSiteConfig({
+                title, tagline, announcement, quizTimerSeconds, xpMultiplier, coinMultiplier,
+                sfxVolume: isNaN(sfxVol) ? 0.7 : sfxVol / 100,
+                musicVolume: isNaN(musVol) ? 0.4 : musVol / 100,
+                allowRegistration, soundEnabledByDefault
+            });
+            if (!r.ok) { toast(r.error || 'Erreur lors de la sauvegarde.', 'err'); return; }
+            renderTabContent();
+            toast('Configuration générale du site enregistrée ✔', 'ok');
+        },
+        resetSiteSettings() {
+            if (!confirm('Rétablir la configuration générale par défaut du site ?')) return;
+            AdminStore.resetSiteConfig();
+            renderTabContent();
+            toast('Configuration du site réinitialisée par défaut.', 'ok');
+        },
+        saveAiSettings() {
+            const generateWebhookUrl = (document.getElementById('admAiGenUrl') || {}).value;
+            const validateWebhookUrl = (document.getElementById('admAiValUrl') || {}).value;
+            const fetchTimeoutMs = parseInt((document.getElementById('admAiTimeout') || {}).value, 10);
+            const fallbackToOffline = Boolean((document.getElementById('admAiFallback') || {}).checked);
+
+            const r = AdminStore.saveAiConfig({
+                generateWebhookUrl, validateWebhookUrl, fetchTimeoutMs, fallbackToOffline
+            });
+            if (!r.ok) { toast(r.error || 'Erreur lors de la sauvegarde de l\'IA.', 'err'); return; }
+            renderTabContent();
+            toast('Configuration IA & Webhooks enregistrée ✔', 'ok');
+        },
+        resetAiSettings() {
+            if (!confirm('Rétablir la configuration IA par défaut ?')) return;
+            AdminStore.resetAiConfig();
+            renderTabContent();
+            toast('Configuration IA réinitialisée par défaut.', 'ok');
+        },
+        async testAiSettings() {
+            const resEl = document.getElementById('admAiTestResult');
+            if (resEl) resEl.innerHTML = '<div class="adm-note">Test de connectivité IA en cours...</div>';
+            const aiCfg = AdminStore.getAiConfig();
+            if (!aiCfg.generateWebhookUrl && !aiCfg.validateWebhookUrl) {
+                if (resEl) resEl.innerHTML = '<div class="adm-note ok">✓ Mode autonome actif : aucun webhook configuré, repli procédural 100% opérationnel.</div>';
+                return;
+            }
+            if (typeof AiProvider !== 'undefined' && typeof AiProvider.isConfigured === 'function') {
+                try {
+                    const start = Date.now();
+                    const testRes = await AiProvider.fetchQuestion('maths', 0, '6eme');
+                    const elapsed = Date.now() - start;
+                    if (resEl) {
+                        if (testRes && testRes.source === 'ai') {
+                            resEl.innerHTML = `<div class="adm-note ok">✓ Webhook IA opérationnel ! Question reçue en ${elapsed}ms.</div>`;
+                        } else {
+                            resEl.innerHTML = `<div class="adm-note warn">⚠️ Webhook IA non joignable (${elapsed}ms). Le repli hors-ligne prend le relais.</div>`;
+                        }
+                    }
+                } catch (e) {
+                    if (resEl) resEl.innerHTML = `<div class="adm-note warn">⚠️ Échec connexion IA : ${esc(e.message || String(e))} — Repli hors-ligne actif.</div>`;
+                }
+            } else {
+                if (resEl) resEl.innerHTML = '<div class="adm-note ok">✓ Configuration locale active (générateur procédural disponible).</div>';
+            }
+        },
         exportConfig() {
             const area = document.getElementById('admExportArea');
             if (!area) return;
@@ -1764,6 +2390,8 @@
     function renderTabContent() {
         const zone = document.getElementById('admTab');
         if (zone) zone.innerHTML = renderTab();
+        const modalWrap = document.getElementById('admModalWrap');
+        if (modalWrap) modalWrap.innerHTML = S.testModalQuestion ? renderTestModal() : '';
         refreshStats();
     }
 
