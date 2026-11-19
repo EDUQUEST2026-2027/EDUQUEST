@@ -10,7 +10,7 @@
 ## Identité
 
 - **Nom** : EDUQUEST
-- **Version** : 1.26.0
+- **Version** : 1.27.0
 - **Type** : Application web éducative (jeu de révision gamifié)
 - **Langue** : français (fr-FR)
 - **Public** : élèves (6e → Terminale), enseignants, établissements scolaires, familles

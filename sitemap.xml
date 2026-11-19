@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- sitemap.xml — EDUQUEST v1.26.0 : pages publiques autorisées à l'indexation.
+<!-- sitemap.xml — EDUQUEST v1.27.0 : pages publiques autorisées à l'indexation.
      Le panneau d'administration (admin.html) et le banc de test (test.html) sont réservés à l'usage interne. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>

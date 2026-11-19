@@ -86,7 +86,7 @@ const QuestionBank = (() => {
         const result = [];
         for (const c of candidates) {
             const n = Math.round(c);
-            if (!seen.has(n) && (allowNegative || n >= 0)) { seen.add(n); result.push(n); }
+            if (Number.isFinite(n) && !seen.has(n) && (allowNegative || n >= 0)) { seen.add(n); result.push(n); }
             if (result.length === 3) break;
         }
         let delta = 1;
@@ -96,6 +96,40 @@ const QuestionBank = (() => {
             delta = delta > 0 ? -delta : -delta + 1;
         }
         return result;
+    }
+
+    /** Garantit 3 distracteurs textuels uniques et distincts de la bonne réponse. */
+    function uniqueStringWrongs(correctStr, candidates, fallbackPool) {
+        const normKey = (s) => String(s ?? '').trim().toLowerCase();
+        const seen = new Set([normKey(correctStr)]);
+        const result = [];
+        const add = (val) => {
+            const s = String(val ?? '').trim();
+            if (!s) return;
+            const k = normKey(s);
+            if (!seen.has(k)) {
+                seen.add(k);
+                result.push(s);
+            }
+        };
+        (candidates || []).forEach(c => { if (result.length < 3) add(c); });
+        (fallbackPool || []).forEach(c => { if (result.length < 3) add(c); });
+        let idx = 1;
+        while (result.length < 3) {
+            add('Autre réponse ' + (idx++));
+        }
+        return result.slice(0, 3);
+    }
+
+    /** Mélange déterministe (Fisher-Yates) d'une liste pour tirage sans répétition. */
+    function seededShuffle(arr, seedStr) {
+        const out = arr.slice();
+        const rng = seededRng(hashSeed(seedStr));
+        for (let i = out.length - 1; i > 0; i--) {
+            const j = Math.floor(rng() * (i + 1));
+            [out[i], out[j]] = [out[j], out[i]];
+        }
+        return out;
     }
 
     /* ================= 1. Générateurs procéduraux ================= */
@@ -317,23 +351,32 @@ const QuestionBank = (() => {
                     break;
                 }
                 case 'pourcentage': {
-                    const prix = (4 + Math.floor(rng() * 12)) * 10;
-                    const remisePct = 20;
-                    correct = prix * (100 - remisePct) / 100;
+                    const prix = (4 + Math.floor(rng() * 14)) * 10;
+                    const remisePct = [10, 20, 25, 30, 50][Math.floor(rng() * 5)];
+                    const remise = Math.round(prix * remisePct / 100);
+                    correct = prix - remise;
                     q = `Un article coûte ${prix} €. Avec une remise de ${remisePct} %, quel est son nouveau prix ?`;
-                    wrongCandidates = [prix - remisePct, correct + 10, correct - 10, prix * 0.2];
-                    exp = `Remise de 20% = ${prix * 0.2} €. Prix final = ${prix} - ${prix * 0.2} = ${correct} €.`;
+                    wrongCandidates = [prix - remisePct, correct + 10, correct - 10, remise];
+                    exp = `Remise de ${remisePct} % = ${remise} €. Prix final = ${prix} - ${remise} = ${correct} €.`;
                     break;
                 }
                 case 'probabilites': {
-                    correct = 3;
-                    q = `On lance un dé équilibré à 6 faces. Combien y a-t-il d'issues favorables pour l'événement « obtenir un nombre pair » ?`;
-                    wrongCandidates = [2, 4, 1, 6];
-                    exp = `Les nombres pairs sont 2, 4 et 6, soit 3 issues favorables sur 6.`;
+                    const cases = [
+                        { label: 'obtenir un nombre pair sur un dé à 6 faces', good: 3, detail: '2, 4 et 6 (3 issues)' },
+                        { label: 'obtenir un multiple de 3 sur un dé à 6 faces', good: 2, detail: '3 et 6 (2 issues)' },
+                        { label: 'obtenir un nombre supérieur ou égal à 3 sur un dé à 6 faces', good: 4, detail: '3, 4, 5 et 6 (4 issues)' },
+                        { label: 'obtenir un nombre strictement inférieur à 6 sur un dé à 6 faces', good: 5, detail: '1, 2, 3, 4 et 5 (5 issues)' },
+                        { label: 'obtenir un diviseur de 6 sur un dé à 6 faces', good: 4, detail: '1, 2, 3 et 6 (4 issues)' },
+                    ];
+                    const item = cases[Math.floor(rng() * cases.length)];
+                    correct = item.good;
+                    q = `On lance un dé équilibré à 6 faces. Combien y a-t-il d'issues favorables pour l'événement « ${item.label} » ?`;
+                    wrongCandidates = [1, 2, 3, 4, 5, 6].filter(n => n !== correct);
+                    exp = `Issues favorables : ${item.detail} sur 6.`;
                     break;
                 }
                 case 'developpement': {
-                    const a = 2 + Math.floor(rng() * 5);
+                    const a = 2 + Math.floor(rng() * 8);
                     correct = a * a;
                     q = `Dans l'identité remarquable (x + ${a})² = x² + ${2 * a}x + a², quel est le terme constant a² ?`;
                     wrongCandidates = [a * 2, correct + 2, correct - 2, a];
@@ -341,15 +384,19 @@ const QuestionBank = (() => {
                     break;
                 }
                 case 'thales': {
-                    const ab = 4, am = 2, ac = 6;
-                    correct = 3;
-                    q = `Thalès : AM/AB = AN/AC. Si AM = 2, AB = 4 et AC = 6, que vaut AN ?`;
-                    wrongCandidates = [4, 2, 5, 1];
-                    exp = `AN = (AM × AC) ÷ AB = (2 × 6) ÷ 4 = 12 ÷ 4 = 3.`;
+                    const k = 2 + Math.floor(rng() * 4);
+                    const am = 2 + Math.floor(rng() * 4);
+                    const an = 2 + Math.floor(rng() * 5);
+                    const ab = am * k;
+                    const ac = an * k;
+                    correct = an;
+                    q = `Thalès : AM/AB = AN/AC. Si AM = ${am}, AB = ${ab} et AC = ${ac}, que vaut AN ?`;
+                    wrongCandidates = [an + 1, an - 1, an * 2, Math.max(1, ab - am)];
+                    exp = `AN = (AM × AC) ÷ AB = (${am} × ${ac}) ÷ ${ab} = ${correct}.`;
                     break;
                 }
                 case 'fonction_affine': {
-                    const a = 2 + Math.floor(rng() * 4), b = 1 + Math.floor(rng() * 6), xVal = 2 + Math.floor(rng() * 4);
+                    const a = 2 + Math.floor(rng() * 5), b = 1 + Math.floor(rng() * 8), xVal = 2 + Math.floor(rng() * 6);
                     correct = a * xVal + b;
                     q = `Soit la fonction f(x) = ${a}x + ${b}. Calcule l'image f(${xVal}).`;
                     wrongCandidates = [correct + a, correct - a, a + b + xVal, correct + 1];
@@ -357,10 +404,13 @@ const QuestionBank = (() => {
                     break;
                 }
                 case 'arithmetique': {
-                    correct = 13;
+                    const primes = [11, 13, 17, 19, 23, 29, 31, 37];
+                    const composites = [9, 15, 21, 25, 27, 33, 35, 39];
+                    const pIdx = Math.floor(rng() * primes.length);
+                    correct = primes[pIdx];
                     q = `Parmi les nombres suivants, lequel est un nombre premier ?`;
-                    wrongCandidates = [9, 15, 21];
-                    exp = `13 n'a que deux diviseurs : 1 et lui-même.`;
+                    wrongCandidates = [composites[pIdx % composites.length], composites[(pIdx + 2) % composites.length], composites[(pIdx + 4) % composites.length]];
+                    exp = `${correct} n'a que deux diviseurs positifs : 1 et lui-même.`;
                     break;
                 }
             }
@@ -370,31 +420,41 @@ const QuestionBank = (() => {
             allowNegative = true;
             switch (kind) {
                 case 'fonction_image': {
-                    const a = 2, xVal = 3, c = 5;
+                    const a = 1 + Math.floor(rng() * 4);
+                    const xVal = 2 + Math.floor(rng() * 4);
+                    const c = 1 + Math.floor(rng() * 9);
                     correct = a * xVal * xVal - c;
-                    q = `Soit f(x) = ${a}x² - ${c}. Quelle est l'image de ${xVal} par f ?`;
-                    wrongCandidates = [correct + 2, correct - 2, a * xVal - c, correct + 6];
-                    exp = `f(${xVal}) = ${a} × (${xVal})² - ${c} = ${a} × 9 - ${c} = 18 - ${c} = ${correct}.`;
+                    q = `Soit f(x) = ${a === 1 ? '' : a}x² - ${c}. Quelle est l'image de ${xVal} par f ?`;
+                    wrongCandidates = [correct + 2, correct - 2, a * xVal - c, a * xVal * xVal + c];
+                    exp = `f(${xVal}) = ${a} × (${xVal})² - ${c} = ${a * xVal * xVal} - ${c} = ${correct}.`;
                     break;
                 }
                 case 'evolution_taux': {
-                    const pct = [15, 20, 25, 30][Math.floor(rng() * 4)];
-                    correct = 100 + pct;
-                    q = `Une grandeur augmente de ${pct} %. Quel pourcentage de la valeur initiale représente-t-elle désormais ?`;
-                    wrongCandidates = [100 - pct, pct, correct + 10, correct - 5];
-                    exp = `Une hausse de ${pct}% correspond à un coefficient de 1 + ${pct}/100, soit ${correct}%.`;
+                    const pct = [10, 15, 20, 25, 30, 40][Math.floor(rng() * 6)];
+                    const isDrop = (index + variant) % 2 === 1;
+                    correct = isDrop ? (100 - pct) : (100 + pct);
+                    q = isDrop
+                        ? `Une grandeur diminue de ${pct} %. Quel pourcentage de la valeur initiale représente-t-elle désormais ?`
+                        : `Une grandeur augmente de ${pct} %. Quel pourcentage de la valeur initiale représente-t-elle désormais ?`;
+                    wrongCandidates = [isDrop ? 100 + pct : 100 - pct, pct, correct + 10, correct - 5];
+                    exp = isDrop
+                        ? `Une baisse de ${pct} % correspond à 100 % - ${pct} % = ${correct} %.`
+                        : `Une hausse de ${pct} % correspond à 100 % + ${pct} % = ${correct} %.`;
                     break;
                 }
                 case 'equation_produit': {
-                    const x1 = 3 + Math.floor(rng() * 4);
+                    const x1 = 2 + Math.floor(rng() * 8);
+                    const k = 2 + Math.floor(rng() * 4);
                     correct = x1;
-                    q = `Résous l'équation produit-nul : (x - ${x1})(2x + 6) = 0. Quelle est la solution positive ?`;
+                    q = `Résous l'équation produit-nul : (x - ${x1})(${k}x + ${k * 3}) = 0. Quelle est la solution positive ?`;
                     wrongCandidates = [-x1, x1 + 1, x1 - 1, x1 * 2];
-                    exp = `x - ${x1} = 0 donne x = ${x1}.`;
+                    exp = `Un produit est nul si l'un de ses facteurs est nul : x - ${x1} = 0 donne x = ${x1} (l'autre solution est -3).`;
                     break;
                 }
                 case 'milieu_coord': {
-                    const xA = 2, xB = 8;
+                    const xA = -4 + Math.floor(rng() * 8);
+                    const delta = (2 + Math.floor(rng() * 6)) * 2;
+                    const xB = xA + delta;
                     correct = (xA + xB) / 2;
                     q = `Si A a pour abscisse ${xA} et B a pour abscisse ${xB}, quelle est l'abscisse du milieu de [AB] ?`;
                     wrongCandidates = [xB - xA, correct + 1, correct - 1, xA + xB];
@@ -402,25 +462,32 @@ const QuestionBank = (() => {
                     break;
                 }
                 case 'simplif_racine': {
-                    correct = 5;
-                    q = `Simplifie √50 sous la forme a√2. Que vaut l'entier a ?`;
-                    wrongCandidates = [2, 25, 10, 4];
-                    exp = `√50 = √(25 × 2) = 5√2, donc a = 5.`;
+                    const a = 2 + Math.floor(rng() * 6);
+                    const r = [2, 3, 5][Math.floor(rng() * 3)];
+                    const n = a * a * r;
+                    correct = a;
+                    q = `Simplifie √${n} sous la forme a√${r}. Que vaut l'entier a ?`;
+                    wrongCandidates = [r, a * a, a + 1, Math.max(1, a - 1)];
+                    exp = `√${n} = √(${a * a} × ${r}) = ${a}√${r}, donc a = ${a}.`;
                     break;
                 }
                 case 'vecteur_coord': {
-                    const xA = 1 + Math.floor(rng() * 4), xB = 6 + Math.floor(rng() * 5);
+                    const xA = -3 + Math.floor(rng() * 8), xB = 4 + Math.floor(rng() * 9);
                     correct = xB - xA;
                     q = `Si A a pour abscisse ${xA} et B pour abscisse ${xB}, quelle est la composante x du vecteur AB (xB - xA) ?`;
                     wrongCandidates = [xA - xB, xA + xB, correct + 1, correct - 1];
-                    exp = `xB - xA = ${xB} - ${xA} = ${correct}.`;
+                    exp = `xB - xA = ${xB} - (${xA}) = ${correct}.`;
                     break;
                 }
                 case 'inequation': {
-                    correct = 4;
-                    q = `Résous : 3x - 5 > 7. Pour quelle plus petite valeur entière x cette inégalité est-elle vérifiée ?`;
-                    wrongCandidates = [3, 5, 2];
-                    exp = `3x > 12 donne x > 4. La valeur minimale entière est donc 5 (ou x > 4).`;
+                    const a = 2 + Math.floor(rng() * 4);
+                    const bound = 2 + Math.floor(rng() * 6);
+                    const b = 1 + Math.floor(rng() * 7);
+                    const rhs = a * bound - b;
+                    correct = bound + 1; // Strictement supérieur : x > bound → plus petit entier = bound + 1
+                    q = `Résous l'inéquation : ${a}x - ${b} > ${rhs}. Quel est le plus petit entier x qui vérifie cette inégalité ?`;
+                    wrongCandidates = [bound, bound - 1, bound + 2];
+                    exp = `${a}x > ${rhs + b} donne x > ${bound}. Le plus petit entier strictement supérieur à ${bound} est ${correct}.`;
                     break;
                 }
             }
@@ -430,57 +497,79 @@ const QuestionBank = (() => {
             allowNegative = true;
             switch (kind) {
                 case 'discriminant': {
-                    const a = 1, b = 6, c = 5;
-                    correct = b * b - 4 * a * c; // 16
-                    q = `Pour x² + ${b}x + ${c}, calcule le discriminant Δ = b² - 4ac.`;
-                    wrongCandidates = [correct + 4, correct - 4, b * b + 4 * a * c, 20];
-                    exp = `Δ = 6² - 4 × 1 × 5 = 36 - 20 = 16.`;
+                    const a = 1 + Math.floor(rng() * 2);
+                    const b = 4 + Math.floor(rng() * 5);
+                    const c = 1 + Math.floor(rng() * 5);
+                    correct = b * b - 4 * a * c;
+                    q = `Pour le trinôme ${a === 1 ? '' : a}x² + ${b}x + ${c}, calcule le discriminant Δ = b² - 4ac.`;
+                    wrongCandidates = [b * b + 4 * a * c, correct + 4, correct - 4, b * b - a * c];
+                    exp = `Δ = ${b}² - 4 × ${a} × ${c} = ${b * b} - ${4 * a * c} = ${correct}.`;
                     break;
                 }
                 case 'nombre_racines': {
-                    correct = 2;
-                    q = `Si le discriminant Δ d'un trinôme est strictement positif (Δ > 0), combien a-t-il de racines réelles ?`;
-                    wrongCandidates = [1, 0, 3];
-                    exp = `Si Δ > 0, il y a 2 racines réelles distinctes.`;
+                    const cases = [
+                        { cond: 'strictement positif (Δ > 0)', ans: 2, exp: 'Si Δ > 0, le trinôme admet 2 racines réelles distinctes.' },
+                        { cond: 'nul (Δ = 0)', ans: 1, exp: 'Si Δ = 0, le trinôme admet 1 unique racine double.' },
+                        { cond: 'strictement négatif (Δ < 0)', ans: 0, exp: 'Si Δ < 0, le trinôme n\'admet aucune racine réelle (0).' },
+                    ];
+                    const item = cases[Math.floor(rng() * cases.length)];
+                    correct = item.ans;
+                    q = `Si le discriminant Δ d'un trinôme du second degré est ${item.cond}, combien admet-il de racines réelles ?`;
+                    wrongCandidates = [0, 1, 2, 3].filter(n => n !== correct);
+                    exp = item.exp;
                     break;
                 }
                 case 'derivee_poly': {
-                    const a = 3, b = 4;
+                    const a = 2 + Math.floor(rng() * 7);
+                    const b = 1 + Math.floor(rng() * 8);
                     correct = 2 * a;
-                    q = `Soit f(x) = ${a}x² - ${b}x + 1. Quel est le coefficient de x dans la dérivée f'(x) ?`;
-                    wrongCandidates = [a, correct + 2, correct - 1, b];
-                    exp = `(ax²)' = 2ax, donc (3x²)' = 6x.`;
+                    q = `Soit f(x) = ${a}x² - ${b}x + 1. Quel est le coefficient de x dans la fonction dérivée f'(x) ?`;
+                    wrongCandidates = [a, correct + 2, correct - 1, -b];
+                    exp = `(ax²)' = 2ax, donc (${a}x²)' = ${correct}x.`;
                     break;
                 }
                 case 'suite_arith': {
-                    const u0 = 4, r = 3, n = 5;
+                    const u0 = 2 + Math.floor(rng() * 8);
+                    const r = 2 + Math.floor(rng() * 6);
+                    const n = 4 + Math.floor(rng() * 5);
                     correct = u0 + n * r;
-                    q = `Suite arithmétique : u₀ = ${u0} et r = ${r}. Que vaut u₅ ?`;
-                    wrongCandidates = [correct + r, correct - r, u0 * Math.pow(r, 2), correct + 2];
-                    exp = `u₅ = ${u0} + 5 × ${r} = ${correct}.`;
+                    q = `Suite arithmétique : u₀ = ${u0} et raison r = ${r}. Que vaut u_${n} ?`;
+                    wrongCandidates = [correct + r, correct - r, u0 + (n - 1) * r, u0 * r + n];
+                    exp = `u_${n} = u₀ + ${n} × r = ${u0} + ${n} × ${r} = ${correct}.`;
                     break;
                 }
                 case 'suite_geom': {
-                    const u0 = 2, qVal = 3;
-                    correct = u0 * qVal * qVal;
-                    q = `Suite géométrique : u₀ = ${u0} et q = ${qVal}. Que vaut u₂ ?`;
-                    wrongCandidates = [u0 + 2 * qVal, correct * 2, correct - 2, 12];
-                    exp = `u₂ = ${u0} × ${qVal}² = 2 × 9 = ${correct}.`;
+                    const u0 = 2 + Math.floor(rng() * 4);
+                    const qVal = 2 + Math.floor(rng() * 3);
+                    const n = 2 + Math.floor(rng() * 2);
+                    correct = u0 * Math.pow(qVal, n);
+                    q = `Suite géométrique : u₀ = ${u0} et raison q = ${qVal}. Que vaut u_${n} ?`;
+                    wrongCandidates = [u0 + n * qVal, correct * qVal, Math.round(correct / qVal), correct + u0];
+                    exp = `u_${n} = ${u0} × ${qVal}^${n} = ${u0} × ${Math.pow(qVal, n)} = ${correct}.`;
                     break;
                 }
                 case 'produit_scalaire': {
-                    const x1 = 2, y1 = 3, x2 = 4, y2 = 1;
+                    const x1 = 1 + Math.floor(rng() * 5), y1 = 1 + Math.floor(rng() * 5);
+                    const x2 = 1 + Math.floor(rng() * 5), y2 = 1 + Math.floor(rng() * 5);
                     correct = x1 * x2 + y1 * y2;
-                    q = `Soit u(2; 3) et v(4; 1). Calcule le produit scalaire u · v = x x' + y y'.`;
-                    wrongCandidates = [x1 * y2 - y1 * x2, correct + 2, correct - 2, 8];
-                    exp = `u · v = 2×4 + 3×1 = 8 + 3 = ${correct}.`;
+                    q = `Soit u(${x1}; ${y1}) et v(${x2}; ${y2}). Calcule le produit scalaire u · v = xx' + yy'.`;
+                    wrongCandidates = [x1 * y2 + y1 * x2, x1 * x2 - y1 * y2, correct + 2, correct - 2];
+                    exp = `u · v = ${x1}×${x2} + ${y1}×${y2} = ${x1 * x2} + ${y1 * y2} = ${correct}.`;
                     break;
                 }
                 case 'cercle_trigo': {
-                    correct = 0;
-                    q = `Sur le cercle trigonométrique, quelle est la valeur exacte de sin(π) ?`;
-                    wrongCandidates = [1, -1, 0.5];
-                    exp = `sin(π) = 0 et cos(π) = -1.`;
+                    const items = [
+                        { label: 'sin(π)', ans: 0, exp: 'sin(π) = 0 et cos(π) = -1.' },
+                        { label: 'cos(π)', ans: -1, exp: 'Au point d\'angle π, l\'abscisse (cosinus) vaut -1.' },
+                        { label: 'cos(0)', ans: 1, exp: 'Au point d\'angle 0, cos(0) = 1 et sin(0) = 0.' },
+                        { label: 'sin(π/2)', ans: 1, exp: 'Au sommet du cercle (π/2), l\'ordonnée (sinus) vaut 1.' },
+                        { label: 'cos(π/2)', ans: 0, exp: 'Au sommet du cercle (π/2), l\'abscisse (cosinus) vaut 0.' },
+                    ];
+                    const item = items[Math.floor(rng() * items.length)];
+                    correct = item.ans;
+                    q = `Sur le cercle trigonométrique, quelle est la valeur exacte de ${item.label} ?`;
+                    wrongCandidates = [-1, 0, 1, 2].filter(n => n !== correct);
+                    exp = item.exp;
                     break;
                 }
             }
@@ -491,53 +580,76 @@ const QuestionBank = (() => {
             allowNegative = true;
             switch (kind) {
                 case 'exponentielle': {
-                    correct = 1;
-                    q = `Dans l'ensemble des réels, quelle est la valeur exacte de exp(0) (ou e⁰) ?`;
-                    wrongCandidates = [0, 2, -1];
-                    exp = `Pour tout réel, exp(0) = 1.`;
+                    const k = 2 + Math.floor(rng() * 6);
+                    const mode = (index + variant) % 2;
+                    if (mode === 0) {
+                        correct = k;
+                        q = `Quelle est la valeur exacte de ${k} × exp(0) (${k}e⁰) ?`;
+                        wrongCandidates = [0, 1, k + 1, -k];
+                        exp = `Comme e⁰ = 1, ${k} × e⁰ = ${k}.`;
+                    } else {
+                        correct = k;
+                        q = `Résous dans ℝ : e^(x) = e^(${k}). Que vaut x ?`;
+                        wrongCandidates = [0, 1, k + 1, -k];
+                        exp = `La fonction exponentielle est strictement croissante : e^x = e^${k} ⇔ x = ${k}.`;
+                    }
                     break;
                 }
                 case 'logarithme': {
-                    correct = 0;
-                    q = `Que vaut le logarithme népérien de 1 : ln(1) ?`;
-                    wrongCandidates = [1, -1, 2];
-                    exp = `ln(1) = 0 car e⁰ = 1.`;
+                    const k = 1 + Math.floor(rng() * 6);
+                    correct = k;
+                    q = `Simplifie l'expression : ln(e^${k}). Quelle est sa valeur exacte ?`;
+                    wrongCandidates = [0, k + 1, k * 2, -k];
+                    exp = `Pour tout réel k, ln(e^k) = k, donc ln(e^${k}) = ${k}.`;
                     break;
                 }
                 case 'derivee_exp_ln': {
-                    const k = 3;
+                    const k = 2 + Math.floor(rng() * 7);
                     correct = k;
-                    q = `Quelle est la dérivée de f(x) = e^(${k}x) ? Quel est le facteur multiplicatif devant l'exponentielle ?`;
-                    wrongCandidates = [1, k * 2, k - 1, 0];
-                    exp = `(e^(kx))' = k e^(kx), donc le facteur est ${correct}.`;
+                    q = `Soit f(x) = e^(${k}x). Dans sa dérivée f'(x) = a·e^(${k}x), que vaut le coefficient a ?`;
+                    wrongCandidates = [1, k * 2, k - 1, -k];
+                    exp = `(e^(kx))' = k·e^(kx), donc le facteur multiplicatif est ${correct}.`;
                     break;
                 }
                 case 'primitive': {
-                    correct = 3;
-                    q = `Soit f(x) = 3x². Quel est l'exposant de x dans sa primitive F(x) = x³ + C ?`;
-                    wrongCandidates = [2, 4, 1, 6];
-                    exp = `Une primitive de 3x² est x³ (exposant 3).`;
+                    const n = 2 + Math.floor(rng() * 5);
+                    correct = n + 1;
+                    q = `Soit f(x) = ${n + 1}x^${n}. Quel est l'exposant de x dans sa primitive F(x) = x^p + C ?`;
+                    wrongCandidates = [n, n - 1, n + 2, n * 2];
+                    exp = `Une primitive de (n+1)x^n est x^(n+1), donc l'exposant est ${correct}.`;
                     break;
                 }
                 case 'limite_ref': {
-                    correct = 0;
-                    q = `Quelle est la limite de 1/x lorsque x tend vers +∞ ?`;
-                    wrongCandidates = [1, -1, 2];
-                    exp = `Quand x → +∞, 1/x tend vers 0.`;
+                    const c = 1 + Math.floor(rng() * 8);
+                    correct = c;
+                    q = `Quelle est la limite de f(x) = ${c} + 1/x lorsque x tend vers +∞ ?`;
+                    wrongCandidates = [0, c + 1, c - 1, -c];
+                    exp = `Quand x → +∞, 1/x tend vers 0, donc f(x) tend vers ${c}.`;
                     break;
                 }
                 case 'proba_cond': {
-                    correct = 50;
-                    q = `Si P(A) = 0,4 et P(A ∩ B) = 0,2, que vaut la probabilité conditionnelle P_A(B) en pourcentage ?`;
-                    wrongCandidates = [20, 40, 80, 25];
-                    exp = `P_A(B) = P(A ∩ B) / P(A) = 0,2 / 0,4 = 0,5 = 50%.`;
+                    const pA = [20, 40, 50, 80][Math.floor(rng() * 4)];
+                    const ratioPct = [25, 50, 75][Math.floor(rng() * 3)];
+                    const pInter = (pA * ratioPct) / 10000;
+                    correct = ratioPct;
+                    q = `Si P(A) = ${(pA / 100).toFixed(2).replace('.', ',')} et P(A ∩ B) = ${pInter.toFixed(2).replace('.', ',')}, que vaut P_A(B) en pourcentage ?`;
+                    wrongCandidates = [100 - ratioPct, pA, Math.round(pInter * 100), 10];
+                    exp = `P_A(B) = P(A ∩ B) / P(A) = ${pInter.toFixed(2)} / ${(pA / 100).toFixed(2)} = ${ratioPct} %.`;
                     break;
                 }
                 case 'loi_binomiale': {
-                    correct = 6;
-                    q = `Que vaut le coefficient binomial (4 parmi 2) représentant les combinaisons ?`;
-                    wrongCandidates = [4, 8, 2];
-                    exp = `4! / (2! × 2!) = 24 / 4 = 6.`;
+                    const combos = [
+                        { n: 4, k: 2, ans: 6, exp: '4! / (2! × 2!) = 24 / 4 = 6.' },
+                        { n: 5, k: 2, ans: 10, exp: '5! / (2! × 3!) = 120 / 12 = 10.' },
+                        { n: 5, k: 1, ans: 5, exp: '(1 parmi 5) = 5.' },
+                        { n: 6, k: 2, ans: 15, exp: '6! / (2! × 4!) = 30 / 2 = 15.' },
+                        { n: 4, k: 3, ans: 4, exp: '(3 parmi 4) = (1 parmi 4) = 4.' },
+                    ];
+                    const item = combos[Math.floor(rng() * combos.length)];
+                    correct = item.ans;
+                    q = `Que vaut le coefficient binomial (${item.k} parmi ${item.n}) ?`;
+                    wrongCandidates = [item.ans + 2, Math.max(1, item.ans - 2), item.n * item.k, item.n + item.k];
+                    exp = item.exp;
                     break;
                 }
             }
@@ -557,7 +669,7 @@ const QuestionBank = (() => {
         };
     }
 
-    /** Générateur procédural de conjugaison et langue pour le français */
+    /** Générateur procédural de conjugaison et langue pour le français (sans doublons d'options) */
     function generateFrenchLesson(index, norm, variant, rng) {
         const verbs = [
             { inf: "chanter", pres: ["chante", "chantes", "chante", "chantons", "chantez", "chantent"], imp: ["chantais", "chantais", "chantait", "chantions", "chantiez", "chantaient"], fut: ["chanterai", "chanteras", "chantera", "chanterons", "chanterez", "chanteront"] },
@@ -566,12 +678,18 @@ const QuestionBank = (() => {
             { inf: "faire", pres: ["fais", "fais", "fait", "faisons", "faites", "font"], imp: ["faisais", "faisais", "faisait", "faisions", "faisiez", "faisaient"], fut: ["ferai", "feras", "fera", "ferons", "ferez", "feront"] },
             { inf: "prendre", pres: ["prends", "prends", "prend", "prenons", "prenez", "prennent"], imp: ["prenais", "prenais", "prenait", "prenions", "preniez", "prenaient"], fut: ["prendrai", "prendras", "prendra", "prendrons", "prendrez", "prendront"] },
             { inf: "venir", pres: ["viens", "viens", "vient", "venons", "venez", "viennent"], imp: ["venais", "venais", "venait", "venions", "veniez", "venaient"], fut: ["viendrai", "viendras", "viendra", "viendrons", "viendrez", "viendront"] },
-            { inf: "pouvoir", pres: ["peux", "peux", "peut", "pouvons", "pouvez", "peuvent"], imp: ["pouvais", "pouvais", "pouvait", "pouvions", "pouviez", "pouvaient"], fut: ["pourrai", "pourras", "pourra", "pourrons", "pourrez", "pourront"] }
+            { inf: "pouvoir", pres: ["peux", "peux", "peut", "pouvons", "pouvez", "peuvent"], imp: ["pouvais", "pouvais", "pouvait", "pouvions", "pouviez", "pouvaient"], fut: ["pourrai", "pourras", "pourra", "pourrons", "pourrez", "pourront"] },
+            { inf: "être", pres: ["suis", "es", "est", "sommes", "êtes", "sont"], imp: ["étais", "étais", "était", "étions", "étiez", "étaient"], fut: ["serai", "seras", "sera", "serons", "serez", "seront"] },
+            { inf: "avoir", pres: ["ai", "as", "a", "avons", "avez", "ont"], imp: ["avais", "avais", "avait", "avions", "aviez", "avaient"], fut: ["aurai", "auras", "aura", "aurons", "aurez", "auront"] },
+            { inf: "voir", pres: ["vois", "vois", "voit", "voyons", "voyez", "voient"], imp: ["voyais", "voyais", "voyait", "voyions", "voyiez", "voyaient"], fut: ["verrai", "verras", "verra", "verrons", "verrez", "verront"] },
+            { inf: "savoir", pres: ["sais", "sais", "sait", "savons", "savez", "savent"], imp: ["savais", "savais", "savait", "savions", "saviez", "savaient"], fut: ["saurai", "sauras", "saura", "saurons", "saurez", "sauront"] },
+            { inf: "dire", pres: ["dis", "dis", "dit", "disons", "dites", "disent"], imp: ["disais", "disais", "disait", "disions", "disiez", "disaient"], fut: ["dirai", "diras", "dira", "dirons", "direz", "diront"] },
+            { inf: "vouloir", pres: ["veux", "veux", "veut", "voulons", "voulez", "veulent"], imp: ["voulais", "voulais", "voulait", "voulions", "vouliez", "voulaient"], fut: ["voudrai", "voudras", "voudra", "voudrons", "voudrez", "voudront"] },
         ];
         const persons = ["je", "tu", "il/elle", "nous", "vous", "ils/elles"];
         const pIndex = Math.floor(rng() * persons.length);
         const vObj = verbs[Math.floor(rng() * verbs.length)];
-        const tenses = norm === '6eme' || norm === '5eme' ? ['présent', 'imparfait', 'futur'] : ['présent', 'imparfait', 'futur'];
+        const tenses = ['présent', 'imparfait', 'futur'];
         const tense = tenses[Math.floor(rng() * tenses.length)];
 
         let forms = vObj.pres;
@@ -579,7 +697,8 @@ const QuestionBank = (() => {
         if (tense === 'futur') forms = vObj.fut;
 
         const correct = forms[pIndex];
-        const wrongs = forms.filter((_, i) => i !== pIndex).slice(0, 3);
+        const allVerbForms = [...forms, ...vObj.pres, ...vObj.imp, ...vObj.fut];
+        const wrongs = uniqueStringWrongs(correct, forms.filter((_, i) => i !== pIndex), allVerbForms);
         const { opts, correct: correctIdx } = shuffleOptions([correct, ...wrongs], 0, rng);
 
         return {
@@ -592,7 +711,7 @@ const QuestionBank = (() => {
         };
     }
 
-    /** Générateur procédural pour l'anglais */
+    /** Générateur procédural pour l'anglais (deck déterministe anti-répétition) */
     function generateEnglishLesson(index, norm, variant, rng) {
         const irregulars = [
             { inf: "to speak", pret: "spoke", pp: "spoken", fr: "parler" },
@@ -606,10 +725,20 @@ const QuestionBank = (() => {
             { inf: "to know", pret: "knew", pp: "known", fr: "savoir" },
             { inf: "to think", pret: "thought", pp: "thought", fr: "penser" },
             { inf: "to make", pret: "made", pp: "made", fr: "fabriquer" },
-            { inf: "to come", pret: "came", pp: "come", fr: "venir" }
+            { inf: "to come", pret: "came", pp: "come", fr: "venir" },
+            { inf: "to break", pret: "broke", pp: "broken", fr: "casser" },
+            { inf: "to choose", pret: "chose", pp: "chosen", fr: "choisir" },
+            { inf: "to drive", pret: "drove", pp: "driven", fr: "conduire" },
+            { inf: "to fall", pret: "fell", pp: "fallen", fr: "tomber" },
+            { inf: "to fly", pret: "flew", pp: "flown", fr: "voler (dans les airs)" },
+            { inf: "to forget", pret: "forgot", pp: "forgotten", fr: "oublier" },
+            { inf: "to buy", pret: "bought", pp: "bought", fr: "acheter" },
+            { inf: "to teach", pret: "taught", pp: "taught", fr: "enseigner" }
         ];
-        const item = irregulars[Math.floor(rng() * irregulars.length)];
-        const askPastParticiple = (index + variant) % 2 === 1;
+        const deck = seededShuffle(irregulars, 'en-deck:' + norm + ':v' + variant);
+        const slot = Math.floor(index / 2) + variant * 3;
+        const item = deck[slot % deck.length];
+        const askPastParticiple = (Math.floor(slot / deck.length) + index + variant) % 2 === 1;
         const baseVerb = item.inf.replace('to ', '');
         const otherForms = irregulars.filter(x => x.inf !== item.inf);
         const randomOther1 = otherForms[Math.floor(rng() * otherForms.length)];
@@ -617,19 +746,14 @@ const QuestionBank = (() => {
 
         if (askPastParticiple) {
             const correct = item.pp;
-            const candidateWrongs = [
+            const wrongs = uniqueStringWrongs(correct, [
                 item.pret !== correct ? item.pret : baseVerb + 'ed',
                 baseVerb + 'ed',
                 item.pret + 'en',
                 randomOther1.pp,
                 randomOther2.pret
-            ];
-            const wrongsSet = new Set();
-            for (const w of candidateWrongs) {
-                if (w !== correct && !wrongsSet.has(w)) wrongsSet.add(w);
-                if (wrongsSet.size === 3) break;
-            }
-            const { opts, correct: cIdx } = shuffleOptions([correct, ...Array.from(wrongsSet)], 0, rng);
+            ]);
+            const { opts, correct: cIdx } = shuffleOptions([correct, ...wrongs], 0, rng);
             return {
                 type: 'qcm',
                 title: 'Niveau ' + (index + 1),
@@ -640,19 +764,14 @@ const QuestionBank = (() => {
             };
         } else {
             const correct = item.pret;
-            const candidateWrongs = [
+            const wrongs = uniqueStringWrongs(correct, [
                 item.pp !== correct ? item.pp : baseVerb + 'ed',
                 baseVerb + 'ed',
                 baseVerb + 't',
                 randomOther1.pret,
                 randomOther2.pp
-            ];
-            const wrongsSet = new Set();
-            for (const w of candidateWrongs) {
-                if (w !== correct && !wrongsSet.has(w)) wrongsSet.add(w);
-                if (wrongsSet.size === 3) break;
-            }
-            const { opts, correct: cIdx } = shuffleOptions([correct, ...Array.from(wrongsSet)], 0, rng);
+            ]);
+            const { opts, correct: cIdx } = shuffleOptions([correct, ...wrongs], 0, rng);
             return {
                 type: 'qcm',
                 title: 'Niveau ' + (index + 1),
@@ -664,7 +783,7 @@ const QuestionBank = (() => {
         }
     }
 
-    /** Générateur procédural pour la géographie */
+    /** Générateur procédural pour la géographie (deck déterministe anti-répétition) */
     function generateGeoLesson(index, norm, variant, rng) {
         const capitals = [
             { country: "l'Italie", cap: "Rome", wrongs: ["Milan", "Venise", "Naples"] },
@@ -678,10 +797,18 @@ const QuestionBank = (() => {
             { country: "le Japon", cap: "Tokyo", wrongs: ["Kyoto", "Osaka", "Hiroshima"] },
             { country: "l'Australie", cap: "Canberra", wrongs: ["Sydney", "Melbourne", "Brisbane"] },
             { country: "le Brésil", cap: "Brasília", wrongs: ["Rio de Janeiro", "São Paulo", "Salvador"] },
-            { country: "l'Égypte", cap: "Le Caire", wrongs: ["Alexandrie", "Louxor", "Gizeh"] }
+            { country: "l'Égypte", cap: "Le Caire", wrongs: ["Alexandrie", "Louxor", "Gizeh"] },
+            { country: "la Suisse", cap: "Berne", wrongs: ["Zurich", "Genève", "Bâle"] },
+            { country: "la Turquie", cap: "Ankara", wrongs: ["Istanbul", "Izmir", "Antalya"] },
+            { country: "le Maroc", cap: "Rabat", wrongs: ["Casablanca", "Marrakech", "Fès"] },
+            { country: "l'Inde", cap: "New Delhi", wrongs: ["Mumbai", "Bangalore", "Calcutta"] },
+            { country: "la Pologne", cap: "Varsovie", wrongs: ["Cracovie", "Gdansk", "Wroclaw"] },
+            { country: "la Suède", cap: "Stockholm", wrongs: ["Göteborg", "Malmö", "Oslo"] }
         ];
-        const item = capitals[Math.floor(rng() * capitals.length)];
-        const { opts, correct } = shuffleOptions([item.cap, ...item.wrongs], 0, rng);
+        const deck = seededShuffle(capitals, 'geo-deck:' + norm + ':v' + variant);
+        const item = deck[(Math.floor(index / 2) + variant * 5) % deck.length];
+        const wrongs = uniqueStringWrongs(item.cap, item.wrongs);
+        const { opts, correct } = shuffleOptions([item.cap, ...wrongs], 0, rng);
         return {
             type: 'qcm',
             title: 'Niveau ' + (index + 1),
@@ -692,16 +819,17 @@ const QuestionBank = (() => {
         };
     }
 
-    /** Générateur procédural pour la physique */
+    /** Générateur procédural pour la physique (sans doublons d'options) */
     function generatePhysicsLesson(index, norm, variant, rng) {
-        const kinds = ['ohm', 'puissance', 'cinetique'];
+        const kinds = ['ohm', 'puissance', 'cinetique', 'poids'];
         const kind = kinds[(index + variant) % kinds.length];
 
         if (kind === 'ohm') {
             const r = 10 * (1 + Math.floor(rng() * 9)); // 10 à 90 ohms
-            const i = 1 + Math.floor(rng() * 4); // 1 à 4 A
+            const i = 2 + Math.floor(rng() * 5); // 2 à 6 A (évite r*i === r/i)
             const u = r * i;
-            const { opts, correct } = shuffleOptions([`${u} V`, `${u + 10} V`, `${Math.round(r / i)} V`, `${u * 2} V`], 0, rng);
+            const wrongs = uniqueWrongs(u, [u + 10, Math.round(r / i), u * 2, Math.max(1, u - r)], false).map(n => `${n} V`);
+            const { opts, correct } = shuffleOptions([`${u} V`, ...wrongs], 0, rng);
             return {
                 type: 'qcm',
                 title: 'Niveau ' + (index + 1),
@@ -711,10 +839,11 @@ const QuestionBank = (() => {
                 exp: `U = R × I = ${r} × ${i} = ${u} V.`
             };
         } else if (kind === 'puissance') {
-            const u = 230;
-            const i = 2 + Math.floor(rng() * 5); // 2 à 6 A
+            const u = [12, 24, 110, 230][Math.floor(rng() * 4)];
+            const i = 2 + Math.floor(rng() * 6);
             const p = u * i;
-            const { opts, correct } = shuffleOptions([`${p} W`, `${p - 200} W`, `${p + 230} W`, `${Math.round(u / i)} W`], 0, rng);
+            const wrongs = uniqueWrongs(p, [Math.max(1, p - u), p + u, Math.round(u / i), p * 2], false).map(n => `${n} W`);
+            const { opts, correct } = shuffleOptions([`${p} W`, ...wrongs], 0, rng);
             return {
                 type: 'qcm',
                 title: 'Niveau ' + (index + 1),
@@ -723,15 +852,30 @@ const QuestionBank = (() => {
                 correct,
                 exp: `P = U × I = ${u} × ${i} = ${p} W.`
             };
-        } else {
-            const v = (2 + Math.floor(rng() * 5)) * 10; // 20 à 60 km/h
-            const t = 2 + Math.floor(rng() * 3); // 2 à 4 h
-            const d = v * t;
-            const { opts, correct } = shuffleOptions([`${d} km`, `${d + v} km`, `${d - 20} km`, `${v + t} km`], 0, rng);
+        } else if (kind === 'poids') {
+            const m = 2 + Math.floor(rng() * 15);
+            const g = 10; // approximation scolaire standard (10 N/kg)
+            const p = m * g;
+            const wrongs = uniqueWrongs(p, [m + g, p + 10, Math.max(1, p - 10), m * 2], false).map(n => `${n} N`);
+            const { opts, correct } = shuffleOptions([`${p} N`, ...wrongs], 0, rng);
             return {
                 type: 'qcm',
                 title: 'Niveau ' + (index + 1),
-                q: `Un cycliste roule à une vitesse moyenne de ${v} km/h pendant ${t} heures. Quelle distance parcourt-il ?`,
+                q: `Sur Terre (g ≈ 10 N/kg), quel est le poids P = m × g d'un objet de masse m = ${m} kg ?`,
+                opts,
+                correct,
+                exp: `P = m × g = ${m} × 10 = ${p} N.`
+            };
+        } else {
+            const v = (2 + Math.floor(rng() * 8)) * 10; // 20 à 90 km/h
+            const t = 2 + Math.floor(rng() * 4); // 2 à 5 h
+            const d = v * t;
+            const wrongs = uniqueWrongs(d, [d + v, Math.max(1, d - 20), v + t, d * 2], false).map(n => `${n} km`);
+            const { opts, correct } = shuffleOptions([`${d} km`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Un véhicule roule à une vitesse moyenne de ${v} km/h pendant ${t} heures. Quelle distance parcourt-il ?`,
                 opts,
                 correct,
                 exp: `Distance = vitesse × temps = ${v} × ${t} = ${d} km.`
@@ -739,25 +883,38 @@ const QuestionBank = (() => {
         }
     }
 
-    /** Générateur procédural pour la chimie */
+    /** Générateur procédural pour la chimie (sans doublons d'options) */
     function generateChemistryLesson(index, norm, variant, rng) {
         const elements = [
             { name: "l'Hydrogène", sym: "H", z: 1 },
+            { name: "l'Hélium", sym: "He", z: 2 },
+            { name: "le Lithium", sym: "Li", z: 3 },
             { name: "le Carbone", sym: "C", z: 6 },
             { name: "l'Azote", sym: "N", z: 7 },
             { name: "l'Oxygène", sym: "O", z: 8 },
+            { name: "le Fluor", sym: "F", z: 9 },
+            { name: "le Néon", sym: "Ne", z: 10 },
             { name: "le Sodium", sym: "Na", z: 11 },
+            { name: "le Magnésium", sym: "Mg", z: 12 },
+            { name: "l'Aluminium", sym: "Al", z: 13 },
+            { name: "le Soufre", sym: "S", z: 16 },
             { name: "le Chlore", sym: "Cl", z: 17 },
+            { name: "le Potassium", sym: "K", z: 19 },
+            { name: "le Calcium", sym: "Ca", z: 20 },
             { name: "le Fer", sym: "Fe", z: 26 },
             { name: "le Cuivre", sym: "Cu", z: 29 },
-            { name: "l'Or", sym: "Au", z: 79 },
-            { name: "l'Hélium", sym: "He", z: 2 }
+            { name: "le Zinc", sym: "Zn", z: 30 },
+            { name: "l'Argent", sym: "Ag", z: 47 },
+            { name: "l'Or", sym: "Au", z: 79 }
         ];
-        const el = elements[Math.floor(rng() * elements.length)];
-        const askSymbol = (index + variant) % 2 === 0;
+        const deck = seededShuffle(elements, 'chem-deck:' + norm + ':v' + variant);
+        const slot = Math.floor(index / 2) + variant * 5;
+        const el = deck[slot % deck.length];
+        const askSymbol = (Math.floor(slot / deck.length) + index + variant) % 2 === 0;
 
         if (askSymbol) {
-            const wrongs = elements.filter(x => x.sym !== el.sym).map(x => x.sym).slice(0, 3);
+            const others = seededShuffle(elements.filter(x => x.sym !== el.sym).map(x => x.sym), 'chem:' + index + ':' + variant);
+            const wrongs = uniqueStringWrongs(el.sym, others);
             const { opts, correct } = shuffleOptions([el.sym, ...wrongs], 0, rng);
             return {
                 type: 'qcm',
@@ -768,8 +925,9 @@ const QuestionBank = (() => {
                 exp: `Le symbole de ${el.name} est ${el.sym}.`
             };
         } else {
-            const wrongs = [el.z + 1, el.z + 2, Math.max(1, el.z - 1)];
-            const { opts, correct } = shuffleOptions([`${el.z}`, ...wrongs.map(String)], 0, rng);
+            const wrongs = uniqueWrongs(el.z, [el.z + 1, el.z + 2, el.z - 1, el.z + 4], false).filter(n => n > 0);
+            while (wrongs.length < 3) wrongs.push(el.z + wrongs.length + 3);
+            const { opts, correct } = shuffleOptions([`${el.z}`, ...wrongs.slice(0, 3).map(String)], 0, rng);
             return {
                 type: 'qcm',
                 title: 'Niveau ' + (index + 1),
@@ -792,24 +950,29 @@ const QuestionBank = (() => {
             { bin: "0110", dec: 6 },
             { bin: "0111", dec: 7 },
             { bin: "1000", dec: 8 },
+            { bin: "1001", dec: 9 },
             { bin: "1010", dec: 10 },
+            { bin: "1011", dec: 11 },
             { bin: "1100", dec: 12 },
+            { bin: "1101", dec: 13 },
+            { bin: "1110", dec: 14 },
             { bin: "1111", dec: 15 }
         ];
-        const item = binaries[Math.floor(rng() * binaries.length)];
-        const wrongs = [item.dec + 1, item.dec + 2, Math.max(0, item.dec - 1)];
+        const deck = seededShuffle(binaries, 'techno-deck:' + norm + ':v' + variant);
+        const item = deck[(Math.floor(index / 2) + variant * 4) % deck.length];
+        const wrongs = uniqueWrongs(item.dec, [item.dec + 1, item.dec + 2, item.dec - 1, item.dec + 4], false);
         const { opts, correct } = shuffleOptions([`${item.dec}`, ...wrongs.map(String)], 0, rng);
         return {
             type: 'qcm',
             title: 'Niveau ' + (index + 1),
-            q: `En binaire sur 4 bits, quelle est la valeur décimale de l'octet court ${item.bin} ?`,
+            q: `En binaire sur 4 bits, quelle est la valeur décimale du mot binaire ${item.bin} ?`,
             opts,
             correct,
             exp: `En binaire, ${item.bin} correspond au nombre décimal ${item.dec}.`
         };
     }
 
-    /** Générateur procédural pour l'histoire */
+    /** Générateur procédural pour l'histoire (dates plausibles, jamais dans le futur) */
     function generateHistoryLesson(index, norm, variant, rng) {
         const events = [
             { event: "la prise de la Bastille", year: 1789, era: "Révolution française" },
@@ -828,20 +991,32 @@ const QuestionBank = (() => {
             { event: "les accords d'Évian marquant l'indépendance de l'Algérie", year: 1962, era: "Décolonisation" },
             { event: "la signature du traité de Versailles", year: 1919, era: "Entre-deux-guerres" },
             { event: "l'apparition des premiers systèmes d'écriture en Mésopotamie", year: -3300, era: "Antiquité" },
-            { event: "la prise de la forteresse de Constantinople par les Ottomans", year: 1453, era: "Fin du Moyen Âge" },
+            { event: "la prise de Constantinople par les Ottomans", year: 1453, era: "Fin du Moyen Âge" },
             { event: "l'arrivée de Christophe Colomb aux Caraïbes", year: 1492, era: "Grandes Découvertes" },
             { event: "l'exécution de Louis XVI sur la guillotine", year: 1793, era: "Révolution française" },
-            { event: "la création de la Communauté Économique Européenne (traité de Rome)", year: 1957, era: "Construction européenne" }
+            { event: "la signature du traité de Rome (CEE)", year: 1957, era: "Construction européenne" },
+            { event: "la chute de l'Empire romain d'Occident", year: 476, era: "Fin de l'Antiquité" },
+            { event: "le sacre d'Hugues Capet, roi des Francs", year: 987, era: "Moyen Âge" },
+            { event: "la dissolution officielle de l'URSS", year: 1991, era: "Fin de la Guerre froide" },
+            { event: "l'adoption de la Déclaration universelle des droits de l'homme", year: 1948, era: "Après-guerre" },
         ];
-        const item = events[Math.floor(rng() * events.length)];
+        const deck = seededShuffle(events, 'hist-deck:' + norm + ':v' + variant);
+        const item = deck[(Math.floor(index / 2) + variant * 7) % deck.length];
         const y = item.year;
-        const delta = Math.abs(y) > 1000 ? 500 : (Math.abs(y) < 100 ? 25 : 10);
-        const wrongs = [
-            y + delta,
-            y - delta,
-            y + delta * 2
-        ].map(n => n < 0 ? `${Math.abs(n)} av. J.-C.` : `${n}`);
-        const correctStr = y < 0 ? `${Math.abs(y)} av. J.-C.` : `${y}`;
+        const fmtYear = (n) => n < 0 ? `${Math.abs(n)} av. J.-C.` : `${n}`;
+        let offsets;
+        if (y < -500) offsets = [-300, 300, -600, 600];
+        else if (y < 0) offsets = [-25, 20, -50, 35];
+        else if (y < 1500) offsets = [-35, 35, -70, 70];
+        else if (y < 1900) offsets = [-12, 12, -25, 25];
+        else offsets = [-6, 6, -14, -22, 10];
+
+        const rawWrongs = offsets
+            .map(d => y + d)
+            .filter(n => n !== y && n !== 0 && n <= 2024)
+            .map(fmtYear);
+        const correctStr = fmtYear(y);
+        const wrongs = uniqueStringWrongs(correctStr, rawWrongs, [fmtYear(y - 10), fmtYear(y - 20), fmtYear(y - 30)]);
         const { opts, correct: cIdx } = shuffleOptions([correctStr, ...wrongs], 0, rng);
         return {
             type: 'qcm',
@@ -853,7 +1028,153 @@ const QuestionBank = (() => {
         };
     }
 
-    /** Générateur procédural pour les SVT */
+    /** Générateur procédural pour NSI & Numérique (Lycée) */
+    function generateNsiLesson(index, norm, variant, rng) {
+        const kinds = ['bin2dec', 'dec2bin', 'hex2dec', 'python_list', 'bytes'];
+        const kind = kinds[(index + variant) % kinds.length];
+
+        if (kind === 'bin2dec') {
+            const val = 5 + Math.floor(rng() * 58); // 5..62
+            const bin = val.toString(2).padStart(6, '0');
+            const wrongs = uniqueWrongs(val, [val + 1, val - 1, val + 2, val ^ 4], false);
+            const { opts, correct } = shuffleOptions([String(val), ...wrongs.map(String)], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Quelle est la représentation décimale du nombre binaire ${bin}₂ ?`,
+                opts,
+                correct,
+                exp: `En base 2, ${bin}₂ = ${val} en base 10.`
+            };
+        }
+        if (kind === 'dec2bin') {
+            const val = 6 + Math.floor(rng() * 25); // 6..30
+            const bin = val.toString(2);
+            const wNums = uniqueWrongs(val, [val + 1, val - 1, val + 2, val ^ 2], false);
+            const wrongs = uniqueStringWrongs(bin, wNums.map(n => n.toString(2)));
+            const { opts, correct } = shuffleOptions([bin, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Comment s'écrit l'entier décimal ${val} en base 2 (binaire) ?`,
+                opts,
+                correct,
+                exp: `${val} en base 10 s'écrit ${bin} en binaire.`
+            };
+        }
+        if (kind === 'hex2dec') {
+            const val = 10 + Math.floor(rng() * 50); // 10..59
+            const hex = val.toString(16).toUpperCase();
+            const wrongs = uniqueWrongs(val, [val + 16, val - 6, val + 1, val - 1], false);
+            const { opts, correct } = shuffleOptions([String(val), ...wrongs.map(String)], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Quelle est la valeur en base 10 du nombre hexadécimal 0x${hex} ?`,
+                opts,
+                correct,
+                exp: `En base 16, 0x${hex} vaut ${val} en décimal.`
+            };
+        }
+        if (kind === 'python_list') {
+            const a = 2 + Math.floor(rng() * 5);
+            const b = 3 + Math.floor(rng() * 6);
+            const c = 4 + Math.floor(rng() * 7);
+            const d = 1 + Math.floor(rng() * 8);
+            const arr = [a, b, c, d];
+            const idx = Math.floor(rng() * arr.length);
+            const ans = arr[idx];
+            const wrongs = uniqueWrongs(ans, [arr[(idx + 1) % 4], arr[(idx + 2) % 4], ans + 1, idx], false);
+            const { opts, correct } = shuffleOptions([String(ans), ...wrongs.map(String)], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `En Python, avec L = [${arr.join(', ')}], que renvoie l'expression L[${idx}] ?`,
+                opts,
+                correct,
+                exp: `En Python, les indices de liste commencent à 0 : L[${idx}] = ${ans}.`
+            };
+        }
+        const bits = [4, 5, 6, 7, 8][Math.floor(rng() * 5)];
+        const count = Math.pow(2, bits);
+        const wrongs = uniqueWrongs(count, [count / 2, count * 2, bits * 2, count - 1], false);
+        const { opts, correct } = shuffleOptions([String(count), ...wrongs.map(String)], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `Combien de valeurs distinctes peut-on coder sur ${bits} bits ?`,
+            opts,
+            correct,
+            exp: `Avec ${bits} bits, on peut coder 2^${bits} = ${count} valeurs distinctes (de 0 à ${count - 1}).`
+        };
+    }
+
+    /** Générateur procédural pour SES (Lycée) */
+    function generateSesLesson(index, norm, variant, rng) {
+        const kinds = ['ca', 'va', 'taux_var', 'part_marche'];
+        const kind = kinds[(index + variant) % kinds.length];
+
+        if (kind === 'ca') {
+            const prix = (2 + Math.floor(rng() * 8)) * 5; // 10..45 €
+            const qty = (2 + Math.floor(rng() * 9)) * 10; // 20..100
+            const ca = prix * qty;
+            const wrongs = uniqueWrongs(ca, [ca + prix * 10, Math.max(10, ca - prix * 10), prix + qty, ca * 2], false).map(n => `${n} €`);
+            const { opts, correct } = shuffleOptions([`${ca} €`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Une entreprise vend ${qty} unités d'un produit au prix unitaire de ${prix} €. Quel est son chiffre d'affaires (CA) ?`,
+                opts,
+                correct,
+                exp: `Chiffre d'affaires = Prix × Quantité = ${prix} × ${qty} = ${ca} €.`
+            };
+        }
+        if (kind === 'va') {
+            const ca = (5 + Math.floor(rng() * 10)) * 1000;
+            const ci = (1 + Math.floor(rng() * 4)) * 1000;
+            const va = ca - ci;
+            const wrongs = uniqueWrongs(va, [ca + ci, ci, va + 1000, Math.max(500, va - 1000)], false).map(n => `${n} €`);
+            const { opts, correct } = shuffleOptions([`${va} €`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Une entreprise réalise ${ca} € de production avec ${ci} € de consommations intermédiaires. Quelle est sa Valeur Ajoutée (VA) ?`,
+                opts,
+                correct,
+                exp: `Valeur Ajoutée = Production − Consommations intermédiaires = ${ca} − ${ci} = ${va} €.`
+            };
+        }
+        if (kind === 'taux_var') {
+            const vd = [50, 100, 200, 250, 400][Math.floor(rng() * 5)];
+            const pct = [10, 20, 25, 40, 50][Math.floor(rng() * 5)];
+            const va = vd + (vd * pct) / 100;
+            const wrongs = uniqueWrongs(pct, [pct + 10, Math.max(5, pct - 10), va - vd, pct * 2], false).map(n => `+${n} %`);
+            const { opts, correct } = shuffleOptions([`+${pct} %`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Un indicateur économique passe de ${vd} à ${va}. Quel est son taux de variation ?`,
+                opts,
+                correct,
+                exp: `Taux de variation = ((${va} − ${vd}) / ${vd}) × 100 = +${pct} %.`
+            };
+        }
+        const total = [200, 400, 500, 1000][Math.floor(rng() * 4)];
+        const pct = [10, 15, 20, 25, 30, 40][Math.floor(rng() * 6)];
+        const sales = (total * pct) / 100;
+        const wrongs = uniqueWrongs(pct, [pct + 5, Math.max(5, pct - 5), 100 - pct, pct * 2], false).map(n => `${n} %`);
+        const { opts, correct } = shuffleOptions([`${pct} %`, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `Sur un marché total de ${total} millions d'euros, une entreprise réalise ${sales} millions d'euros de ventes. Quelle est sa part de marché ?`,
+            opts,
+            correct,
+            exp: `Part de marché = (${sales} / ${total}) × 100 = ${pct} %.`
+        };
+    }
+
+    /** Générateur procédural pour les SVT (deck déterministe anti-répétition) */
     function generateSvtLesson(index, norm, variant, rng) {
         const organs = [
             { organ: "le cœur", system: "le système cardiovasculaire", role: "propulser le sang dans tout l'organisme", wrongs: ["digérer les aliments", "filtrer l'urine", "produire l'insuline"] },
@@ -862,10 +1183,17 @@ const QuestionBank = (() => {
             { organ: "les reins", system: "le système urinaire", role: "filtrer le sang pour éliminer les déchets sous forme d'urine", wrongs: ["absorber les vitamines", "ventiler les alvéoles", "fabriquer l'hémoglobine"] },
             { organ: "le pancréas", system: "le système endocrinien et digestif", role: "sécréter l'insuline et des enzymes digestives", wrongs: ["purifier l'air inspiré", "coaguler le sang", "produire les globules rouges"] },
             { organ: "l'intestin grêle", system: "le système digestif", role: "absorber la majorité des nutriments vers le sang", wrongs: ["stocker les urines", "synthétiser l'ADN", "oxygéner le sang"] },
-            { organ: "le cerveau", system: "le système nerveux central", role: "intégrer les informations et commander les mouvements", wrongs: ["sécréter l'acide gastrique", "neutraliser les bactéries par la bile", "produire le liquide synovial"] }
+            { organ: "le cerveau", system: "le système nerveux central", role: "intégrer les informations et commander les mouvements", wrongs: ["sécréter l'acide gastrique", "neutraliser les bactéries par la bile", "produire le liquide synovial"] },
+            { organ: "le foie", system: "le système digestif", role: "produire la bile et réguler le stockage du glucose", wrongs: ["ventiler le thorax", "transmettre les ondes sonores", "fabriquer les spermatozoïdes"] },
+            { organ: "la moelle osseuse", system: "le système immunitaire et sanguin", role: "produire les cellules sanguines (hématies, leucocytes, plaquettes)", wrongs: ["digérer les lipides", "contrôler l'équilibre auditif", "éliminer le CO₂ expiré"] },
+            { organ: "la rétine", system: "le système sensoriel visuel", role: "convertir la lumière en signaux nerveux transmis au cerveau", wrongs: ["sécréter les larmes", "protéger le tympan", "filtrer le plasma sanguin"] },
+            { organ: "la peau", system: "la barrière cutanée", role: "protéger l'organisme et réguler la température corporelle", wrongs: ["stocker la bile", "pomper le sang veineux", "broyer les protéines"] },
+            { organ: "les plaquettes sanguines", system: "le système circulatoire", role: "assurer la coagulation du sang lors d'une blessure", wrongs: ["transporter le dioxygène", "produire des hormones sexuelles", "digérer l'amidon"] }
         ];
-        const item = organs[Math.floor(rng() * organs.length)];
-        const { opts, correct } = shuffleOptions([item.role, ...item.wrongs], 0, rng);
+        const deck = seededShuffle(organs, 'svt-deck:' + norm + ':v' + variant);
+        const item = deck[(Math.floor(index / 2) + variant * 5) % deck.length];
+        const wrongs = uniqueStringWrongs(item.role, item.wrongs);
+        const { opts, correct } = shuffleOptions([item.role, ...wrongs], 0, rng);
         return {
             type: 'qcm',
             title: 'Niveau ' + (index + 1),
@@ -876,18 +1204,24 @@ const QuestionBank = (() => {
         };
     }
 
-    /** Générateur procédural pour l'EMC */
+    /** Générateur procédural pour l'EMC (deck déterministe anti-répétition) */
     function generateEmcLesson(index, norm, variant, rng) {
-        const numbers = [
+        const items = [
             { num: "15", service: "le SAMU (urgences médicales graves)" },
-            { num: "17", service: "Police Secours ou Gendarmerie" },
+            { num: "17", service: "Police Secours ou la Gendarmerie" },
             { num: "18", service: "les Sapeurs-Pompiers (incendies, secours)" },
             { num: "112", service: "le numéro d'appel d'urgence européen unique" },
             { num: "3018", service: "la ligne d'écoute gratuite contre le cyberharcèlement scolaire" },
-            { num: "119", service: "le numéro national de l'Enfance en Danger" }
+            { num: "119", service: "le numéro national de l'Enfance en Danger" },
+            { num: "114", service: "le numéro d'urgence accessible par SMS pour les personnes sourdes ou malentendantes" },
+            { num: "115", service: "le SAMU social (hébergement d'urgence)" },
+            { num: "3919", service: "la ligne d'écoute dédiée aux femmes victimes de violences" },
+            { num: "196", service: "les secours maritimes (CROSS)" }
         ];
-        const item = numbers[Math.floor(rng() * numbers.length)];
-        const wrongs = numbers.filter(x => x.num !== item.num).map(x => x.num).slice(0, 3);
+        const deck = seededShuffle(items, 'emc-deck:' + norm + ':v' + variant);
+        const item = deck[(Math.floor(index / 2) + variant * 3) % deck.length];
+        const others = seededShuffle(items.filter(x => x.num !== item.num).map(x => x.num), 'emc-w:' + index + ':' + variant);
+        const wrongs = uniqueStringWrongs(item.num, others);
         const { opts, correct } = shuffleOptions([item.num, ...wrongs], 0, rng);
         return {
             type: 'qcm',
@@ -899,7 +1233,7 @@ const QuestionBank = (() => {
         };
     }
 
-    /** Générateur procédural pour la philosophie */
+    /** Générateur procédural pour la philosophie (Terminale, deck déterministe anti-répétition) */
     function generatePhiloLesson(index, norm, variant, rng) {
         const quotes = [
             { quote: "« Connais-toi toi-même. »", author: "Socrate", wrongs: ["Aristote", "Épicure", "Nietzsche"] },
@@ -911,10 +1245,18 @@ const QuestionBank = (() => {
             { quote: "« L'existence précède l'essence. »", author: "Jean-Paul Sartre", wrongs: ["Albert Camus", "Michel Foucault", "Simone de Beauvoir"] },
             { quote: "« La liberté des uns s'arrête là où commence celle des autres. »", author: "John Stuart Mill", wrongs: ["Thomas More", "Machiavel", "Hegel"] },
             { quote: "« Sapere aude ! Aie le courage de te servir de ton propre entendement ! »", author: "Emmanuel Kant", wrongs: ["Baruch Spinoza", "Gottfried Leibniz", "Christian Wolff"] },
-            { quote: "« Ce qui ne me tue pas me rend plus fort. »", author: "Friedrich Nietzsche", wrongs: ["Sigmund Freud", "Karl Marx", "Martin Heidegger"] }
+            { quote: "« L'homme est un animal politique. »", author: "Aristote", wrongs: ["Platon", "Épicure", "Sénèque"] },
+            { quote: "« On ne naît pas femme : on le devient. »", author: "Simone de Beauvoir", wrongs: ["Hannah Arendt", "Simone Weil", "Judith Butler"] },
+            { quote: "« Science sans conscience n'est que ruine de l'âme. »", author: "François Rabelais", wrongs: ["Michel de Montaigne", "René Descartes", "Francis Bacon"] },
+            { quote: "« Le Moi n'est pas maître dans sa propre maison. »", author: "Sigmund Freud", wrongs: ["Carl Jung", "Henri Bergson", "Emmanuel Kant"] },
+            { quote: "« Rien de grand ne s'est accompli dans le monde sans passion. »", author: "Georg Wilhelm Friedrich Hegel", wrongs: ["Arthur Schopenhauer", "Baruch Spinoza", "David Hume"] },
+            { quote: "« L'obéissance à la loi qu'on s'est prescrite est liberté. »", author: "Jean-Jacques Rousseau", wrongs: ["Thomas Hobbes", "Nicolas Machiavel", "John Locke"] },
+            { quote: "« Il faut imaginer Sisyphe heureux. »", author: "Albert Camus", wrongs: ["Jean-Paul Sartre", "Søren Kierkegaard", "Martin Heidegger"] }
         ];
-        const item = quotes[Math.floor(rng() * quotes.length)];
-        const { opts, correct } = shuffleOptions([item.author, ...item.wrongs], 0, rng);
+        const deck = seededShuffle(quotes, 'philo-deck:' + norm + ':v' + variant);
+        const item = deck[(Math.floor(index / 2) + variant * 5) % deck.length];
+        const wrongs = uniqueStringWrongs(item.author, item.wrongs);
+        const { opts, correct } = shuffleOptions([item.author, ...wrongs], 0, rng);
         return {
             type: 'qcm',
             title: 'Niveau ' + (index + 1),
@@ -1126,28 +1468,26 @@ const QuestionBank = (() => {
         ],
 
         techno: [
-            // 6ème
+            // 6ème (Collège uniquement)
             { q: "À quelle famille de matériaux appartiennent le chêne et le pin ?", correct: "les matières organiques (bois)", wrongs: ["les métaux", "les céramiques", "les plastiques"], levels: ['6eme'], exp: "Le bois est issu du règne végétal vivant." },
             { q: "Sur un vélo, quel sous-ensemble transmet l'effort musculaire à la roue motrice ?", correct: "le pédalier, la chaîne et les pignons", wrongs: ["les étriers de frein", "le guidon", "la potence"], levels: ['6eme'], exp: "C'est la chaîne cinématique de transmission par chaîne." },
+            { q: "Quelle fonction décrit le besoin principal auquel répond un objet technique ?", correct: "la fonction d'usage", wrongs: ["la fonction d'estime", "la fonction de recyclage", "le cahier des notes"], levels: ['6eme', '5eme'], exp: "La fonction d'usage répond à la question : à quoi sert l'objet ?" },
+            { q: "Quel matériau issu de la bauxite est très apprécié pour sa légèreté et sa résistance à la corrosion ?", correct: "l'aluminium", wrongs: ["la fonte", "le granit", "le verre"], levels: ['6eme', '5eme'], exp: "L'aluminium est léger et très utilisé dans les transports." },
             // 5ème
             { q: "Quel type d'ouvrage suspend sa chaussée à de hauts pylônes au moyen de câbles tendus ?", correct: "un pont à haubans", wrongs: ["un pont en arc", "un pont à poutres", "un pont levant"], levels: ['5eme'], exp: "Le viaduc de Millau ou le pont de Normandie sont des ponts à haubans." },
             { q: "Quelle source d'énergie renouvelable est captée par une éolienne ?", correct: "l'énergie cinétique du vent", wrongs: ["l'énergie thermique", "l'énergie solaire directe", "l'énergie marémotrice"], levels: ['5eme'], exp: "Les pales convertissent la force du vent en rotation." },
+            { q: "Quel document décrit l'ensemble des contraintes et exigences à respecter pour concevoir un produit ?", correct: "le cahier des charges fonctionnel", wrongs: ["la notice de montage", "la facture d'achat", "le brevet commercial"], levels: ['5eme', '4eme'], exp: "Le cahier des charges définit les fonctions de service et critères attendus." },
             // 4ème
             { q: "Dans un système automatisé, quel organe prélève une grandeur physique de l'environnement ?", correct: "un capteur", wrongs: ["un actionneur", "un moteur", "un vérin"], levels: ['4eme'], exp: "Le capteur transforme une grandeur physique (température, lumière) en signal." },
             { q: "Quel polymère thermoplastique biodégradable est le plus répandu en impression 3D FDM ?", correct: "le PLA", wrongs: ["le PVC", "le téflon", "le plomb"], levels: ['4eme'], exp: "Le PLA est produit à partir d'amidon de maïs ou de canne à sucre." },
+            { q: "Dans une chaîne d'énergie, quel bloc transforme l'énergie électrique en mouvement mécanique ?", correct: "le convertisseur (ex: moteur)", wrongs: ["le capteur", "l'interface homme-machine", "la batterie seule"], levels: ['4eme', '3eme'], exp: "Un moteur convertit l'énergie électrique en énergie mécanique." },
             // 3ème (Brevet)
             { q: "Quelle suite finie et ordonnée d'instructions résout un problème pas à pas ?", correct: "un algorithme", wrongs: ["un processeur", "une base de données", "un compilateur"], levels: ['3eme'], exp: "L'algorithme est transcrit dans un langage de programmation." },
             { q: "Quelle technologie sans fil à courte portée connecte clavier, souris ou écouteurs ?", correct: "le Bluetooth", wrongs: ["la 5G", "la fibre optique", "le câble coaxial"], levels: ['3eme'], exp: "Le Bluetooth opère par ondes radio UHF sur la bande 2,4 GHz." },
             { q: "Dans un réseau local, quel équipement achemine les trames de données entre machines connectées ?", correct: "le switch (commutateur)", wrongs: ["la carte son", "l'onduleur", "l'écran"], levels: ['3eme'], exp: "Le switch filtre et distribue les paquets vers le bon port Ethernet." },
-            // 2nde
-            { q: "Combien d'octets composent exactement un kilooctet selon la norme binaire historique ?", correct: "1024 octets", wrongs: ["8 octets", "100 octets", "10000 octets"], levels: ['2nde'], exp: "2¹⁰ = 1 024 octets (kibioctet en norme CEI)." },
-            { q: "Quel composant traite les instructions logiques et arithmétiques dans un ordinateur ?", correct: "le microprocesseur (CPU)", wrongs: ["la mémoire vive seule", "l'alimentation", "le dissipateur thermique"], levels: ['2nde'], exp: "Le processeur exécute le cycle recherche-décodage-exécution." },
-            // 1ère
-            { q: "En Python, quel mot-clé déclare la définition d'une fonction ?", correct: "def", wrongs: ["function", "func", "declare"], levels: ['1ere'], exp: "Syntaxe : def ma_fonction(param): ..." },
-            { q: "En base de données SQL, quelle commande interroge et sélectionne des données ?", correct: "SELECT", wrongs: ["FETCH", "GET", "RETRIEVE"], levels: ['1ere'], exp: "Exemple : SELECT nom, age FROM eleves WHERE classe='1ere';" },
-            // Terminale
-            { q: "Quel modèle de cryptographie utilise deux clés distinctes (une publique et une privée) ?", correct: "le chiffrement asymétrique (RSA)", wrongs: ["le chiffrement symétrique", "le code de César", "le hachage MD5"], levels: ['terminale'], exp: "La clé publique chiffre, seule la clé privée correspondante peut déchiffrer." },
-            { q: "Quelle architecture matérielle historique mutualise le stockage des données et des programmes en mémoire ?", correct: "l'architecture de Von Neumann", wrongs: ["l'architecture Harvard stricte", "l'architecture GPU", "la machine de Turing théorique"], levels: ['terminale'], exp: "Proposée en 1945, elle fonde la quasi-totalité des ordinateurs actuels." }
+            { q: "Dans un logiciel de programmation par blocs (Scratch), quelle structure permet de répéter une série d'instructions ?", correct: "une boucle", wrongs: ["une variable globale", "un capteur ultrason", "une constante"], levels: ['6eme', '5eme', '4eme', '3eme'], exp: "Les boucles évitent de dupliquer des instructions répétitives." },
+            { q: "Combien de bits contient exactement un octet ?", correct: "8 bits", wrongs: ["4 bits", "16 bits", "10 bits"], levels: ['4eme', '3eme'], exp: "Un octet est composé de 8 bits prenant chacun la valeur 0 ou 1." },
+            { q: "Quelle étape de conception consiste à fabriquer un premier exemplaire fonctionnel pour tester un objet ?", correct: "le prototypage", wrongs: ["le recyclage", "la commercialisation", "l'archivage"], levels: ['3eme', '4eme'], exp: "Le prototype permet de valider les choix techniques avant la production en série." }
         ],
 
         anglais: [
@@ -1206,61 +1546,67 @@ const QuestionBank = (() => {
         ],
 
         philo: [
-            // Collège
-            { q: "Quel philosophe grec antique affirmait : « Tout ce que je sais, c'est que je ne sais rien » ?", correct: "Socrate", wrongs: ["Alexandre", "Jules César", "Héraclite"], levels: ['6eme', '5eme', '4eme', '3eme'], exp: "Socrate utilisait l'ironie pour inciter chacun à examiner ses préjugés." },
-            { q: "Que signifie étymologiquement le terme 'philosophie' en grec ancien ?", correct: "l'amour de la sagesse", wrongs: ["la science des dieux", "l'art du pouvoir", "la vérité absolue"], levels: ['6eme', '5eme', '4eme', '3eme'], exp: "Philo (aimer) + sophia (sagesse / savoir)." },
-            { q: "Dans le mythe de Platon, que permet l'anneau trouvé par le berger Gygès ?", correct: "de devenir invisible à volonté", wrongs: ["de voler dans les airs", "de lire dans les pensées", "de transformer le plomb en or"], levels: ['5eme', '4eme', '3eme'], exp: "Ce mythe interroge si l'on resterait juste si l'on était certain de ne jamais être pris." },
-            { q: "Quelle célèbre allégorie de Platon montre des prisonniers enchaînés prenant des ombres pour la réalité ?", correct: "l'allégorie de la caverne", wrongs: ["le mythe de Sisyphe", "le tonneau des Danaïdes", "le fil d'Ariane"], levels: ['4eme', '3eme', '2nde'], exp: "Elle illustre l'accès difficile de l'ignorance vers la vérité intelligible." },
-            // 2nde
-            { q: "Selon Aristote, par quelle disposition d'esprit débute toute quête philosophique ?", correct: "l'étonnement", wrongs: ["la peur", "l'ambition", "le dégoût"], levels: ['2nde'], exp: "S'étonner pousse l'esprit à chercher les causes premières." },
-            { q: "Quel concept désigne la capacité humaine de faire des choix sans contrainte extérieure absolue ?", correct: "le libre arbitre", wrongs: ["le fatalisme", "le déterminisme absolu", "l'instinct"], levels: ['2nde', '1ere'], exp: "Le libre arbitre fonde la responsabilité morale de nos actes." },
-            // 1ère
-            { q: "Qui a formulé la certitude inaugurale : « Je pense, donc je suis » (Cogito, ergo sum) ?", correct: "René Descartes", wrongs: ["Jean-Jacques Rousseau", "Blaise Pascal", "David Hume"], levels: ['1ere', 'terminale'], exp: "Dans le 'Discours de la méthode' (1637), après l'épreuve du doute méthodique." },
-            { q: "Quelle doctrine antique d'Épictète invite à distinguer ce qui dépend de nous de ce qui n'en dépend pas ?", correct: "le stoïcisme", wrongs: ["l'épicurisme", "le scepticisme", "le cynisme"], levels: ['1ere', 'terminale'], exp: "Le stoïcisme recherche l'ataraxie (tranquillité de l'âme)." },
-            { q: "Pour Jean-Jacques Rousseau, dans quel état vivait l'homme avant les lois et la société civile ?", correct: "l'état de nature", wrongs: ["l'état de guerre permanente", "le siècle d'or industriel", "la féodalité"], levels: ['1ere', 'terminale'], exp: "Pour Rousseau, 'l'homme est né bon, c'est la société qui le corrompt'." },
-            // Terminale
+            // Terminale uniquement (programme du Baccalauréat)
+            { q: "Quel philosophe grec antique affirmait : « Tout ce que je sais, c'est que je ne sais rien » ?", correct: "Socrate", wrongs: ["Aristote", "Épicure", "Héraclite"], levels: ['terminale'], exp: "Socrate utilisait la maïeutique et l'ironie pour inciter chacun à examiner ses préjugés." },
+            { q: "Dans le mythe de Platon (La République), que permet l'anneau trouvé par le berger Gygès ?", correct: "de devenir invisible à volonté", wrongs: ["de voler dans les airs", "de lire dans les pensées", "de transformer le plomb en or"], levels: ['terminale'], exp: "Ce mythe interroge si l'on resterait juste si l'on était certain de l'impunité." },
+            { q: "Quelle célèbre allégorie de Platon montre des prisonniers enchaînés prenant des ombres pour la réalité ?", correct: "l'allégorie de la caverne", wrongs: ["le mythe de Sisyphe", "le tonneau des Danaïdes", "le fil d'Ariane"], levels: ['terminale'], exp: "Elle illustre le passage difficile de l'opinion sensible vers la connaissance intelligible." },
+            { q: "Selon Aristote, par quelle disposition d'esprit débute toute quête philosophique ?", correct: "l'étonnement", wrongs: ["la peur", "l'ambition", "le dégoût"], levels: ['terminale'], exp: "S'étonner pousse l'esprit à rechercher les causes premières." },
+            { q: "Quel concept désigne la capacité humaine de faire des choix sans détermination extérieure absolue ?", correct: "le libre arbitre", wrongs: ["le fatalisme", "le déterminisme absolu", "l'instinct"], levels: ['terminale'], exp: "Le libre arbitre fonde la responsabilité morale de nos actes." },
+            { q: "Qui a formulé la certitude inaugurale : « Je pense, donc je suis » (Cogito, ergo sum) ?", correct: "René Descartes", wrongs: ["Jean-Jacques Rousseau", "Blaise Pascal", "David Hume"], levels: ['terminale'], exp: "Dans le 'Discours de la méthode' (1637), après l'épreuve du doute méthodique." },
+            { q: "Quelle doctrine antique d'Épictète invite à distinguer ce qui dépend de nous de ce qui n'en dépend pas ?", correct: "le stoïcisme", wrongs: ["l'épicurisme", "le scepticisme", "le cynisme"], levels: ['terminale'], exp: "Le stoïcisme recherche l'ataraxie (tranquillité de l'âme) par la maîtrise de ses jugements." },
+            { q: "Pour Jean-Jacques Rousseau, dans quel état hypothétique vivait l'homme avant les lois et la société civile ?", correct: "l'état de nature", wrongs: ["l'état de guerre permanente", "le siècle d'or industriel", "la féodalité"], levels: ['terminale'], exp: "Pour Rousseau, l'état de nature est une fiction théorique permettant de penser le contrat social." },
             { q: "Pour Sigmund Freud, quelle instance psychique abrite les désirs et pulsions refoulés ?", correct: "le Ça (l'Inconscient)", wrongs: ["le Surmoi", "le Moi conscient", "la raison pure"], levels: ['terminale'], exp: "Le Ça obéit au principe de plaisir, tandis que le Surmoi représente les interdits intériorisés." },
             { q: "Quel impératif moral kantien exige que la maxime de notre action puisse être universalisée ?", correct: "l'impératif catégorique", wrongs: ["l'impératif hypothétique", "la loi du talion", "l'utilitarisme"], levels: ['terminale'], exp: "Agis de telle sorte que la maxime de ta volonté puisse toujours valoir comme loi universelle." },
-            { q: "Quel philosophe existentialiste a écrit : « L'existence précède l'essence » et « L'homme est condamné à être libre » ?", correct: "Jean-Paul Sartre", wrongs: ["Albert Camus", "Michel Foucault", "Arthur Schopenhauer"], levels: ['terminale'], exp: "Pour Sartre, l'humain n'a pas de nature prédéfinie ; il se définit par ses actes." },
-            { q: "Pour Karl Marx, quel phénomène dépossède le prolétaire du fruit et du sens de son travail ?", correct: "l'aliénation", wrongs: ["la sublimation", "l'émancipation", "l'ataraxie"], levels: ['terminale'], exp: "L'ouvrier est étranger au produit qu'il fabrique et à sa propre activité créatrice." },
-            { q: "Dans « Le Prince », quel penseur florentin analyse le pouvoir politique de manière réaliste et stratégique ?", correct: "Nicolas Machiavel", wrongs: ["Thomas More", "Montesquieu", "Alexis de Tocqueville"], levels: ['terminale'], exp: "Machiavel dissocie la politique pragmatique de la morale chrétienne de son temps." }
+            { q: "Quel philosophe existentialiste a écrit : « L'existence précède l'essence » et « L'homme est condamné à être libre » ?", correct: "Jean-Paul Sartre", wrongs: ["Albert Camus", "Michel Foucault", "Arthur Schopenhauer"], levels: ['terminale'], exp: "Pour Sartre, l'humain n'a pas de nature prédéfinie ; il se définit par ses choix et ses actes." },
+            { q: "Pour Karl Marx, quel phénomène dépossède le prolétaire du fruit et du sens de son travail ?", correct: "l'aliénation", wrongs: ["la sublimation", "l'émancipation", "l'ataraxie"], levels: ['terminale'], exp: "L'ouvrier devient étranger au produit qu'il fabrique et à sa propre activité créatrice." },
+            { q: "Dans « Le Prince », quel penseur florentin analyse le pouvoir politique de manière réaliste et stratégique ?", correct: "Nicolas Machiavel", wrongs: ["Thomas More", "Montesquieu", "Alexis de Tocqueville"], levels: ['terminale'], exp: "Machiavel dissocie l'efficacité politique pragmatique de la morale traditionnelle." },
+            { q: "Chez Baruch Spinoza, comment appelle-t-on l'effort par lequel chaque chose tend à persévérer dans son être ?", correct: "le conatus", wrongs: ["le logos", "le noumène", "le cogito"], levels: ['terminale'], exp: "Dans l'Éthique, le conatus est l'essence même de chaque être singulier." },
+            { q: "Pour Karl Popper, quel critère distingue une théorie scientifique d'une croyance irréfutable ?", correct: "la réfutabilité (falsifiabilité)", wrongs: ["la popularité", "la certitude absolue", "l'autorité traditionnelle"], levels: ['terminale'], exp: "Une théorie est scientifique si une expérience peut potentiellement la mettre en défaut." },
+            { q: "Dans la philosophie d'Épicure, quel est le souverain bien recherché par le sage ?", correct: "l'ataraxie (absence de trouble de l'âme)", wrongs: ["la richesse matérielle", "la gloire politique", "la souffrance ascétique"], levels: ['terminale'], exp: "L'épicurisme prône une vie sobre visant l'absence de douleur corporelle et de trouble psychique." },
+            { q: "Selon Hannah Arendt, quelle notion désigne le fait que des crimes extrêmes puissent être commis par des fonctionnaires dépourvus de pensée critique ?", correct: "la banalité du mal", wrongs: ["la volonté de puissance", "la mauvaise foi", "le contrat social"], levels: ['terminale'], exp: "Formulée lors du procès Eichmann (1961), elle souligne le danger de l'absence de jugement." },
+            { q: "Chez Jean-Paul Sartre, comment nomme-t-on le mensonge à soi-même par lequel un individu nie sa propre liberté ?", correct: "la mauvaise foi", wrongs: ["l'aliénation", "le refoulement", "le doute hyperbolique"], levels: ['terminale'], exp: "La mauvaise foi consiste à fuir l'angoisse de la liberté derrière des excuses ou un rôle." }
         ],
         nsi: [
-            // Collège (6e - 3e / Pix / Initiation algo & scratch)
-            { q: "Combien de bits contient exactement un octet (byte) ?", correct: "8 bits", wrongs: ["4 bits", "16 bits", "10 bits"], levels: ['6eme', '5eme', '4eme', '3eme'], exp: "Un octet est toujours composé de 8 bits (pouvant prendre les valeurs 0 ou 1)." },
-            { q: "Dans un logiciel de programmation par blocs comme Scratch, quel bloc permet de répéter une action ?", correct: "une boucle (ex: répéter 10 fois)", wrongs: ["une variable", "un lutin", "un son"], levels: ['6eme', '5eme', '4eme', '3eme'], exp: "La boucle permet la répétition d'instructions." },
-            { q: "Quel langage est utilisé pour structurer le texte et les images d'une page Web ?", correct: "HTML", wrongs: ["CSS", "Python", "SQL"], levels: ['6eme', '5eme', '4eme', '3eme', '2nde'], exp: "HTML (HyperText Markup Language) définit le squelette et le contenu de la page." },
-            { q: "Comment appelle-t-on une tentative d'escroquerie par e-mail visant à voler vos mots de passe ?", correct: "le phishing (hameçonnage)", wrongs: ["le streaming", "le bluetooth", "le wifi"], levels: ['6eme', '5eme', '4eme', '3eme'], exp: "Le hameçonnage imite des organismes de confiance pour dérober des identifiants." },
-            { q: "Quel composant d'un ordinateur exécute les calculs et les instructions des programmes ?", correct: "le microprocesseur (CPU)", wrongs: ["le disque dur (SSD)", "la carte graphique (GPU)", "l'alimentation"], levels: ['5eme', '4eme', '3eme', '2nde'], exp: "Le CPU (Central Processing Unit) est le cerveau calculateur de l'ordinateur." },
-            { q: "Quelle mémoire rapide perd toutes ses données lorsque l'ordinateur s'éteint ?", correct: "la mémoire vive (RAM)", wrongs: ["la mémoire morte (ROM)", "le disque dur", "la clé USB"], levels: ['4eme', '3eme', '2nde'], exp: "La RAM est une mémoire volatile à accès ultra-rapide." },
-            // Lycée (2nde SNT, 1ere NSI, Terminale NSI)
-            { q: "En Python, quel type de variable contient une collection ordonnée et modifiable d'éléments entre crochets ?", correct: "une liste (list)", wrongs: ["un tuple", "un dictionnaire", "un entier (int)"], levels: ['2nde', '1ere', 'terminale'], exp: "Une liste s'écrit [1, 2, 3] et peut être modifiée après création." },
+            // Lycée uniquement (2nde SNT, 1ere NSI, Terminale NSI)
+            { q: "Combien de bits contient exactement un octet (byte) ?", correct: "8 bits", wrongs: ["4 bits", "16 bits", "10 bits"], levels: ['2nde', '1ere', 'terminale'], exp: "Un octet est toujours composé de 8 bits (valeurs 0 ou 1)." },
+            { q: "Quel langage est utilisé pour structurer le contenu sémantique d'une page Web ?", correct: "HTML", wrongs: ["CSS", "Python", "SQL"], levels: ['2nde', '1ere'], exp: "HTML (HyperText Markup Language) définit la structure et les balises de la page." },
+            { q: "Quelle mémoire volatile rapide perd ses données lorsque l'ordinateur s'éteint ?", correct: "la mémoire vive (RAM)", wrongs: ["la mémoire morte (ROM)", "le disque SSD", "la clé USB"], levels: ['2nde', '1ere'], exp: "La RAM stocke temporairement les programmes et données en cours d'exécution." },
+            { q: "En Python, quel type de variable contient une collection ordonnée et modifiable d'éléments entre crochets ?", correct: "une liste (list)", wrongs: ["un tuple", "un dictionnaire", "un entier (int)"], levels: ['2nde', '1ere', 'terminale'], exp: "Une liste s'écrit [1, 2, 3] et est mutable." },
+            { q: "En Python, quel type associe des clés uniques à des valeurs entre accolades ?", correct: "un dictionnaire (dict)", wrongs: ["une liste (list)", "un tuple", "un booléen"], levels: ['1ere', 'terminale'], exp: "Exemple : {'nom': 'Ada', 'note': 19}." },
             { q: "Quelle requête SQL permet d'extraire des données d'une table sans les modifier ?", correct: "SELECT", wrongs: ["INSERT", "UPDATE", "DELETE"], levels: ['2nde', '1ere', 'terminale'], exp: "SELECT permet d'interroger la base de données relationnelle." },
             { q: "Quelle est la valeur binaire du nombre décimal 13 ?", correct: "1101", wrongs: ["1011", "1110", "1001"], levels: ['1ere', 'terminale'], exp: "13 = 8 + 4 + 0 + 1, soit 1101 en base 2." },
-            { q: "Quel protocole sécurise les échanges Web en chiffrant les communications avec TLS/SSL ?", correct: "HTTPS", wrongs: ["HTTP", "FTP", "DNS"], levels: ['2nde', '1ere', 'terminale'], exp: "Le 'S' de HTTPS signifie Secure (port standard 443)." },
+            { q: "Quel protocole sécurise les échanges Web en chiffrant les communications avec TLS ?", correct: "HTTPS", wrongs: ["HTTP", "FTP", "DNS"], levels: ['2nde', '1ere', 'terminale'], exp: "Le 'S' de HTTPS signifie Secure (port standard 443)." },
             { q: "Dans le modèle Von Neumann, quelle unité décode et orchestre l'exécution des instructions ?", correct: "l'unité de contrôle", wrongs: ["l'unité arithmétique et logique", "la mémoire de masse", "le bus de données"], levels: ['1ere', 'terminale'], exp: "L'unité de contrôle (séquenceur) pilote le cycle instruction (fetch, decode, execute)." },
-            { q: "Quelle est la complexité temporelle du tri fusion (merge sort) dans le pire des cas ?", correct: "O(N log N)", wrongs: ["O(N²)", "O(N)", "O(log N)"], levels: ['1ere', 'terminale'], exp: "Le tri fusion divise le tableau et combine en O(N log N), même dans le pire des cas." },
-            { q: "En programmation, comment appelle-t-on une fonction qui s'appelle elle-même avec un cas de base ?", correct: "une fonction récursive", wrongs: ["une fonction itérative", "une fonction anonyme", "un générateur"], levels: ['1ere', 'terminale'], exp: "La récursivité résout un problème en le décomposant en sous-problèmes identiques." },
-            { q: "Dans un arbre binaire de recherche (ABR), pour chaque nœud, les valeurs du sous-arbre gauche sont :", correct: "strictement inférieures à la valeur du nœud", wrongs: ["strictement supérieures", "aléatoires", "toujours nulles"], levels: ['terminale'], exp: "C'est la propriété fondamentale d'organisation d'un ABR." },
-            { q: "Quel protocole réseau traduit un nom de domaine (ex: eduquest.fr) en adresse IP ?", correct: "le DNS (Domain Name System)", wrongs: ["le DHCP", "l'ARP", "le TCP"], levels: ['2nde', '1ere', 'terminale'], exp: "Le DNS est l'annuaire d'Internet traduisant les noms lisibles en adresses IP." }
+            { q: "Quelle est la complexité temporelle du tri fusion (merge sort) dans le pire des cas ?", correct: "O(N log N)", wrongs: ["O(N²)", "O(N)", "O(log N)"], levels: ['1ere', 'terminale'], exp: "Le tri fusion applique 'diviser pour régner' en O(N log N)." },
+            { q: "Quelle est la complexité temporelle d'une recherche dichotomique dans un tableau trié de taille N ?", correct: "O(log N)", wrongs: ["O(N)", "O(N²)", "O(1)"], levels: ['1ere', 'terminale'], exp: "La zone de recherche est divisée par 2 à chaque comparaison." },
+            { q: "En programmation, comment appelle-t-on une fonction qui s'appelle elle-même avec un cas de base ?", correct: "une fonction récursive", wrongs: ["une fonction itérative", "une fonction anonyme", "un générateur"], levels: ['1ere', 'terminale'], exp: "La récursivité décompose un problème en sous-problèmes identiques jusqu'au cas de base." },
+            { q: "Dans un arbre binaire de recherche (ABR), pour chaque nœud, les valeurs du sous-arbre gauche sont :", correct: "strictement inférieures à la valeur du nœud", wrongs: ["strictement supérieures", "aléatoires", "toujours nulles"], levels: ['terminale'], exp: "C'est l'invariant structurel d'un arbre binaire de recherche." },
+            { q: "Quel protocole réseau traduit un nom de domaine (ex: eduquest.fr) en adresse IP ?", correct: "le DNS (Domain Name System)", wrongs: ["le DHCP", "l'ARP", "le TCP"], levels: ['2nde', '1ere', 'terminale'], exp: "Le DNS est l'annuaire distribué traduisant les noms de domaine en adresses IP." },
+            { q: "Quelle structure de données linéaire suit le principe LIFO (Last In, First Out) ?", correct: "une pile (stack)", wrongs: ["une file (queue)", "un graphe", "une table de hachage"], levels: ['terminale'], exp: "Dans une pile, le dernier élément empilé est le premier dépilé." },
+            { q: "Quelle structure de données linéaire suit le principe FIFO (First In, First Out) ?", correct: "une file (queue)", wrongs: ["une pile (stack)", "un arbre binaire", "un dictionnaire"], levels: ['terminale'], exp: "Dans une file, le premier élément arrivé est le premier sorti." },
+            { q: "Quel modèle de cryptographie utilise une clé publique pour chiffrer et une clé privée pour déchiffrer ?", correct: "le chiffrement asymétrique (ex: RSA)", wrongs: ["le chiffrement symétrique (AES)", "le code de César", "le hachage SHA-256"], levels: ['terminale'], exp: "La clé publique peut être partagée librement sans compromettre le déchiffrement." },
+            { q: "Quel protocole de routage cherche le plus court chemin dans un graphe pondéré grâce à l'algorithme de Dijkstra ?", correct: "OSPF", wrongs: ["RIP (comptage de sauts)", "DNS", "HTTP"], levels: ['terminale'], exp: "OSPF utilise le coût des liaisons (bande passante) avec l'algorithme de Dijkstra." }
         ],
         ses: [
-            // 2nde
+            // Lycée uniquement (2nde, 1ere, Terminale)
             { q: "Quelle formule permet de calculer le Chiffre d'Affaires (CA) d'une entreprise ?", correct: "Prix de vente × Quantité vendue", wrongs: ["Prix de vente − Coûts de production", "Bénéfice ÷ Capital", "Recettes + Impôts"], levels: ['2nde', '1ere', 'terminale'], exp: "Le CA représente le montant total des ventes (quantité × prix unitaire)." },
-            { q: "Comment appelle-t-on la richesse réelle créée par une entreprise (Production − Consommations intermédiaires) ?", correct: "la Valeur Ajoutée (VA)", wrongs: ["le Bénéfice net", "le Dividende", "le Capital social"], levels: ['2nde', '1ere', 'terminale'], exp: "La VA mesure la valeur économique ajoutée par l'activité propre de l'entreprise." },
-            { q: "Selon les économistes classiques, lorsque le prix d'un bien augmente, en règle générale :", correct: "la demande diminue et l'offre augmente", wrongs: ["la demande augmente et l'offre diminue", "l'offre et la demande s'annulent", "la demande devient infinie"], levels: ['2nde', '1ere', 'terminale'], exp: "Loi de l'offre (croissante avec le prix) et de la demande (décroissante avec le prix)." },
+            { q: "Comment appelle-t-on la richesse réelle créée par une entreprise (Production − Consommations intermédiaires) ?", correct: "la Valeur Ajoutée (VA)", wrongs: ["le Bénéfice net", "le Dividende", "le Capital social"], levels: ['2nde', '1ere', 'terminale'], exp: "La VA mesure la valeur économique créée par l'activité propre de l'entreprise." },
+            { q: "Selon le modèle de marché concurrentiel, lorsque le prix d'un bien augmente, en règle générale :", correct: "la demande diminue et l'offre augmente", wrongs: ["la demande augmente et l'offre diminue", "l'offre et la demande s'annulent", "la demande devient infinie"], levels: ['2nde', '1ere', 'terminale'], exp: "Loi de l'offre (croissante avec le prix) et de la demande (décroissante avec le prix)." },
             { q: "Comment appelle-t-on l'apprentissage des règles, valeurs et normes sociales dès l'enfance ?", correct: "la socialisation primaire", wrongs: ["la socialisation secondaire", "l'acculturation forcée", "l'émancipation légale"], levels: ['2nde', '1ere', 'terminale'], exp: "La socialisation primaire est transmise dès l'enfance par la famille et l'école." },
+            { q: "Que mesure le Produit Intérieur Brut (PIB) d'un pays sur une année ?", correct: "la somme des valeurs ajoutées créées sur le territoire", wrongs: ["le montant total de la dette publique", "le nombre d'entreprises créées", "l'épargne totale des ménages"], levels: ['2nde', '1ere', 'terminale'], exp: "Le PIB agrège les richesses (valeurs ajoutées) produites sur le territoire national." },
+            { q: "Comment nomme-t-on un marché sur lequel une seule entreprise fait face à une multitude d'acheteurs ?", correct: "un monopole", wrongs: ["un oligopole", "la concurrence pure et parfaite", "un monopsone"], levels: ['2nde', '1ere'], exp: "En situation de monopole, l'entreprise dispose d'un fort pouvoir de marché (faiseur de prix)." },
             // 1ère
             { q: "Dans un marché de concurrence pure et parfaite (CPP), que signifie l'hypothèse d'atomicité ?", correct: "un grand nombre d'acheteurs et de vendeurs sans pouvoir de marché individuel", wrongs: ["un monopole d'État", "des produits tous différents", "des barrières strictes à l'entrée"], levels: ['1ere', 'terminale'], exp: "Aucun acteur ne peut influencer seul le prix : ils sont 'preneurs de prix' (price takers)." },
             { q: "Comment qualifie-t-on la conséquence involontaire de l'action d'un agent sur un tiers, sans compensation financière (ex: la pollution) ?", correct: "une externalité (négative)", wrongs: ["une asymétrie d'information", "un bien collectif", "un monopole naturel"], levels: ['1ere', 'terminale'], exp: "La pollution est l'exemple type d'externalité négative non prise en compte par le marché." },
             { q: "Quelle institution est en charge de la politique monétaire et de la stabilité des prix dans la zone euro ?", correct: "la Banque Centrale Européenne (BCE)", wrongs: ["le FMI", "la Commission Européenne", "la Banque Mondiale"], levels: ['1ere', 'terminale'], exp: "La BCE pilote les taux directeurs pour maintenir l'inflation autour de 2%." },
-            { q: "Quelle notion désigne la situation où un acheteur ou vendeur dispose de plus d'informations que l'autre lors d'une transaction ?", correct: "l'asymétrie d'information", wrongs: ["l'atomicité de marché", "la concurrence parfaite", "la rationalité absolue"], levels: ['1ere', 'terminale'], exp: "Théorisée par Akerlof (marché des 'lemons' / voitures d'occasion)." },
+            { q: "Quelle notion désigne la situation où un acheteur ou vendeur dispose de plus d'informations que l'autre lors d'une transaction ?", correct: "l'asymétrie d'information", wrongs: ["l'atomicité de marché", "la concurrence parfaite", "la rationalité absolue"], levels: ['1ere', 'terminale'], exp: "Théorisée par Akerlof (marché des voitures d'occasion)." },
+            { q: "Comment appelle-t-on un bien non rival et non excluable (ex : l'éclairage public ou la défense nationale) ?", correct: "un bien collectif", wrongs: ["un bien commun", "un bien privatif", "un bien de club"], levels: ['1ere', 'terminale'], exp: "Un bien collectif est financé par l'État en raison du phénomène du passager clandestin." },
             // Terminale
             { q: "Pour Joseph Schumpeter, quel processus révolutionne sans cesse les structures économiques en détruisant les anciennes activités au profit des nouvelles ?", correct: "la destruction créatrice", wrongs: ["la main invisible", "la division internationale du travail", "la théorie du ruissellement"], levels: ['terminale'], exp: "L'entrepreneur innovateur est le moteur de la destruction créatrice." },
-            { q: "Selon David Ricardo, quel est l'intérêt pour un pays de se spécialiser dans la production où son avantage est le plus grand ou son désavantage le plus faible ?", correct: "la théorie des avantages comparatifs", wrongs: ["le mercantilisme", "le protectionnisme éducateur", "la théorie des débouchés"], levels: ['terminale'], exp: "Ricardo démontre que le commerce international profite à tous les pays s'ils exploitent leurs avantages comparatifs." },
+            { q: "Selon David Ricardo, quel principe explique l'intérêt pour chaque pays de se spécialiser là où sa productivité relative est la meilleure ?", correct: "la théorie des avantages comparatifs", wrongs: ["le mercantilisme", "le protectionnisme éducateur", "la théorie des débouchés"], levels: ['terminale'], exp: "Ricardo démontre que le commerce international peut bénéficier à tous via les avantages comparatifs." },
             { q: "Quel coefficient compris entre 0 (égalité parfaite) et 1 (inégalité totale) mesure les inégalités de revenus d'une population ?", correct: "le coefficient de Gini", wrongs: ["l'indice de Herfindahl", "le PIB par habitant", "le ratio de Sharpe"], levels: ['terminale'], exp: "L'indice de Gini synthétise la courbe de Lorenz des revenus ou patrimoines." },
-            { q: "Pour Karl Marx, sur quelle contradiction fondamentale repose le système capitaliste ?", correct: "la lutte des classes entre bourgeois (possesseurs du capital) et prolétaires", wrongs: ["l'absence de libre-échange", "la surabondance des monnaies", "le manque de formation ouvrière"], levels: ['terminale'], exp: "Pour Marx, l'histoire humaine est l'histoire de la lutte des classes." },
-            { q: "Comment appelle-t-on le paradoxe économique selon lequel l'amélioration de l'efficacité énergétique peut accroître la consommation totale de ressources au lieu de la réduire ?", correct: "l'effet rebond (paradoxe de Jevons)", wrongs: ["l'effet Veblen", "la tragédie des biens communs", "l'aléa moral"], levels: ['terminale'], exp: "Les gains d'efficacité rendent la ressource moins coûteuse, incitant à un usage plus intensif." }
+            { q: "Pour Karl Marx, sur quelle contradiction fondamentale repose le système capitaliste ?", correct: "la lutte des classes entre bourgeois (possesseurs du capital) et prolétaires", wrongs: ["l'absence de libre-échange", "la surabondance des monnaies", "le manque de formation ouvrière"], levels: ['terminale'], exp: "Pour Marx, l'histoire humaine est structurée par la lutte des classes." },
+            { q: "Comment appelle-t-on le paradoxe selon lequel l'amélioration de l'efficacité énergétique peut accroître la consommation totale de ressources ?", correct: "l'effet rebond (paradoxe de Jevons)", wrongs: ["l'effet Veblen", "la tragédie des biens communs", "l'aléa moral"], levels: ['terminale'], exp: "Les gains d'efficacité abaissent le coût d'usage, incitant à consommer davantage." }
         ]
     };
 
@@ -1290,13 +1636,28 @@ const QuestionBank = (() => {
         return fullBank;
     }
 
-    /** Générateur unifié avec alternance procédurale / questions de cours */
+    /** Calcule une signature normalisée unique d'une question pour éviter les répétitions. */
+    function questionSignature(lesson) {
+        if (!lesson || typeof lesson !== 'object') return '';
+        const raw = [
+            lesson.type || 'qcm',
+            lesson.q || '',
+            lesson.textWithBlanks || '',
+        ].join('|');
+        return raw
+            .toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9|]+/g, ' ')
+            .trim();
+    }
+
+    /** Générateur unifié avec alternance procédurale / questions de cours sans répétition */
     function generateBankLesson(subjectId, index, niveau, variant = 0) {
         const norm = normalizeNiveau(niveau);
         const rng = seededRng(hashSeed(subjectId + ':' + norm + ':' + index + ':v' + variant));
 
         // Pour les matières qui ont un générateur procédural, on alterne intelligemment
-        // pour offrir une variété infinie sans répétition de questions fixes.
+        // pour offrir une variété élevée sans répétition de questions fixes.
         const useProcedural = (index + variant) % 2 === 1;
 
         if (useProcedural) {
@@ -1310,6 +1671,8 @@ const QuestionBank = (() => {
             if (subjectId === 'techno') return generateTechnoLesson(index, norm, variant, rng);
             if (subjectId === 'emc') return generateEmcLesson(index, norm, variant, rng);
             if (subjectId === 'philo') return generatePhiloLesson(index, norm, variant, rng);
+            if (subjectId === 'nsi') return generateNsiLesson(index, norm, variant, rng);
+            if (subjectId === 'ses') return generateSesLesson(index, norm, variant, rng);
         }
 
         const bank = getQuestionsForNiveau(subjectId, norm);
@@ -1325,10 +1688,11 @@ const QuestionBank = (() => {
             };
         }
 
-        // Permutation pseudo-aléatoire sans doublon consécutif
-        const seedVal = hashSeed(subjectId + ':' + norm + ':v' + variant);
-        const offset = Math.floor(rng() * bank.length);
-        const fact = bank[(index * 7 + offset) % bank.length];
+        // Deck déterministe par passe : parcourt toute la banque avant toute répétition
+        const slot = Math.floor(index / 2) + variant * 7;
+        const pass = Math.floor(slot / bank.length);
+        const deck = seededShuffle(bank, `${subjectId}:${norm}:bankdeck:${pass}:v${variant}`);
+        const fact = deck[slot % deck.length];
 
         if (fact.type === 'vrai_faux') {
             const isTrue = fact.correct === true || String(fact.correct).toLowerCase() === 'vrai';
@@ -1353,8 +1717,9 @@ const QuestionBank = (() => {
             };
         }
 
-        // QCM standard
-        const opts0 = [fact.correct, ...fact.wrongs];
+        // QCM standard garanti sans doublon
+        const cleanWrongs = uniqueStringWrongs(fact.correct, fact.wrongs || []);
+        const opts0 = [fact.correct, ...cleanWrongs];
         const { opts, correct } = shuffleOptions(opts0, 0, rng);
 
         return {
@@ -1374,6 +1739,7 @@ const QuestionBank = (() => {
         normalizeNiveau,
         bandForNiveau,
         getQuestionsForNiveau,
+        questionSignature,
 
         /**
          * Génère UNE seule leçon pour une matière, un numéro, un niveau et une variante.

@@ -1,4 +1,4 @@
-# Architecture Technique — EDUQUEST v1.26.0
+# Architecture Technique — EDUQUEST v1.27.0
 
 ## 1. Vue d'ensemble
 
@@ -61,8 +61,11 @@ eduquest/
 │   ├── ai-provider.js          # Génération et validation par IA (webhook Make/repli local)
 │   ├── cookies.js              # Bandeau de consentement conforme RGPD/CNIL (12 mois)
 │   ├── core/
+│   │   ├── audio-manager.js    # Audio global continu, anti-réactivation & bruitages Web Audio
+│   │   ├── quiz-timer.js       # Chronomètre unifié (Date.now) sur tous les exercices & réessais
+│   │   ├── adaptive-engine.js  # Moteur adaptatif local (non-répétition, reset échec, paliers)
 │   │   ├── game-rules.js       # Règles pures (étoiles, bouclier, streak, combo, récompenses)
-│   │   └── quiz-session.js     # Cycle de vie et pipeline de validation de question
+│   │   └── quiz-session.js     # Cycle de vie, anti-triche et pipeline de validation de question
 │   └── features/
 │       └── daily-quests.js     # Quêtes journalières déterministes (tirage Fisher-Yates, minuit)
 ├── fonts/                      # Polices vectorielles hébergées localement (Outfit, Fredoka, Space Grotesk)

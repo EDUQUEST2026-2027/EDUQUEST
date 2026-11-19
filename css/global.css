@@ -69,6 +69,17 @@
     --c-blue:        #4a5c7c;  /* Bleu acier (fond glassmorphe) */
     --c-gold:        #c8a84b;  /* Or doré (accents, footer, surbrillances) */
     --c-white:       #ffffff;  /* Blanc pur (textes principaux) */
+
+    /* Personnalisation d'apparence (Options → Interface & Boutons, v1.27.0) */
+    --ui-accent:        #c8a84b;
+    --ui-bg-tint:       #0d1f3a;
+    --ui-bg-tint-2:     #122d1a;
+    --ui-surface:       rgba(10, 18, 34, 0.78);
+    --ui-btn-bg:        #24354f;
+    --ui-btn-bg-hover:  #31486b;
+    --ui-btn-border:    rgba(130, 165, 215, 0.42);
+    --ui-btn-text:      #eef4ff;
+    --btn-brightness:   0.80;  /* Luminosité adoucie par défaut (80 %) */
 }
 
 /* --------------------------------------------------------------------------
@@ -193,17 +204,106 @@ body {
 */
 .menu-button,
 .option-button {
-    font-family: var(--font-pixel-ui, 'Cinzel', serif); /* Police pixel — direction Codédex (v2.6) */
+    font-family: var(--font-pixel-ui, 'Cinzel', serif);
     font-weight: 700;
-    color: #fff;
+    color: var(--ui-btn-text, #eef4ff);
     cursor: pointer;
     text-align: center;
-    text-decoration: none;     /* Supprime le soulignement des liens <a> */
-    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Animation douce */
-    user-select: none;         /* Empêche la sélection du texte au clic */
-    position: relative;        /* Nécessaire pour ::before et ::after */
-    overflow: hidden;          /* Cache l'effet de lumière quand il est hors du bouton */
+    text-decoration: none;
+    transition: transform 0.22s ease, box-shadow 0.25s ease, background-color 0.25s ease, border-color 0.25s ease, filter 0.22s ease;
+    user-select: none;
+    position: relative;
+    overflow: hidden;
     display: block;
+    filter: brightness(var(--btn-brightness, 0.80));
+}
+
+/* Correctif v1.27.0 : style sombre et confortable pour TOUS les .option-button
+   (auparavant sans background/border/padding → boutons gris natifs éblouissants). */
+.option-button {
+    flex: 1;
+    padding: 13px 18px;
+    font-size: 0.9rem;
+    letter-spacing: 0.8px;
+    border-radius: 14px;
+    background: linear-gradient(180deg,
+        color-mix(in srgb, var(--ui-btn-bg, #24354f) 88%, #ffffff 12%) 0%,
+        color-mix(in srgb, var(--ui-btn-bg, #24354f) 90%, #000000 10%) 100%);
+    border: 1px solid var(--ui-btn-border, rgba(130, 165, 215, 0.42));
+    border-top-color: rgba(255, 255, 255, 0.22);
+    box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.06) inset,
+        0 6px 18px rgba(0, 0, 0, 0.42);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+}
+
+.option-button:hover {
+    background: linear-gradient(180deg,
+        color-mix(in srgb, var(--ui-btn-bg, #24354f) 76%, #ffffff 24%) 0%,
+        var(--ui-btn-bg, #24354f) 100%);
+    border-color: var(--ui-accent, var(--c-gold));
+    transform: translateY(-2px);
+    filter: brightness(calc(var(--btn-brightness, 0.80) + 0.14));
+    box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.1) inset,
+        0 10px 26px rgba(0, 0, 0, 0.52),
+        0 0 16px color-mix(in srgb, var(--ui-accent, #c8a84b) 25%, transparent);
+}
+
+.menu-button:hover {
+    filter: brightness(calc(var(--btn-brightness, 0.80) + 0.16));
+}
+
+.option-button.danger {
+    background: linear-gradient(180deg, rgba(128, 42, 42, 0.88) 0%, rgba(84, 24, 24, 0.94) 100%);
+    border: 1px solid rgba(215, 95, 95, 0.42);
+    border-top-color: rgba(240, 130, 130, 0.45);
+    color: #ffe8e8;
+}
+
+.option-button.danger:hover {
+    background: linear-gradient(180deg, rgba(155, 50, 50, 0.94) 0%, rgba(105, 30, 30, 0.98) 100%);
+    border-color: rgba(245, 130, 130, 0.7);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.52), 0 0 18px rgba(190, 65, 65, 0.3);
+}
+
+.option-button.secondary-subtle {
+    background: rgba(20, 30, 50, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: rgba(235, 242, 255, 0.88);
+}
+
+/* Couleur personnalisée des boutons (activée dans Options → Apparence) */
+[data-btn-custom="true"] .menu-button:not(.danger),
+[data-btn-custom="true"] .dash-btn-primary,
+[data-btn-custom="true"] .option-button:not(.danger) {
+    background: linear-gradient(180deg,
+        color-mix(in srgb, var(--ui-btn-bg) 88%, #ffffff 12%) 0%,
+        color-mix(in srgb, var(--ui-btn-bg) 88%, #000000 12%) 100%) !important;
+    border-color: var(--ui-btn-border) !important;
+    color: var(--ui-btn-text, #ffffff) !important;
+}
+
+/* Couleur personnalisée de l'interface (activée dans Options → Apparence) */
+[data-ui-custom="true"] .background {
+    background:
+        radial-gradient(ellipse at 25% 15%, color-mix(in srgb, var(--ui-accent) 34%, transparent) 0%, transparent 56%),
+        radial-gradient(ellipse at 82% 82%, color-mix(in srgb, var(--ui-bg-tint) 65%, transparent) 0%, transparent 54%),
+        linear-gradient(175deg,
+            color-mix(in srgb, var(--ui-bg-tint) 38%, #050912 62%) 0%,
+            color-mix(in srgb, var(--ui-bg-tint) 62%, #060b16 38%) 48%,
+            color-mix(in srgb, var(--ui-bg-tint) 30%, #04070e 70%) 100%) !important;
+}
+[data-ui-custom="true"] .options-container,
+[data-ui-custom="true"] .login-container,
+[data-ui-custom="true"] .dash-card,
+[data-ui-custom="true"] .dash-header,
+[data-ui-custom="true"] .modal-content {
+    border-color: color-mix(in srgb, var(--ui-accent) 36%, rgba(255, 255, 255, 0.12));
+    box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.06) inset,
+        0 24px 64px rgba(0, 0, 0, 0.65),
+        0 0 40px color-mix(in srgb, var(--ui-accent) 14%, transparent);
 }
 
 /* Effet de lumière coulissante qui traverse le bouton au survol */
@@ -291,6 +391,71 @@ body {
     top: 20px;
     right: 20px;
     z-index: 1000; /* Au-dessus de tout le contenu */
+}
+
+/* ===== CONTRÔLE RAPIDE AUDIO GLOBAL (.audio-toggle-fab) =====
+   Permet de couper / réactiver la musique depuis n'importe quelle page
+   (Accueil, Tableau de bord, Carte, Légal) sans jamais relancer la musique
+   contre la volonté de l'utilisateur.
+*/
+.audio-toggle-fab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-top-color: rgba(255, 255, 255, 0.28);
+    background: rgba(8, 14, 24, 0.68);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    color: #fff;
+    font-size: 1.2rem;
+    cursor: pointer;
+    box-shadow: 0 2px 0 rgba(255, 255, 255, 0.06) inset, 0 6px 20px rgba(0, 0, 0, 0.45);
+    transition: transform 0.22s ease, border-color 0.25s ease, background-color 0.25s ease, filter 0.22s ease;
+    user-select: none;
+    pointer-events: auto;
+    filter: brightness(var(--btn-brightness, 0.80));
+}
+.audio-toggle-fab:not(.in-header) {
+    position: fixed;
+    top: 22px;
+    right: 78px;
+    z-index: 1000;
+}
+.audio-toggle-fab:hover {
+    transform: scale(1.08);
+    background: rgba(20, 32, 50, 0.82);
+    border-color: var(--ui-accent, var(--c-gold));
+    filter: brightness(calc(var(--btn-brightness, 0.80) + 0.18));
+}
+.audio-toggle-fab.is-muted {
+    background: rgba(82, 26, 26, 0.68);
+    border-color: rgba(220, 100, 100, 0.42);
+    opacity: 0.88;
+}
+.audio-toggle-fab.is-playing {
+    border-color: color-mix(in srgb, var(--ui-accent, #c8a84b) 55%, rgba(107, 202, 130, 0.5));
+    box-shadow: 0 0 14px color-mix(in srgb, var(--ui-accent, #c8a84b) 25%, transparent), 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+
+/* ===== BANDEAU D'ANNONCE GLOBALE (AdminStore.siteConfig.announcement) ===== */
+.site-announcement-banner {
+    width: min(760px, calc(100% - 32px));
+    margin: 0 auto 18px;
+    padding: 10px 18px;
+    border-radius: 12px;
+    background: linear-gradient(90deg, rgba(200, 168, 75, 0.18), rgba(20, 36, 62, 0.82));
+    border: 1px solid color-mix(in srgb, var(--ui-accent, #c8a84b) 50%, transparent);
+    color: #fff3cf;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.98rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-align: center;
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.4);
 }
 
 /* ===== NOTIFICATIONS TOAST (.notification) =====
@@ -465,6 +630,14 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
         font-size: 1.2rem;
     }
 
+    .audio-toggle-fab:not(.in-header) {
+        top: 10px;
+        right: 58px;
+        width: 40px;
+        height: 40px;
+        font-size: 1.05rem;
+    }
+
     /* Pied de page « crédits » : pleine largeur en bas de l'écran, au-dessus
        des liens légaux — ne recouvre plus les boutons et les cartes. */
     .footer.footer-with-links {
@@ -494,13 +667,6 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
         bottom: 8px;
         font-size: 11px;
         padding: 5px 10px;
-    }
-
-    /* Bouton flottant « ← Retour » : compact et au-dessus du pied de page */
-    .retour-button-matieres {
-        bottom: 84px;
-        width: min(260px, calc(100% - 32px));
-        padding: 12px 16px;
     }
 }
 

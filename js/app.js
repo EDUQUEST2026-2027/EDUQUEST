@@ -1,6 +1,7 @@
 /* ==========================================================================
-   APP.JS — EDUQUEST v1.26.0
-   Contrôleur principal du jeu : cycle de vie des vues, audio, HUD, modales.
+   APP.JS — EDUQUEST v1.27.0
+   Contrôleur principal du jeu : cycle de vie des vues, apparence, audio,
+   chronomètre, anti-triche, moteur adaptatif / multi-IA, HUD et modales.
    ========================================================================== */
 
 /* ==========================================================================
@@ -92,7 +93,95 @@ setupGlobalErrorHandler();
    ========================================================================== */
 
 /** Version de l'application — affichée dans le footer de toutes les pages. */
-const APP_VERSION = '1.26.0';
+const APP_VERSION = '1.27.0';
+
+/**
+ * Calcule une couleur de texte à fort contraste (#0b1220 ou #f0f4ff) selon
+ * la luminance relative d'une couleur hexadécimale #rrggbb.
+ */
+function _contrastTextForHex(hex) {
+    const clean = String(hex || '').replace('#', '');
+    if (!/^[0-9a-f]{6}$/i.test(clean)) return '#f0f4ff';
+    const r = parseInt(clean.slice(0, 2), 16) / 255;
+    const g = parseInt(clean.slice(2, 4), 16) / 255;
+    const b = parseInt(clean.slice(4, 6), 16) / 255;
+    const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    return lum > 0.62 ? '#0b1220' : '#f0f4ff';
+}
+
+/**
+ * Applique globalement les réglages d'apparence (thème boutique, couleur
+ * de l'interface, couleur des boutons, luminosité des boutons) sur TOUTES
+ * les pages du site.
+ */
+function applyAppearanceSettings() {
+    if (typeof document === 'undefined' || !document.documentElement) return;
+    const root = document.documentElement;
+
+    // 1. Thème de la boutique (data-theme) appliqué partout (index, dashboard, map)
+    const shopTheme = getOption('dash_equippedTheme') || 'default';
+    root.setAttribute('data-theme', shopTheme);
+
+    // 2. Luminosité des boutons (défaut adouci : 80 % = 0.80)
+    const rawBrightness = parseInt(getOption('btnBrightness') || '80', 10);
+    const clampedPct = Number.isFinite(rawBrightness) ? Math.min(110, Math.max(45, rawBrightness)) : 80;
+    root.style.setProperty('--btn-brightness', (clampedPct / 100).toFixed(2));
+
+    // 3. Couleur personnalisée de l'interface
+    const uiPreset = getOption('uiPreset') || 'default';
+    const uiColor = getOption('uiColor') || '';
+    const uiAccent = getOption('uiAccent') || '';
+    if (uiPreset !== 'default' && /^#[0-9a-f]{6}$/i.test(uiColor)) {
+        root.setAttribute('data-ui-custom', 'true');
+        root.style.setProperty('--ui-bg-tint', uiColor);
+        if (/^#[0-9a-f]{6}$/i.test(uiAccent)) {
+            root.style.setProperty('--ui-accent', uiAccent);
+            root.style.setProperty('--c-gold', uiAccent);
+        } else {
+            root.style.setProperty('--ui-accent', uiColor);
+        }
+    } else {
+        root.removeAttribute('data-ui-custom');
+        root.style.removeProperty('--ui-bg-tint');
+        root.style.removeProperty('--ui-accent');
+        root.style.removeProperty('--c-gold');
+    }
+
+    // 4. Couleur personnalisée des boutons
+    const btnPreset = getOption('btnPreset') || 'default';
+    const btnColor = getOption('btnColor') || '';
+    if (btnPreset !== 'default' && /^#[0-9a-f]{6}$/i.test(btnColor)) {
+        root.setAttribute('data-btn-custom', 'true');
+        root.style.setProperty('--ui-btn-bg', btnColor);
+        root.style.setProperty('--ui-btn-border', btnColor);
+        root.style.setProperty('--ui-btn-text', _contrastTextForHex(btnColor));
+    } else {
+        root.removeAttribute('data-btn-custom');
+        root.style.removeProperty('--ui-btn-bg');
+        root.style.removeProperty('--ui-btn-border');
+        root.style.removeProperty('--ui-btn-text');
+    }
+}
+
+/**
+ * Affiche le bandeau d'annonce globale (AdminStore.siteConfig.announcement)
+ * sur l'accueil et le tableau de bord lorsqu'un message est configuré.
+ */
+function applySiteAnnouncement() {
+    const el = document.getElementById('siteAnnouncement');
+    if (!el) return;
+    const cfg = (typeof AdminStore !== 'undefined' && typeof AdminStore.getSiteConfig === 'function')
+        ? AdminStore.getSiteConfig()
+        : null;
+    const msg = (cfg && typeof cfg.announcement === 'string') ? cfg.announcement.trim() : '';
+    if (msg) {
+        el.textContent = '📢 ' + msg;
+        el.hidden = false;
+    } else {
+        el.textContent = '';
+        el.hidden = true;
+    }
+}
 
 /**
  * Crédits du créateur (v1.20) — affichés dans le footer de toutes les pages.
@@ -145,14 +234,25 @@ function refreshFooterCredits() {
     }
 }
 
-// Synchronisation temps réel des crédits et de l'URL GitHub (inter-onglets et événements locaux)
+// Synchronisation temps réel des crédits, de l'annonce et de l'apparence (inter-onglets et événements locaux)
 if (typeof window !== 'undefined') {
     window.addEventListener('storage', (event) => {
         if (event.key === 'eduquest_admin_data') {
             refreshFooterCredits();
+            applySiteAnnouncement();
+        }
+        if (event.key && (event.key === 'eduquest_options' || event.key.startsWith('eduquest_opts_'))) {
+            applyAppearanceSettings();
+            applyParticulesSetting();
+            applyEcoModeSetting();
+            applyAnimationsSetting();
         }
     });
     window.addEventListener('eduquest:credits-updated', refreshFooterCredits);
+    window.addEventListener('pageshow', () => {
+        applyAppearanceSettings();
+        applySiteAnnouncement();
+    });
 }
 
 /*
@@ -397,203 +497,118 @@ function updateFooterVersion() {
 }
 
 /* ==========================================================================
-   2. SYSTÈME AUDIO
-   Gère la lecture d'une playlist musicale persistante entre les pages.
+   2. SYSTÈME AUDIO GLOBAL (délégué à js/core/audio-manager.js — v1.27.0)
+   Garantit une musique continue sur tout le site (accueil, dashboard, carte,
+   exercices, légal) ET zéro réactivation aléatoire après coupure manuelle.
    ========================================================================== */
 
-/**
- * Objet Audio HTML5 global pour la musique de fond.
- * Un seul objet est utilisé pour toutes les pistes de la playlist.
- */
-const music = new Audio();
-
-/**
- * Playlist : liste des fichiers audio dans l'ordre de lecture.
- * Les fichiers sont dans le dossier Musique/ relatif à la racine du projet.
- * Pour ajouter une piste : ajouter une ligne 'Musique/music7.mp3' ici.
- */
-const playlist = [
-    'Musique/music1.mp3',
-    'Musique/music2.mp3',
-    'Musique/music3.mp3',
-    'Musique/music4.mp3',
-    'Musique/music5.mp3',
-    'Musique/music6.mp3'
-];
-
-/** Index de la piste actuellement chargée dans l'objet music (0 = première). */
-let currentTrack = 0;
-
-/** true si la musique est en cours de lecture, false si en pause ou stoppée. */
-let isMusicPlaying = false;
-
-/**
- * Activation globale des sons (maître) — correspond à l'option 'sonsActifs'.
- * Si false, AUCUN son ne joue, quelle que soit l'option musicale.
- */
-let globalSoundEnabled = true;
-
-/**
- * Initialise la musique au chargement de la page.
- * Lit les préférences sauvegardées (volume, piste, position) et prépare
- * l'objet Audio pour une lecture dès le premier clic de l'utilisateur.
- *
- * Remarque : la musique n'est pas lancée directement ici car les navigateurs
- * bloquent l'autoplay avant une interaction utilisateur. Le lancement réel
- * se fait dans l'écouteur 'click' de document (initMusicOnInteraction).
- */
 function initGlobalMusic() {
-    globalSoundEnabled = getOption('sonsActifs') !== 'false';      // Défaut : activé
-    const musicEnabled = getOption('musiqueActive') !== 'false';    // Défaut : activé
-    const savedVol     = getOption('volumeMusique');                 // Ex: '75'
-
-    // Volume entre 0.0 et 1.0 (l'option est stockée entre 0 et 100)
-    music.volume = savedVol ? (parseInt(savedVol) / 100) : 0.75;
-    music.loop = false; // On gère nous-mêmes le passage à la piste suivante
-
-    if (globalSoundEnabled && musicEnabled) {
-        // Récupère la piste et la position sauvegardées via db.js
-        const musicState = DB.getMusicState();
-        currentTrack = musicState.track;
-
-        // Validation de la valeur récupérée (peut être NaN si localStorage vide)
-        if (isNaN(currentTrack) || currentTrack < 0 || currentTrack >= playlist.length) {
-            currentTrack = 0; // Retour au début si la valeur est invalide
-        }
-
-        music.src = playlist[currentTrack]; // Charge le fichier audio
-        if (musicState.time) music.currentTime = musicState.time; // Reprend là où on s'était arrêté
-        // NE PAS mettre isMusicPlaying = true ici : le vrai démarrage
-        // (et le passage à true) se fait dans initMusicOnInteraction au premier clic.
+    if (typeof AudioManager !== 'undefined' && typeof AudioManager.init === 'function') {
+        AudioManager.init();
     }
 }
 
-/**
- * Lance la lecture d'une piste spécifique.
- * Utilisée pour le passage automatique à la piste suivante (événement 'ended')
- * et depuis la page options pour prévisualiser le volume.
- *
- * @param {number} index - Index de la piste dans le tableau playlist (commence à 0)
- */
 function playTrack(index) {
-    // Sécurité : si l'index est hors limites, on revient au début
-    if (index < 0 || index >= playlist.length) index = 0;
-
-    currentTrack = index;
-    music.src = playlist[currentTrack]; // Change le fichier source
-    music.currentTime = 0;              // Repart du début de la piste
-
-    // Lance la lecture (retourne une Promise — on gère l'échec silencieusement)
-    music.play().catch(e => {
-        isMusicPlaying = false; // Lecture refusée (ex: autoplay bloqué)
-    });
-
-    // Sauvegarde la piste courante via db.js
-    DB.setMusicState(currentTrack, 0);
+    if (typeof AudioManager !== 'undefined' && typeof AudioManager.playTrack === 'function') {
+        AudioManager.playTrack(index, true);
+    }
 }
-
-/**
- * Sauvegarde l'état de la musique juste avant de quitter la page.
- * L'événement 'beforeunload' se déclenche lors de toute navigation (changement
- * de page, fermeture d'onglet, rechargement).
- * Permet de reprendre la musique au même endroit sur la page suivante.
- */
-window.addEventListener('beforeunload', () => {
-    if (isMusicPlaying) {
-        // music.currentTime = position en secondes dans la piste courante
-        DB.setMusicState(currentTrack, music.currentTime);
-    }
-});
-
-/**
- * Passage automatique à la piste suivante quand une piste se termine.
- * La playlist boucle : après la dernière piste, on revient à la première.
- * Le modulo (%) gère le retour à 0 après la dernière piste.
- */
-music.addEventListener('ended', () => {
-    currentTrack = (currentTrack + 1) % playlist.length;
-    playTrack(currentTrack);
-});
-
-/**
- * Lance la musique dès le premier clic de l'utilisateur sur n'importe quelle page.
- * Technique utilisée pour contourner la restriction autoplay des navigateurs :
- * la lecture audio nécessite une interaction utilisateur préalable.
- *
- * Le { capture: true } permet d'intercepter le clic avant tous les autres gestionnaires.
- * L'écouteur se retire lui-même après le premier déclenchement (removeEventListener).
- */
-document.addEventListener('click', function initMusicOnInteraction() {
-    if (globalSoundEnabled && getOption('musiqueActive') !== 'false' && !isMusicPlaying) {
-        if (!music.src) music.src = playlist[currentTrack]; // Sécurité : src doit être défini
-        music.play().then(() => {
-            isMusicPlaying = true;
-            document.removeEventListener('click', initMusicOnInteraction, true);
-        }).catch(e => {
-            // Échec autoplay / interaction refusée : on conserve l'écouteur pour le prochain clic
-        });
-    } else {
-        document.removeEventListener('click', initMusicOnInteraction, true);
-    }
-}, true);
 
 /* ==========================================================================
    3. LOGIQUE D'ACCUEIL & NOTIFICATIONS
-   Gère la page index.html et les messages toast globaux.
+   Gère la page index.html, l'expulsion propre sur Quitter et les toasts.
    ========================================================================== */
 
-/**
- * Affiche un message de notification temporaire ("toast") dans le coin supérieur droit.
- * Le toast disparaît automatiquement après 3 secondes (défini dans la CSS par fadeOut).
- *
- * Le style visuel est défini dans global.css (.notification, .notification.error).
- *
- * @param {string} message - Texte à afficher dans la notification
- * @param {'success'|'error'} type - 'success' = fond vert (défaut), 'error' = fond rouge
- *
- * Exemples d'appel :
- *   showNotification('Options sauvegardées !');          // Vert
- *   showNotification('Mot de passe incorrect.', 'error'); // Rouge
- */
 function showNotification(message, type = 'success') {
     const notif = document.createElement('div');
     notif.className = 'notification';
-    if (type === 'error') notif.classList.add('error'); // Applique le style rouge
+    if (type === 'error') notif.classList.add('error');
     notif.textContent = message;
     document.body.appendChild(notif);
-    // Suppression automatique après 3 secondes (correspond à la durée de l'animation CSS)
     setTimeout(() => notif.remove(), 3000);
 }
 
 /**
  * Initialise la page d'accueil (index.html).
- * Gère le bouton "QUITTER" : affiche une confirmation, puis une page de sortie,
- * et tente de fermer l'onglet (ne fonctionne que si l'onglet a été ouvert par script).
- *
- * N'a aucun effet si le bouton #quitButton n'est pas présent dans la page,
- * ce qui permet d'inclure app.js sur toutes les pages sans erreur.
+ * Bouton « QUITTER » :
+ *   1. Ouvre la modale thématique #modalQuitConfirm.
+ *   2. À la confirmation (dans le geste utilisateur synchrone) :
+ *      - Coupe immédiatement la musique & tout audio (AudioManager.stopAll)
+ *      - Quitte le plein écran s'il est actif
+ *      - Tente la fermeture directe de l'onglet (window.close)
+ *      - Affiche l'écran d'au revoir puis expulse automatiquement vers about:blank
+ *        si le navigateur empêche la fermeture d'un onglet ouvert manuellement.
  */
 function initAccueil() {
     const quitButton = document.getElementById('quitButton');
+    const quitModal = document.getElementById('modalQuitConfirm');
+    const confirmYes = document.getElementById('confirmQuitYes');
+    const confirmCancel = document.getElementById('confirmQuitCancel');
+
+    function performQuitExpulsion() {
+        // 1. Coupe tout son immédiatement
+        if (typeof AudioManager !== 'undefined' && typeof AudioManager.stopAll === 'function') {
+            AudioManager.stopAll();
+        }
+        // 2. Quitte le plein écran si actif
+        if (document.fullscreenElement) {
+            const exitFs = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+            if (exitFs) { try { exitFs.call(document); } catch (_) {} }
+        }
+        // 3. Bascule vers l'écran de sortie
+        if (quitModal) quitModal.hidden = true;
+        const mainPage = document.getElementById('mainPage');
+        const exitPage = document.getElementById('exitPage');
+        if (mainPage) mainPage.classList.add('hidden');
+        if (exitPage) exitPage.classList.remove('hidden');
+
+        // 4. Tentative synchrone de fermeture dans le geste utilisateur
+        try { window.close(); } catch (_) {}
+        try { window.open('', '_self', ''); window.close(); } catch (_) {}
+
+        // 5. Si l'onglet reste ouvert (sécurité navigateur), expulsion propre vers about:blank
+        setTimeout(() => {
+            try { window.close(); } catch (_) {}
+            const subtitle = document.querySelector('#exitPage .exit-subtitle');
+            if (subtitle) subtitle.textContent = 'Fermeture de la session EDUQUEST…';
+            setTimeout(() => {
+                try {
+                    window.location.replace('about:blank');
+                } catch (_) {
+                    if (subtitle) subtitle.textContent = 'Session terminée. Vous pouvez fermer cet onglet.';
+                }
+            }, 650);
+        }, 450);
+    }
+
     if (quitButton) {
         quitButton.addEventListener('click', () => {
-            // Demande de confirmation avant de quitter
-            if (!confirm('Voulez-vous vraiment quitter ?')) return;
+            if (typeof AudioManager !== 'undefined' && typeof AudioManager.playSfx === 'function') {
+                AudioManager.playSfx('click');
+            }
+            if (quitModal) {
+                quitModal.hidden = false;
+                if (confirmCancel) confirmCancel.focus();
+            } else if (confirm('Voulez-vous vraiment quitter EDUQUEST ?')) {
+                performQuitExpulsion();
+            }
+        });
+    }
 
-            // Cache le menu principal et affiche la page de sortie (#exitPage)
-            document.getElementById('mainPage').classList.add('hidden');
-            document.getElementById('exitPage').classList.remove('hidden');
-
-            // Tentative de fermeture de l'onglet après 3 secondes
-            setTimeout(() => {
-                window.close(); // Fonctionne si l'onglet a été ouvert via window.open()
-                window.open('', '_self', ''); // Contournement alternatif
-                window.close();
-
-                // Si l'onglet ne peut pas être fermé, on affiche un message d'aide
-                const subtitle = document.querySelector('#exitPage .exit-subtitle');
-                if (subtitle) subtitle.innerHTML = "Vous pouvez maintenant fermer cet onglet.";
-            }, 3000);
+    if (confirmYes) {
+        confirmYes.addEventListener('click', performQuitExpulsion);
+    }
+    if (confirmCancel && quitModal) {
+        confirmCancel.addEventListener('click', () => {
+            quitModal.hidden = true;
+        });
+    }
+    if (quitModal) {
+        quitModal.addEventListener('click', (e) => {
+            if (e.target === quitModal) quitModal.hidden = true;
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !quitModal.hidden) quitModal.hidden = true;
         });
     }
 }
@@ -647,6 +662,15 @@ function initConnexion() {
      * L'attribut HTML 'hidden' sur les panneaux contrôle leur visibilité.
      */
     if (tabLogin && tabRegister) {
+        const siteCfg = (typeof AdminStore !== 'undefined' && typeof AdminStore.getSiteConfig === 'function')
+            ? AdminStore.getSiteConfig()
+            : null;
+        const allowReg = !siteCfg || siteCfg.allowRegistration !== false;
+        if (!allowReg) {
+            tabRegister.hidden = true;
+            if (panelRegister) panelRegister.hidden = true;
+        }
+
         tabLogin.addEventListener('click', () => {
             tabLogin.classList.add('active');
             tabRegister.classList.remove('active');
@@ -655,6 +679,10 @@ function initConnexion() {
         });
 
         tabRegister.addEventListener('click', () => {
+            if (!allowReg) {
+                showNotification('Les inscriptions sont temporairement fermées par l\'administrateur.', 'error');
+                return;
+            }
             tabRegister.classList.add('active');
             tabLogin.classList.remove('active');
             if (panelRegister) panelRegister.hidden = false; // Affiche le formulaire d'inscription
@@ -784,200 +812,186 @@ function initConnexion() {
 }
 
 /* ==========================================================================
-   5. GESTION DES OPTIONS (Modale #modalOptions)
+   5. GESTION DES OPTIONS & APPARENCE (Modale #modalOptions — v1.27.0)
    ========================================================================== */
-function initOptions() {
-    /* --- Récupération des éléments HTML de la page options.html --- */
-    const volumeMusique    = document.getElementById('volumeMusique');  // Slider 0-100
-    const volumeEffets     = document.getElementById('volumeEffets');   // Slider 0-100
-    const pleinEcran       = document.getElementById('pleinEcran');     // Checkbox plein écran
-    const sonsActifs       = document.getElementById('sonsActifs');     // Checkbox son global
-    const musiqueActive    = document.getElementById('musiqueActive');  // Checkbox musique
-    const effetsActifs     = document.getElementById('effetsActifs');   // Checkbox effets sonores
-    const saveOptionsBtn   = document.getElementById('saveOptions');    // Bouton "Sauvegarder"
-    const backButton       = document.getElementById('backButton');     // Bouton "Retour"
-    const particulesCheckbox = document.getElementById('particules');   // Checkbox particules
-    const ecoModeCheckbox    = document.getElementById('ecoMode');          // Checkbox Économie d'énergie
-    const animationsCheckbox = document.getElementById('animationsActives'); // Checkbox Animations esthétiques
-    const modeChronoCheckbox = document.getElementById('modeChrono');    // Checkbox Mode Défi Chronométré
+let _optionsOpenedFromHash = false;
 
-    // Détection de la page : si saveOptions n'existe pas, on n'est pas sur options.html
+function initOptions() {
+    const volumeMusique      = document.getElementById('volumeMusique');
+    const volumeEffets       = document.getElementById('volumeEffets');
+    const pleinEcran         = document.getElementById('pleinEcran');
+    const sonsActifs         = document.getElementById('sonsActifs');
+    const musiqueActive      = document.getElementById('musiqueActive');
+    const effetsActifs       = document.getElementById('effetsActifs');
+    const saveOptionsBtn     = document.getElementById('saveOptions');
+    const backButton         = document.getElementById('backButton');
+    const particulesCheckbox = document.getElementById('particules');
+    const ecoModeCheckbox    = document.getElementById('ecoMode');
+    const animationsCheckbox = document.getElementById('animationsActives');
+    const modeChronoCheckbox = document.getElementById('modeChrono');
+    const chronoDurLabel     = document.getElementById('chronoDurationLabel');
+    const optNiveauSelect    = document.getElementById('optionsNiveauSelect');
+
+    // Contrôles d'apparence (Couleur interface, Couleur boutons, Luminosité boutons)
+    const uiColorPresets     = document.getElementById('uiColorPresets');
+    const uiColorPicker      = document.getElementById('uiColorPicker');
+    const btnColorPresets    = document.getElementById('btnColorPresets');
+    const btnColorPicker     = document.getElementById('btnColorPicker');
+    const btnBrightness      = document.getElementById('btnBrightness');
+    const btnBrightnessDisp  = document.getElementById('valueBtnBrightnessDisplay');
+    const resetAppearanceBtn = document.getElementById('resetAppearanceBtn');
+
     if (!saveOptionsBtn) return;
 
-    /* --- Fonctions de mise à jour de l'UI --- */
+    // Etat courant d'apparence en cours d'édition
+    let curUiPreset  = getOption('uiPreset') || 'default';
+    let curUiColor   = getOption('uiColor') || '#0d1f3a';
+    let curUiAccent  = getOption('uiAccent') || '#c8a84b';
+    let curBtnPreset = getOption('btnPreset') || 'default';
+    let curBtnColor  = getOption('btnColor') || '#24354f';
 
-    /**
-     * Met à jour l'affichage du pourcentage et le volume réel de la musique
-     * en temps réel (pendant que l'utilisateur glisse le curseur).
-     */
-    function updateVolumeMusique() {
-        document.getElementById('valueMusiqueDisplay').textContent = volumeMusique.value + '%';
-        music.volume = volumeMusique.value / 100; // Applique immédiatement au lecteur audio
+    // 1. Durée dynamique du chrono (AdminStore.siteConfig.quizTimerSeconds)
+    if (chronoDurLabel && typeof QuizTimer !== 'undefined' && typeof QuizTimer.getConfiguredDuration === 'function') {
+        chronoDurLabel.textContent = QuizTimer.getConfiguredDuration() + 's';
     }
 
-    /**
-     * Met à jour uniquement l'affichage du pourcentage des effets sonores.
-     * Note : les effets sonores ne sont pas encore implémentés — c'est un
-     * contrôle visuel prévu pour une version future.
-     */
-    function updateVolumeEffets() {
-        document.getElementById('valueEffetsDisplay').textContent = volumeEffets.value + '%';
-    }
-
-    /**
-     * Lance ou arrête la musique selon l'état des checkboxes.
-     * La musique doit jouer seulement si DEUX conditions sont vraies :
-     *   1. sonsActifs est coché (son global activé)
-     *   2. musiqueActive est coché (musique de fond activée)
-     */
-    function toggleMusique() {
-        const shouldPlay = sonsActifs.checked && musiqueActive.checked;
-        if (shouldPlay && !isMusicPlaying) {
-            playTrack(currentTrack); // Lance la lecture
-            isMusicPlaying = true;
-        } else if (!shouldPlay && isMusicPlaying) {
-            music.pause();           // Met en pause
-            isMusicPlaying = false;
+    // 2. Peuplement dynamique du sélecteur de classe depuis AdminStore.getLevels()
+    if (optNiveauSelect && typeof AdminStore !== 'undefined' && typeof AdminStore.getLevels === 'function') {
+        const levels = AdminStore.getLevels();
+        if (Array.isArray(levels) && levels.length > 0) {
+            optNiveauSelect.innerHTML = levels.map(l => {
+                const cycle = l.band === 'lycee' ? 'Lycée' : 'Collège';
+                return `<option value="${escapeHtml(l.id)}">🎓 ${escapeHtml(l.label || l.id)} (${cycle})</option>`;
+            }).join('');
         }
     }
 
-    /**
-     * Gère l'état des contrôles dépendant du son global (sonsActifs).
-     * Quand le son global est désactivé :
-     *   - Les checkboxes musique et effets sont désactivées visuellement
-     *   - Leurs valeurs précédentes sont mémorisées dans dataset.prevChecked
-     *   - La classe CSS 'disabled' est appliquée pour le style visuel
-     * Quand le son global est réactivé :
-     *   - Les valeurs précédentes sont restaurées
-     *   - Les contrôles redeviennent interactifs
-     */
-    function updateSoundControlsState() {
-        const allActive       = sonsActifs.checked;
+    function updateVolumeMusique(applyLive = true) {
+        const disp = document.getElementById('valueMusiqueDisplay');
+        if (disp) disp.textContent = volumeMusique.value + '%';
+        if (applyLive && typeof AudioManager !== 'undefined' && typeof AudioManager.setMusicVolume === 'function') {
+            AudioManager.setMusicVolume(volumeMusique.value);
+        }
+    }
+
+    function updateVolumeEffets(applyLive = true) {
+        const disp = document.getElementById('valueEffetsDisplay');
+        if (disp) disp.textContent = volumeEffets.value + '%';
+        if (applyLive && typeof AudioManager !== 'undefined' && typeof AudioManager.setSfxVolume === 'function') {
+            AudioManager.setSfxVolume(volumeEffets.value);
+        }
+    }
+
+    function updateBtnBrightnessDisplay() {
+        if (!btnBrightness) return;
+        const pct = parseInt(btnBrightness.value, 10) || 80;
+        if (btnBrightnessDisp) btnBrightnessDisp.textContent = pct + '%';
+        document.documentElement.style.setProperty('--btn-brightness', (pct / 100).toFixed(2));
+    }
+
+    function refreshAppearanceSwatches() {
+        if (uiColorPresets) {
+            uiColorPresets.querySelectorAll('.color-swatch').forEach(sw => {
+                sw.classList.toggle('active', sw.dataset.uiPreset === curUiPreset);
+            });
+        }
+        if (btnColorPresets) {
+            btnColorPresets.querySelectorAll('.color-swatch').forEach(sw => {
+                sw.classList.toggle('active', sw.dataset.btnPreset === curBtnPreset);
+            });
+        }
+        if (uiColorPicker && /^#[0-9a-f]{6}$/i.test(curUiColor)) uiColorPicker.value = curUiColor;
+        if (btnColorPicker && /^#[0-9a-f]{6}$/i.test(curBtnColor)) btnColorPicker.value = curBtnColor;
+    }
+
+    function updateSoundControlsState(userInitiated = false) {
+        const allActive        = sonsActifs.checked;
         const musiqueContainer = musiqueActive.closest('.checkbox-container');
         const effetsContainer  = effetsActifs.closest('.checkbox-container');
 
         if (!allActive) {
-            // Mémorisation des états actuels avant désactivation
-            musiqueActive.dataset.prevChecked = musiqueActive.checked;
-            effetsActifs.dataset.prevChecked  = effetsActifs.checked;
-
-            // Désactivation visuelle et fonctionnelle
+            musiqueActive.dataset.prevChecked = String(musiqueActive.checked);
+            effetsActifs.dataset.prevChecked  = String(effetsActifs.checked);
             musiqueActive.checked  = false;
             musiqueActive.disabled = true;
             effetsActifs.checked   = false;
             effetsActifs.disabled  = true;
-
-            // Application du style "grisé"
             if (musiqueContainer) musiqueContainer.classList.add('disabled');
             if (effetsContainer)  effetsContainer.classList.add('disabled');
         } else {
-            // Réactivation des contrôles
             musiqueActive.disabled = false;
             effetsActifs.disabled  = false;
-
-            // Restauration des états précédents
-            // dataset.prevChecked est une string 'true'/'false', on compare à 'false'
-            musiqueActive.checked = musiqueActive.dataset.prevChecked !== 'false';
-            effetsActifs.checked  = effetsActifs.dataset.prevChecked !== 'false';
-
-            // Retrait du style "grisé"
+            if (musiqueActive.dataset.prevChecked !== undefined) {
+                musiqueActive.checked = musiqueActive.dataset.prevChecked !== 'false';
+            }
+            if (effetsActifs.dataset.prevChecked !== undefined) {
+                effetsActifs.checked = effetsActifs.dataset.prevChecked !== 'false';
+            }
             if (musiqueContainer) musiqueContainer.classList.remove('disabled');
             if (effetsContainer)  effetsContainer.classList.remove('disabled');
         }
 
-        // Mise à jour de la lecture musicale selon le nouvel état
-        toggleMusique();
+        // Ne JAMAIS déclencher de démarrage audio au chargement passif de la page !
+        if (userInitiated) {
+            saveCurrentOptionsLocally();
+            if (typeof AudioManager !== 'undefined' && typeof AudioManager.syncWithOptions === 'function') {
+                AudioManager.syncWithOptions(true);
+            }
+        }
     }
 
-    /**
-     * Charge toutes les options sauvegardées et met à jour les contrôles HTML.
-     * Appelée une seule fois au chargement de la page options.
-     *
-     * Pour les sliders : convertit la valeur string en number (implicite dans .value).
-     * Pour les checkboxes : compare la string 'true'/'false' à 'true'.
-     * Si une option n'a pas encore de valeur (première utilisation), les sons
-     * sont activés par défaut pour une meilleure expérience.
-     */
     function chargerOptionsUI() {
-        // Sliders (valeurs numériques de 0 à 100)
-        volumeMusique.value = getOption('volumeMusique') || '75';
-        volumeEffets.value  = getOption('volumeEffets')  || '80';
-        updateVolumeMusique(); // Met à jour l'affichage et le volume réel
-        updateVolumeEffets();  // Met à jour l'affichage
+        const siteCfg = (typeof AdminStore !== 'undefined' && typeof AdminStore.getSiteConfig === 'function')
+            ? AdminStore.getSiteConfig()
+            : null;
+        const defaultBgm = siteCfg && siteCfg.defaultBgmVolume != null ? String(siteCfg.defaultBgmVolume) : '35';
+        const defaultSfx = siteCfg && siteCfg.defaultSfxVolume != null ? String(siteCfg.defaultSfxVolume) : '60';
+        const defaultSoundOn = !siteCfg || siteCfg.soundEnabledByDefault !== false;
 
-        // Checkboxes (booléens stockés en string)
+        volumeMusique.value = getOption('volumeMusique') || defaultBgm;
+        volumeEffets.value  = getOption('volumeEffets')  || defaultSfx;
+        updateVolumeMusique(false);
+        updateVolumeEffets(false);
+
         ['pleinEcran', 'particules', 'ecoMode', 'sonsActifs', 'musiqueActive', 'effetsActifs', 'modeChrono', 'animationsActives'].forEach(id => {
             const value = getOption(id);
             const el    = document.getElementById(id);
             if (!el) return;
             if (value !== null) {
-                el.checked = value === 'true'; // Convertit la string en booléen
-            } else if (['sonsActifs', 'musiqueActive', 'effetsActifs', 'animationsActives'].includes(id)) {
-                el.checked = true; // Valeur par défaut : activé
+                el.checked = value === 'true';
+            } else if (['sonsActifs', 'musiqueActive', 'effetsActifs'].includes(id)) {
+                el.checked = defaultSoundOn;
+            } else if (id === 'animationsActives' || id === 'particules') {
+                el.checked = true;
+            } else {
+                el.checked = false;
             }
         });
 
-        const optNiveauEl = document.getElementById('optionsNiveauSelect');
-        if (optNiveauEl && typeof DB !== 'undefined' && DB.getNiveau) {
-            optNiveauEl.value = DB.getNiveau() || '6eme';
+        if (optNiveauSelect && typeof DB !== 'undefined' && DB.getNiveau) {
+            optNiveauSelect.value = DB.getNiveau() || '6eme';
         }
 
-        // Si le son global est désactivé, on mémorise les états des sous-options
-        // avant d'appeler updateSoundControlsState() qui les efface
         if (!sonsActifs.checked) {
             musiqueActive.dataset.prevChecked = getOption('musiqueActive') || 'true';
             effetsActifs.dataset.prevChecked  = getOption('effetsActifs')  || 'true';
         }
+        // Mise à jour visuelle UNIQUEMENT (userInitiated = false)
+        updateSoundControlsState(false);
 
-        // Application de la logique de désactivation si nécessaire
-        updateSoundControlsState();
+        // Apparence
+        curUiPreset  = getOption('uiPreset') || 'default';
+        curUiColor   = getOption('uiColor') || '#0d1f3a';
+        curUiAccent  = getOption('uiAccent') || '#c8a84b';
+        curBtnPreset = getOption('btnPreset') || 'default';
+        curBtnColor  = getOption('btnColor') || '#24354f';
+        if (btnBrightness) {
+            btnBrightness.value = getOption('btnBrightness') || '80';
+            updateBtnBrightnessDisplay();
+        }
+        refreshAppearanceSwatches();
     }
 
-    // Chargement initial des options sauvegardées
-    chargerOptionsUI();
-
-    /* --- Écouteurs d'événements sur les contrôles --- */
-
-    // Son global : désactive/réactive musique et effets
-    sonsActifs.addEventListener('change', updateSoundControlsState);
-
-    // Musique et effets : lance/arrête la lecture
-    musiqueActive.addEventListener('change', toggleMusique);
-    effetsActifs.addEventListener('change', toggleMusique);
-
-    // Sliders de volume : mise à jour en temps réel
-    volumeMusique.addEventListener('input', updateVolumeMusique);
-    volumeEffets.addEventListener('input', updateVolumeEffets);
-
-    // Checkbox Plein Écran : bascule l'API fullscreen du navigateur
-    pleinEcran.addEventListener('change', () => {
-        if (pleinEcran.checked) {
-            // Entrée en plein écran (multi-navigateur)
-            const request = document.documentElement.requestFullscreen
-                         || document.documentElement.webkitRequestFullscreen
-                         || document.documentElement.msRequestFullscreen;
-            if (request) request.call(document.documentElement);
-        } else {
-            // Sortie du plein écran (multi-navigateur)
-            const exit = document.exitFullscreen
-                      || document.webkitExitFullscreen
-                      || document.msExitFullscreen;
-            if (exit) exit.call(document);
-        }
-    });
-
-    // Checkbox Particules & Animations : affiche/cache et applique immédiatement
-    ecoModeCheckbox.addEventListener('change', applyEcoModeSetting);
-    particulesCheckbox.addEventListener('change', applyParticulesSetting);
-    if (animationsCheckbox) animationsCheckbox.addEventListener('change', applyAnimationsSetting);
-
-    /* --- Bouton Sauvegarder --- */
-    /**
-     * Sauvegarde toutes les options via DB.saveOption().
-     * Gestion spéciale pour la musique/effets : si le son global est désactivé,
-     * on sauvegarde les valeurs "précédentes" (avant désactivation) pour les
-     * restaurer correctement à la prochaine ouverture.
-     */
     function saveCurrentOptionsLocally() {
         saveOption('volumeMusique', volumeMusique.value);
         saveOption('volumeEffets', volumeEffets.value);
@@ -988,59 +1002,165 @@ function initOptions() {
         saveOption('sonsActifs', String(sonsActifs.checked));
         if (modeChronoCheckbox) saveOption('modeChrono', String(modeChronoCheckbox.checked));
 
-        const optNiveau = document.getElementById('optionsNiveauSelect');
-        if (optNiveau && typeof DB !== 'undefined' && DB.setNiveau) {
-            DB.setNiveau(optNiveau.value);
+        // Apparence
+        saveOption('uiPreset', curUiPreset);
+        saveOption('uiColor', curUiColor);
+        saveOption('uiAccent', curUiAccent);
+        saveOption('btnPreset', curBtnPreset);
+        saveOption('btnColor', curBtnColor);
+        if (btnBrightness) saveOption('btnBrightness', String(btnBrightness.value));
+        applyAppearanceSettings();
+
+        if (optNiveauSelect && typeof DB !== 'undefined' && DB.setNiveau) {
+            DB.setNiveau(optNiveauSelect.value);
             if (typeof getEffectiveSubjects === 'function') {
-                DASH_SUBJECTS = getEffectiveSubjects(optNiveau.value);
+                DASH_SUBJECTS = getEffectiveSubjects(optNiveauSelect.value);
             }
         }
 
         if (sonsActifs.checked) {
-            // Son global activé → on sauvegarde les états actuels des sous-options
             saveOption('musiqueActive', String(musiqueActive.checked));
             saveOption('effetsActifs', String(effetsActifs.checked));
         } else {
-            // Son global désactivé → on sauvegarde les états "d'avant" pour les restaurer
-            // dataset.prevChecked contient 'true' ou 'false' sous forme de string
             saveOption('musiqueActive', String(musiqueActive.dataset.prevChecked !== 'false'));
             saveOption('effetsActifs', String(effetsActifs.dataset.prevChecked !== 'false'));
         }
     }
 
-    saveOptionsBtn.addEventListener('click', () => {
+    function closeOptionsModal() {
+        const modalEl = document.getElementById('modalOptions');
+        if (modalEl) modalEl.hidden = true;
+        if (_optionsOpenedFromHash) {
+            _optionsOpenedFromHash = false;
+            const ref = document.referrer || '';
+            if (ref && (ref.includes('dashboard.html') || ref.includes('map.html'))) {
+                window.history.back();
+            }
+        }
+    }
+
+    chargerOptionsUI();
+
+    /* --- Écouteurs audio --- */
+    sonsActifs.addEventListener('change', () => updateSoundControlsState(true));
+    musiqueActive.addEventListener('change', () => {
         saveCurrentOptionsLocally();
-        showNotification('⚙ Options sauvegardées !');
-        // Retour à l'accueil après 1 seconde pour laisser le temps de voir la notification
-        setTimeout(() => { 
-            if(document.getElementById('modalOptions')) document.getElementById('modalOptions').hidden = true;
-        }, 1000);
+        if (typeof AudioManager !== 'undefined' && typeof AudioManager.syncWithOptions === 'function') {
+            AudioManager.syncWithOptions(true);
+        }
+    });
+    // Correctif v1.27.0 : effetsActifs ne touche JAMAIS la musique de fond !
+    effetsActifs.addEventListener('change', () => {
+        saveCurrentOptionsLocally();
+        if (effetsActifs.checked && sonsActifs.checked && typeof AudioManager !== 'undefined') {
+            AudioManager.playSfx('click');
+        }
     });
 
-    // Bouton Retour : sauvegarde automatique et navigation
-    if (backButton) {
-        backButton.addEventListener('click', () => {
-            saveCurrentOptionsLocally(); // Sauvegarde automatique pour éviter la perte de configs
-            if(document.getElementById('modalOptions')) document.getElementById('modalOptions').hidden = true;
+    volumeMusique.addEventListener('input', () => updateVolumeMusique(true));
+    volumeMusique.addEventListener('change', saveCurrentOptionsLocally);
+    volumeEffets.addEventListener('input', () => updateVolumeEffets(true));
+    volumeEffets.addEventListener('change', () => {
+        saveCurrentOptionsLocally();
+        if (typeof AudioManager !== 'undefined') AudioManager.playSfx('click');
+    });
+
+    /* --- Écouteurs Apparence --- */
+    if (uiColorPresets) {
+        uiColorPresets.querySelectorAll('.color-swatch').forEach(sw => {
+            sw.addEventListener('click', () => {
+                curUiPreset = sw.dataset.uiPreset || 'default';
+                curUiColor  = sw.dataset.bg || '#0d1f3a';
+                curUiAccent = sw.dataset.accent || '#c8a84b';
+                refreshAppearanceSwatches();
+                saveCurrentOptionsLocally();
+            });
+        });
+    }
+    if (uiColorPicker) {
+        uiColorPicker.addEventListener('input', () => {
+            curUiPreset = 'custom';
+            curUiColor  = uiColorPicker.value;
+            curUiAccent = '#c8a84b';
+            refreshAppearanceSwatches();
+            saveCurrentOptionsLocally();
+        });
+    }
+    if (btnColorPresets) {
+        btnColorPresets.querySelectorAll('.color-swatch').forEach(sw => {
+            sw.addEventListener('click', () => {
+                curBtnPreset = sw.dataset.btnPreset || 'default';
+                curBtnColor  = sw.dataset.btn || '#24354f';
+                refreshAppearanceSwatches();
+                saveCurrentOptionsLocally();
+            });
+        });
+    }
+    if (btnColorPicker) {
+        btnColorPicker.addEventListener('input', () => {
+            curBtnPreset = 'custom';
+            curBtnColor  = btnColorPicker.value;
+            refreshAppearanceSwatches();
+            saveCurrentOptionsLocally();
+        });
+    }
+    if (btnBrightness) {
+        btnBrightness.addEventListener('input', updateBtnBrightnessDisplay);
+        btnBrightness.addEventListener('change', saveCurrentOptionsLocally);
+    }
+    if (resetAppearanceBtn) {
+        resetAppearanceBtn.addEventListener('click', () => {
+            curUiPreset  = 'default';
+            curUiColor   = '#0d1f3a';
+            curUiAccent  = '#c8a84b';
+            curBtnPreset = 'default';
+            curBtnColor  = '#24354f';
+            if (btnBrightness) {
+                btnBrightness.value = '80';
+                updateBtnBrightnessDisplay();
+            }
+            refreshAppearanceSwatches();
+            saveCurrentOptionsLocally();
+            showNotification('🎨 Apparence réinitialisée par défaut !');
         });
     }
 
-    // Auto-save en temps réel à chaque modification pour éviter toute perte
-    const autoSave = () => saveCurrentOptionsLocally();
-    sonsActifs.addEventListener('change', autoSave);
-    musiqueActive.addEventListener('change', autoSave);
-    effetsActifs.addEventListener('change', autoSave);
-    volumeMusique.addEventListener('change', autoSave);
-    volumeEffets.addEventListener('change', autoSave);
-    pleinEcran.addEventListener('change', autoSave);
-    particulesCheckbox.addEventListener('change', autoSave);
-    ecoModeCheckbox.addEventListener('change', autoSave);
-    if (animationsCheckbox) animationsCheckbox.addEventListener('change', autoSave);
-    if (modeChronoCheckbox) modeChronoCheckbox.addEventListener('change', autoSave);
-    const optNiveauSelect = document.getElementById('optionsNiveauSelect');
-    if (optNiveauSelect) optNiveauSelect.addEventListener('change', autoSave);
+    /* --- Écouteurs affichage & classe --- */
+    pleinEcran.addEventListener('change', () => {
+        if (pleinEcran.checked) {
+            const request = document.documentElement.requestFullscreen
+                         || document.documentElement.webkitRequestFullscreen
+                         || document.documentElement.msRequestFullscreen;
+            if (request) request.call(document.documentElement);
+        } else {
+            const exit = document.exitFullscreen
+                      || document.webkitExitFullscreen
+                      || document.msExitFullscreen;
+            if (exit) exit.call(document);
+        }
+        saveCurrentOptionsLocally();
+    });
 
-    // Sync de la checkbox plein écran quand l'utilisateur appuie sur Échap
+    ecoModeCheckbox.addEventListener('change', () => { saveCurrentOptionsLocally(); applyEcoModeSetting(); });
+    particulesCheckbox.addEventListener('change', () => { saveCurrentOptionsLocally(); applyParticulesSetting(); });
+    if (animationsCheckbox) animationsCheckbox.addEventListener('change', () => { saveCurrentOptionsLocally(); applyAnimationsSetting(); });
+    if (modeChronoCheckbox) modeChronoCheckbox.addEventListener('change', saveCurrentOptionsLocally);
+    if (optNiveauSelect) optNiveauSelect.addEventListener('change', saveCurrentOptionsLocally);
+
+    /* --- Boutons Sauvegarder & Retour --- */
+    saveOptionsBtn.addEventListener('click', () => {
+        saveCurrentOptionsLocally();
+        showNotification('⚙ Options sauvegardées !');
+        setTimeout(closeOptionsModal, 700);
+    });
+
+    if (backButton) {
+        backButton.addEventListener('click', () => {
+            saveCurrentOptionsLocally();
+            closeOptionsModal();
+        });
+    }
+
     document.addEventListener('fullscreenchange', () => {
         pleinEcran.checked = !!document.fullscreenElement;
     });
@@ -1279,27 +1399,50 @@ window._toggleQuizHint = function(btn) {
         : `<span class="dash-hint-icon">💡</span> Besoin d'un indice ?`;
 };
 
+/**
+ * Génère le bandeau méta d'un quiz : étoiles maximales encore en jeu (anti-triche)
+ * + indicateur du moteur adaptatif / fournisseur Multi-IA utilisé.
+ */
+function renderQuizMetaStripHtml(attempt) {
+    if (!attempt) return '';
+    // Nombre max d'étoiles si l'élève répond juste sur la tentative actuelle
+    const nextAttemptNumber = attempt.answered ? attempt.attempts : (attempt.attempts + 1);
+    const maxStars = (typeof GameRules !== 'undefined' && GameRules.starsFor)
+        ? GameRules.starsFor(nextAttemptNumber, Boolean(attempt.usedShield))
+        : 3;
+    const penalized = maxStars < 3;
+    const starsHtml = '⭐'.repeat(maxStars) + '☆'.repeat(3 - maxStars);
+    const stakeLabel = penalized
+        ? `${starsHtml} Max ${maxStars} étoile${maxStars > 1 ? 's' : ''}`
+        : `${starsHtml} 3 étoiles en jeu`;
+
+    const isAi = attempt.source === 'ai';
+    const tierId = attempt.difficultyTier || (attempt.tierInfo && attempt.tierInfo.id) || 'standard';
+    const tierIcon = (attempt.tierInfo && attempt.tierInfo.icon) || (tierId === 'remediation' ? '🌱' : tierId === 'approfondissement' ? '🚀' : '⚡');
+    const sourceLabel = isAi
+        ? `🤖 ${attempt.providerName || 'IA adaptative'}`
+        : `${tierIcon} ${attempt.providerName || 'Adaptatif'}`;
+
+    return `
+        <span class="quiz-stars-stake ${penalized ? 'penalized' : ''}" title="${penalized ? 'Une erreur précédente sur ce niveau réduit le maximum d\'étoiles.' : 'Réponds juste du premier coup pour 3 étoiles !'}">${stakeLabel}</span>
+        <span class="quiz-source-pill ${isAi ? 'is-ai' : ''} tier-${escapeHtml(tierId)}" title="Difficulté adaptative & anti-répétition">${escapeHtml(sourceLabel)}</span>
+    `;
+}
+
 function initMap() {
     const mapHeader = document.querySelector('.map-header');
     if (!mapHeader) return; // Pas sur la page map.html → on sort
 
-    /** Une icône de matière peut être un fichier d'îlot (PNG ou SVG, WebP, JPG),
-     *  une URL web, un data:image ou un emoji Unicode. Retourne true si c'est un fichier image. */
+    /** Vérifie si une chaîne correspond à un fichier image local ou sûr. */
     function isIconFile(icon) {
-        return /\.(png|svg|webp|jpg|jpeg)$/i.test(icon) || (typeof icon === 'string' && (icon.startsWith('http://') || icon.startsWith('https://') || icon.startsWith('data:') || icon.startsWith('Image/')));
+        if (typeof icon !== 'string') return false;
+        const clean = icon.trim();
+        return /\.(png|svg|webp|jpg|jpeg)$/i.test(clean)
+            || clean.startsWith('Image/')
+            || clean.startsWith('https://')
+            || clean.startsWith('http://');
     }
 
-    /**
-     * Correspondance entre le nom de matière affiché (paramètre d'URL
-     * ?matiere=...) et l'identifiant utilisé dans DASH_SUBJECTS (v2.1).
-     * jouer.html propose « Physique » et « Chimie » séparément (deux îlots
-     * distincts) : depuis v1.18, la Chimie possède ses propres questions
-     * (id 'chimie', banque dédiée dans question-bank.js) et n'est plus un
-     * alias de la Physique. EMC n'a pas de carte dans jouer.html (pas
-     * d'îlot graphique dédié pour l'instant) → carteSubject sera
-     * `undefined` pour elle, et initMap retombe sur l'ancien comportement
-     * (modale à étoiles) plutôt que d'échouer silencieusement.
-     */
     const MATIERE_TO_SUBJECT_ID = {
         'Mathématiques': 'maths',
         'Français': 'francais',
@@ -1319,104 +1462,145 @@ function initMap() {
         'SES': 'ses',
     };
 
-    /* --- Lecture des paramètres d'URL --- */
-    // Ex: map.html?matiere=Mathématiques&icon=maths.png
     const urlParams = new URLSearchParams(window.location.search);
     let subject = urlParams.get('matiere');
     let icon    = urlParams.get('icon');
+
+    const niveauActuel = (typeof DB !== 'undefined' && DB.getNiveau) ? (DB.getNiveau() || '6eme') : '6eme';
+    const niveauLabel = (typeof AdminStore !== 'undefined' && typeof AdminStore.levelLabel === 'function')
+        ? AdminStore.levelLabel(niveauActuel)
+        : niveauActuel;
+
+    // Affiche la classe en lecture seule dans l'en-tête (aucun changement de classe en exercice)
+    const mapGradeBadge = document.getElementById('mapGradeBadge');
+    if (mapGradeBadge) {
+        mapGradeBadge.textContent = '🎓 ' + niveauLabel;
+    }
+
+    /** Transition dynamique d'expulsion vers le tableau de bord si la matière est hors programme. */
+    function triggerExpulsionToDashboard(reasonText) {
+        const overlay = document.getElementById('mapExpelOverlay');
+        const textEl = document.getElementById('mapExpelText');
+        if (textEl && reasonText) textEl.textContent = reasonText;
+        if (overlay) {
+            overlay.hidden = false;
+            requestAnimationFrame(() => overlay.classList.add('visible'));
+            setTimeout(() => {
+                window.location.replace('dashboard.html');
+            }, 1250);
+        } else {
+            window.location.replace('dashboard.html');
+        }
+    }
+
+    // Rafraîchit la liste des matières autorisées pour la classe courante
+    DASH_SUBJECTS = getEffectiveSubjects(niveauActuel);
 
     if (!subject) {
         const defaultSubject = (DASH_SUBJECTS && DASH_SUBJECTS[0]) ? DASH_SUBJECTS[0] : null;
         if (defaultSubject) {
             subject = defaultSubject.name;
-            icon = icon || defaultSubject.icon || defaultSubject.islandImg || 'Image/ile/maths.webp';
+            icon = icon || getSubjectIslandSrc(defaultSubject) || defaultSubject.icon || 'Image/ile/maths.webp';
         } else {
             subject = 'Mathématiques';
             icon = icon || 'Image/ile/maths.webp';
         }
-    } else if (!icon) {
+    }
+
+    // Recherche stricte dans les matières AUTORISÉES pour cette classe
+    const requestedId = MATIERE_TO_SUBJECT_ID[subject] || null;
+    let carteSubject = DASH_SUBJECTS.find(s => (requestedId && s.id === requestedId) || s.name === subject);
+
+    if (!carteSubject) {
+        // Vérifie si la matière existe dans le catalogue complet mais est interdite pour la classe actuelle
+        const allRaw = (typeof AdminStore !== 'undefined' && typeof AdminStore.applyOverrides === 'function')
+            ? AdminStore.applyOverrides(RAW_DASH_SUBJECTS)
+            : RAW_DASH_SUBJECTS;
+        const matchedRaw = allRaw.find(s => (requestedId && s.id === requestedId) || s.name === subject);
+        if (matchedRaw) {
+            const allowed = (typeof AdminStore !== 'undefined' && typeof AdminStore.isSubjectAllowedForNiveau === 'function')
+                ? AdminStore.isSubjectAllowedForNiveau(matchedRaw, niveauActuel)
+                : false;
+            if (!allowed) {
+                triggerExpulsionToDashboard(
+                    `La matière « ${matchedRaw.name} » ne fait pas partie du programme de ${niveauLabel}. Retour dynamique vers le tableau de bord…`
+                );
+                return;
+            }
+            carteSubject = matchedRaw._custom
+                ? matchedRaw
+                : (typeof QuestionBank !== 'undefined' ? QuestionBank.extend(matchedRaw, 100, niveauActuel) : matchedRaw);
+        }
+    }
+
+    // Surveillance dynamique : si la classe change ailleurs (Options ou autre onglet),
+    // on expulse proprement si la matière n'est plus autorisée (ou on actualise si autorisée).
+    function verifyGradeConsistency() {
+        const latestNiv = (typeof DB !== 'undefined' && DB.getNiveau) ? (DB.getNiveau() || '6eme') : '6eme';
+        if (latestNiv === niveauActuel) return;
+        const allRaw = (typeof AdminStore !== 'undefined' && typeof AdminStore.applyOverrides === 'function')
+            ? AdminStore.applyOverrides(RAW_DASH_SUBJECTS)
+            : RAW_DASH_SUBJECTS;
+        const rawSub = carteSubject ? allRaw.find(s => s.id === carteSubject.id) : null;
+        const stillAllowed = rawSub && (typeof AdminStore !== 'undefined' && typeof AdminStore.isSubjectAllowedForNiveau === 'function')
+            ? AdminStore.isSubjectAllowedForNiveau(rawSub, latestNiv)
+            : false;
+        if (!stillAllowed) {
+            const newLbl = (typeof AdminStore !== 'undefined' && AdminStore.levelLabel) ? AdminStore.levelLabel(latestNiv) : latestNiv;
+            triggerExpulsionToDashboard(
+                `Ta classe a changé pour ${newLbl} : cette matière n'y est pas enseignée. Retour au tableau de bord…`
+            );
+        } else {
+            window.location.reload();
+        }
+    }
+    window.addEventListener('pageshow', verifyGradeConsistency);
+    window.addEventListener('storage', (e) => {
+        if (e.key && (e.key === 'eduquest_niveau' || e.key.startsWith('eduquest_niveau_'))) {
+            verifyGradeConsistency();
+        }
+    });
+
+    // Préfère l'icône canonique de la matière (évite tout XSS via ?icon=)
+    const canonicalIcon = carteSubject ? (getSubjectIslandSrc(carteSubject) || carteSubject.icon) : null;
+    if (canonicalIcon) {
+        icon = canonicalIcon;
+    } else if (!icon || !isIconFile(icon)) {
         icon = 'Image/ile/maths.webp';
     }
 
-    // Matière correspondante côté quiz réel (DASH_SUBJECTS), si elle existe.
-    // v1.19 — Recherche aussi par NOM affiché : couvre les matières renommées
-    // ou créées dans le panneau d'administration (le nom peut différer des
-    // clés historiques de MATIERE_TO_SUBJECT_ID).
-    let carteSubject = DASH_SUBJECTS.find(s => s.id === MATIERE_TO_SUBJECT_ID[subject])
-        || DASH_SUBJECTS.find(s => s.name === subject);
-
-    if (!carteSubject) {
-        const rawList = (typeof AdminStore !== 'undefined' && typeof AdminStore.applyOverrides === 'function')
-            ? AdminStore.applyOverrides(RAW_DASH_SUBJECTS)
-            : RAW_DASH_SUBJECTS;
-        const fallbackRaw = rawList.find(s => s.id === MATIERE_TO_SUBJECT_ID[subject])
-            || rawList.find(s => s.name === subject);
-        if (fallbackRaw) {
-            const curNiv = (typeof DB !== 'undefined' && DB.getNiveau) ? (DB.getNiveau() || '6eme') : '6eme';
-            carteSubject = fallbackRaw._custom ? fallbackRaw : (typeof QuestionBank !== 'undefined' ? QuestionBank.extend(fallbackRaw, 100, curNiv) : fallbackRaw);
-        }
-    }
-
-    /** Nombre de niveaux affichés : aligné sur le nombre de leçons réelles
-     *  si la matière est connue du moteur de quiz, sinon 6 par défaut
-     *  (ancien comportement, modale à étoiles). */
     const TOTAL_LEVELS = carteSubject ? carteSubject.lessons.length : 6;
 
     /* --- Mise à jour des éléments visuels d'en-tête --- */
-    const titleEl = document.querySelector('h1');          // Titre de la matière
-    const iconEl  = document.querySelector('.subject-icon'); // Icône de la matière
-    if (titleEl) titleEl.textContent = subject;
-
-    const mapGradeSelect = document.getElementById('mapGradeSelect');
-    if (mapGradeSelect) {
-        const curNiveau = (typeof DB !== 'undefined' && DB.getNiveau) ? (DB.getNiveau() || '6eme') : '6eme';
-        mapGradeSelect.value = curNiveau;
-        mapGradeSelect.addEventListener('change', () => {
-            const newNiv = mapGradeSelect.value;
-            if (typeof DB !== 'undefined' && DB.setNiveau) {
-                DB.setNiveau(newNiv);
-            }
-            if (typeof getEffectiveSubjects === 'function') {
-                DASH_SUBJECTS = getEffectiveSubjects(newNiv);
-                carteSubject = DASH_SUBJECTS.find(s => s.id === MATIERE_TO_SUBJECT_ID[subject])
-                    || DASH_SUBJECTS.find(s => s.name === subject);
-                if (!carteSubject) {
-                    const rawList = (typeof AdminStore !== 'undefined' && typeof AdminStore.applyOverrides === 'function')
-                        ? AdminStore.applyOverrides(RAW_DASH_SUBJECTS)
-                        : RAW_DASH_SUBJECTS;
-                    const fallbackRaw = rawList.find(s => s.id === MATIERE_TO_SUBJECT_ID[subject])
-                        || rawList.find(s => s.name === subject);
-                    if (fallbackRaw) {
-                        carteSubject = fallbackRaw._custom ? fallbackRaw : (typeof QuestionBank !== 'undefined' ? QuestionBank.extend(fallbackRaw, 100, newNiv) : fallbackRaw);
-                    }
-                }
-            }
-            const lbl = mapGradeSelect.options[mapGradeSelect.selectedIndex]?.text || newNiv;
-            showNotification(`🎓 Programme actualisé : ${lbl}`, 'info');
-        });
-    }
+    const titleEl = document.querySelector('h1');
+    const iconEl  = document.querySelector('.subject-icon');
+    if (titleEl) titleEl.textContent = carteSubject ? carteSubject.name : subject;
 
     const resolveIslandUrl = (src) => {
-        if (!src) return '';
-        if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:') || src.startsWith('/') || src.startsWith('Image/')) {
-            return src;
+        if (!src || typeof src !== 'string') return '';
+        const clean = src.trim();
+        // Refuse javascript: et schémas dangereux
+        if (/^\s*javascript:/i.test(clean) || /^\s*data:text\/html/i.test(clean)) return 'Image/ile/maths.webp';
+        if (clean.startsWith('http://') || clean.startsWith('https://') || clean.startsWith('/') || clean.startsWith('Image/')) {
+            return clean;
         }
-        return 'Image/ile/' + src;
+        return 'Image/ile/' + clean.replace(/[^a-zA-Z0-9._-]/g, '');
     };
 
     if (iconEl) {
-        // Icône fichier (PNG ou SVG îlot, URL web ou image perso) vs emoji Unicode.
+        iconEl.textContent = '';
         if (isIconFile(icon)) {
-            // Si l'icône est un fichier image : on crée une balise <img>
-            iconEl.innerHTML = `<img src="${resolveIslandUrl(icon)}" class="matiere-icon" style="width:1.2em;height:1.2em;vertical-align:middle;object-fit:contain;">`;
+            const img = document.createElement('img');
+            img.src = resolveIslandUrl(icon);
+            img.alt = carteSubject ? carteSubject.name : subject;
+            img.className = 'matiere-icon';
+            img.style.cssText = 'width:1.2em;height:1.2em;vertical-align:middle;object-fit:contain;';
+            iconEl.appendChild(img);
         } else {
-            // Sinon c'est un emoji : on l'affiche directement comme texte
             iconEl.textContent = icon;
         }
     }
 
-    // Illustration d'îlot en arrière-plan (v2.2) : seulement si l'icône est
-    // un vrai fichier image (PNG ou SVG).
     const bgIslandEl = document.getElementById('subject-bg-island');
     if (bgIslandEl) {
         if (isIconFile(icon)) {
@@ -1426,8 +1610,7 @@ function initMap() {
         }
     }
 
-    // Met à jour le titre de l'onglet du navigateur
-    document.title = 'EDUQUEST - ' + subject;
+    document.title = 'EDUQUEST - ' + (carteSubject ? carteSubject.name : subject);
 
     function renderMapHeaderStreak() {
         const headerRight = mapHeader.querySelector('div[style*="pointer-events: auto"]');
@@ -1456,10 +1639,6 @@ function initMap() {
         streakEl.innerHTML = html;
     }
     renderMapHeaderStreak();
-
-    /* --- Niveau scolaire actuel (ex: '6eme') --- */
-    // Récupéré via db.js pour être cohérent avec le reste du jeu
-    const niveauActuel = DB.getNiveau() || '6eme';
 
     /**
      * Coordonnées d'un niveau sur la piste (v2.3 — jusqu'à 100 niveaux).
@@ -1735,27 +1914,46 @@ function initMap() {
      * correction. `lesson`/`questionId` sont remplis quand la question arrive.
      */
     let currentModalLevel = null;
-    let currentAttempt = null; // { attempts, submitted, answered, isCorrect, checking, lesson, questionId, explanation } — mode quiz réel
+    let currentAttempt = null;
     const modal = document.getElementById('level-modal');
     const quizZone = document.getElementById('modal-quiz-zone');
     const starsZone = document.getElementById('modal-stars-zone');
+    const effectiveSubjectId = carteSubject ? carteSubject.id : (MATIERE_TO_SUBJECT_ID[subject] || subject);
 
-    /**
-     * Convertit un résultat de quiz en étoiles — règle PURE partagée avec le
-     * dashboard (js/core/game-rules.js). v1.26 : plus aucun effet de bord ici
-     * (l'ancienne version pouvait débiter un bouclier pendant un simple rendu).
-     */
+    // Contrôleur de chronomètre dédié à map.html (fonctionne sur TOUS les exercices & réessais)
+    const mapTimer = (typeof QuizTimer !== 'undefined')
+        ? QuizTimer.create({
+            containerId: 'map-chrono-bar-container',
+            onExpire: () => _mapSubmitQuiz(GameRules.TIMEOUT_ANSWER),
+        })
+        : null;
+
+    function stopMapTimer() {
+        if (mapTimer) mapTimer.stop();
+    }
+
+    function getMapRemainingTime() {
+        return mapTimer ? mapTimer.getRemaining() : 0;
+    }
+
+    window.addEventListener('pagehide', stopMapTimer);
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal && !modal.hidden) {
+            stopMapTimer();
+            modal.hidden = true;
+            positionCharacter(findCurrentLevel(progress), true);
+        }
+    });
+
     function starsFromAttempts(attempts, usedShield = false) {
         return GameRules.starsFor(attempts, usedShield);
     }
 
     /**
      * Débloque le niveau suivant et sauvegarde, commun aux deux modes.
-     * @param {number} starsEarned
-     * @param {object|null} attempt  tentative du mode quiz (null en mode étoiles)
      */
     function unlockNextAndSave(starsEarned, attempt = null) {
-        if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
+        stopMapTimer();
         const isFirstSuccess = progress.levels[currentModalLevel].stars === 0 && starsEarned > 0;
         if (starsEarned > progress.levels[currentModalLevel].stars) {
             progress.levels[currentModalLevel].stars = starsEarned;
@@ -1763,7 +1961,12 @@ function initMap() {
         if (currentModalLevel + 1 <= TOTAL_LEVELS) {
             progress.levels[currentModalLevel + 1].unlocked = true;
         }
-        
+
+        // Réussite validée → on efface le compteur anti-triche d'erreurs de ce niveau
+        if (typeof DB !== 'undefined' && typeof DB.clearLevelAttempt === 'function') {
+            DB.clearLevelAttempt(effectiveSubjectId, niveauActuel, currentModalLevel - 1);
+        }
+
         const streakRes = (typeof DB !== 'undefined' && DB.recordLevelVictory) ? DB.recordLevelVictory() : { streak: 1, combo: 0, multiplier: 1.0 };
         const mult = (streakRes && streakRes.multiplier) || ((typeof DB !== 'undefined' && DB.getMultiplier) ? DB.getMultiplier() : 1.0);
         renderMapHeaderStreak();
@@ -1777,8 +1980,10 @@ function initMap() {
             const rewards = (typeof AdminStore !== 'undefined' && typeof AdminStore.getRewardsConfig === 'function')
                 ? AdminStore.getRewardsConfig()
                 : GameRules.DEFAULT_REWARDS;
+            const siteCfg = (typeof AdminStore !== 'undefined' && typeof AdminStore.getSiteConfig === 'function')
+                ? AdminStore.getSiteConfig()
+                : null;
 
-            // Potion Double XP (consommée uniquement sur une 1re réussite)
             if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster(GameRules.DOUBLE_XP_ID)) {
                 usedDoubleXp = DB.useBooster(GameRules.DOUBLE_XP_ID);
                 if (usedDoubleXp && typeof showNotification === 'function') {
@@ -1789,10 +1994,13 @@ function initMap() {
             const gains = GameRules.computeLevelRewards({
                 stars: starsEarned,
                 multiplier: mult,
-                chronoEnabled: (typeof DB !== 'undefined' && DB.getOption('modeChrono') === 'true'),
-                timeRemaining: window.mapQuizTimeRemaining,
+                chronoEnabled: (typeof QuizTimer !== 'undefined') ? QuizTimer.isEnabled() : (getOption('modeChrono') === 'true'),
+                timeRemaining: getMapRemainingTime(),
+                chronoDuration: (typeof QuizTimer !== 'undefined') ? QuizTimer.getConfiguredDuration() : 45,
                 doubleXp: usedDoubleXp,
                 rewards,
+                siteXpMultiplier: siteCfg ? siteCfg.xpMultiplier : 1,
+                siteCoinMultiplier: siteCfg ? siteCfg.coinMultiplier : 1,
             });
             xpGained = gains.xp;
             coinsGained = gains.coins;
@@ -1809,12 +2017,14 @@ function initMap() {
         saveProgress(progress);
         renderLevels(progress);
 
-        // Célébration + progression des quêtes journalières
         if (starsEarned > 0) {
             Celebrate.confetti();
+            if (typeof AudioManager !== 'undefined' && typeof AudioManager.playSfx === 'function') {
+                AudioManager.playSfx('victory');
+            }
             DailyQuests.track(GameRules.questDelta({
                 stars: starsEarned,
-                attempts: attempt ? attempt.attempts : 0, // mode étoiles : jamais « du 1er coup »
+                attempts: attempt ? attempt.attempts : 0,
                 xp: xpGained,
             }));
             const usedShield = Boolean(attempt && attempt.usedShield);
@@ -1823,64 +2033,107 @@ function initMap() {
                     justCompletedLevel: true,
                     starsEarned: starsEarned,
                     justAnsweredFirstTry: starsEarned === 3,
-                    subjectId: carteSubject ? carteSubject.id : MATIERE_TO_SUBJECT_ID[subject],
+                    subjectId: effectiveSubjectId,
                     usedDoubleXp: usedDoubleXp,
                     usedShield: usedShield,
                     usedBooster: usedDoubleXp ? 'boost-xp' : (usedShield ? 'boost-shield' : null),
                     boosterId: usedDoubleXp ? 'boost-xp' : (usedShield ? 'boost-shield' : null),
                     streakCount: streakRes.streak,
                     comboCount: streakRes.combo,
-                    maxCombo: streakRes.maxCombo
+                    maxCombo: streakRes.maxCombo,
                 });
             }
         }
         return { isFirstSuccess, xpGained, coinsGained, scoreGained, multiplier: mult, streak: streakRes.streak };
     }
 
+    /** Charge une nouvelle question via AiProvider (Multi-IA + AdaptiveEngine local). */
+    async function loadQuestionForAttempt(attempt, levelNumber, { excludeProviderId = null } = {}) {
+        const idx = levelNumber - 1;
+        const duration = (typeof QuizTimer !== 'undefined') ? QuizTimer.getConfiguredDuration() : 45;
+        attempt.chronoDuration = duration;
+        try {
+            const fetched = await AiProvider.fetchQuestion(effectiveSubjectId, idx, niveauActuel, {
+                variant: attempt.variant,
+                salt: attempt.salt,
+                subject: carteSubject,
+                subjectName: carteSubject ? carteSubject.name : subject,
+                localLesson: (attempt.salt === 0 && carteSubject && carteSubject.lessons[idx]) ? carteSubject.lessons[idx] : null,
+                excludeSignatures: attempt.failedSignatures || [],
+                excludeProviderId,
+            });
+            if (currentAttempt !== attempt || currentModalLevel !== levelNumber || modal.hidden) return;
+            attempt.lesson = fetched.lesson;
+            attempt.questionId = fetched.questionId || null;
+            attempt.source = fetched.source || 'local';
+            attempt.providerId = fetched.providerId || null;
+            attempt.providerName = fetched.providerName || '';
+            attempt.difficultyTier = fetched.difficultyTier || 'standard';
+            attempt.tierInfo = fetched.tierInfo || null;
+            attempt.signature = fetched.signature || (typeof QuestionBank !== 'undefined' && QuestionBank.questionSignature ? QuestionBank.questionSignature(fetched.lesson) : '');
+            attempt.checking = false;
+            renderModalQuiz();
+        } catch (err) {
+            console.warn('[map] Récupération de question échouée, repli local.', err);
+            if (currentAttempt !== attempt || currentModalLevel !== levelNumber || modal.hidden) return;
+            const fallback = (typeof AdaptiveEngine !== 'undefined' && AdaptiveEngine.pickLocalQuestion)
+                ? AdaptiveEngine.pickLocalQuestion({
+                    subject: carteSubject,
+                    subjectId: effectiveSubjectId,
+                    levelIndex: idx,
+                    niveau: niveauActuel,
+                    salt: attempt.salt,
+                    excludeSignatures: attempt.failedSignatures || [],
+                })
+                : { lesson: carteSubject.lessons[idx], signature: '', source: 'local', providerName: 'Banque locale', difficultyTier: 'standard' };
+            attempt.lesson = fallback.lesson;
+            attempt.questionId = null;
+            attempt.source = 'local';
+            attempt.providerName = fallback.providerName || 'Banque locale';
+            attempt.difficultyTier = fallback.difficultyTier || 'standard';
+            attempt.tierInfo = fallback.tierInfo || null;
+            attempt.signature = fallback.signature || '';
+            attempt.checking = false;
+            renderModalQuiz();
+        }
+    }
+
     /** Rendu de la question courante dans #modal-quiz-zone (mode quiz réel). */
     function renderModalQuiz() {
         const { submitted, answered, isCorrect, checking, lesson } = currentAttempt;
+        const metaEl     = document.getElementById('modal-quiz-meta');
         const questionEl = document.getElementById('modal-quiz-question');
-        const body = document.getElementById('modal-quiz-body');
+        const body       = document.getElementById('modal-quiz-body');
         const feedbackEl = document.getElementById('modal-quiz-feedback');
-        const actionsEl = document.getElementById('modal-quiz-actions');
+        const actionsEl  = document.getElementById('modal-quiz-actions');
 
-        const chronoEnabled = (typeof DB !== 'undefined' && DB.getOption('modeChrono') === 'true');
+        const chronoEnabled = (typeof QuizTimer !== 'undefined') ? QuizTimer.isEnabled() : (getOption('modeChrono') === 'true');
+        const chronoDuration = (typeof QuizTimer !== 'undefined') ? QuizTimer.getConfiguredDuration() : 45;
         let chronoBarEl = document.getElementById('map-chrono-bar-container');
 
-        /* --- État « génération en cours » (AiProvider.fetchQuestion) --- */
+        /* --- État « génération en cours » --- */
         if (checking === 'loading' || !lesson) {
-            if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
+            stopMapTimer();
             if (chronoBarEl) chronoBarEl.remove();
             const oldComboBar = document.getElementById('map-combo-bar-container');
             if (oldComboBar) oldComboBar.remove();
+            if (metaEl) metaEl.innerHTML = '';
             delete body.dataset.renderedLessonKey;
             questionEl.textContent = 'Génération de la question…';
-            body.innerHTML = `<div class="dash-feedback">⏳ Préparation de la question du niveau ${currentModalLevel}…</div>`;
+            body.innerHTML = `<div class="dash-feedback">⏳ Préparation d'une question adaptée pour le niveau ${currentModalLevel}…</div>`;
             feedbackEl.innerHTML = '';
             actionsEl.innerHTML = `<button class="dash-btn-ghost" id="modal-quiz-cancel">Annuler</button>`;
             document.getElementById('modal-quiz-cancel').addEventListener('click', () => {
-                if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
+                stopMapTimer();
                 modal.hidden = true;
                 positionCharacter(findCurrentLevel(progress), true);
             });
             return;
         }
 
-        // Gestion de la barre chrono visuelle
-        if (chronoEnabled && !answered && !checking) {
-            if (!chronoBarEl) {
-                chronoBarEl = document.createElement('div');
-                chronoBarEl.id = 'map-chrono-bar-container';
-                chronoBarEl.style.cssText = 'width:100%; height:10px; background:#1c2430; border-radius:5px; margin-bottom:14px; overflow:hidden; position:relative; box-shadow:inset 0 1px 3px rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.1);';
-                chronoBarEl.innerHTML = `
-                    <div id="map-chrono-bar" style="width:${Math.max(0, (window.mapQuizTimeRemaining / 30) * 100)}%; height:100%; background:linear-gradient(90deg, #ff4757, #ffa502); transition: width 1s linear;"></div>
-                    <span id="map-chrono-time-text" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); font-family:'Rajdhani',monospace; font-weight:700; font-size:11px; color:#fff; text-shadow:0 1px 2px #000;">⏱ ${window.mapQuizTimeRemaining || 30}s</span>
-                `;
-                questionEl.parentNode.insertBefore(chronoBarEl, questionEl);
-            }
-        } else if (chronoBarEl) {
-            chronoBarEl.remove();
+        // Bandeau méta : étoiles max en jeu (anti-triche) + palier adaptatif / IA
+        if (metaEl) {
+            metaEl.innerHTML = renderQuizMetaStripHtml(currentAttempt);
         }
 
         // Barre visuelle de combo et multiplicateur
@@ -1907,7 +2160,19 @@ function initMap() {
             <div class="dash-combo-mult-badge">Bonus <b>x${multiplier.toFixed(1)}</b></div>
         `;
 
-        const lessonKey = (lesson.id || lesson.q) + '_' + (currentAttempt.variant || 0);
+        // Barre de chronomètre unifiée (créée / mise à jour proprement à chaque exercice)
+        if (chronoEnabled && !answered && !checking) {
+            if (!chronoBarEl && typeof QuizTimer !== 'undefined') {
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = QuizTimer.renderBarHtml('map-chrono-bar-container', chronoDuration).trim();
+                chronoBarEl = wrapper.firstElementChild;
+                questionEl.parentNode.insertBefore(chronoBarEl, comboBarEl);
+            }
+        } else if (chronoBarEl) {
+            chronoBarEl.remove();
+        }
+
+        const lessonKey = [currentModalLevel, currentAttempt.salt, currentAttempt.variant, currentAttempt.signature || lesson.q].join('::');
         const needsRender = (body.dataset.renderedLessonKey !== lessonKey);
 
         if (needsRender) {
@@ -1917,7 +2182,7 @@ function initMap() {
         }
 
         const hintSlot = document.getElementById('modal-quiz-hint-slot');
-        const hintText = getLessonHint(lesson, carteSubject ? carteSubject.id : subject);
+        const hintText = getLessonHint(lesson, effectiveSubjectId);
 
         if (!answered && !checking) {
             if (hintSlot) {
@@ -1937,46 +2202,35 @@ function initMap() {
             feedbackEl.innerHTML = '';
             actionsEl.innerHTML = `<button class="dash-btn-ghost" id="modal-quiz-cancel">Annuler</button>`;
             document.getElementById('modal-quiz-cancel').addEventListener('click', () => {
-                if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
+                stopMapTimer();
                 modal.hidden = true;
                 positionCharacter(findCurrentLevel(progress), true);
             });
             if (needsRender) {
                 QuizEngine.bind(body, lesson, currentAttempt, _mapSubmitQuiz);
-            }
-
-            if (chronoEnabled) {
-                if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
-                window.mapQuizChronoInterval = setInterval(() => {
-                    window.mapQuizTimeRemaining--;
-                    const bar = document.getElementById('map-chrono-bar');
-                    const text = document.getElementById('map-chrono-time-text');
-                    if (bar) bar.style.width = Math.max(0, (window.mapQuizTimeRemaining / 30) * 100) + '%';
-                    if (text) text.textContent = '⏱ ' + Math.max(0, window.mapQuizTimeRemaining) + 's';
-                    if (window.mapQuizTimeRemaining <= 0) {
-                        clearInterval(window.mapQuizChronoInterval);
-                        _mapSubmitQuiz('TEMPS_ECOULE');
-                    }
-                }, 1000);
+                // Démarre un chronomètre neuf pour CHAQUE exercice et CHAQUE réessai !
+                if (chronoEnabled && mapTimer) {
+                    mapTimer.start(chronoDuration);
+                }
             }
         } else if (checking) {
             if (hintSlot) hintSlot.innerHTML = '';
-            if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
+            stopMapTimer();
             QuizEngine.freeze(body, lesson, submitted);
             feedbackEl.innerHTML = `<div class="dash-feedback" role="status" aria-live="polite">Correction en cours…</div>`;
             actionsEl.innerHTML = '';
         } else {
             if (hintSlot) hintSlot.innerHTML = '';
-            if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
+            stopMapTimer();
             QuizEngine.reveal(body, lesson, submitted);
             const multTag = multiplier > 1.0 ? `<span class="dash-combo-tag">x${multiplier.toFixed(1)}</span> ` : '';
             const expText = currentAttempt.explanation || (lesson ? lesson.exp : '') || '';
             feedbackEl.innerHTML = `
                 <div class="dash-feedback ${isCorrect ? 'ok' : 'ko'}">
-                    <div class="dash-feedback-badge">${isCorrect ? '✓ Bonne réponse ! ' + multTag : '✗ Pas tout à fait...'}</div>
+                    <div class="dash-feedback-badge">${isCorrect ? '✓ Bonne réponse ! ' + multTag : '✗ Pas tout à fait... (une nouvelle question te sera proposée)'}</div>
                     ${expText ? `
                         <div class="dash-feedback-exp">
-                            <div class="dash-feedback-exp-title">📖 Explication & Règle de cours :</div>
+                            <div class="dash-feedback-exp-title">📖 Explication &amp; Règle de cours :</div>
                             <div class="dash-feedback-exp-content">${escapeHtml(expText)}</div>
                         </div>
                     ` : ''}
@@ -1987,7 +2241,7 @@ function initMap() {
                 if (starsNow === 3) {
                     Celebrate.confetti();
                 }
-                actionsEl.innerHTML = `<button class="dash-btn-primary" id="modal-quiz-continue">Continuer</button>`;
+                actionsEl.innerHTML = `<button class="dash-btn-primary" id="modal-quiz-continue">Continuer (${'⭐'.repeat(starsNow)})</button>`;
                 document.getElementById('modal-quiz-continue').addEventListener('click', () => {
                     const res = unlockNextAndSave(starsNow, currentAttempt);
                     modal.hidden = true;
@@ -1996,150 +2250,94 @@ function initMap() {
             } else {
                 actionsEl.innerHTML = `
                     <button class="dash-btn-ghost" id="modal-quiz-quit">Quitter</button>
-                    <button class="dash-btn-primary" id="modal-quiz-retry">Réessayer</button>`;
+                    <button class="dash-btn-primary" id="modal-quiz-retry">🔄 Réessayer (nouvelle question)</button>`;
                 document.getElementById('modal-quiz-quit').addEventListener('click', () => {
-                    if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
+                    stopMapTimer();
                     modal.hidden = true;
                     positionCharacter(findCurrentLevel(progress), true);
                 });
                 document.getElementById('modal-quiz-retry').addEventListener('click', async () => {
-                    if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
+                    stopMapTimer();
                     delete body.dataset.renderedLessonKey;
-                    window.mapQuizTimeRemaining = 30;
-                    const nextVariant = ((currentAttempt.variant || 0) + 1 + Math.floor(Math.random() * 2)) % 3;
-                    currentAttempt.variant = nextVariant;
-                    currentAttempt.submitted = null;
-                    currentAttempt.answered = false;
-                    currentAttempt.isCorrect = false;
-                    currentAttempt.checking = 'loading';
-                    currentAttempt.explanation = '';
+                    const prevProviderId = currentAttempt.providerId;
+                    const nextVariant = QuizSession.nextVariant(currentAttempt.variant);
+                    QuizSession.resetForRetry(currentAttempt, nextVariant);
                     renderModalQuiz();
-
-                    try {
-                        const { lesson, questionId } = await AiProvider.fetchQuestion(
-                            carteSubject.id, currentModalLevel - 1, currentNiveau(), {
-                                variant: nextVariant,
-                                subject: carteSubject
-                            }
-                        );
-                        if (currentAttempt.variant !== nextVariant || modal.hidden) return;
-                        currentAttempt.lesson = lesson;
-                        currentAttempt.questionId = questionId;
-                        currentAttempt.checking = false;
-                        renderModalQuiz();
-                    } catch (err) {
-                        console.warn('[map retry] Erreur chargement variante', err);
-                        currentAttempt.checking = false;
-                        renderModalQuiz();
-                    }
+                    await loadQuestionForAttempt(currentAttempt, currentModalLevel, { excludeProviderId: prevProviderId });
                 });
             }
         }
     }
 
-    /**
-     * Soumission d'une réponse dans la modale de la carte.
-     * v1.26 : délègue au pipeline partagé QuizSession.submit (même code que le
-     * dashboard) — correction, combo et Bouclier d'Étoile (1 seul par question).
-     */
     async function _mapSubmitQuiz(rawAnswer) {
-        if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
+        stopMapTimer();
         const attempt = currentAttempt;
         if (!attempt) return;
         const res = await QuizSession.submit(attempt, rawAnswer, {
             render: renderModalQuiz,
-            // La modale a pu être fermée (ou un autre niveau ouvert) pendant l'attente
             isStale: () => currentAttempt !== attempt || modal.hidden,
+            subjectId: effectiveSubjectId,
+            niveau: niveauActuel,
+            levelIndex: currentModalLevel - 1,
+            chronoDuration: attempt.chronoDuration || (typeof QuizTimer !== 'undefined' ? QuizTimer.getConfiguredDuration() : 45),
         });
         if (res) renderMapHeaderStreak();
     }
 
-    /**
-     * Clic sur un bouton de niveau (dot) :
-     * - Ignore les niveaux verrouillés (classe 'locked')
-     * - Déplace le personnage vers ce niveau
-     * - Ouvre la modale en mode quiz réel si la matière est reconnue,
-     *   sinon retombe sur l'ancien choix d'étoiles.
-     */
     document.querySelectorAll('.level-dot').forEach(btn => {
         btn.addEventListener('click', () => {
-            if (btn.classList.contains('locked')) return; // Niveau verrouillé → on ignore
-            currentModalLevel = parseInt(btn.dataset.level);
-            positionCharacter(currentModalLevel, true); // Déplace le personnage (animé)
+            if (btn.classList.contains('locked')) return;
+            currentModalLevel = parseInt(btn.dataset.level, 10);
+            positionCharacter(currentModalLevel, true);
 
             if (!modal) return;
             document.getElementById('modal-title').textContent = 'Niveau ' + currentModalLevel;
-            window.mapQuizTimeRemaining = 30;
-            if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
+            stopMapTimer();
 
             if (carteSubject && carteSubject.lessons[currentModalLevel - 1]) {
                 const mapBody = document.getElementById('modal-quiz-body');
                 if (mapBody) delete mapBody.dataset.renderedLessonKey;
                 quizZone.hidden = false;
                 starsZone.hidden = true;
-                const requestedLevel = currentModalLevel;
-                const initialVariant = Math.floor(Math.random() * 3);
-                currentAttempt = {
-                    attempts: 0,
-                    variant: initialVariant,
-                    submitted: null,
-                    answered: false,
-                    isCorrect: false,
-                    checking: 'loading',
-                    lesson: null,
-                    questionId: null,
-                    explanation: '',
-                    usedShield: false
-                };
-                const attempt = currentAttempt; // identité figée pour le garde anti-course
-                renderModalQuiz(); // Affiche d'abord l'état « génération… »
 
-                /* Question via AiProvider : variante aléatoire parmi 3 */
-                AiProvider.fetchQuestion(carteSubject.id, requestedLevel - 1, currentNiveau(), {
+                // Recharge l'historique anti-triche persisté pour ce niveau !
+                // Si l'élève a déjà fait une erreur puis quitté/rechargé la page :
+                //  - attempts démarre au nombre d'échecs persistés (max 2 étoiles, jamais 3 !)
+                //  - salt > 0 + failedSignatures → question réinitialisée vers une nouvelle question !
+                const persisted = (typeof DB !== 'undefined' && typeof DB.getLevelAttempt === 'function')
+                    ? DB.getLevelAttempt(effectiveSubjectId, niveauActuel, currentModalLevel - 1)
+                    : { fails: 0, usedShield: false, questionSalt: 0, failedSignatures: [] };
+
+                const requestedLevel = currentModalLevel;
+                const initialVariant = persisted.questionSalt > 0
+                    ? (persisted.questionSalt % 3)
+                    : Math.floor(Math.random() * 3);
+
+                currentAttempt = QuizSession.createAttempt({
+                    attempts: persisted.fails || 0,
+                    usedShield: Boolean(persisted.usedShield),
                     variant: initialVariant,
-                    subject: carteSubject
-                })
-                    .then(({ lesson, questionId }) => {
-                        // Garde anti-course : la modale a pu être fermée, un autre
-                        // niveau ouvert, ou la tentative remplacée pendant l'attente.
-                        if (currentAttempt !== attempt) return;
-                        if (currentModalLevel !== requestedLevel || modal.hidden) return;
-                        attempt.lesson = lesson;
-                        attempt.questionId = questionId;
-                        attempt.checking = false;
-                        renderModalQuiz();
-                    })
-                    .catch(err => {
-                        console.warn('[map] Récupération de question échouée, repli local.', err);
-                        if (currentAttempt !== attempt) return;
-                        if (currentModalLevel !== requestedLevel || modal.hidden) return;
-                        const fallbackLesson = carteSubject.lessons[requestedLevel - 1];
-                        attempt.lesson = fallbackLesson;
-                        attempt.questionId = null;
-                        attempt.checking = false;
-                        renderModalQuiz();
-                    });
+                    salt: persisted.questionSalt || 0,
+                    failedSignatures: Array.isArray(persisted.failedSignatures) ? persisted.failedSignatures.slice() : [],
+                    checking: 'loading',
+                    chronoDuration: (typeof QuizTimer !== 'undefined') ? QuizTimer.getConfiguredDuration() : 45,
+                });
+                const attempt = currentAttempt;
+                modal.hidden = false;
+                renderModalQuiz();
+                loadQuestionForAttempt(attempt, requestedLevel);
             } else {
                 quizZone.hidden = true;
                 starsZone.hidden = false;
+                modal.hidden = false;
             }
-            modal.hidden = false; // Affiche la modale
         });
     });
 
-    /**
-     * Clic sur un choix d'étoiles dans la modale (mode repli uniquement) :
-     * - Met à jour les étoiles du niveau (on ne peut qu'améliorer, jamais réduire)
-     * - Débloque automatiquement le niveau suivant
-     * - Sauvegarde la progression
-     * - Ferme la modale et met à jour l'affichage
-     *
-     * Le bouton data-stars="1/2/3" contient le nombre d'étoiles choisies.
-     */
     document.querySelectorAll('.star-choice').forEach(btn => {
         btn.addEventListener('click', () => {
             if (!currentModalLevel) return;
-            const stars = parseInt(btn.dataset.stars);
+            const stars = parseInt(btn.dataset.stars, 10);
             const res = unlockNextAndSave(stars);
             modal.hidden = true;
             if (res.isFirstSuccess) {
@@ -2148,35 +2346,30 @@ function initMap() {
         });
     });
 
-    /**
-     * Bouton "Annuler" de la modale (mode étoiles) :
-     * Ferme la modale et repositionne le personnage sur le niveau courant.
-     */
     const closeBtn = document.getElementById('modal-close');
     if (closeBtn) closeBtn.addEventListener('click', () => {
-        if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
+        stopMapTimer();
         modal.hidden = true;
         positionCharacter(findCurrentLevel(progress), true);
     });
 
-    /**
-     * Bouton "Réinitialiser la progression" :
-     * Remet la progression à zéro (uniquement le niveau 1 débloqué, sans étoiles).
-     * Utile pendant le développement ou pour recommencer une matière.
-     */
     const resetBtn = document.getElementById('reset-progress');
     if (resetBtn) resetBtn.addEventListener('click', () => {
-        if (window.mapQuizChronoInterval) clearInterval(window.mapQuizChronoInterval);
-        progress = getDefaultProgress(); // Remet à zéro en mémoire
-        saveProgress(progress);          // Sauvegarde la progression réinitialisée
+        stopMapTimer();
+        if (typeof DB !== 'undefined' && typeof DB.clearSubjectAttempts === 'function') {
+            DB.clearSubjectAttempts(effectiveSubjectId, niveauActuel);
+        }
+        progress = getDefaultProgress();
+        saveProgress(progress);
         modal.hidden = true;
-        renderLevels(progress);          // Met à jour l'affichage
+        renderLevels(progress);
     });
 
     const backBtn = document.querySelector('.back-button');
     if (backBtn) {
         backBtn.addEventListener('click', (e) => {
-            if (window.history.length > 1) {
+            stopMapTimer();
+            if (window.history.length > 1 && document.referrer && document.referrer.includes('dashboard.html')) {
                 e.preventDefault();
                 window.history.back();
             }
@@ -2263,7 +2456,7 @@ const RAW_DASH_SUBJECTS = [
         { title: "Les écosystèmes", q: "Un organisme qui se nourrit exclusivement de végétaux est un :", opts: ["décomposeur", "carnivore", "herbivore", "omnivore"], correct: 2, exp: "Par définition, un herbivore ne consomme que des végétaux." },
         { type: "reponse_courte", title: "Le cœur", q: "Combien de cavités possède le cœur humain ?", accepted: ["4", "quatre"], exp: "Le cœur a 4 cavités : 2 oreillettes et 2 ventricules." },
     ]},
-    { id: "techno", name: "Technologie", icon: "⚙", band: "college", lessons: [
+    { id: "techno", name: "Technologie", icon: "⚙", band: "college", allowedNiveaux: ["6eme", "5eme", "4eme", "3eme"], lessons: [
         { type: "texte_a_choix", title: "Les algorithmes", q: "Choisis les bons termes pour compléter la définition.", textWithBlanks: "Pour répéter des instructions tant qu'une condition est vraie, on utilise une boucle ___, et pour faire un choix, une condition ___.", choices: [["tant que", "pour", "infinie"], ["si", "sinon", "alors"]], blanks: [["tant que"], ["si"]], exp: "« Tant que » (while) et « si » (if) sont des structures fondamentales en programmation." },
         { title: "Les capteurs", q: "Un capteur de température mesure :", opts: ["la pression", "la chaleur ambiante", "le son", "la lumière"], correct: 1, exp: "C'est sa fonction première : convertir une température en signal exploitable." },
         { title: "Les matériaux", q: "Le PLA est un matériau souvent utilisé en :", opts: ["chauffage", "soudure", "impression 3D", "isolation électrique"], correct: 2, exp: "Le PLA est un plastique biodégradable très utilisé en fabrication additive." },
@@ -2298,21 +2491,21 @@ const RAW_DASH_SUBJECTS = [
         { title: "La justice", q: "Le principe de présomption d'innocence signifie que :", opts: ["on est toujours coupable", "on est innocent tant que la culpabilité n'est pas prouvée", "la peine est automatique", "il n'y a pas de procès"], correct: 1, exp: "Ce principe protège tout accusé jusqu'au jugement." },
         { type: "drag_and_drop", title: "Les pouvoirs", q: "Associe chaque pouvoir à son rôle.", items: ["Pouvoir exécutif", "Pouvoir législatif", "Pouvoir judiciaire"], targets: ["Applique les lois", "Vote les lois", "Fait respecter les lois"], pairs: { "Pouvoir exécutif": "Applique les lois", "Pouvoir législatif": "Vote les lois", "Pouvoir judiciaire": "Fait respecter les lois" }, exp: "La séparation des pouvoirs structure les institutions démocratiques." },
     ]},
-    { id: "philo", name: "Philosophie", icon: "🏛️", island: "Image/ile/philo.svg", lessons: [
+    { id: "philo", name: "Philosophie", icon: "🏛️", band: "lycee", allowedNiveaux: ["terminale"], island: "Image/ile/philo.svg", lessons: [
         { title: "L'allégorie de la caverne", q: "Qui a écrit l'allégorie de la caverne ?", opts: ["Socrate", "Platon", "Aristote", "Descartes"], correct: 1, exp: "Platon expose l'allégorie de la caverne dans La République (Livre VII)." },
         { title: "Le doute méthodique", q: "Quelle célèbre formule résume la certitude première de René Descartes ?", opts: ["Je sais que je ne sais rien", "L'homme est un loup pour l'homme", "Cogito, ergo sum (Je pense, donc je suis)", "Connais-toi toi-même"], correct: 2, exp: "Dans le Discours de la méthode, Descartes découvre le « Cogito » au terme du doute méthodique." },
         { title: "La conscience", q: "Pour Sigmund Freud, quelle partie de la psyché regroupe les pulsions refoulées ?", opts: ["Le Surmoi", "Le Moi", "L'Inconscient / Le Ça", "La conscience morale"], correct: 2, exp: "Le Ça représente le réservoir des pulsions inconscientes." },
         { type: "vrai_faux", title: "L'éthique et la morale", q: "Pour Emmanuel Kant, un acte moral doit être guidé par le devoir et l'impératif catégorique, sans rechercher son propre intérêt.", correct: true, exp: "Vrai : la morale déontologique kantienne repose sur le devoir désintéressé." },
         { type: "texte_a_trous", title: "Le contrat social", q: "Complète la citation de Jean-Jacques Rousseau.", textWithBlanks: "L'homme est né ___ et partout il est dans les ___.", blanks: [["libre"], ["fers"]], distractors: ["seul", "sage", "liens", "chaînes"], exp: "« L'homme est né libre et partout il est dans les fers » (Du contrat social, 1762)." },
     ]},
-    { id: "nsi", name: "NSI & Numérique", icon: "Image/ile/nsi.svg", band: "lycee", island: "Image/ile/nsi.svg", lessons: [
+    { id: "nsi", name: "NSI & Numérique", icon: "Image/ile/nsi.svg", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale"], island: "Image/ile/nsi.svg", lessons: [
         { title: "Binaire et Bits", q: "Quelle est la valeur décimale de l'octet binaire 00001010 ?", opts: ["8", "10", "12", "16"], correct: 1, exp: "En binaire : 8 + 2 = 10 (positions 2³ et 2¹)." },
         { title: "Algorithmique Python", q: "En Python, que renvoie l'expression [x * 2 for x in [1, 2, 3]] ?", opts: ["[1, 2, 3]", "[2, 4, 6]", "[2, 2, 2]", "Error"], correct: 1, exp: "C'est une compréhension de liste qui multiplie chaque élément par 2 : [2, 4, 6]." },
         { type: "vrai_faux", title: "Complexité algorithmique", q: "La recherche dichotomique dans un tableau trié de taille N a une complexité logarithmique O(log N).", correct: true, exp: "Vrai : à chaque étape, on divise par deux l'espace de recherche." },
         { type: "texte_a_trous", title: "Architecture Web", q: "Complète le rôle des langages du Web.", textWithBlanks: "Le langage ___ structure le contenu d'une page, le langage ___ gère sa présentation visuelle et ___ assure son interactivité dynamique.", blanks: [["HTML"], ["CSS"], ["JavaScript"]], distractors: ["SQL", "Python", "PHP"], exp: "Le trio fondamental du front-end est HTML (structure), CSS (style) et JavaScript (interactivité)." },
         { type: "drag_and_drop", title: "Réseaux & Protocoles", q: "Associe chaque protocole à son usage.", items: ["HTTP / HTTPS", "DNS", "SSH"], targets: ["Transfert de pages Web", "Résolution nom de domaine en IP", "Connexion à distance sécurisée"], pairs: { "HTTP / HTTPS": "Transfert de pages Web", "DNS": "Résolution nom de domaine en IP", "SSH": "Connexion à distance sécurisée" }, exp: "Ces protocoles fondamentaux structurent les communications sur Internet." },
     ]},
-    { id: "ses", name: "SES (Économie)", icon: "Image/ile/ses.svg", band: "lycee", island: "Image/ile/ses.svg", lessons: [
+    { id: "ses", name: "SES (Économie)", icon: "Image/ile/ses.svg", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale"], island: "Image/ile/ses.svg", lessons: [
         { title: "Le marché et les prix", q: "Selon la loi de l'offre et de la demande, lorsque la demande d'un bien augmente sans que l'offre ne change, son prix :", opts: ["diminue", "tend à augmenter", "reste toujours fixe", "devient nul"], correct: 1, exp: "La rareté relative entraîne une hausse du prix d'équilibre." },
         { title: "La création monétaire", q: "Qui crée la majeure partie de la monnaie en circulation dans une économie moderne ?", opts: ["L'État par l'impôt", "Les banques commerciales lors de l'octroi de crédits", "La banque centrale par impression de billets", "Les entreprises industrielles"], correct: 1, exp: "« Les crédits font les dépôts » : les banques commerciales créent la monnaie scripturale lors d'un prêt." },
         { type: "vrai_faux", title: "Le PIB et la croissance", q: "Le Produit Intérieur Brut (PIB) mesure la richesse totale des patrimoines des ménages.", correct: false, exp: "Faux : le PIB mesure le flux de valeur ajoutée créée sur une période donnée (un an), pas le stock de patrimoine." },
@@ -2321,43 +2514,34 @@ const RAW_DASH_SUBJECTS = [
     ]},
 ];
 
-// Étend chaque matière de 5 leçons écrites à la main à 100 niveaux
-// (voir question-bank.js — QuestionBank.extend). Les 5 premières restent
-// inchangées (et sont les seules à utiliser les types autres que QCM) ;
-// les niveaux 6 à 100 sont générés depuis une banque de vraies questions
-// adaptée au niveau scolaire choisi (6ème → Terminale).
 if (typeof AdminStore !== 'undefined' && AdminStore.registerDefaults) {
     AdminStore.registerDefaults(RAW_DASH_SUBJECTS);
 }
 
-const NIVEAU_BAND = currentNiveauBand();
-
 /**
- * Retourne les matières effectives avec 100 niveaux générés selon le niveau scolaire courant.
- * Permet d'adapter instantanément les questions quand l'élève change de classe dans le sélecteur.
+ * Retourne les matières effectives autorisées pour le niveau scolaire courant,
+ * étendues jusqu'à 100 niveaux.
+ * Délègue strictement à AdminStore.isSubjectAllowedForNiveau() :
+ *   - Collège (6e → 3e) : JAMAIS de SES, Philosophie ni NSI.
+ *   - 2nde / 1ère : SES & NSI présents, pas de Technologie ni Philosophie.
+ *   - Terminale : Philosophie, SES & NSI présents, pas de Technologie.
  */
 function getEffectiveSubjects(niveau) {
     const currentNiv = niveau || (typeof DB !== 'undefined' && DB.getNiveau ? DB.getNiveau() : '6eme') || '6eme';
-    const band = (typeof AdminStore !== 'undefined' && AdminStore.levelBand)
-        ? (AdminStore.levelBand(currentNiv) || (typeof QuestionBank !== 'undefined' ? QuestionBank.bandForNiveau(currentNiv) : 'college'))
-        : (typeof QuestionBank !== 'undefined' ? QuestionBank.bandForNiveau(currentNiv) : 'college');
+    const raw = (typeof AdminStore !== 'undefined' && typeof AdminStore.applyOverrides === 'function')
+        ? AdminStore.applyOverrides(RAW_DASH_SUBJECTS)
+        : RAW_DASH_SUBJECTS;
 
-    const raw = (typeof AdminStore !== 'undefined' ? AdminStore.applyOverrides(RAW_DASH_SUBJECTS) : RAW_DASH_SUBJECTS);
-
-    // Filtrage dynamique selon la configuration de chaque matière (AdminStore) :
-    // - s.enabled !== false (la matière est active pour les élèves)
-    // - s.allowedNiveaux : classes spécifiques ciblées (ex: ['6eme', '5eme'])
-    // - s.band : 'all' (tous cycles), 'college' (collège uniquement), 'lycee' (lycée uniquement)
     const filtered = raw.filter(s => {
+        if (typeof AdminStore !== 'undefined' && typeof AdminStore.isSubjectAllowedForNiveau === 'function') {
+            return AdminStore.isSubjectAllowedForNiveau(s, currentNiv);
+        }
         if (s.enabled === false) return false;
-
-        // Restriction à des classes spécifiques configurées dans le panneau admin
         if (Array.isArray(s.allowedNiveaux) && s.allowedNiveaux.length > 0) {
             return s.allowedNiveaux.includes(currentNiv);
         }
-
-        // Restriction par cycle (collège / lycée)
-        const subBand = s.band || (s.id === 'techno' ? 'college' : (s.id === 'nsi' || s.id === 'ses' ? 'lycee' : 'all'));
+        const band = typeof QuestionBank !== 'undefined' ? QuestionBank.bandForNiveau(currentNiv) : 'college';
+        const subBand = s.band || (s.id === 'techno' ? 'college' : (s.id === 'nsi' || s.id === 'ses' || s.id === 'philo' ? 'lycee' : 'all'));
         if (subBand === 'college' && band !== 'college') return false;
         if (subBand === 'lycee' && band !== 'lycee') return false;
         return true;
@@ -2524,8 +2708,8 @@ function checkBadges(extra = {}) {
                 }
             }
         }
-        if (count === 0 && typeof state !== 'undefined' && state.progress && state.progress[s.id]) {
-            count = state.progress[s.id];
+        if (count === 0 && extra && extra.dashProgress && extra.dashProgress[s.id]) {
+            count = extra.dashProgress[s.id];
             totalCompleted += count;
         }
         completedPerSubject[s.id] = count;
@@ -2550,7 +2734,7 @@ function checkBadges(extra = {}) {
                 pass = threeStarCount >= 1 || extra.starsEarned === 3;
                 break;
             case 'streak_3':
-                pass = (extra.streakCount >= 3) || (typeof DB !== 'undefined' && DB.getStreak && DB.getStreak() >= 3) || totalCompleted >= 3;
+                pass = (extra.streakCount >= 3) || (typeof DB !== 'undefined' && DB.getStreak && DB.getStreak() >= 3);
                 break;
             case 'streak_5':
                 pass = (extra.streakCount >= 5) || (typeof DB !== 'undefined' && DB.getStreak && DB.getStreak() >= 5);
@@ -2611,11 +2795,11 @@ function checkBadges(extra = {}) {
                 pass = hasAnyBooster;
                 break;
             case 'potion_double_xp':
-                pass = !!extra.usedDoubleXp || extra.usedBooster === 'boost-xp' || extra.boosterId === 'boost-xp' || ((boostersHistory.used && boostersHistory.used['boost-xp']) > 0) || (boosters['boost-xp'] > 0);
+                pass = !!extra.usedDoubleXp || extra.usedBooster === 'boost-xp' || ((boostersHistory.used && boostersHistory.used['boost-xp']) > 0);
                 break;
             case 'bouclier_etoile':
             case 'potion_shield':
-                pass = !!extra.usedShield || extra.usedBooster === 'boost-shield' || extra.boosterId === 'boost-shield' || ((boostersHistory.used && boostersHistory.used['boost-shield']) > 0) || (boosters['boost-shield'] > 0);
+                pass = !!extra.usedShield || extra.usedBooster === 'boost-shield' || ((boostersHistory.used && boostersHistory.used['boost-shield']) > 0);
                 break;
             case 'maths_fan':
                 pass = (completedPerSubject['maths'] || 0) >= 5;
@@ -2628,11 +2812,11 @@ function checkBadges(extra = {}) {
                 break;
             case 'sciences_fan':
             case 'maitre_chimie':
-                pass = (completedPerSubject['svt'] || 0) >= 5 || (completedPerSubject['physique'] || 0) >= 5 || (completedPerSubject['chimie'] || 0) >= 5 || (extra.subjectId === 'chimie' && extra.justCompletedLevel);
+                pass = (completedPerSubject['svt'] || 0) >= 5 || (completedPerSubject['physique'] || 0) >= 5 || (completedPerSubject['chimie'] || 0) >= 5;
                 break;
             case 'philo_fan':
             case 'maitre_philo':
-                pass = (completedPerSubject['philo'] || 0) >= 1 || (extra.subjectId === 'philo' && extra.justCompletedLevel);
+                pass = (completedPerSubject['philo'] || 0) >= 5;
                 break;
             case 'polyglotte':
                 pass = (completedPerSubject['anglais'] || 0) >= 5;
@@ -2660,8 +2844,8 @@ function checkBadges(extra = {}) {
         if (!pass && b.condition) {
             const cond = String(b.condition).trim();
             if (cond === 'hasBooster' && hasAnyBooster) pass = true;
-            else if (cond === 'usedDoubleXp' && (!!extra.usedDoubleXp || extra.usedBooster === 'boost-xp' || (boostersHistory.used && boostersHistory.used['boost-xp'] > 0) || boosters['boost-xp'] > 0)) pass = true;
-            else if (cond === 'usedShield' && (!!extra.usedShield || extra.usedBooster === 'boost-shield' || (boostersHistory.used && boostersHistory.used['boost-shield'] > 0) || boosters['boost-shield'] > 0)) pass = true;
+            else if (cond === 'usedDoubleXp' && (!!extra.usedDoubleXp || extra.usedBooster === 'boost-xp' || (boostersHistory.used && boostersHistory.used['boost-xp'] > 0))) pass = true;
+            else if (cond === 'usedShield' && (!!extra.usedShield || extra.usedBooster === 'boost-shield' || (boostersHistory.used && boostersHistory.used['boost-shield'] > 0))) pass = true;
             else if (cond === 'questClaimed' && !!extra.questClaimed) pass = true;
             else if (cond === 'dailyChestOpened' && !!extra.dailyChestOpened) pass = true;
             else if (cond === 'justAnsweredFirstTry' && (!!extra.justAnsweredFirstTry || extra.starsEarned === 3)) pass = true;
@@ -2722,6 +2906,9 @@ function checkBadges(extra = {}) {
         });
         if (typeof Celebrate !== 'undefined' && Celebrate.confetti) {
             Celebrate.confetti();
+        }
+        if (typeof AudioManager !== 'undefined' && typeof AudioManager.playSfx === 'function') {
+            AudioManager.playSfx('unlock');
         }
     }
 
@@ -2811,7 +2998,7 @@ function initDashboard() {
     function xpInLevel() { return state.xp % 100; }
 
     function triggerBadgesCheck(extra = {}) {
-        const unlocked = checkBadges({ ...extra });
+        const unlocked = checkBadges({ dashProgress: state.progress, ...extra });
         state.badges = DB.getBadges();
         return unlocked;
     }
@@ -2867,7 +3054,7 @@ function initDashboard() {
             <div class="dash-header-left" style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
                 <div class="dash-brand"><b>EDU</b><span>QUEST</span></div>
                 <div class="dash-grade-wrap" style="display: inline-flex; align-items: center;">
-                    <select class="dash-grade-select" onchange="window._dashChangeNiveau(this.value)" aria-label="Choisir sa classe">
+                    <select class="dash-grade-select" id="dashGradeSelect" ${state.quiz ? 'disabled title="Changement de classe verrouillé pendant un exercice"' : ''} onchange="window._dashChangeNiveau(this.value)" aria-label="Choisir sa classe">
                         ${optionsHtml}
                     </select>
                 </div>
@@ -2994,12 +3181,12 @@ function initDashboard() {
                 ? `<div class="dash-subject-island-wrap">
                      <img src="${escapeHtml(islandSrc)}" alt="${escapeHtml(s.name)}" class="dash-subject-island" loading="lazy">
                    </div>`
-                : `<div class="dash-subject-icon">${s.icon}</div>`;
+                : `<div class="dash-subject-icon">${escapeHtml(s.icon || '📘')}</div>`;
 
-            return `<div class="dash-subject-card" onclick="window._dashOpenMap('${s.id}')" tabindex="0" role="button" aria-label="${escapeHtml(s.name)}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window._dashOpenMap('${s.id}');}">
+            return `<div class="dash-subject-card" onclick="window._dashOpenMap('${escapeHtml(s.id)}')" tabindex="0" role="button" aria-label="${escapeHtml(s.name)}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window._dashOpenMap('${escapeHtml(s.id)}');}">
                 <span class="dash-pct mono">${done}/${total}</span>
                 ${iconHtml}
-                <h3>${s.name}</h3>
+                <h3>${escapeHtml(s.name)}</h3>
                 <div class="dash-progress-track"><div class="dash-progress-fill" style="width:${pct}%"></div></div>
             </div>`;
         }).join('');
@@ -3130,7 +3317,7 @@ function initDashboard() {
             <div class="dash-map-wrap">
                 <div class="dash-map-title">
                     <div class="dash-eyebrow" style="display:flex; align-items:center;">${eyebrowIcon} Parcours</div>
-                    <h2>${subject.name}</h2>
+                    <h2>${escapeHtml(subject.name)}</h2>
                     ${subject.lessons.length > MAX_VISIBLE ? `<p style="font-size:12px; color:rgba(255,255,255,0.5); margin-top:4px;">Aperçu des ${MAX_VISIBLE} premiers niveaux sur ${subject.lessons.length}.</p>` : ''}
                 </div>
                 <svg viewBox="0 0 600 210" style="width:100%; height:auto; display:block; margin-top:6px;">
@@ -3228,8 +3415,85 @@ function initDashboard() {
         </section>`;
     }
 
+    // Contrôleur de chronomètre dédié aux quiz du dashboard (fonctionne sur TOUS les exercices & réessais)
+    const dashTimer = (typeof QuizTimer !== 'undefined')
+        ? QuizTimer.create({
+            containerId: 'chrono-bar-container',
+            onExpire: () => window._dashSubmitQuiz(GameRules.TIMEOUT_ANSWER),
+        })
+        : null;
+
+    function stopDashTimer() {
+        if (dashTimer) dashTimer.stop();
+    }
+    function getDashRemainingTime() {
+        return dashTimer ? dashTimer.getRemaining() : 0;
+    }
+
+    window.addEventListener('pagehide', stopDashTimer);
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && state.quiz) {
+            window._dashCloseQuiz();
+        }
+    });
+
+    async function loadDashQuestion(quizObj, { excludeProviderId = null } = {}) {
+        const { subjectId, lessonIndex } = quizObj;
+        const currentNiv = currentNiveau();
+        const dashSubj = DASH_SUBJECTS.find(s => s.id === subjectId);
+        const duration = (typeof QuizTimer !== 'undefined') ? QuizTimer.getConfiguredDuration() : 45;
+        quizObj.chronoDuration = duration;
+        try {
+            const fetched = await AiProvider.fetchQuestion(subjectId, lessonIndex, currentNiv, {
+                variant: quizObj.variant,
+                salt: quizObj.salt,
+                subject: dashSubj,
+                subjectName: dashSubj ? dashSubj.name : subjectId,
+                localLesson: (quizObj.salt === 0 && dashSubj && dashSubj.lessons[lessonIndex]) ? dashSubj.lessons[lessonIndex] : null,
+                excludeSignatures: quizObj.failedSignatures || [],
+                excludeProviderId,
+            });
+            if (state.quiz !== quizObj) return;
+            quizObj.lesson = fetched.lesson;
+            quizObj.questionId = fetched.questionId || null;
+            quizObj.source = fetched.source || 'local';
+            quizObj.providerId = fetched.providerId || null;
+            quizObj.providerName = fetched.providerName || '';
+            quizObj.difficultyTier = fetched.difficultyTier || 'standard';
+            quizObj.tierInfo = fetched.tierInfo || null;
+            quizObj.signature = fetched.signature || (typeof QuestionBank !== 'undefined' && QuestionBank.questionSignature ? QuestionBank.questionSignature(fetched.lesson) : '');
+            quizObj.loading = false;
+            quizObj.checking = false;
+            renderQuizModal();
+        } catch (err) {
+            console.warn('[dashboard] Erreur récupération question, repli local.', err);
+            if (state.quiz !== quizObj) return;
+            const fallback = (typeof AdaptiveEngine !== 'undefined' && AdaptiveEngine.pickLocalQuestion)
+                ? AdaptiveEngine.pickLocalQuestion({
+                    subject: dashSubj,
+                    subjectId,
+                    levelIndex: lessonIndex,
+                    niveau: currentNiv,
+                    salt: quizObj.salt,
+                    excludeSignatures: quizObj.failedSignatures || [],
+                })
+                : { lesson: dashSubj && dashSubj.lessons[lessonIndex], signature: '', source: 'local', providerName: 'Banque locale', difficultyTier: 'standard' };
+            quizObj.lesson = fallback.lesson;
+            quizObj.questionId = null;
+            quizObj.source = 'local';
+            quizObj.providerName = fallback.providerName || 'Banque locale';
+            quizObj.difficultyTier = fallback.difficultyTier || 'standard';
+            quizObj.tierInfo = fallback.tierInfo || null;
+            quizObj.signature = fallback.signature || '';
+            quizObj.loading = false;
+            quizObj.checking = false;
+            renderQuizModal();
+        }
+    }
+
     function renderQuizModal() {
         if (!state.quiz) {
+            stopDashTimer();
             const oldOverlay = document.getElementById('dashQuizOverlay');
             if (oldOverlay) oldOverlay.remove();
             return;
@@ -3239,7 +3503,8 @@ function initDashboard() {
         const subject = DASH_SUBJECTS.find(s => s.id === subjectId);
         let overlay = document.getElementById('dashQuizOverlay');
 
-        if (loading) {
+        if (loading || checking === 'loading') {
+            stopDashTimer();
             if (!overlay) {
                 overlay = document.createElement('div');
                 overlay.className = 'dash-overlay';
@@ -3249,7 +3514,8 @@ function initDashboard() {
             delete overlay.dataset.quizKey;
             overlay.innerHTML = `<div class="dash-modal">
                 <div class="dash-eyebrow">${subject ? escapeHtml(subject.name) : 'Quiz'} · Niveau ${lessonIndex + 1}</div>
-                <h3 role="status" aria-live="polite">Génération de la question…</h3>
+                <h3 role="status" aria-live="polite">Génération d'une question adaptée…</h3>
+                <div class="dash-modal-actions"><button class="dash-btn-ghost" onclick="window._dashCloseQuiz()">Annuler</button></div>
             </div>`;
             return;
         }
@@ -3284,6 +3550,12 @@ function initDashboard() {
                 </div>
             </div>` : '';
 
+        const chronoEnabled = (typeof QuizTimer !== 'undefined') ? QuizTimer.isEnabled() : (getOption('modeChrono') === 'true');
+        const chronoDuration = (typeof QuizTimer !== 'undefined') ? QuizTimer.getConfiguredDuration() : 45;
+        const siteCfg = (typeof AdminStore !== 'undefined' && typeof AdminStore.getSiteConfig === 'function')
+            ? AdminStore.getSiteConfig()
+            : null;
+
         let feedback = '';
         if (checking) {
             feedback = `<div class="dash-feedback" role="status" aria-live="polite">Correction en cours…</div>`;
@@ -3291,10 +3563,10 @@ function initDashboard() {
             const multTag = multiplier > 1.0 ? `<span class="dash-combo-tag">x${multiplier.toFixed(1)}</span> ` : '';
             const expText = explanation || (lesson ? lesson.exp : '') || '';
             feedback = `<div class="dash-feedback ${isCorrect ? 'ok' : 'ko'}">
-                <div class="dash-feedback-badge">${isCorrect ? '✓ Bonne réponse ! ' + multTag : '✗ Pas tout à fait...'}</div>
+                <div class="dash-feedback-badge">${isCorrect ? '✓ Bonne réponse ! ' + multTag : '✗ Pas tout à fait... (une nouvelle question te sera proposée)'}</div>
                 ${expText ? `
                     <div class="dash-feedback-exp">
-                        <div class="dash-feedback-exp-title">📖 Explication & Règle de cours :</div>
+                        <div class="dash-feedback-exp-title">📖 Explication &amp; Règle de cours :</div>
                         <div class="dash-feedback-exp-content">${escapeHtml(expText)}</div>
                     </div>
                 ` : ''}
@@ -3302,15 +3574,17 @@ function initDashboard() {
             if (isCorrect) {
                 const isFirstSuccess = state.quiz.lessonIndex === (state.progress[subjectId] || 0);
                 if (isFirstSuccess) {
-                    // Aperçu calculé EXACTEMENT comme le crédit final (_dashFinishQuiz)
                     const preview = GameRules.computeLevelRewards({
                         stars: GameRules.starsFor(state.quiz.attempts, state.quiz.usedShield),
                         multiplier,
-                        chronoEnabled: (typeof DB !== 'undefined' && DB.getOption('modeChrono') === 'true'),
-                        timeRemaining: window.quizTimeRemaining,
+                        chronoEnabled,
+                        timeRemaining: getDashRemainingTime(),
+                        chronoDuration,
                         doubleXp: (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster(GameRules.DOUBLE_XP_ID)),
                         rewards: (typeof AdminStore !== 'undefined' && typeof AdminStore.getRewardsConfig === 'function')
                             ? AdminStore.getRewardsConfig() : null,
+                        siteXpMultiplier: siteCfg ? siteCfg.xpMultiplier : 1,
+                        siteCoinMultiplier: siteCfg ? siteCfg.coinMultiplier : 1,
                     });
                     feedback += `<div class="dash-reward-line"><span>+${preview.xp} XP ${multiplier > 1.0 ? `<b style="color:#ffa502;">(x${multiplier.toFixed(1)})</b>` : ''}</span><span>+${preview.coins} <span class="dash-coin-dot" style="display:inline-block; width:10px;height:10px; vertical-align:middle;"></span></span><span style="color:#ffbe0b; font-weight:700;">+${preview.score} pts</span></div>`;
                 } else {
@@ -3319,28 +3593,29 @@ function initDashboard() {
             }
         }
 
+        const starsWin = isCorrect ? GameRules.starsFor(state.quiz.attempts, state.quiz.usedShield) : 0;
         const actions = !answered
             ? `<div class="dash-modal-actions"><button class="dash-btn-ghost" onclick="window._dashCloseQuiz()">Annuler</button></div>`
             : isCorrect
-                ? `<div class="dash-modal-actions"><button class="dash-btn-primary" onclick="window._dashFinishQuiz()">Continuer</button></div>`
-                : `<div class="dash-modal-actions"><button class="dash-btn-ghost" onclick="window._dashCloseQuiz()">Quitter</button><button class="dash-btn-primary" onclick="window._dashRetryQuiz()">Réessayer</button></div>`;
+                ? `<div class="dash-modal-actions"><button class="dash-btn-primary" onclick="window._dashFinishQuiz()">Continuer (${'⭐'.repeat(starsWin)})</button></div>`
+                : `<div class="dash-modal-actions"><button class="dash-btn-ghost" onclick="window._dashCloseQuiz()">Quitter</button><button class="dash-btn-primary" onclick="window._dashRetryQuiz()">🔄 Réessayer (nouvelle question)</button></div>`;
 
-        const chronoEnabled = (typeof DB !== 'undefined' && DB.getOption('modeChrono') === 'true');
-        const chronoHtml = chronoEnabled && !answered && !checking 
-            ? `<div id="chrono-bar-container" style="width:100%; height:10px; background:#1c2430; border-radius:5px; margin-bottom:15px; overflow:hidden; position:relative; box-shadow:inset 0 1px 3px rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.1);">
-                <div id="chrono-bar" style="width:${Math.max(0, (window.quizTimeRemaining / 30) * 100)}%; height:100%; background:linear-gradient(90deg, #ff4757, #ffa502); transition: width 1s linear;"></div>
-                <span id="chrono-time-text" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); font-family:'Rajdhani',monospace; font-weight:700; font-size:11px; color:#fff; text-shadow:0 1px 2px #000;">⏱ ${window.quizTimeRemaining || 30}s</span>
-               </div>`
+        const chronoHtml = (chronoEnabled && !answered && !checking && typeof QuizTimer !== 'undefined')
+            ? QuizTimer.renderBarHtml('chrono-bar-container', chronoDuration)
             : '';
+        const metaStripHtml = `<div class="quiz-meta-strip">${renderQuizMetaStripHtml(state.quiz)}</div>`;
 
-        const quizKey = lesson ? ((lesson.id || lesson.q) + '_' + (state.quiz.variant || 0)) : null;
+        const quizKey = lesson ? [subjectId, lessonIndex, state.quiz.salt, state.quiz.variant, state.quiz.signature || lesson.q].join('::') : null;
 
         if (overlay && overlay.dataset.quizKey === quizKey && overlay.querySelector('.dash-quiz-body')) {
-            // Mise à jour sur place : le DOM de la question n'est PAS réinitialisé, les choix ne sautent pas !
+            const metaEl = overlay.querySelector('.quiz-meta-strip');
+            if (metaEl) metaEl.innerHTML = renderQuizMetaStripHtml(state.quiz);
+
             const comboEl = overlay.querySelector('.dash-quiz-combo-bar');
             if (comboEl) comboEl.outerHTML = comboBarHtml;
 
             if (checking || answered) {
+                stopDashTimer();
                 const chronoBar = overlay.querySelector('#chrono-bar-container');
                 if (chronoBar) chronoBar.remove();
                 const hintEl = overlay.querySelector('.dash-hint-container');
@@ -3362,7 +3637,6 @@ function initDashboard() {
             return;
         }
 
-        // Première création ou changement de question
         if (!overlay) {
             overlay = document.createElement('div');
             overlay.className = 'dash-overlay';
@@ -3372,6 +3646,7 @@ function initDashboard() {
         overlay.dataset.quizKey = quizKey || '';
         overlay.innerHTML = `<div class="dash-modal">
             <div class="dash-eyebrow">${escapeHtml(subject ? subject.name : '')} · ${escapeHtml(lesson ? lesson.title : '')}</div>
+            ${metaStripHtml}
             ${chronoHtml}
             ${comboBarHtml}
             <h3>${escapeHtml(lesson ? lesson.q : '')}</h3>
@@ -3388,19 +3663,8 @@ function initDashboard() {
             QuizEngine.freeze(body, lesson, submitted);
         } else if (lesson) {
             QuizEngine.bind(body, lesson, state.quiz, window._dashSubmitQuiz);
-            if (chronoEnabled) {
-                if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
-                window.quizChronoInterval = setInterval(() => {
-                    window.quizTimeRemaining--;
-                    const chronoBar = document.getElementById('chrono-bar');
-                    const chronoText = document.getElementById('chrono-time-text');
-                    if (chronoBar) chronoBar.style.width = Math.max(0, (window.quizTimeRemaining / 30) * 100) + '%';
-                    if (chronoText) chronoText.textContent = '⏱ ' + Math.max(0, window.quizTimeRemaining) + 's';
-                    if (window.quizTimeRemaining <= 0) {
-                        clearInterval(window.quizChronoInterval);
-                        window._dashSubmitQuiz('TEMPS_ECOULE');
-                    }
-                }, 1000);
+            if (chronoEnabled && dashTimer) {
+                dashTimer.start(chronoDuration);
             }
         }
     }
@@ -3408,6 +3672,10 @@ function initDashboard() {
     /* ============ ACTIONS (exposées sur window pour les onclick inline) ============ */
 
     window._dashChangeNiveau = function(val) {
+        if (state.quiz) {
+            showNotification('Termine ou ferme l\'exercice en cours avant de changer de classe.', 'error');
+            return;
+        }
         DB.setNiveau(val);
         if (typeof getEffectiveSubjects === 'function') {
             DASH_SUBJECTS = getEffectiveSubjects(val);
@@ -3417,12 +3685,19 @@ function initDashboard() {
             : [];
         const found = niveaux.find(n => n.id === val);
         const label = found ? (found.label || found.name) : val;
-        showNotification(`🎓 Programme actualisé pour la classe : ${label}`, 'info');
+        if (state.view === 'map' && state.currentSubject && !DASH_SUBJECTS.some(s => s.id === state.currentSubject)) {
+            state.view = 'dashboard';
+            state.currentSubject = null;
+            showNotification(`🎓 Programme actualisé (${label}) : retour aux matières autorisées.`, 'info');
+        } else {
+            showNotification(`🎓 Programme actualisé pour la classe : ${label}`, 'info');
+        }
         render();
     };
 
     function navigateToView(viewName, subjectId = null, push = true) {
         if (state.quiz) {
+            stopDashTimer();
             state.quiz = null;
             const overlay = document.getElementById('dashQuizOverlay');
             if (overlay) overlay.remove();
@@ -3468,40 +3743,33 @@ function initDashboard() {
     };
 
     window._dashOpenQuiz = async function (subjectId, lessonIndex) {
-        window.quizTimeRemaining = 30;
-        if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
-        const initialVariant = Math.floor(Math.random() * 3);
-        state.quiz = {
+        stopDashTimer();
+        const currentNiv = currentNiveau();
+        const persisted = (typeof DB !== 'undefined' && typeof DB.getLevelAttempt === 'function')
+            ? DB.getLevelAttempt(subjectId, currentNiv, lessonIndex)
+            : { fails: 0, usedShield: false, questionSalt: 0, failedSignatures: [] };
+
+        const initialVariant = persisted.questionSalt > 0
+            ? (persisted.questionSalt % 3)
+            : Math.floor(Math.random() * 3);
+
+        state.quiz = QuizSession.createAttempt({
             subjectId,
             lessonIndex,
             variant: initialVariant,
+            salt: persisted.questionSalt || 0,
+            attempts: persisted.fails || 0,
+            usedShield: Boolean(persisted.usedShield),
+            failedSignatures: Array.isArray(persisted.failedSignatures) ? persisted.failedSignatures.slice() : [],
             loading: true,
-            lesson: null,
-            questionId: null,
-            submitted: null,
-            answered: false,
-            isCorrect: false,
-            attempts: 0,
-            explanation: '',
-            usedShield: false
-        };
+            checking: 'loading',
+        });
         render();
-
-        const currentNiv = currentNiveau();
-        const dashSubj = DASH_SUBJECTS.find(s => s.id === subjectId);
-        const { lesson, questionId } = await AiProvider.fetchQuestion(
-            subjectId, lessonIndex, currentNiv, { variant: initialVariant, subject: dashSubj }
-        );
-
-        if (!state.quiz || state.quiz.subjectId !== subjectId || state.quiz.lessonIndex !== lessonIndex) return;
-        state.quiz.lesson = lesson;
-        state.quiz.questionId = questionId;
-        state.quiz.loading = false;
-        renderQuizModal();
+        await loadDashQuestion(state.quiz);
     };
 
     window._dashCloseQuiz = function () {
-        if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
+        stopDashTimer();
         state.quiz = null;
         const overlay = document.getElementById('dashQuizOverlay');
         if (overlay) overlay.remove();
@@ -3509,50 +3777,44 @@ function initDashboard() {
     };
 
     window._dashRetryQuiz = async function () {
-        if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
-        window.quizTimeRemaining = 30;
+        if (!state.quiz) return;
+        stopDashTimer();
         const overlay = document.getElementById('dashQuizOverlay');
         if (overlay) delete overlay.dataset.quizKey;
-        const { subjectId, lessonIndex } = state.quiz;
-        const nextVariant = ((state.quiz.variant || 0) + 1 + Math.floor(Math.random() * 2)) % 3;
-        state.quiz.variant = nextVariant;
-        state.quiz.submitted = null;
-        state.quiz.answered = false;
-        state.quiz.isCorrect = false;
-        state.quiz.checking = false;
+        const prevProviderId = state.quiz.providerId;
+        const nextVariant = QuizSession.nextVariant(state.quiz.variant);
+        QuizSession.resetForRetry(state.quiz, nextVariant);
         state.quiz.loading = true;
-        state.quiz.explanation = '';
         renderQuizModal();
-
-        const currentNiv = currentNiveau();
-        const dashSubj = DASH_SUBJECTS.find(s => s.id === subjectId);
-        const { lesson, questionId } = await AiProvider.fetchQuestion(
-            subjectId, lessonIndex, currentNiv, { variant: nextVariant, subject: dashSubj }
-        );
-        if (!state.quiz || state.quiz.subjectId !== subjectId || state.quiz.lessonIndex !== lessonIndex) return;
-        state.quiz.lesson = lesson;
-        state.quiz.questionId = questionId;
-        state.quiz.loading = false;
-        renderQuizModal();
+        await loadDashQuestion(state.quiz, { excludeProviderId: prevProviderId });
     };
 
-    /* v1.26 : pipeline partagé avec la carte (js/core/quiz-session.js) */
     window._dashSubmitQuiz = async function (rawAnswer) {
-        if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
+        stopDashTimer();
         const quiz = state.quiz;
         if (!quiz) return;
         await QuizSession.submit(quiz, rawAnswer, {
             render: renderQuizModal,
             isStale: () => state.quiz !== quiz,
+            subjectId: quiz.subjectId,
+            niveau: currentNiveau(),
+            levelIndex: quiz.lessonIndex,
+            chronoDuration: quiz.chronoDuration || (typeof QuizTimer !== 'undefined' ? QuizTimer.getConfiguredDuration() : 45),
         });
     };
 
     window._dashFinishQuiz = function () {
-        if (window.quizChronoInterval) clearInterval(window.quizChronoInterval);
-        if (!state.quiz || !state.quiz.isCorrect) return; // double clic / appel parasite
+        stopDashTimer();
+        if (!state.quiz || !state.quiz.isCorrect) return;
         const { subjectId, lessonIndex, attempts } = state.quiz;
         const usedShield = Boolean(state.quiz.usedShield);
         const stars = GameRules.starsFor(attempts, usedShield);
+
+        // Réussite validée → purge du compteur anti-triche pour ce niveau
+        if (typeof DB !== 'undefined' && typeof DB.clearLevelAttempt === 'function') {
+            DB.clearLevelAttempt(subjectId, currentNiveau(), lessonIndex);
+        }
+
         const streakRes = (typeof DB !== 'undefined' && DB.recordLevelVictory) ? DB.recordLevelVictory() : { streak: 1, combo: 0, multiplier: 1.0 };
         const mult = (streakRes && streakRes.multiplier) || ((typeof DB !== 'undefined' && DB.getMultiplier) ? DB.getMultiplier() : 1.0);
         let xpGained = 0;
@@ -3565,9 +3827,10 @@ function initDashboard() {
             const rewards = (typeof AdminStore !== 'undefined' && typeof AdminStore.getRewardsConfig === 'function')
                 ? AdminStore.getRewardsConfig()
                 : GameRules.DEFAULT_REWARDS;
+            const siteCfg = (typeof AdminStore !== 'undefined' && typeof AdminStore.getSiteConfig === 'function')
+                ? AdminStore.getSiteConfig()
+                : null;
 
-            // Potion Double XP (v1.26 : plus de débit tardif du bouclier ici,
-            // il n'est consommé qu'au moment de la 1re erreur — QuizSession)
             let usedDoubleXp = false;
             if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster(GameRules.DOUBLE_XP_ID)) {
                 usedDoubleXp = DB.useBooster(GameRules.DOUBLE_XP_ID);
@@ -3577,10 +3840,13 @@ function initDashboard() {
             const gains = GameRules.computeLevelRewards({
                 stars,
                 multiplier: mult,
-                chronoEnabled: (typeof DB !== 'undefined' && DB.getOption('modeChrono') === 'true'),
-                timeRemaining: window.quizTimeRemaining,
+                chronoEnabled: (typeof QuizTimer !== 'undefined') ? QuizTimer.isEnabled() : (getOption('modeChrono') === 'true'),
+                timeRemaining: getDashRemainingTime(),
+                chronoDuration: (typeof QuizTimer !== 'undefined') ? QuizTimer.getConfiguredDuration() : 45,
                 doubleXp: usedDoubleXp,
                 rewards,
+                siteXpMultiplier: siteCfg ? siteCfg.xpMultiplier : 1,
+                siteCoinMultiplier: siteCfg ? siteCfg.coinMultiplier : 1,
             });
             xpGained = gains.xp;
             coinsGained = gains.coins;
@@ -3611,6 +3877,9 @@ function initDashboard() {
         persistState();
 
         Celebrate.confetti();
+        if (typeof AudioManager !== 'undefined' && typeof AudioManager.playSfx === 'function') {
+            AudioManager.playSfx('victory');
+        }
         DailyQuests.track(GameRules.questDelta({ stars, attempts, xp: xpGained }));
 
         render();
@@ -3628,6 +3897,7 @@ function initDashboard() {
         const q = DailyQuests.claim(id);
         if (!q) return;
         if (btn) Celebrate.burst(btn);
+        if (typeof AudioManager !== 'undefined' && typeof AudioManager.playSfx === 'function') AudioManager.playSfx('coin');
         syncWallet();
         triggerBadgesCheck({ questClaimed: true });
         render();
@@ -3639,6 +3909,7 @@ function initDashboard() {
         if (!coins) return;
         if (btn) Celebrate.burst(btn);
         Celebrate.confetti();
+        if (typeof AudioManager !== 'undefined' && typeof AudioManager.playSfx === 'function') AudioManager.playSfx('victory');
         syncWallet();
         triggerBadgesCheck({ dailyChestOpened: true });
         render();
@@ -3658,6 +3929,7 @@ function initDashboard() {
             return;
         }
         state.coins -= item.cost;
+        if (typeof AudioManager !== 'undefined' && typeof AudioManager.playSfx === 'function') AudioManager.playSfx('coin');
         const cat = item.category || 'aura';
 
         if (cat === 'booster') {
@@ -3682,7 +3954,6 @@ function initDashboard() {
         } else if (cat === 'avatar') {
             state.equippedAvatar = id;
         } else {
-            // aura
             state.equippedAura = id;
             state.equippedSkin = id;
         }
@@ -3739,9 +4010,12 @@ function initDashboard() {
     });
 
     window.addEventListener('pageshow', () => {
-        // En cas de retour (BFCache ou retour arrière du navigateur),
-        // resynchronise silencieusement l'état sans rechargement de page
+        // Resynchronise aussi les matières selon la classe courante (ex: modifiée dans Options)
+        DASH_SUBJECTS = getEffectiveSubjects();
         state = loadState();
+        DASH_SUBJECTS.forEach(s => {
+            if (!(s.id in state.progress)) state.progress[s.id] = 0;
+        });
         render();
     });
 
@@ -3753,69 +4027,44 @@ function initDashboard() {
 /* ==========================================================================
    INITIALISATION GLOBALE — Point d'entrée unique
    ========================================================================== */
-/**
- * Exécuté quand le DOM est entièrement chargé (tous les éléments HTML sont disponibles).
- * Lance les fonctions d'initialisation communes à toutes les pages, puis les
- * initialiseurs spécifiques à chaque page.
- *
- * ORDRE D'EXÉCUTION :
- * 1. Musique    → prépare la lecture audio (pas encore lancée)
- * 2. Environnement → génère les étoiles et nuages
- * 3. Footer     → version + crédits personnalisés (panneau d'administration)
- * 4. Cookies    → bandeau de consentement RGPD (cookies.js, automatique)
- * 5. Fullscreen → tente le plein écran si activé dans les options
- * 6. Initialiseurs de pages → seul celui de la bonne page fait quelque chose
- *
- * DÉTECTION DE PAGE :
- * Chaque initX() vérifie si ses éléments HTML cibles existent.
- * Si non → retour immédiat sans erreur.
- * Si oui → initialisation complète.
- * Cela évite d'avoir un fichier JS par page.
- */
 document.addEventListener('DOMContentLoaded', () => {
 
-    // 1. Initialisation de la musique (lit les préférences, charge la piste)
+    // 0. Apparence globale (thème boutique + couleur interface + couleur/luminosité boutons) & annonce
+    applyAppearanceSettings();
+    applySiteAnnouncement();
+
+    // 1. Initialisation du gestionnaire audio global (musique continue + zéro réactivation parasite)
     initGlobalMusic();
 
     // 2. Création des éléments visuels (étoiles + nuages)
     createEnvironment();
 
-    // 3. Mise à jour du numéro de version dans le footer
+    // 3. Mise à jour du numéro de version & des crédits dans le footer
     updateFooterVersion();
-
-    // 3bis. Crédits du créateur (v1.20) — personnalisables depuis le panneau
     refreshFooterCredits();
-
-    // 3ter. Consentement cookies (v1.20) — filet de sécurité si cookies.js
-    // n'a pas pu s'initialiser (le bandeau lui-même est auto-suffisant)
     setupCookieConsentFallback();
 
     // 4. Plein écran automatique si activé dans les options
-    // Première tentative au chargement (souvent bloquée par les navigateurs)
     applyFullscreenSetting();
-
-    // Deuxième tentative au premier clic (les navigateurs l'autorisent alors)
     function onFirstInteraction() {
         applyFullscreenSetting();
-        document.removeEventListener('click', onFirstInteraction, true); // Retire l'écouteur
+        document.removeEventListener('click', onFirstInteraction, true);
     }
     document.addEventListener('click', onFirstInteraction, true);
 
     // 5. Initialisation des fonctionnalités spécifiques à chaque page
-    // Chaque fonction détecte si elle est sur la bonne page avant d'agir
-    initAccueil();    // index.html   → bouton Quitter
-    initConnexion();  // login.html   → formulaires connexion + inscription
-    initOptions();    // options.html → contrôles de préférences
-
-    initMap();        // map.html     → carte de progression par niveau
-    initDashboard();  // dashboard.html → tableau de bord + quiz + boutique
+    initAccueil();
+    initConnexion();
+    initOptions();
+    initMap();
+    initDashboard();
 
     // Ouverture automatique de la modale des options si demandée via l'URL (#options)
     if (window.location.hash === '#options') {
         const modalOptions = document.getElementById('modalOptions');
         if (modalOptions) {
+            _optionsOpenedFromHash = true;
             modalOptions.hidden = false;
-            // Supprime le hash de l'URL pour ne pas le rouvrir au rechargement
             history.replaceState(null, null, window.location.pathname + window.location.search);
         }
     }

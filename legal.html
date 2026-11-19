@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <!--
-  LEGAL.HTML — EDUQUEST v1.26.0
+  LEGAL.HTML — EDUQUEST v1.27.0
   Page légale : mentions légales, politique de confidentialité et gestion des cookies.
 -->
 <head>
@@ -14,9 +14,9 @@
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="EDUQUEST">
     <meta property="og:title" content="Mentions légales & confidentialité — EDUQUEST">
-    <meta property="og:image" content="Image/logo.png">
+    <meta property="og:image" content="Image/logo.webp">
     <meta name="twitter:card" content="summary_large_image">
-    <link rel="icon" type="image/png" href="Image/logo.png">
+    <link rel="icon" type="image/webp" href="Image/logo.webp">
     <link rel="stylesheet" href="css/admin.css">
     <style>
         /* Ajustements propres à la page légale (admin.css fournit la base) */
@@ -250,14 +250,19 @@
         </section>
 
         <p class="adm-hint" style="text-align:center; margin-top:6px;">
-            EDUQUEST v1.26.0 — Application éducative front-end (mode local).<br>
+            EDUQUEST v1.27.0 — Application éducative front-end (mode local).<br>
             Contenus pédagogiques conformes aux programmes scolaires officiels (6e → Terminale).
         </p>
     </main>
 
+    <script src="js/db.js"></script>
     <script src="js/admin-store.js"></script>
+    <script src="js/core/audio-manager.js"></script>
     <script src="js/cookies.js"></script>
     <script>
+        if (window.AudioManager && typeof window.AudioManager.init === 'function') {
+            window.AudioManager.init();
+        }
         /**
          * Alimente la page avec les crédits personnalisés (AdminStore) et
          * branche le bouton « Gérer mes cookies » sur le bandeau (cookies.js).

@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="fr">
 <!--
-  MAP.HTML — EDUQUEST v1.26.0
-  Carte interactive : progression niveau par niveau, personnage et modale de quiz.
+  MAP.HTML — EDUQUEST v1.27.0
+  Carte interactive : progression niveau par niveau, personnage, chronomètre et quiz adaptatif.
 -->
 <head>
     <meta charset="UTF-8">
@@ -41,21 +41,11 @@
              Les valeurs de .subject-icon et <h1> sont injectées par JS (initMap).
         ================================================================ -->
         <section class="map-header" aria-label="Carte des niveaux">
-            <!-- Côté gauche : icône, titre de la matière et sélecteur de classe -->
+            <!-- Côté gauche : icône, titre de la matière et badge classe en lecture seule -->
             <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                 <span class="subject-icon">📚</span>
                 <h1>Matière</h1>
-                <div class="dash-grade-wrap" style="display: inline-flex; align-items: center;">
-                    <select class="dash-grade-select" id="mapGradeSelect" aria-label="Choisir sa classe">
-                        <option value="6eme">🎓 6ème</option>
-                        <option value="5eme">🎓 5ème</option>
-                        <option value="4eme">🎓 4ème</option>
-                        <option value="3eme">🎓 3ème</option>
-                        <option value="2nde">🎓 2nde</option>
-                        <option value="1ere">🎓 1ère</option>
-                        <option value="terminale">🎓 Terminale</option>
-                    </select>
-                </div>
+                <span class="map-grade-badge" id="mapGradeBadge" title="Ta classe actuelle (modifiable depuis le tableau de bord ou les options)">🎓 6ème</span>
             </div>
             <!-- Côté droit : boutons d'action -->
             <div style="display: flex; gap: 10px; align-items: center; pointer-events: auto;">
@@ -129,6 +119,7 @@
                  pour un rendu identique.
             ============================================================ -->
             <div id="modal-quiz-zone" hidden>
+                <div id="modal-quiz-meta" class="quiz-meta-strip"></div>
                 <p id="modal-quiz-question" class="modal-subtitle"></p>
                 <div id="modal-quiz-hint-slot"></div>
                 <div id="modal-quiz-body" class="dash-quiz-body"></div>
@@ -167,8 +158,18 @@
         </div>
     </div>
 
+    <!-- Overlay de transition dynamique d'expulsion si la matière ne correspond pas à la classe -->
+    <div id="mapExpelOverlay" class="map-expel-overlay" role="alertdialog" aria-modal="true" hidden>
+        <div class="map-expel-card">
+            <div class="map-expel-icon">🧭</div>
+            <h2 class="map-expel-title" id="mapExpelTitle">Changement de parcours</h2>
+            <p class="map-expel-text" id="mapExpelText">Cette matière ne fait pas partie du programme de ta classe actuelle. Retour au tableau de bord…</p>
+            <div class="map-expel-bar"><div class="map-expel-bar-fill"></div></div>
+        </div>
+    </div>
+
     <footer>
-        <div class="footer">Version 1.26.0</div>
+        <div class="footer">Version 1.27.0</div>
         <div class="legal-links"><a href="legal.html">Mentions légales</a> · <a href="legal.html#cookies" onclick="window.dispatchEvent(new Event('eduquest:cookie-reopen'))">Cookies</a></div>
     </footer>
 
@@ -176,6 +177,9 @@
     <script src="js/admin-store.js"></script>
     <script src="js/quiz-engine.js"></script>
     <script src="js/question-bank.js"></script>
+    <script src="js/core/audio-manager.js"></script>
+    <script src="js/core/quiz-timer.js"></script>
+    <script src="js/core/adaptive-engine.js"></script>
     <script src="js/ai-provider.js"></script>
     <script src="js/core/game-rules.js"></script>
     <script src="js/core/quiz-session.js"></script>

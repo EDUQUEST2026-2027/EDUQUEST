@@ -71,7 +71,13 @@ Puis ouvrez l'URL affichée (ex. `http://localhost:8080`).
   - **Thèmes cosmiques & Potions magiques.**
 - **🏆 Succès & Badges déblocables :** Système de trophées récompensant chaque grand palier (premier quiz, sans faute, score parfait, séries de victoires, maître du combo, maître des îles...).
 - **🎉 Célébrations & Confettis natifs :** Moteur de confettis Canvas autonome (`Celebrate`), 100 % hors-ligne sans CDN, célébrant les 3 étoiles, les montées de niveau, la réussite des quêtes et l'ouverture du coffre.
-- **🤖 Mode IA configurable :** Génération et correction dynamique des questions via scénarios Make (`ai-provider.js`), paramétrables dans le panneau d'administration, avec repli local transparent.
+- **🤖 Moteur adaptatif local & Pool Multi-IA :**
+  - **Moteur adaptatif (`js/core/adaptive-engine.js`) :** mémorise les questions déjà vues pour éviter les répétitions, ajuste la difficulté (Consolidation / Standard / Défi +) selon les réussites et réinitialise vers une nouvelle question après chaque échec.
+  - **Pool Multi-IA (`js/ai-provider.js`) :** accepte un lot de plusieurs fournisseurs IA (Make.com, API compatibles OpenAI/Mistral/Groq/Ollama, Google Gemini) sélectionnés aléatoirement par question avec bascule en cascade et repli local 100 % hors-ligne.
+- **🔊 Gestionnaire audio global (`js/core/audio-manager.js`) :** musique continue sur tout le site (accueil, matières, cartes, niveaux, légal) avec bouton rapide muet, respect strict des coupures manuelles (aucune réactivation aléatoire) et bruitages Web Audio synthétisés.
+- **⏱️ Chronomètre unifié (`js/core/quiz-timer.js`) & Anti-triche étoiles :** compte à rebours fiable sur tous les exercices (1 à 100) et réessais ; les erreurs sont persistées par niveau afin qu'un retour de page ou rechargement ne permette jamais de récupérer 3 étoiles.
+- **🎨 Apparence personnalisable (Options) :** réglage de la couleur de l'interface, de la couleur des boutons et de leur luminosité (adoucie par défaut à 80 %).
+- **🏛️ Filtrage strict Collège / Lycée :** Technologie réservée au collège (6e → 3e), SES et NSI réservées au lycée (2nde → Terminale), Philosophie réservée à la Terminale ; badge classe en lecture seule en exercice et expulsion dynamique en cas d'accès hors programme.
 - **🔒 Respect de la vie privée & RGPD :** Zéro publicité, zéro traceur tiers intrusif, bandeau de cookies conforme CNIL (`cookies.js`) et mentions légales complètes (`legal.html`).
 
 ---
@@ -83,33 +89,36 @@ Puis ouvrez l'URL affichée (ex. `http://localhost:8080`).
 ├── service-worker.js, manifest.webmanifest, robots.txt, sitemap.xml, llms.txt, schema.sql
 ├── css/   → global.css, style.css, quests.css, admin.css
 ├── js/    → app.js, db.js, quiz-engine.js, question-bank.js, admin.js, admin-store.js, ai-provider.js, cookies.js
-│   ├── core/     → game-rules.js, quiz-session.js
+│   ├── core/     → audio-manager.js, quiz-timer.js, adaptive-engine.js, game-rules.js, quiz-session.js
 │   └── features/ → daily-quests.js
 ├── docs/  → ARCHITECTURE.md, GUIDE_CONTRIBUTION.md, API_PERSISTENCE.md
-└── tests/ → admin-store, cookies, daily-quests, db, game-rules-and-session, question-bank, quiz-engine (.test.js), test-helper.js
+└── tests/ → 93 tests unitaires Node.js (adaptive-and-multi-ai, admin-store, audio-manager, cookies, daily-quests, db, game-rules-and-session, question-bank, quiz-engine, quiz-timer)
 ```
 
 | Fichier / Dossier | Rôle |
 |---|---|
-| `index.html` | Page d'accueil : menu principal, modales Options & Connexion, univers spatial |
-| `dashboard.html` | Tableau de bord élève : sélection de classe, missions quotidiennes, sélection des 13 matières, boutique, succès |
-| `map.html` | Carte interactive d'une matière : parcours des îles, niveaux jouables (1 à 100), modale de quiz avec combo et timer chrono |
-| `admin.html` | **Panneau d'administration unifié** : interface d'administration avec navigation par onglets |
+| `index.html` | Page d'accueil : menu principal, modales Options & Apparence, Connexion & confirmation Quitter |
+| `dashboard.html` | Tableau de bord élève : sélection de classe, missions quotidiennes, matières filtrées par cycle, boutique, succès |
+| `map.html` | Carte interactive d'une matière : parcours des îles (1 à 100), badge classe en lecture seule, expulsion hors programme, quiz |
+| `admin.html` | **Panneau d'administration unifié** : membres, niveaux, matières, leçons, boutique, récompenses, pool Multi-IA & crédits |
 | `legal.html` | Mentions légales, politique de confidentialité RGPD et gestion des cookies |
-| `test.html` | **Banc de tests navigateur autonome** : interface d'évaluation complète avec retour visuel immédiat, benchmark et banc interactif |
+| `test.html` | **Banc de tests navigateur autonome** : suites QA complètes avec sandbox isolé et benchmark |
 | `css/` | Feuilles de style modulaires : `global.css`, `style.css`, `quests.css` et `admin.css` |
-| `js/app.js` | Contrôleur principal de jeu : gestionnaire de vues, audio, HUD, boutique, confettis Canvas |
-| `js/db.js` | Couche d'accès aux données : persistance locale isolée par utilisateur (`localStorage`) ou API SQL optionnelle |
+| `js/app.js` | Contrôleur principal de jeu : vues, apparence, HUD, boutique, confettis Canvas |
+| `js/db.js` | Couche d'accès aux données : persistance isolée par compte (progression, tentatives anti-triche, profil adaptatif) |
 | `js/quiz-engine.js` | Moteur de rendu et de validation des 6 types de questions avec tolérance orthographique Levenshtein |
-| `js/question-bank.js` | Banque de questions et générateur procédural déterministe (PRNG mulberry32) pour les niveaux 6 à 100 par matière |
-| `js/core/game-rules.js` | Règles de jeu pures partagées (calcul d'étoiles, règles du bouclier, combos, barèmes) |
-| `js/core/quiz-session.js` | Pipeline unifié de soumission des quiz et consommation sécurisée des boosters |
+| `js/question-bank.js` | Banque de questions et générateurs procéduraux sans doublons (decks déterministes anti-répétition) |
+| `js/core/audio-manager.js` | Gestionnaire audio global : continuité musicale inter-pages, respect de coupure manuelle, bruitages SFX |
+| `js/core/quiz-timer.js` | Chronomètre unifié à horloge réelle (`Date.now`) fonctionnel sur tous les exercices et réessais |
+| `js/core/adaptive-engine.js` | Moteur adaptatif local : non-répétition persistée, reset sur échec et paliers Consolidation/Standard/Défi + |
+| `js/core/game-rules.js` | Règles de jeu pures partagées (étoiles, bouclier, combos, barèmes, multiplicateurs site) |
+| `js/core/quiz-session.js` | Pipeline unifié de soumission des quiz, persistance anti-triche et consommation sécurisée des boosters |
 | `js/features/daily-quests.js` | Moteur de quêtes journalières déterministes (tirage Fisher-Yates, renouvellement minuit) |
-| `js/ai-provider.js` | Adaptateur IA : communication avec Make/webhooks pour génération/correction à la volée avec repli local |
-| `js/admin-store.js` | Configuration centrale du panneau d'administration (niveaux, leçons, configuration site & IA, boutique, récompenses) |
-| `js/admin.js` | Moteur et interface utilisateur du panneau d'administration |
+| `js/ai-provider.js` | Orchestrateur Multi-IA (Make, OpenAI-compatible, Gemini) avec tirage aléatoire, cascade failover et repli adaptatif |
+| `js/admin-store.js` | Configuration centrale, règles strictes Collège/Lycée, boutique, badges et pool IA |
+| `js/admin.js` | Interface du panneau d'administration |
 | `js/cookies.js` | Bandeau de consentement RGPD conforme CNIL (mémorisation du choix 12 mois) |
-| `service-worker.js` | PWA et mise en cache hors-ligne intégrale de l'application (v1.26.0) |
+| `service-worker.js` | PWA v1.27.0 (network-first HTML/JS/CSS + cache-first médias, 100 % hors-ligne) |
 | `schema.sql` | Schéma relationnel complet pour le déploiement avec serveur backend optionnel |
 | `docs/` | Guides techniques approfondis : [Architecture](docs/ARCHITECTURE.md), [Guide de contribution](docs/GUIDE_CONTRIBUTION.md), [Persistance des données](docs/API_PERSISTENCE.md) |
 

@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EDUQUEST — Banc de Tests Automatisés & Outil QA (v1.26.0)</title>
-    <link rel="icon" href="Image/logo.png" type="image/png">
+    <title>EDUQUEST — Banc de Tests Automatisés & Outil QA (v1.27.0)</title>
+    <link rel="icon" href="Image/logo.webp" type="image/webp">
     <link rel="stylesheet" href="css/global.css">
     <style>
         :root {
@@ -471,7 +471,7 @@
         <header class="qa-header">
             <div class="title-group">
                 <h1>🛡️ EDUQUEST — Suite QA & Banc de Tests</h1>
-                <p>Outil d'automatisation, validation unitaire, régression & stress tests (v1.26.0 - Zero Dependency)</p>
+                <p>Outil d'automatisation, validation unitaire, régression & stress tests (v1.27.0 - Zero Dependency)</p>
             </div>
             <div class="header-actions">
                 <a href="index.html" class="btn">← Menu Principal</a>
@@ -527,7 +527,7 @@
         <main id="suites-container"></main>
 
         <footer class="test-runner-footer">
-            EDUQUEST v1.26.0 • Banc de validation Vanilla ES6+ 100% hors-ligne & compatible double-clic <code>file:///</code><br>
+            EDUQUEST v1.27.0 • Banc de validation Vanilla ES6+ 100% hors-ligne & compatible double-clic <code>file:///</code><br>
             Les tests s'exécutent dans une mémoire isolée : vos données de joueur et comptes enregistrés sur cet appareil ne sont jamais altérés.
         </footer>
     </div>
@@ -539,6 +539,9 @@
     <script src="js/quiz-engine.js"></script>
     <script src="js/question-bank.js"></script>
     <script src="js/admin-store.js"></script>
+    <script src="js/core/audio-manager.js"></script>
+    <script src="js/core/quiz-timer.js"></script>
+    <script src="js/core/adaptive-engine.js"></script>
     <script src="js/ai-provider.js"></script>
     <script src="js/cookies.js"></script>
     <script src="js/core/game-rules.js"></script>
@@ -1118,6 +1121,74 @@
             });
         });
 
+        // --- SUITE 12 : AUDIO GLOBAL, CHRONO, ADAPTATIF, ANTI-TRICHE & CURRICULUM (v1.27.0) ---
+        describe('Correctifs v1.27.0 — Audio, Chrono, Anti-triche, Adaptatif & Cycles', function (it) {
+            it('AudioManager : respecte la coupure manuelle et stopAll()', function () {
+                AudioManager._resetForTests();
+                DB.saveOption('sonsActifs', 'true');
+                DB.saveOption('musiqueActive', 'true');
+                assert.strictEqual(AudioManager.canPlayMusic(), true);
+                AudioManager.setManualMute(true);
+                assert.strictEqual(AudioManager.canPlayMusic(), false);
+                AudioManager.setManualMute(false);
+                AudioManager.stopAll();
+                assert.strictEqual(AudioManager.canPlayMusic(), false);
+                AudioManager._resetForTests();
+            });
+
+            it('QuizTimer : démarre et redémarre proprement sur plusieurs exercices successifs', function () {
+                const t = QuizTimer.create({ containerId: 'qa-chrono-container' });
+                t.start(45);
+                assert.strictEqual(t.isRunning(), true);
+                t.stop();
+                t.start(30);
+                assert.strictEqual(t.isRunning(), true);
+                t.stop();
+                assert.strictEqual(t.isRunning(), false);
+            });
+
+            it('Anti-triche étoiles : erreur persistée limite la récompense à 2 étoiles max', function () {
+                DB.clearLevelAttempt('maths', '6eme', 0);
+                DB.recordLevelFailure('maths', '6eme', 0, { failedSignature: 'sig-1' });
+                const p = DB.getLevelAttempt('maths', '6eme', 0);
+                assert.strictEqual(p.fails, 1);
+                assert.strictEqual(GameRules.starsFor(p.fails + 1, p.usedShield), 2);
+                DB.clearLevelAttempt('maths', '6eme', 0);
+            });
+
+            it('AdaptiveEngine : non-répétition sur 10 niveaux consécutifs et reset sur échec', function () {
+                AdaptiveEngine.resetAll();
+                const seen = new Set();
+                for (let i = 0; i < 10; i++) {
+                    const q = AdaptiveEngine.pickLocalQuestion({ subjectId: 'histoire', levelIndex: i, niveau: '3eme' });
+                    assert.strictEqual(seen.has(q.signature), false);
+                    seen.add(q.signature);
+                }
+                const first = AdaptiveEngine.pickLocalQuestion({ subjectId: 'maths', levelIndex: 0, niveau: '6eme', salt: 0 });
+                const retry = AdaptiveEngine.pickLocalQuestion({ subjectId: 'maths', levelIndex: 0, niveau: '6eme', salt: 1, excludeSignatures: [first.signature] });
+                assert.notStrictEqual(retry.signature, first.signature);
+            });
+
+            it('Curriculum strict : SES, Philosophie et NSI exclus du Collège (6e→3e) ; Philo réservée à la Terminale', function () {
+                AdminStore.resetAll();
+                const subs = AdminStore.applyOverrides([
+                    { id: 'techno', name: 'Technologie' },
+                    { id: 'ses', name: 'SES (Économie)' },
+                    { id: 'philo', name: 'Philosophie' },
+                    { id: 'nsi', name: 'NSI & Numérique' },
+                ]);
+                ['6eme', '5eme', '4eme', '3eme'].forEach(g => {
+                    assert.strictEqual(AdminStore.isSubjectAllowedForNiveau(subs.find(s => s.id === 'ses'), g), false);
+                    assert.strictEqual(AdminStore.isSubjectAllowedForNiveau(subs.find(s => s.id === 'philo'), g), false);
+                    assert.strictEqual(AdminStore.isSubjectAllowedForNiveau(subs.find(s => s.id === 'nsi'), g), false);
+                    assert.strictEqual(AdminStore.isSubjectAllowedForNiveau(subs.find(s => s.id === 'techno'), g), true);
+                });
+                assert.strictEqual(AdminStore.isSubjectAllowedForNiveau(subs.find(s => s.id === 'philo'), '2nde'), false);
+                assert.strictEqual(AdminStore.isSubjectAllowedForNiveau(subs.find(s => s.id === 'philo'), 'terminale'), true);
+                assert.strictEqual(AdminStore.isSubjectAllowedForNiveau(subs.find(s => s.id === 'ses'), '2nde'), true);
+            });
+        });
+
         /* =========================================================================
            5. MOTEUR D'EXÉCUTION, UI & EXPORT
            ========================================================================= */
@@ -1334,7 +1405,7 @@
             const pass = lastResults.filter(r => r.passed).length;
             const fail = total - pass;
             const md = [
-                `# 🛡️ EDUQUEST — Rapport QA v1.26.0`,
+                `# 🛡️ EDUQUEST — Rapport QA v1.27.0`,
                 `- **Date :** ${new Date().toISOString()}`,
                 `- **Total :** ${total} | **Succès :** ${pass} | **Échecs :** ${fail}`,
                 `- **Statut :** ${fail === 0 ? '✅ 100% PASSANT' : '⚠️ ' + fail + ' ÉCHECS'}`,
@@ -1353,7 +1424,7 @@
 
         document.getElementById('btn-export-json').addEventListener('click', () => {
             const report = {
-                version: '1.26.0',
+                version: '1.27.0',
                 timestamp: new Date().toISOString(),
                 summary: {
                     total: lastResults.length,

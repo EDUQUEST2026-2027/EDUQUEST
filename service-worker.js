@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eduquest-cache-v1.26.0';
+const CACHE_NAME = 'eduquest-cache-v1.27.0';
 
 const PRECACHE_URLS = [
   './',
@@ -20,12 +20,17 @@ const PRECACHE_URLS = [
   'js/cookies.js',
   'js/question-bank.js',
   'js/quiz-engine.js',
+  'js/core/audio-manager.js',
+  'js/core/quiz-timer.js',
+  'js/core/adaptive-engine.js',
   'js/core/game-rules.js',
   'js/core/quiz-session.js',
   'js/features/daily-quests.js',
   'manifest.webmanifest',
+  'fonts/PressStart2P-Regular.woff2',
+  'fonts/Silkscreen-Regular.woff2',
+  'fonts/Silkscreen-Bold.woff2',
   'Image/logo.webp',
-  'Image/logo.png',
   'Image/personnages/robot.webp',
   'Image/personnages/einstein.webp',
   'Image/personnages/marie-curie.webp',
@@ -62,32 +67,50 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   const currentCaches = [CACHE_NAME];
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return cacheNames.filter(cacheName => !currentCaches.includes(cacheName));
-    }).then(cachesToDelete => {
-      return Promise.all(cachesToDelete.map(cacheToDelete => {
-        return caches.delete(cacheToDelete);
-      }));
-    }).then(() => self.clients.claim())
+    caches.keys()
+      .then(cacheNames => cacheNames.filter(name => !currentCaches.includes(name)))
+      .then(oldCaches => Promise.all(oldCaches.map(name => caches.delete(name))))
+      .then(() => self.clients.claim())
   );
 });
 
+function isAppCodeRequest(request) {
+  const url = new URL(request.url);
+  if (request.mode === 'navigate') return true;
+  return /\.(html|js|css|webmanifest)$/i.test(url.pathname);
+}
+
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+  const reqUrl = new URL(event.request.url);
+  if (reqUrl.origin !== self.location.origin) return;
 
+  // Stratégie Network-First pour HTML / JS / CSS : toujours à jour en ligne, repli cache hors-ligne
+  if (isAppCodeRequest(event.request)) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          if (response && response.status === 200 && response.type === 'basic') {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Stratégie Cache-First pour les médias statiques (images, polices, musiques)
   event.respondWith(
-    caches.match(event.request).then(cachedResponse => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
+    caches.match(event.request).then(cached => {
+      if (cached) return cached;
       return fetch(event.request).then(response => {
         if (!response || response.status !== 200 || response.type !== 'basic') {
           return response;
         }
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, responseToCache);
-        });
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
         return response;
       });
     })

@@ -1,5 +1,5 @@
 /* =============================================================================
-   ADMIN.JS — EDUQUEST v1.26.0
+   ADMIN.JS — EDUQUEST v1.27.0
    Interface du panneau d'administration (admin.html).
 
    PRINCIPE :
@@ -30,9 +30,10 @@
         vrai_faux: 'Vrai / Faux',
         reponse_courte: 'Réponse courte',
         texte_a_trous: 'Texte à trous',
+        texte_a_choix: 'Texte à choix',
         drag_and_drop: 'Association',
     };
-    const LESSON_ORDER = ['qcm', 'vrai_faux', 'reponse_courte', 'texte_a_trous', 'drag_and_drop'];
+    const LESSON_ORDER = ['qcm', 'vrai_faux', 'reponse_courte', 'texte_a_trous', 'texte_a_choix', 'drag_and_drop'];
 
     const OFFICIAL_ISLANDS = [
         { value: 'Image/ile/maths.webp', label: '📐 Île des Mathématiques' },
@@ -541,16 +542,26 @@
                         <label style="display:flex; justify-content:space-between; align-items:center;">
                             <span>Niveaux d'étude autorisés pour cette matière :</span>
                             <span style="font-size:0.8rem; font-weight:normal; color:var(--muted);">
-                                ${allowedNiveaux.length === 0 ? 'Toutes les classes du cycle sont autorisées' : allowedNiveaux.length + ' classe(s) sélectionnée(s)'}
+                                ${(() => {
+                                    const eff = (typeof AdminStore !== 'undefined' && AdminStore.defaultAllowedNiveauxForSubject)
+                                        ? AdminStore.defaultAllowedNiveauxForSubject(fresh)
+                                        : allowedNiveaux;
+                                    return eff.length + ' classe(s) sélectionnée(s)';
+                                })()}
                             </span>
                         </label>
                         <div class="adm-grade-pills">
-                            ${levels.map(l => {
-                                const isChecked = allowedNiveaux.length === 0 || allowedNiveaux.includes(l.id);
-                                return `<button type="button" class="adm-grade-pill ${isChecked ? 'checked' : ''}" onclick="ADM.toggleSubjectGrade('${l.id}')">
-                                    ${isChecked ? '✓' : '○'} ${esc(l.label || l.id)}
-                                </button>`;
-                            }).join('')}
+                            ${(() => {
+                                const effectiveAllowed = (typeof AdminStore !== 'undefined' && AdminStore.defaultAllowedNiveauxForSubject)
+                                    ? AdminStore.defaultAllowedNiveauxForSubject(fresh)
+                                    : allowedNiveaux;
+                                return levels.map(l => {
+                                    const isChecked = effectiveAllowed.includes(l.id);
+                                    return `<button type="button" class="adm-grade-pill ${isChecked ? 'checked' : ''}" onclick="ADM.toggleSubjectGrade('${l.id}')">
+                                        ${isChecked ? '✓' : '○'} ${esc(l.label || l.id)}
+                                    </button>`;
+                                }).join('');
+                            })()}
                             <button type="button" class="adm-btn adm-btn-ghost" style="padding:3px 8px; font-size:0.75rem;" onclick="ADM.setAllSubjectGrades(true)">Tout cocher</button>
                             <button type="button" class="adm-btn adm-btn-ghost" style="padding:3px 8px; font-size:0.75rem;" onclick="ADM.setAllSubjectGrades(false)">Tout décocher</button>
                         </div>
@@ -693,12 +704,16 @@
                     <label class="adm-hint" style="display:block; margin-bottom:6px;">Saisissez votre réponse :</label>
                     <input class="adm-input" id="admTestShortInput" value="${esc(S.testModalAnswer || '')}" placeholder="Tapez votre réponse ici..." oninput="ADM.selectTestAnswer(this.value)" style="font-size:1.05rem; padding:10px 14px;">
                 </div>`;
-        } else if (type === 'texte_a_trous') {
+        } else if (type === 'texte_a_trous' || type === 'texte_a_choix') {
             const text = q.textWithBlanks || q.q || '';
+            const choicesHint = (type === 'texte_a_choix' && Array.isArray(q.choices) && q.choices.length)
+                ? `<p class="adm-hint" style="margin:6px 0;">Choix proposés par trou : ${q.choices.map((c, idx) => `<b>#${idx + 1}</b> (${esc(Array.isArray(c) ? c.join(' / ') : c)})`).join(' · ')}</p>`
+                : '';
             interactiveHtml = `
                 <div style="margin:16px 0; font-size:1.05rem; line-height:1.6;">
                     <p style="background:rgba(255,255,255,0.03); padding:10px; border-radius:8px;">${esc(text)}</p>
-                    <label class="adm-hint" style="display:block; margin:8px 0 4px;">Saisissez les mots manquants (séparés par une virgule) :</label>
+                    ${choicesHint}
+                    <label class="adm-hint" style="display:block; margin:8px 0 4px;">Saisissez les mots choisis (séparés par une virgule) :</label>
                     <input class="adm-input" id="admTestBlanksInput" value="${esc(Array.isArray(S.testModalAnswer) ? S.testModalAnswer.join(', ') : (S.testModalAnswer || ''))}" placeholder="ex: mot1, mot2..." oninput="ADM.selectTestAnswer(this.value.split(',').map(s=>s.trim()))">
                 </div>`;
         } else { // drag_and_drop
@@ -837,6 +852,17 @@
                 <div class="adm-field"><label>Réponses des trous (une ligne par trou, alternatives séparées par des virgules)</label>
                     <textarea class="adm-textarea" id="admF_blanks" rows="3">${esc((d.blanks || []).map(b => (b || []).join(', ')).join('\n'))}</textarea></div>`;
         }
+        if (type === 'texte_a_choix') {
+            return `
+                <div class="adm-field"><label>Consigne</label>
+                    <input class="adm-input" id="admF_q" value="${esc(d.q || '')}" placeholder="Ex: Complète la phrase avec les bons mots."></div>
+                <div class="adm-field"><label>Phrase à compléter (chaque menu déroulant = ___ )</label>
+                    <textarea class="adm-textarea" id="admF_txt" rows="2">${esc(d.textWithBlanks || '')}</textarea></div>
+                <div class="adm-field"><label>Bonnes réponses attendues (une ligne par trou)</label>
+                    <textarea class="adm-textarea" id="admF_blanks" rows="2">${esc((d.blanks || []).map(b => (Array.isArray(b) ? b : [b]).join(', ')).join('\n'))}</textarea></div>
+                <div class="adm-field"><label>Choix proposés dans chaque menu (une ligne par trou, options séparées par des virgules)</label>
+                    <textarea class="adm-textarea" id="admF_choices" rows="3">${esc((d.choices || []).map(c => (Array.isArray(c) ? c : [c]).join(', ')).join('\n'))}</textarea></div>`;
+        }
         // drag_and_drop
         return `
             <div class="adm-field"><label>Consigne</label>
@@ -872,6 +898,14 @@
         } else if (type === 'texte_a_trous') {
             lesson.textWithBlanks = val('admF_txt').trim();
             lesson.blanks = linesToList(val('admF_blanks')).map(line =>
+                line.split(',').map(s => s.trim()).filter(Boolean));
+            lesson.exp = val('admF_exp').trim();
+        } else if (type === 'texte_a_choix') {
+            lesson.q = val('admF_q').trim() || 'Complète la phrase avec les choix proposés.';
+            lesson.textWithBlanks = val('admF_txt').trim();
+            lesson.blanks = linesToList(val('admF_blanks')).map(line =>
+                line.split(',').map(s => s.trim()).filter(Boolean));
+            lesson.choices = linesToList(val('admF_choices')).map(line =>
                 line.split(',').map(s => s.trim()).filter(Boolean));
             lesson.exp = val('admF_exp').trim();
         } else { // drag_and_drop
@@ -1253,19 +1287,21 @@
                     </div>
                 </div>
 
-                <!-- Catalogue des Succès / Badges -->
+                <!-- Catalogue dynamique des Succès / Badges -->
                 <div class="adm-card" style="margin-top: 16px;">
-                    <h3 style="font-family:'Cinzel',serif; font-size:15px; color:var(--gold-soft); margin-bottom:8px;">🏆 Succès & Badges Disponibles</h3>
+                    <h3 style="font-family:'Cinzel',serif; font-size:15px; color:var(--gold-soft); margin-bottom:8px;">🏆 Succès &amp; Badges Disponibles (${(typeof AdminStore !== 'undefined' && AdminStore.getBadges) ? AdminStore.getBadges().length : 0})</h3>
                     <div class="adm-table-wrap">
                         <table class="adm-table">
                             <thead><tr><th>Icône</th><th>Nom du Succès</th><th>Description / Condition</th><th>Statut</th></tr></thead>
                             <tbody>
-                                <tr><td>🎯</td><td><b>Premier pas</b></td><td>Réussir sa toute première question de quiz</td><td><span class="adm-badge adm-badge-eleve">Actif</span></td></tr>
-                                <tr><td>✨</td><td><b>Sans-faute</b></td><td>Répondre juste du premier coup, sans réessayer</td><td><span class="adm-badge adm-badge-eleve">Actif</span></td></tr>
-                                <tr><td>🌐</td><td><b>Touche-à-tout</b></td><td>Terminer au moins une leçon dans chaque matière</td><td><span class="adm-badge adm-badge-eleve">Actif</span></td></tr>
-                                <tr><td>🏆</td><td><b>Expert(e)</b></td><td>Terminer toutes les leçons d'une même matière</td><td><span class="adm-badge adm-badge-eleve">Actif</span></td></tr>
-                                <tr><td>🎨</td><td><b>Collectionneur</b></td><td>Posséder au moins 3 skins différents dans la boutique</td><td><span class="adm-badge adm-badge-eleve">Actif</span></td></tr>
-                                <tr><td>🚀</td><td><b>Étoile montante</b></td><td>Atteindre le niveau 5 du joueur (400+ XP)</td><td><span class="adm-badge adm-badge-eleve">Actif</span></td></tr>
+                                ${((typeof AdminStore !== 'undefined' && AdminStore.getBadges) ? AdminStore.getBadges() : []).map(b => `
+                                    <tr>
+                                        <td>${esc(b.icon || '🏆')}</td>
+                                        <td><b>${esc(b.name)}</b></td>
+                                        <td>${esc(b.desc || b.condition || '')}</td>
+                                        <td><span class="adm-badge adm-badge-eleve">Actif</span></td>
+                                    </tr>
+                                `).join('')}
                             </tbody>
                         </table>
                     </div>
@@ -1310,8 +1346,7 @@
                 <h2>👥 Membres <small>comptes du jeu (mode local)</small></h2>
                 <div class="adm-note">
                     Les comptes permettent aux élèves de se connecter sur cet appareil (modale Se Connecter). En mode local,
-                    la <b>progression est liée à l'appareil</b>, pas au compte — utilisez « Réglages → Réinitialiser
-                    la progression » pour repartir de zéro.
+                    la progression, les options, la classe et les succès sont <b>strictement isolés par compte</b> dans le navigateur — utilisez « Réglages → Réinitialiser les données de jeu » pour repartir de zéro.
                 </div>
                 <div class="adm-card" style="border-color:rgba(200,168,75,.35);">
                     <h3 style="font-family:'Cinzel',serif; font-size:14px; color:var(--gold-soft); margin-bottom:10px;">➕ Créer un compte</h3>
@@ -1348,7 +1383,7 @@
             <div class="adm-card">
                 <div class="adm-toolbar">
                     <h2 style="margin:0;">⚙️ Configuration Générale &amp; Gameplay du Site</h2>
-                    <span class="adm-badge adm-badge-system">v1.26.0</span>
+                    <span class="adm-badge adm-badge-system">v1.27.0</span>
                 </div>
                 <p class="adm-hint">Personnalisez ici tous les paramètres globaux de la plateforme EDUQUEST : titre, slogans, durée du chronomètre, multiplicateurs d'XP et de pièces, audio et inscriptions.</p>
 
@@ -1417,18 +1452,102 @@
 
             <div class="adm-card">
                 <div class="adm-toolbar">
-                    <h2 style="margin:0;">🤖 Configuration de l'IA &amp; Webhooks Make.com</h2>
-                    <span class="adm-badge adm-badge-type">Intégration Enseignant</span>
+                    <h2 style="margin:0;">🤖 Pool Multi-IA &amp; Mode Adaptatif</h2>
+                    <span class="adm-badge adm-badge-type">${(aiCfg.providers || []).filter(p => p.enabled !== false).length} IA dans le pool</span>
                 </div>
-                <p class="adm-hint">Configurez les webhooks Make pour la génération dynamique et la correction des questions par Intelligence Artificielle. En cas d'indisponibilité ou d'erreur réseau, le repli hors-ligne garantit une expérience fluide pour les élèves.</p>
+                <p class="adm-hint">Configurez un <b>lot de plusieurs IA</b> (Make.com, API compatibles OpenAI/Mistral/Groq/Ollama, Google Gemini) sélectionnées aléatoirement à chaque question avec bascule en cascade. En l'absence d'IA externe ou hors-ligne, le <b>moteur adaptatif local</b> prend automatiquement le relais sans répétition.</p>
 
                 <div class="adm-form" style="margin-top:14px;">
+                    <div class="adm-grid-2">
+                        <div class="adm-field" style="display:flex; align-items:center; gap:8px;">
+                            <input type="checkbox" id="admAiAdaptive" ${aiCfg.adaptiveMode !== false ? 'checked' : ''} style="width:18px; height:18px; cursor:pointer;">
+                            <label for="admAiAdaptive" style="margin:0; cursor:pointer;">Activer l'adaptation dynamique (Consolidation / Standard / Défi +)</label>
+                        </div>
+                        <div class="adm-field">
+                            <label>Stratégie de sélection dans le pool Multi-IA</label>
+                            <select class="adm-select" id="admAiStrategy">
+                                <option value="random"${(aiCfg.selectionStrategy || 'random') === 'random' ? ' selected' : ''}>🎲 Aléatoire pondéré par question (recommandé)</option>
+                                <option value="round_robin"${aiCfg.selectionStrategy === 'round_robin' ? ' selected' : ''}>🔄 Rotation circulaire (Round-Robin)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="adm-ai-pool" id="admAiPoolList">
+                        ${(aiCfg.providers || []).length === 0
+                            ? `<div class="adm-note">Aucun fournisseur IA externe ajouté dans le pool. Ajoutez-en ci-dessous (ou laissez vide pour utiliser le moteur adaptatif 100 % hors-ligne).</div>`
+                            : (aiCfg.providers || []).map((p, idx) => `
+                                <div class="adm-ai-provider-card ${p.enabled === false ? 'is-disabled' : ''}">
+                                    <div class="adm-ai-provider-head">
+                                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                            <b>${esc(p.name)}</b>
+                                            <span class="adm-ai-provider-type">${esc(p.type)}</span>
+                                            ${p.model ? `<span class="adm-hint">Modèle : ${esc(p.model)}</span>` : ''}
+                                            <span class="adm-hint">Poids : ${p.weight || 1}</span>
+                                        </div>
+                                        <div style="display:flex; gap:6px;">
+                                            <button type="button" class="adm-btn adm-btn-ghost" style="padding:4px 10px; font-size:0.8rem;" onclick="ADM.toggleAiProvider(${idx})">${p.enabled === false ? '▶ Activer' : '⏸ Pause'}</button>
+                                            <button type="button" class="adm-btn adm-btn-ghost" style="padding:4px 10px; font-size:0.8rem;" onclick="ADM.testSingleAiProvider(${idx})">🧪 Tester</button>
+                                            <button type="button" class="adm-btn adm-btn-danger" style="padding:4px 10px; font-size:0.8rem;" onclick="ADM.deleteAiProvider(${idx})">🗑</button>
+                                        </div>
+                                    </div>
+                                    <div class="adm-hint" style="word-break:break-all;">Endpoint : <code>${esc(p.endpoint || '(Gemini par défaut)')}</code></div>
+                                </div>
+                            `).join('')
+                        }
+                    </div>
+
+                    <!-- Formulaire d'ajout d'une IA dans le pool -->
+                    <div class="adm-card" style="border-color: rgba(95,212,230,0.3); margin: 8px 0 14px;">
+                        <h3 style="font-family:'Cinzel',serif; font-size:14px; color:var(--cyan); margin-bottom:10px;">➕ Ajouter une IA au pool aléatoire</h3>
+                        <div class="adm-grid-3">
+                            <div class="adm-field">
+                                <label>Nom affiché</label>
+                                <input class="adm-input" id="admNewAiName" placeholder="Ex: Gemini Flash / Mistral">
+                            </div>
+                            <div class="adm-field">
+                                <label>Type de connecteur</label>
+                                <select class="adm-select" id="admNewAiType">
+                                    <option value="make_webhook">Webhook Make.com (POST JSON)</option>
+                                    <option value="openai_compatible">OpenAI / Groq / Mistral / Ollama</option>
+                                    <option value="gemini">Google Gemini API</option>
+                                </select>
+                            </div>
+                            <div class="adm-field">
+                                <label>Poids aléatoire (1–10)</label>
+                                <input class="adm-input" type="number" id="admNewAiWeight" min="1" max="10" value="1">
+                            </div>
+                        </div>
+                        <div class="adm-grid-2" style="margin-top:8px;">
+                            <div class="adm-field">
+                                <label>URL de l'endpoint</label>
+                                <input class="adm-input" id="admNewAiEndpoint" placeholder="https://api.openai.com/v1/chat/completions ou Make hook">
+                            </div>
+                            <div class="adm-field">
+                                <label>Modèle (optionnel pour Make)</label>
+                                <input class="adm-input" id="admNewAiModel" placeholder="Ex: gpt-4o-mini, gemini-2.0-flash, mistral-small">
+                            </div>
+                        </div>
+                        <div class="adm-grid-2" style="margin-top:8px;">
+                            <div class="adm-field">
+                                <label>Clé API (optionnel, stockée en local uniquement)</label>
+                                <input class="adm-input" type="password" id="admNewAiKey" placeholder="sk-... ou AIza...">
+                            </div>
+                            <div class="adm-field">
+                                <label>Webhook validation (Make uniquement, optionnel)</label>
+                                <input class="adm-input" id="admNewAiValidateUrl" placeholder="https://hook.eu1.make.com/...">
+                            </div>
+                        </div>
+                        <div style="margin-top:10px;">
+                            <button type="button" class="adm-btn" onclick="ADM.addAiProvider()">➕ Ajouter cette IA au pool</button>
+                        </div>
+                    </div>
+
                     <div class="adm-field">
-                        <label>Webhook de génération de questions (POST URL)</label>
+                        <label>Webhook principal Make — génération (rétrocompatible)</label>
                         <input class="adm-input" id="admAiGenUrl" value="${esc(aiCfg.generateWebhookUrl || '')}" placeholder="https://hook.eu1.make.com/...">
                     </div>
                     <div class="adm-field">
-                        <label>Webhook de validation de questions (POST URL)</label>
+                        <label>Webhook principal Make — validation (rétrocompatible)</label>
                         <input class="adm-input" id="admAiValUrl" value="${esc(aiCfg.validateWebhookUrl || '')}" placeholder="https://hook.eu1.make.com/...">
                     </div>
                     <div class="adm-grid-2">
@@ -1438,13 +1557,13 @@
                         </div>
                         <div class="adm-field" style="display:flex; align-items:center; gap:8px; margin-top:22px;">
                             <input type="checkbox" id="admAiFallback" ${aiCfg.fallbackToOffline !== false ? 'checked' : ''} style="width:18px; height:18px; cursor:pointer;">
-                            <label for="admAiFallback" style="margin:0; cursor:pointer;">Repli automatique sur les questions hors-ligne</label>
+                            <label for="admAiFallback" style="margin:0; cursor:pointer;">Repli automatique sur le moteur adaptatif local</label>
                         </div>
                     </div>
 
                     <div class="adm-toolbar" style="margin-top:14px;">
-                        <button class="adm-btn adm-btn-ok" onclick="ADM.saveAiSettings()">💾 Enregistrer les webhooks IA</button>
-                        <button class="adm-btn adm-btn-ghost" onclick="ADM.testAiSettings()">🧪 Tester la connexion IA</button>
+                        <button class="adm-btn adm-btn-ok" onclick="ADM.saveAiSettings()">💾 Enregistrer la configuration Multi-IA</button>
+                        <button class="adm-btn adm-btn-ghost" onclick="ADM.testAiSettings()">🧪 Tester le pool IA</button>
                         <button class="adm-btn adm-btn-ghost adm-right" onclick="ADM.resetAiSettings()">Rétablir par défaut</button>
                     </div>
                     <div id="admAiTestResult" style="margin-top:10px;"></div>
@@ -1731,8 +1850,9 @@
             if (!S.subjectId) return;
             const sub = subjectList().find(x => x.id === S.subjectId);
             if (!sub) return;
-            const allLevels = AdminStore.getLevels();
-            let current = Array.isArray(sub.allowedNiveaux) && sub.allowedNiveaux.length ? sub.allowedNiveaux.slice() : allLevels.map(l => l.id);
+            let current = (typeof AdminStore !== 'undefined' && typeof AdminStore.defaultAllowedNiveauxForSubject === 'function')
+                ? AdminStore.defaultAllowedNiveauxForSubject(sub)
+                : (Array.isArray(sub.allowedNiveaux) && sub.allowedNiveaux.length ? sub.allowedNiveaux.slice() : AdminStore.getLevels().map(l => l.id));
             if (current.includes(gradeId)) {
                 current = current.filter(id => id !== gradeId);
             } else {
@@ -2147,18 +2267,6 @@
         },
 
         /* ----- Réglages ----- */
-        async updateProfile() {
-            const pseudo = (document.getElementById('admMePseudo') || {}).value || '';
-            const pass = (document.getElementById('admMePass') || {}).value || '';
-            const patch = {};
-            if (pseudo) patch.username = pseudo;
-            if (pass) patch.password = pass;
-            if (!Object.keys(patch).length) { toast('Rien à enregistrer.', 'err'); return; }
-            const r = await DB.updateProfile(patch);
-            if (!r.ok) { toast(r.error || 'Modification impossible.', 'err'); return; }
-            renderPanel();
-            toast('Profil mis à jour ✔', 'ok');
-        },
         saveSiteSettings() {
             const title = (document.getElementById('admSiteTitle') || {}).value;
             const tagline = (document.getElementById('admSiteTagline') || {}).value;
@@ -2192,13 +2300,73 @@
             const validateWebhookUrl = (document.getElementById('admAiValUrl') || {}).value;
             const fetchTimeoutMs = parseInt((document.getElementById('admAiTimeout') || {}).value, 10);
             const fallbackToOffline = Boolean((document.getElementById('admAiFallback') || {}).checked);
+            const adaptiveMode = Boolean((document.getElementById('admAiAdaptive') || {}).checked);
+            const selectionStrategy = (document.getElementById('admAiStrategy') || {}).value || 'random';
 
             const r = AdminStore.saveAiConfig({
-                generateWebhookUrl, validateWebhookUrl, fetchTimeoutMs, fallbackToOffline
+                generateWebhookUrl, validateWebhookUrl, fetchTimeoutMs, fallbackToOffline,
+                adaptiveMode, selectionStrategy,
             });
             if (!r.ok) { toast(r.error || 'Erreur lors de la sauvegarde de l\'IA.', 'err'); return; }
             renderTabContent();
-            toast('Configuration IA & Webhooks enregistrée ✔', 'ok');
+            toast('Configuration Multi-IA & Adaptatif enregistrée ✔', 'ok');
+        },
+        addAiProvider() {
+            const name = ((document.getElementById('admNewAiName') || {}).value || '').trim();
+            const type = (document.getElementById('admNewAiType') || {}).value || 'make_webhook';
+            const endpoint = ((document.getElementById('admNewAiEndpoint') || {}).value || '').trim();
+            const validateEndpoint = ((document.getElementById('admNewAiValidateUrl') || {}).value || '').trim();
+            const model = ((document.getElementById('admNewAiModel') || {}).value || '').trim();
+            const apiKey = ((document.getElementById('admNewAiKey') || {}).value || '').trim();
+            const weight = Math.max(1, Math.min(10, parseInt((document.getElementById('admNewAiWeight') || {}).value, 10) || 1));
+
+            if (!name) { toast('Donnez un nom à ce fournisseur IA.', 'err'); return; }
+            if (type !== 'gemini' && !endpoint) { toast('Renseignez l\'URL de l\'endpoint.', 'err'); return; }
+            if (type === 'gemini' && !apiKey && !endpoint) { toast('Renseignez la clé API Gemini ou une URL personnalisée.', 'err'); return; }
+
+            const cur = AdminStore.getAiConfig();
+            const providers = (cur.providers || []).slice();
+            providers.push({
+                id: AdminStore.slug(name) + '-' + (Date.now() % 10000),
+                name, type, endpoint, validateEndpoint, model, apiKey, weight, enabled: true,
+            });
+            const r = AdminStore.saveAiConfig({ providers });
+            if (!r.ok) { toast(r.error || 'Ajout impossible.', 'err'); return; }
+            renderTabContent();
+            toast(`IA « ${name} » ajoutée au pool aléatoire ✔`, 'ok');
+        },
+        toggleAiProvider(idx) {
+            const cur = AdminStore.getAiConfig();
+            const providers = (cur.providers || []).slice();
+            if (!providers[idx]) return;
+            providers[idx].enabled = providers[idx].enabled === false;
+            AdminStore.saveAiConfig({ providers });
+            renderTabContent();
+            toast(providers[idx].enabled ? `IA « ${providers[idx].name} » activée.` : `IA « ${providers[idx].name} » mise en pause.`, 'ok');
+        },
+        deleteAiProvider(idx) {
+            const cur = AdminStore.getAiConfig();
+            const providers = (cur.providers || []).slice();
+            if (!providers[idx]) return;
+            const removed = providers.splice(idx, 1)[0];
+            AdminStore.saveAiConfig({ providers });
+            renderTabContent();
+            toast(`IA « ${removed.name} » retirée du pool.`, 'ok');
+        },
+        async testSingleAiProvider(idx) {
+            const cur = AdminStore.getAiConfig();
+            const p = (cur.providers || [])[idx];
+            if (!p) return;
+            const resEl = document.getElementById('admAiTestResult');
+            if (resEl) resEl.innerHTML = `<div class="adm-note">Test de « ${esc(p.name)} » en cours…</div>`;
+            if (typeof AiProvider !== 'undefined' && typeof AiProvider.testProvider === 'function') {
+                const res = await AiProvider.testProvider(p);
+                if (resEl) {
+                    resEl.innerHTML = res.ok
+                        ? `<div class="adm-note ok">✓ « ${esc(p.name)} » opérationnelle (${res.latencyMs}ms) — Exemple : <i>${esc(res.lesson.q)}</i></div>`
+                        : `<div class="adm-note warn">⚠️ « ${esc(p.name)} » en échec (${res.latencyMs}ms) : ${esc(res.error)}</div>`;
+                }
+            }
         },
         resetAiSettings() {
             if (!confirm('Rétablir la configuration IA par défaut ?')) return;
@@ -2208,29 +2376,31 @@
         },
         async testAiSettings() {
             const resEl = document.getElementById('admAiTestResult');
-            if (resEl) resEl.innerHTML = '<div class="adm-note">Test de connectivité IA en cours...</div>';
-            const aiCfg = AdminStore.getAiConfig();
-            if (!aiCfg.generateWebhookUrl && !aiCfg.validateWebhookUrl) {
-                if (resEl) resEl.innerHTML = '<div class="adm-note ok">✓ Mode autonome actif : aucun webhook configuré, repli procédural 100% opérationnel.</div>';
+            if (resEl) resEl.innerHTML = '<div class="adm-note">Test du pool Multi-IA en cours…</div>';
+            const active = (typeof AiProvider !== 'undefined' && typeof AiProvider.getActiveProviders === 'function')
+                ? AiProvider.getActiveProviders()
+                : [];
+            if (active.length === 0) {
+                if (resEl) resEl.innerHTML = '<div class="adm-note ok">✓ Mode autonome actif : aucune IA externe configurée, le moteur adaptatif local fonctionne 100 % hors-ligne sans répétition.</div>';
                 return;
             }
-            if (typeof AiProvider !== 'undefined' && typeof AiProvider.isConfigured === 'function') {
+            if (typeof AiProvider !== 'undefined' && typeof AiProvider.fetchQuestion === 'function') {
                 try {
                     const start = Date.now();
                     const testRes = await AiProvider.fetchQuestion('maths', 0, '6eme');
                     const elapsed = Date.now() - start;
                     if (resEl) {
                         if (testRes && testRes.source === 'ai') {
-                            resEl.innerHTML = `<div class="adm-note ok">✓ Webhook IA opérationnel ! Question reçue en ${elapsed}ms.</div>`;
+                            resEl.innerHTML = `<div class="adm-note ok">✓ Pool Multi-IA opérationnel ! Réponse reçue via <b>${esc(testRes.providerName || 'IA')}</b> en ${elapsed}ms.</div>`;
                         } else {
-                            resEl.innerHTML = `<div class="adm-note warn">⚠️ Webhook IA non joignable (${elapsed}ms). Le repli hors-ligne prend le relais.</div>`;
+                            resEl.innerHTML = `<div class="adm-note warn">⚠️ Fournisseurs distants injoignables (${elapsed}ms). Le moteur adaptatif local prend automatiquement le relais.</div>`;
                         }
                     }
                 } catch (e) {
-                    if (resEl) resEl.innerHTML = `<div class="adm-note warn">⚠️ Échec connexion IA : ${esc(e.message || String(e))} — Repli hors-ligne actif.</div>`;
+                    if (resEl) resEl.innerHTML = `<div class="adm-note warn">⚠️ Échec connexion IA : ${esc(e.message || String(e))} — Repli adaptatif local actif.</div>`;
                 }
             } else {
-                if (resEl) resEl.innerHTML = '<div class="adm-note ok">✓ Configuration locale active (générateur procédural disponible).</div>';
+                if (resEl) resEl.innerHTML = '<div class="adm-note ok">✓ Configuration locale active (moteur adaptatif disponible).</div>';
             }
         },
         exportConfig() {

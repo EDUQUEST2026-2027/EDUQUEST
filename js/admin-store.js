@@ -1,5 +1,5 @@
 /* =============================================================================
-   ADMIN-STORE.JS — EDUQUEST v1.26.0
+   ADMIN-STORE.JS — EDUQUEST v1.27.0
    Couche de configuration centrale du panneau d'administration (admin.html).
 
    RÔLE :
@@ -9,7 +9,8 @@
      - Matières & Leçons  → Rattachement des cycles (band) et classes autorisées,
                             questions manuelles & variantes procédurales aléatoires.
      - Configuration site → Titre, slogan, chrono, multiplicateurs XP/pièces, sons.
-     - Configuration IA   → Webhooks Make.com de génération/validation et timeouts.
+     - Configuration IA   → Pool multi-IA (Make, OpenAI-compatible, Gemini), mode
+                            adaptatif et webhooks de génération/validation.
      - Boutique & Succès  → Articles, prix, visuels et attribution des récompenses.
 
    PERSISTANCE :
@@ -25,6 +26,17 @@ const AdminStore = (() => {
 
     // Clé localStorage unique pour toute la configuration administrateur
     const LS_KEY = 'eduquest_admin_data';
+
+    // Règles pédagogiques strictes par défaut (Collège vs Lycée)
+    // - Technologie : Collège uniquement (6e → 3e)
+    // - NSI & SES : Lycée uniquement (2nde, 1ère, Terminale) — jamais au collège
+    // - Philosophie : Terminale uniquement — jamais au collège
+    const SUBJECT_DEFAULT_RULES = {
+        techno: { band: 'college', allowedNiveaux: ['6eme', '5eme', '4eme', '3eme'] },
+        nsi:    { band: 'lycee',   allowedNiveaux: ['2nde', '1ere', 'terminale'] },
+        ses:    { band: 'lycee',   allowedNiveaux: ['2nde', '1ere', 'terminale'] },
+        philo:  { band: 'lycee',   allowedNiveaux: ['terminale'] },
+    };
 
     // Niveaux scolaires par défaut (6ème → Terminale) : id stable
     // (utilisé dans DB.setNiveau et les clés de progression), label affiché,
@@ -113,13 +125,16 @@ const AdminStore = (() => {
         allowRegistration: true,      // Autoriser de nouveaux élèves à créer un compte
     };
 
-    // Configuration par défaut de l'intégration IA (Make.com)
+    // Configuration par défaut de l'intégration IA (Multi-IA + Make.com + Adaptatif)
     const DEFAULT_AI_CONFIG = {
-        generateWebhookUrl: '',       // Webhook POST de génération (Make)
-        validateWebhookUrl: '',       // Webhook POST de validation (Make)
+        generateWebhookUrl: '',       // Webhook POST de génération (Make, rétrocompatible)
+        validateWebhookUrl: '',       // Webhook POST de validation (Make, rétrocompatible)
+        providers: [],                // Pool multi-IA [{ id, name, type, endpoint, validateEndpoint, apiKey, model, enabled, weight }]
+        adaptiveMode: true,           // Active la difficulté adaptative et la non-répétition
+        selectionStrategy: 'random',  // 'random' | 'round_robin'
         fetchTimeoutMs: 8000,         // Délai avant repli local en millisecondes
         timeoutMs: 8000,
-        fallbackToOffline: true,      // Repli automatique sur QuestionBank si indisponible
+        fallbackToOffline: true,      // Repli automatique sur AdaptiveEngine/QuestionBank si indisponible
         fallbackToLocal: true,
     };
 
@@ -315,6 +330,12 @@ const AdminStore = (() => {
         } else if (l.type === 'texte_a_trous') {
             l.textWithBlanks = l.textWithBlanks || '';
             l.blanks = (l.blanks || []).map(b => (Array.isArray(b) ? b : [b]).map(a => String(a).trim()));
+        } else if (l.type === 'texte_a_choix') {
+            l.textWithBlanks = l.textWithBlanks || '';
+            l.blanks = (l.blanks || []).map(b => (Array.isArray(b) ? b : [b]).map(a => String(a).trim()));
+            l.choices = Array.isArray(l.choices)
+                ? l.choices.map(c => Array.isArray(c) ? c.map(x => String(x).trim()) : String(c).trim())
+                : [];
         } else if (l.type === 'drag_and_drop') {
             l.items = (l.items || []).map(i => String(i).trim());
             l.targets = (l.targets || []).map(t => String(t).trim());
@@ -443,8 +464,60 @@ const AdminStore = (() => {
     }
 
     /* -----------------------------------------------------------------------
-       MATIÈRES : REGISTRE DES DÉFAUTS (enregistré par app.js)
+       MATIÈRES : RÈGLES DE CYCLE & REGISTRE DES DÉFAUTS (enregistré par app.js)
        ----------------------------------------------------------------------- */
+
+    /** Cycle par défaut ('college' | 'lycee' | 'all') d'une matière. */
+    function defaultBandForSubject(subjectOrId) {
+        const id = typeof subjectOrId === 'string' ? subjectOrId : (subjectOrId && subjectOrId.id) || '';
+        const explicitBand = (subjectOrId && typeof subjectOrId === 'object' && (subjectOrId.band === 'college' || subjectOrId.band === 'lycee' || subjectOrId.band === 'all'))
+            ? subjectOrId.band
+            : null;
+        if (explicitBand) return explicitBand;
+        if (SUBJECT_DEFAULT_RULES[id]) return SUBJECT_DEFAULT_RULES[id].band;
+        return 'all';
+    }
+
+    /** Classes autorisées par défaut pour une matière (strictement cohérent Collège / Lycée). */
+    function defaultAllowedNiveauxForSubject(subject) {
+        if (!subject) return getLevels().map(l => l.id);
+        if (Array.isArray(subject.allowedNiveaux) && subject.allowedNiveaux.length > 0) {
+            return subject.allowedNiveaux.slice();
+        }
+        const id = typeof subject === 'string' ? subject : subject.id;
+        if (SUBJECT_DEFAULT_RULES[id]) {
+            const ruleLevels = SUBJECT_DEFAULT_RULES[id].allowedNiveaux;
+            const existingIds = new Set(getLevels().map(l => l.id));
+            const matching = ruleLevels.filter(nid => existingIds.has(nid));
+            if (matching.length > 0) return matching;
+        }
+        const band = defaultBandForSubject(subject);
+        if (band === 'all') return getLevels().map(l => l.id);
+        return getLevels().filter(l => l.band === band).map(l => l.id);
+    }
+
+    /**
+     * Source unique de vérité : retourne true si et seulement si `subject`
+     * est active et autorisée pour la classe `niveauId`.
+     * Garantit notamment l'absence totale de SES, Philosophie et NSI au collège,
+     * de Technologie au lycée, et de Philosophie avant la Terminale.
+     */
+    function isSubjectAllowedForNiveau(subject, niveauId) {
+        if (!subject || subject.enabled === false) return false;
+        const norm = (typeof QuestionBank !== 'undefined' && typeof QuestionBank.normalizeNiveau === 'function')
+            ? QuestionBank.normalizeNiveau(niveauId)
+            : String(niveauId || '6eme').toLowerCase().trim();
+        const allowed = Array.isArray(subject.allowedNiveaux) && subject.allowedNiveaux.length > 0
+            ? subject.allowedNiveaux
+            : defaultAllowedNiveauxForSubject(subject);
+        if (allowed.length > 0) {
+            return allowed.includes(norm);
+        }
+        const band = defaultBandForSubject(subject);
+        if (band === 'all') return true;
+        const nBand = levelBand(norm) || ((['2nde', '1ere', 'terminale'].includes(norm)) ? 'lycee' : 'college');
+        return band === nBand;
+    }
 
     /**
      * Enregistre une copie des matières par défaut (RAW_DASH_SUBJECTS).
@@ -455,12 +528,17 @@ const AdminStore = (() => {
         if (defaults || !Array.isArray(rawSubjects)) return;
         defaults = {};
         rawSubjects.forEach(s => {
+            const rule = SUBJECT_DEFAULT_RULES[s.id];
+            const band = s.band || (rule ? rule.band : 'all');
+            const allowedNiveaux = (Array.isArray(s.allowedNiveaux) && s.allowedNiveaux.length > 0)
+                ? _clone(s.allowedNiveaux)
+                : (rule ? _clone(rule.allowedNiveaux) : []);
             defaults[s.id] = {
                 id: s.id,
                 name: s.name,
                 icon: s.icon,
-                band: s.band || (s.id === 'techno' ? 'college' : (s.id === 'nsi' || s.id === 'ses' ? 'lycee' : 'all')),
-                allowedNiveaux: Array.isArray(s.allowedNiveaux) ? _clone(s.allowedNiveaux) : [],
+                band,
+                allowedNiveaux,
                 enabled: s.enabled !== false,
                 description: s.description || '',
                 lessons: _clone(s.lessons || []),
@@ -501,13 +579,20 @@ const AdminStore = (() => {
     function applyOverrides(rawSubjects) {
         const data = _data();
         const result = (Array.isArray(rawSubjects) ? rawSubjects : []).map(raw => {
-            const ov = data.subjects.overrides[raw.id];
-            if (!ov) return raw; // matière non personnalisée → telle quelle
+            const rule = SUBJECT_DEFAULT_RULES[raw.id];
             const out = _clone(raw);
+            if (!out.band) out.band = rule ? rule.band : 'all';
+            if ((!Array.isArray(out.allowedNiveaux) || out.allowedNiveaux.length === 0) && rule) {
+                out.allowedNiveaux = _clone(rule.allowedNiveaux);
+            }
+            const ov = data.subjects.overrides[raw.id];
+            if (!ov) return out;
             if (typeof ov.name === 'string' && ov.name.trim()) out.name = ov.name.trim();
             if (typeof ov.icon === 'string' && ov.icon.trim()) out.icon = ov.icon.trim();
             if (ov.band) out.band = ov.band;
-            if (Array.isArray(ov.allowedNiveaux)) out.allowedNiveaux = _clone(ov.allowedNiveaux);
+            if (Array.isArray(ov.allowedNiveaux) && ov.allowedNiveaux.length > 0) {
+                out.allowedNiveaux = _clone(ov.allowedNiveaux);
+            }
             if (typeof ov.enabled === 'boolean') out.enabled = ov.enabled;
             if (typeof ov.description === 'string') out.description = ov.description;
             if (Array.isArray(ov.lessons) && ov.lessons.length) out.lessons = _clone(ov.lessons);
@@ -541,13 +626,20 @@ const AdminStore = (() => {
         const data = _data();
         const out = (Array.isArray(rawSubjects) ? rawSubjects : []).map(raw => {
             const ov = data.subjects.overrides[raw.id];
-            const defBand = raw.band || (raw.id === 'techno' ? 'college' : (raw.id === 'nsi' || raw.id === 'ses' ? 'lycee' : 'all'));
+            const rule = SUBJECT_DEFAULT_RULES[raw.id];
+            const defBand = raw.band || (rule ? rule.band : 'all');
+            const defAllowed = (Array.isArray(raw.allowedNiveaux) && raw.allowedNiveaux.length > 0)
+                ? _clone(raw.allowedNiveaux)
+                : (rule ? _clone(rule.allowedNiveaux) : []);
+            const effectiveAllowed = (ov && Array.isArray(ov.allowedNiveaux) && ov.allowedNiveaux.length > 0)
+                ? _clone(ov.allowedNiveaux)
+                : defAllowed;
             return {
                 id: raw.id,
                 name: ov && ov.name ? ov.name : raw.name,
                 icon: ov && ov.icon ? ov.icon : raw.icon,
                 band: ov && ov.band ? ov.band : defBand,
-                allowedNiveaux: ov && Array.isArray(ov.allowedNiveaux) ? _clone(ov.allowedNiveaux) : _clone(raw.allowedNiveaux || []),
+                allowedNiveaux: effectiveAllowed,
                 enabled: ov && typeof ov.enabled === 'boolean' ? ov.enabled : (raw.enabled !== false),
                 description: ov && typeof ov.description === 'string' ? ov.description : (raw.description || ''),
                 isCustom: false,
@@ -733,10 +825,12 @@ const AdminStore = (() => {
         if (!data.shop) data.shop = { overrides: {}, customs: [] };
 
         const isDefault = DEFAULT_SHOP_ITEMS.some(d => d.id === id);
+        let savedId = id;
         if (isDefault) {
             data.shop.overrides[id] = { id, name, category, cost, color, img, desc, disabled, deleted: false };
         } else {
             const cleanId = id || slug(name);
+            savedId = cleanId;
             const idx = data.shop.customs.findIndex(c => c.id === cleanId);
             const entry = { id: cleanId, name, category, cost, color, img, desc, disabled, deleted: false, _custom: true };
             if (idx >= 0) {
@@ -746,7 +840,7 @@ const AdminStore = (() => {
             }
         }
         _save();
-        return { ok: true, item: getShopItem(id) };
+        return { ok: true, item: getShopItem(savedId) };
     }
 
     /** Supprime un article personnalisé ou masque un article système. */
@@ -944,13 +1038,34 @@ const AdminStore = (() => {
         return { ok: true, siteConfig: getSiteConfig() };
     }
 
-    /** Configuration effective de l'intégration IA. */
-    function getAiConfig() {
-        const data = _data();
-        return Object.assign(_clone(DEFAULT_AI_CONFIG), data.aiConfig || {});
+    /** Normalise un fournisseur du pool multi-IA. */
+    function _normalizeAiProvider(p, idx = 0) {
+        if (!p || typeof p !== 'object') return null;
+        const type = ['make_webhook', 'openai_compatible', 'gemini'].includes(p.type) ? p.type : 'make_webhook';
+        const endpoint = String(p.endpoint || '').trim();
+        const validateEndpoint = String(p.validateEndpoint || '').trim();
+        const name = String(p.name || `IA #${idx + 1}`).trim() || `IA #${idx + 1}`;
+        const id = String(p.id || slug(name) || `ia-${idx + 1}`).trim();
+        const apiKey = String(p.apiKey || '').trim();
+        const model = String(p.model || '').trim();
+        const enabled = p.enabled !== false;
+        const weight = Math.max(1, Math.min(10, parseInt(p.weight, 10) || 1));
+        return { id, name, type, endpoint, validateEndpoint, apiKey, model, enabled, weight };
     }
 
-    /** Sauvegarde la configuration de l'IA (webhooks Make.com et délai). */
+    /** Configuration effective de l'intégration IA (Multi-IA + Make + Adaptatif). */
+    function getAiConfig() {
+        const data = _data();
+        const merged = Object.assign(_clone(DEFAULT_AI_CONFIG), data.aiConfig || {});
+        merged.providers = Array.isArray(merged.providers)
+            ? merged.providers.map((p, i) => _normalizeAiProvider(p, i)).filter(Boolean)
+            : [];
+        merged.adaptiveMode = merged.adaptiveMode !== false;
+        merged.selectionStrategy = (merged.selectionStrategy === 'round_robin') ? 'round_robin' : 'random';
+        return merged;
+    }
+
+    /** Sauvegarde la configuration de l'IA (pool multi-IA, webhooks Make.com, mode adaptatif et délai). */
     function saveAiConfig(values) {
         if (!values || typeof values !== 'object') return { ok: false, error: 'Configuration invalide.' };
         const cur = getAiConfig();
@@ -958,10 +1073,20 @@ const AdminStore = (() => {
             : values.timeoutMs != null ? Math.max(1000, parseInt(values.timeoutMs, 10) || 8000) : cur.fetchTimeoutMs;
         const fallback = typeof values.fallbackToOffline === 'boolean' ? values.fallbackToOffline
             : typeof values.fallbackToLocal === 'boolean' ? values.fallbackToLocal : cur.fallbackToOffline;
+        const adaptiveMode = typeof values.adaptiveMode === 'boolean' ? values.adaptiveMode : cur.adaptiveMode;
+        const selectionStrategy = (values.selectionStrategy === 'round_robin' || values.selectionStrategy === 'random')
+            ? values.selectionStrategy
+            : cur.selectionStrategy;
+        const providers = Array.isArray(values.providers)
+            ? values.providers.map((p, i) => _normalizeAiProvider(p, i)).filter(Boolean)
+            : cur.providers;
 
         const clean = {
             generateWebhookUrl: (typeof values.generateWebhookUrl === 'string') ? values.generateWebhookUrl.trim() : (cur.generateWebhookUrl || ''),
             validateWebhookUrl: (typeof values.validateWebhookUrl === 'string') ? values.validateWebhookUrl.trim() : (cur.validateWebhookUrl || ''),
+            providers,
+            adaptiveMode,
+            selectionStrategy,
             fetchTimeoutMs: timeout,
             timeoutMs: timeout,
             fallbackToOffline: fallback,
@@ -1086,9 +1211,11 @@ const AdminStore = (() => {
                 if (!key || preserved.has(key)) continue;
                 if (
                     key === 'eduquest_options' || key === 'eduquest_niveau' || key === 'eduquest_daily_quests' ||
+                    key === 'eduquest_audio_manual_mute' || key === 'eduquest_audio_state' ||
                     key.startsWith('eduquest_opts_') || key.startsWith('eduquest_prog_') ||
                     key.startsWith('eduquest_niveau_') || key.startsWith('eduquest_quests_') ||
                     key.startsWith('eduquest_boosters_') || key.startsWith('eduquest_streak_') ||
+                    key.startsWith('eduquest_attempts_') || key.startsWith('eduquest_adaptive_') ||
                     /^eduquest_.*_progress$/.test(key)
                 ) {
                     remove.push(key);
@@ -1110,6 +1237,7 @@ const AdminStore = (() => {
         DEFAULT_REWARDS: _clone(DEFAULT_REWARDS),
         DEFAULT_SITE_CONFIG: _clone(DEFAULT_SITE_CONFIG),
         DEFAULT_AI_CONFIG: _clone(DEFAULT_AI_CONFIG),
+        SUBJECT_DEFAULT_RULES: _clone(SUBJECT_DEFAULT_RULES),
         LESSON_TYPES: LESSON_TYPES.slice(),
 
         // Utilitaires
@@ -1118,6 +1246,9 @@ const AdminStore = (() => {
         suggestSubjectId,
         validateLesson,
         normalizeLesson,
+        defaultBandForSubject,
+        defaultAllowedNiveauxForSubject,
+        isSubjectAllowedForNiveau,
 
         // Niveaux scolaires
         getLevels,

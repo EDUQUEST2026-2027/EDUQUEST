@@ -20,7 +20,10 @@ Toutes les clés sont préfixées par `eduquest_` pour éviter tout conflit avec
 | `eduquest_boosters` | `Object` | Inventaire des potions et consommables (Double XP, Bouclier) |
 | `eduquest_streak` | `Number` | Nombre de victoires consécutives |
 | `eduquest_combo` | `Number` | Enchaînement de réponses justes consécutives |
-| `eduquest_admin_data` | `Object` | Configuration globale, matières, leçons, IA et boutique (`AdminStore`) |
+| `eduquest_attempts_<scope>` | `Object` | Suivi anti-triche par niveau (erreurs persistées, bouclier consommé, sel de réinitialisation) |
+| `eduquest_adaptive_<scope>` | `Object` | Historique anti-répétition et palier adaptatif par matière et par classe |
+| `eduquest_audio_manual_mute` | `String` | État de coupure audio manuelle (`'true'` / `'false'`) empêchant toute réactivation parasite |
+| `eduquest_admin_data` | `Object` | Configuration globale, matières, leçons, pool Multi-IA et boutique (`AdminStore`) |
 | `eduquest_cookie_consent` | `Object` | Choix de consentement RGPD (durée de validité 12 mois) |
 
 ### Structure détaillée de `eduquest_admin_data` :

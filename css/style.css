@@ -1,5 +1,5 @@
 /* ==========================================================================
-   STYLE.CSS — EDUQUEST v1.26.0
+   STYLE.CSS — EDUQUEST v1.27.0
    Design system des pages, modales, animations et composants interactifs.
 
    DÉPENDANCE :
@@ -2814,8 +2814,6 @@
    l'esthétique pixel-art (contraste garanti pour l'accessibilité WCAG). */
 .menu-button:focus-visible,
 .option-button:focus-visible,
-.niveau-pill:focus-visible,
-.matiere-card:focus-visible,
 .level-dot:focus-visible,
 .dash-tab:focus-visible,
 .dash-subject-card:focus-visible,
@@ -2827,14 +2825,10 @@
 .dash-dd-target:focus-visible,
 .dash-short-input:focus-visible,
 .dash-blank-input:focus-visible,
-.login-input:focus-visible,
-.return-button:focus-visible {
-    outline: 2px solid var(--c-gold);
+.login-input:focus-visible {
+    outline: 2px solid var(--ui-accent, var(--c-gold));
     outline-offset: 3px;
 }
-
-/* Les champs déjà stylés via :focus gardent leur bordure dorée, l'outline
-   s'ajoute en doublon sans gêner. */
 
 /* --- Sélection de texte --- */
 ::selection {
@@ -2852,69 +2846,22 @@
 ::-webkit-scrollbar-thumb:hover { background: rgba(200, 168, 75, 0.45); }
 
 /* --- Illustrations pixel-art : rendu net (pas d'interpolation floue) --- */
-img.matiere-icon,
 .logo-image,
 .dash-skin-orb img,
 .dash-avatar img {
     image-rendering: pixelated;
 }
 
-/* --- Socle lumineux des matières en emoji (Géographie, Chimie) ---
-   Les îlots PNG ont une illustration riche ; les emojis seuls paraissaient
-   plats. Un disque dégradé + halo doré derrière l'emoji leur donne la même
-   présence visuelle dans la grille. */
-span.matiere-icon {
-    width: clamp(120px, 16vw, 150px);
-    aspect-ratio: 1 / 1;
-    display: grid;
-    place-items: center;
-    font-size: clamp(2.6rem, 5vw, 3.4rem);
-    line-height: 1;
-    border-radius: 50%;
-    background:
-        radial-gradient(circle at 32% 25%, rgba(255,255,255,0.14) 0 18%, transparent 20%),
-        radial-gradient(circle at 50% 60%, rgba(74,124,89,0.5) 0 45%, rgba(10,22,40,0.9) 78%);
-    border: 3px solid rgba(200,168,75,0.4);
-    box-shadow:
-        inset 0 4px 0 rgba(255,255,255,0.18),
-        inset 0 -6px 0 rgba(0,0,0,0.35),
-        0 6px 0 rgba(0,0,0,0.45),
-        0 0 26px rgba(200,168,75,0.18);
-}
-span.matiere-icon::before { content: none; }
-
-/* --- Ornement du titre de sélection de niveau --- */
-.niveau-title::after {
-    content: '';
-    display: block;
-    width: min(220px, 60%);
-    height: 2px;
-    margin: 12px auto 0;
-    background: linear-gradient(90deg, transparent, rgba(200,168,75,0.55), transparent);
-}
-
-/* --- Footer : lisible et sans collision avec le bouton Retour --- */
+/* --- Footer : lisible et bien dégagé --- */
 .footer {
     bottom: 10px;
     color: rgba(200, 168, 75, 0.45);
-    z-index: 101; /* Au-dessus du bouton Retour (z-index 100) en cas de contact */
+    z-index: 101;
 }
-
-/* Le bouton Retour au menu gagne de l'air : moins large, plus haut au-dessus
-   du footer, et la grille réserve l'espace qu'il occupe pour que la dernière
-   rangée de cartes ne passe jamais derrière lui. */
-.retour-button-matieres {
-    bottom: 44px;
-    width: auto;
-    min-width: 230px;
-    padding: 12px 30px;
-}
-.matieres-grid { padding-bottom: 0; }
-main.container:has(.retour-button-matieres) { padding-bottom: 130px; }
 
 /* --- focus-visible des cartes matières du dashboard (clavier) --- */
 .dash-subject-card:focus-visible {
-    border-color: var(--c-gold);
+    border-color: var(--ui-accent, var(--c-gold));
     transform: translateY(-4px);
 }
 
@@ -2928,11 +2875,9 @@ main.container:has(.retour-button-matieres) { padding-bottom: 130px; }
         0 -2px 0 rgba(200, 168, 75, 0.55) inset;
 }
 
-/* --- Respect des préférences système : réduire les animations ---
-   (vertige, épilepsie photosensible, batterie). Les éléments restent
-   entièrement utilisables, sans mouvements permanents. */
+/* --- Respect des préférences système : réduire les animations --- */
 @media (prefers-reduced-motion: reduce) {
-    .star, .cloud, .matiere-icon, .logo-image, .level-dot.active,
+    .star, .cloud, .logo-image, .level-dot.active,
     .dash-map-wrap circle, .dash-node-group circle {
         animation: none !important;
     }
@@ -2948,25 +2893,11 @@ main.container:has(.retour-button-matieres) { padding-bottom: 130px; }
     .background, .stars, .clouds { display: none; }
 }
 
-/* =========================================================================
-   v1.21 — DERNIER MOT RESPONSIVE (petits téléphones ≤ 600px)
-   Placé TOUT À LA FIN du fichier pour surmonter la couche « polish »
-   (ex : .matieres-grid { padding-bottom: 0 } ligne ~2842). Ce bloc doit
-   toujours rester dernier : tout correctif mobile ultérieur s'ajoute ici.
-   ========================================================================= */
-@media (max-width: 600px) {
-    /* Espace sous la grille des matières pour le bouton « Retour » flottant
-       et le pied de page — sinon les dernières cartes sont recouvertes. */
-    .matieres-grid.visible {
-        padding-bottom: 150px;
-    }
-}
-
-/* --- Mode �conomie d'�nergie --- */
+/* --- Mode économie d'énergie --- */
 body.eco-mode-active * { animation: none !important; }
 body.eco-mode-active .stars, body.eco-mode-active .clouds { display: none !important; }
 
-/* S�lecteur de classe dans le dashboard */
+/* Sélecteur de classe dans le dashboard */
 .dash-grade-wrap {
     display: inline-flex;
     align-items: center;
@@ -3502,6 +3433,369 @@ body.no-animations *::after {
     text-decoration: underline !important;
     filter: brightness(1.2);
 }
+
+/* =========================================================================
+   v1.27.0 — PERSONNALISATION APPARENCE, QUITTER, CHRONO, BADGE CLASSE & IA
+   ========================================================================= */
+
+/* Cohérence de luminosité sur tous les boutons interactifs */
+.dash-btn-primary,
+.dash-btn-ghost,
+.back-button,
+.dash-back-btn {
+    filter: brightness(var(--btn-brightness, 0.80));
+}
+.dash-btn-primary:hover,
+.dash-btn-ghost:hover,
+.back-button:hover,
+.dash-back-btn:hover {
+    filter: brightness(calc(var(--btn-brightness, 0.80) + 0.16));
+}
+
+/* --- Section Apparence dans #modalOptions --- */
+.options-section-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.92rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--ui-accent, var(--c-gold));
+    margin: 22px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid color-mix(in srgb, var(--ui-accent, #c8a84b) 28%, transparent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.color-presets-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+}
+
+.color-swatch {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    padding: 0;
+    flex: 0 0 auto;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+.color-swatch:hover {
+    transform: scale(1.16);
+    border-color: #ffffff;
+}
+.color-swatch.active {
+    border-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.28), 0 0 14px currentColor;
+    transform: scale(1.12);
+}
+
+.color-picker-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-left: auto;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.72);
+    font-weight: 600;
+}
+
+.color-picker-input {
+    width: 34px;
+    height: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.35);
+    padding: 2px;
+    cursor: pointer;
+}
+
+.appearance-reset-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+.btn-appearance-reset {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 6px 14px;
+    border-radius: 10px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.btn-appearance-reset:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: var(--ui-accent, var(--c-gold));
+    color: #fff;
+}
+
+/* --- Modale de confirmation Quitter (#modalQuitConfirm) --- */
+.quit-modal-card {
+    width: min(440px, calc(100vw - 32px));
+    background: rgba(8, 14, 26, 0.94);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid rgba(220, 100, 100, 0.35);
+    border-top-color: rgba(255, 150, 150, 0.45);
+    border-radius: 22px;
+    padding: 28px 26px;
+    text-align: center;
+    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.78), 0 0 36px rgba(139, 58, 58, 0.22);
+    animation: panelSlideIn 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.quit-modal-icon {
+    font-size: 2.6rem;
+    margin-bottom: 10px;
+}
+.quit-modal-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.45rem;
+    font-weight: 900;
+    color: #fff;
+    margin-bottom: 10px;
+    letter-spacing: 1.5px;
+}
+.quit-modal-text {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.02rem;
+    color: rgba(255, 255, 255, 0.78);
+    line-height: 1.45;
+    margin-bottom: 22px;
+}
+.quit-modal-actions {
+    display: flex;
+    gap: 12px;
+}
+
+/* --- Badge classe en lecture seule sur map.html (remplace #mapGradeSelect) --- */
+.map-grade-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: rgba(10, 18, 36, 0.78);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid color-mix(in srgb, var(--ui-accent, #c8a84b) 48%, transparent);
+    color: #ffd166;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.96rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.38);
+    pointer-events: auto;
+    user-select: none;
+    white-space: nowrap;
+}
+
+/* --- Transition dynamique d'expulsion vers le tableau de bord (map.html) --- */
+.map-expel-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 20000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(4, 9, 20, 0.88);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+}
+.map-expel-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+.map-expel-card {
+    width: min(460px, calc(100vw - 32px));
+    padding: 28px 26px;
+    border-radius: 22px;
+    background: rgba(12, 20, 38, 0.95);
+    border: 1px solid rgba(255, 209, 102, 0.45);
+    text-align: center;
+    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.75);
+    transform: translateY(18px) scale(0.96);
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.map-expel-overlay.visible .map-expel-card {
+    transform: translateY(0) scale(1);
+}
+.map-expel-icon {
+    font-size: 2.8rem;
+    margin-bottom: 10px;
+}
+.map-expel-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.35rem;
+    color: #ffd166;
+    margin-bottom: 8px;
+}
+.map-expel-text {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.02rem;
+    color: rgba(255, 255, 255, 0.84);
+    line-height: 1.45;
+    margin-bottom: 18px;
+}
+.map-expel-bar {
+    width: 100%;
+    height: 6px;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.12);
+    overflow: hidden;
+}
+.map-expel-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #ffd166, #6bca82);
+    transition: width 1.15s linear;
+}
+.map-expel-overlay.visible .map-expel-bar-fill {
+    width: 100%;
+}
+
+/* --- Chronomètre unifié & lisible (map.html & dashboard.html) --- */
+.quiz-chrono-container {
+    margin: 0 0 14px;
+    padding: 8px 12px 10px;
+    background: rgba(8, 15, 30, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.quiz-chrono-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #e2e8f0;
+}
+.quiz-chrono-label {
+    font-family: var(--font-pixel-ui, 'Rajdhani', monospace);
+    font-size: 0.9rem;
+    color: #6bca82;
+    letter-spacing: 0.5px;
+}
+.quiz-chrono-track {
+    width: 100%;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    overflow: hidden;
+}
+.quiz-chrono-fill {
+    height: 100%;
+    width: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #4a7c59, #6bca82);
+    transition: width 0.22s linear, background-color 0.25s ease;
+}
+.quiz-chrono-container.is-warning {
+    border-color: rgba(255, 193, 7, 0.55);
+}
+.quiz-chrono-container.is-warning .quiz-chrono-label {
+    color: #ffd166;
+}
+.quiz-chrono-container.is-warning .quiz-chrono-fill {
+    background: linear-gradient(90deg, #e09f3e, #ffd166);
+}
+.quiz-chrono-container.is-urgent {
+    border-color: rgba(239, 83, 80, 0.75);
+    box-shadow: 0 0 18px rgba(239, 83, 80, 0.3);
+    animation: chronoUrgentPulse 0.75s ease-in-out infinite;
+}
+.quiz-chrono-container.is-urgent .quiz-chrono-label {
+    color: #ff6b6b;
+}
+.quiz-chrono-container.is-urgent .quiz-chrono-fill {
+    background: linear-gradient(90deg, #c62828, #ff5252);
+}
+@keyframes chronoUrgentPulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(239, 83, 80, 0.25); }
+    50%      { box-shadow: 0 0 22px rgba(239, 83, 80, 0.58); }
+}
+
+/* --- Bandeau méta du quiz (Étoiles en jeu + Palier adaptatif / Source IA) --- */
+.quiz-meta-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.quiz-stars-stake,
+.quiz-source-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.84rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+.quiz-stars-stake {
+    background: rgba(255, 209, 102, 0.14);
+    border: 1px solid rgba(255, 209, 102, 0.35);
+    color: #ffd166;
+}
+.quiz-stars-stake.penalized {
+    background: rgba(255, 138, 101, 0.16);
+    border-color: rgba(255, 138, 101, 0.45);
+    color: #ffab91;
+}
+.quiz-source-pill {
+    background: rgba(95, 212, 230, 0.12);
+    border: 1px solid rgba(95, 212, 230, 0.32);
+    color: #9ae4f0;
+}
+.quiz-source-pill.is-ai {
+    background: rgba(157, 78, 221, 0.18);
+    border-color: rgba(199, 125, 255, 0.45);
+    color: #e0aaff;
+}
+.quiz-source-pill.tier-remediation {
+    border-color: rgba(107, 202, 130, 0.45);
+    color: #a8f0b8;
+}
+.quiz-source-pill.tier-approfondissement {
+    border-color: rgba(255, 183, 3, 0.5);
+    color: #ffd166;
+}
+
+@media (max-width: 600px) {
+    .map-grade-badge {
+        font-size: 0.82rem;
+        padding: 5px 10px;
+    }
+    .quit-modal-actions {
+        flex-direction: column;
+    }
+}
+
 
 
 

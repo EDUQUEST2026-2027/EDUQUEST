@@ -1,14 +1,9 @@
 /* =============================================================================
-   QUIZ-SESSION.JS — EDUQUEST v1.26
+   QUIZ-SESSION.JS — EDUQUEST v1.27.0
    Soumission d'une réponse UNIFIÉE pour la carte (map.html) et le tableau de
-   bord (dashboard.html). Remplace la logique dupliquée de _mapSubmitQuiz et
-   _dashSubmitQuiz : correction (AiProvider → QuizEngine), combo, Bouclier
-   d'Étoile — en un seul endroit.
-
-   Dépendances résolues À L'APPEL (pas au chargement) via `deps` ou globalThis :
-     AiProvider.submitAnswer, DB.{hasBooster,useBooster,recordCorrectAnswer,
-     recordWrongAnswer}, GameRules, showNotification (optionnelle).
-   → testable en Node avec des doublures (tests/game-rules-and-session.test.js).
+   bord (dashboard.html). Gère la correction (AiProvider → QuizEngine), le combo,
+   le Bouclier d'Étoile, la persistance anti-triche des erreurs et la mise à jour
+   du moteur adaptatif — en un seul endroit.
    ============================================================================= */
 (function (root, factory) {
     const api = factory(root);
@@ -19,12 +14,22 @@
 
     const TIMEOUT_EXPLANATION = 'Temps écoulé ! Tu as dépassé les 30 secondes accordées.';
 
+    function formatTimeoutExplanation(durationSec) {
+        const d = Number(durationSec);
+        if (Number.isFinite(d) && d > 0) {
+            return `Temps écoulé ! Tu as dépassé les ${Math.round(d)} secondes accordées.`;
+        }
+        return TIMEOUT_EXPLANATION;
+    }
+
     function resolve(deps) {
         const d = deps || {};
         return {
             ai: d.AiProvider || root.AiProvider,
             db: d.DB || root.DB,
             rules: d.GameRules || root.GameRules,
+            adaptive: d.AdaptiveEngine || root.AdaptiveEngine,
+            audio: d.AudioManager || root.AudioManager,
             notify: d.notify || (typeof root.showNotification === 'function' ? root.showNotification : null),
         };
     }
@@ -34,6 +39,7 @@
         return Object.assign({
             attempts: 0,
             variant: 0,
+            salt: 0,
             submitted: null,
             answered: false,
             isCorrect: false,
@@ -42,6 +48,14 @@
             questionId: null,
             explanation: '',
             usedShield: false,
+            signature: '',
+            failedSignatures: [],
+            source: 'local',
+            providerId: null,
+            providerName: '',
+            difficultyTier: 'standard',
+            tierInfo: null,
+            chronoDuration: 0,
         }, extra || {});
     }
 
@@ -50,14 +64,17 @@
      * @param {object} attempt  état mutable de la tentative (createAttempt)
      * @param {*} rawAnswer     réponse brute (ou GameRules.TIMEOUT_ANSWER)
      * @param {object} hooks
-     * @param {Function} hooks.render   re-rendu de l'UI (appelé 2 fois)
-     * @param {Function} hooks.isStale  true si la modale a été fermée/remplacée
-     * @param {object} [deps]           injection pour les tests
+     * @param {Function} hooks.render     re-rendu de l'UI (appelé 2 fois)
+     * @param {Function} hooks.isStale    true si la modale a été fermée/remplacée
+     * @param {string}  [hooks.subjectId] identifiant de matière (pour anti-triche & adaptatif)
+     * @param {string}  [hooks.niveau]    classe scolaire courante
+     * @param {number}  [hooks.levelIndex] indice du niveau (0..99)
+     * @param {number}  [hooks.chronoDuration] durée du chrono pour le message de dépassement
+     * @param {object} [deps]             injection pour les tests
      * @returns {Promise<{isCorrect:boolean, shieldAbsorbed:boolean}|null>}
-     *          null si la tentative est devenue obsolète pendant la correction
      */
     async function submit(attempt, rawAnswer, hooks, deps) {
-        const { ai, db, rules, notify } = resolve(deps);
+        const { ai, db, rules, adaptive, audio, notify } = resolve(deps);
         const h = hooks || {};
         const render = typeof h.render === 'function' ? h.render : () => {};
         const isStale = typeof h.isStale === 'function' ? h.isStale : () => false;
@@ -83,13 +100,24 @@
         attempt.checking = false;
         attempt.answered = true;
         attempt.isCorrect = Boolean(result && result.isCorrect) && !isTimeout;
-        attempt.explanation = isTimeout ? TIMEOUT_EXPLANATION : ((result && result.explanation) || '');
+        const duration = h.chronoDuration || attempt.chronoDuration || 0;
+        attempt.explanation = isTimeout
+            ? formatTimeoutExplanation(duration)
+            : ((result && result.explanation) || '');
         attempt.lesson = Object.assign({}, attempt.lesson, (result && result.answerKey) || {});
 
         let shieldAbsorbed = false;
         if (attempt.isCorrect) {
             if (db && db.recordCorrectAnswer) db.recordCorrectAnswer();
+            if (audio && typeof audio.playSfx === 'function') audio.playSfx('correct');
         } else {
+            // Mémorise la signature ratée pour empêcher son retour au réessai
+            if (attempt.signature) {
+                if (!Array.isArray(attempt.failedSignatures)) attempt.failedSignatures = [];
+                if (!attempt.failedSignatures.includes(attempt.signature)) {
+                    attempt.failedSignatures.push(attempt.signature);
+                }
+            }
             const shieldId = rules ? rules.SHIELD_ID : 'boost-shield';
             const hasShield = Boolean(db && db.hasBooster && db.hasBooster(shieldId));
             if (rules && rules.shouldShieldAbsorb(attempt, hasShield) && db.useBooster(shieldId)) {
@@ -98,14 +126,39 @@
                 if (notify) notify('🛡️ Bouclier d\'Étoile consommé : série et 3 étoiles protégées !', 'info');
             }
             if (db && db.recordWrongAnswer) db.recordWrongAnswer(shieldAbsorbed);
+
+            // Persistance anti-triche immédiate : quitter / recharger la page ne remet pas les étoiles à 3
+            if (db && typeof db.recordLevelFailure === 'function' && h.subjectId && h.levelIndex != null) {
+                const persisted = db.recordLevelFailure(h.subjectId, h.niveau || '6eme', h.levelIndex, {
+                    shieldAbsorbed,
+                    failedSignature: attempt.signature || '',
+                });
+                if (persisted && typeof persisted.questionSalt === 'number') {
+                    attempt.salt = persisted.questionSalt;
+                }
+            }
+            if (audio && typeof audio.playSfx === 'function') audio.playSfx('wrong');
         }
+
+        // Mise à jour du moteur adaptatif (Consolidation / Standard / Approfondissement)
+        if (adaptive && typeof adaptive.recordOutcome === 'function' && h.subjectId) {
+            attempt.tierInfo = adaptive.recordOutcome(h.subjectId, h.niveau || '6eme', {
+                isCorrect: attempt.isCorrect,
+                firstTry: attempt.isCorrect && attempt.attempts === 1,
+            });
+            if (attempt.tierInfo && attempt.tierInfo.id) {
+                attempt.difficultyTier = attempt.tierInfo.id;
+            }
+        }
+
         render();
         return { isCorrect: attempt.isCorrect, shieldAbsorbed };
     }
 
-    /** Prépare la tentative pour un nouvel essai (après une erreur). */
+    /** Prépare la tentative pour un nouvel essai (après une erreur : nouvelle question garantie). */
     function resetForRetry(attempt, nextVariant) {
         attempt.variant = nextVariant;
+        attempt.salt = (Number(attempt.salt) || 0) + 1;
         attempt.submitted = null;
         attempt.answered = false;
         attempt.isCorrect = false;
@@ -120,5 +173,12 @@
         return ((Number(current) || 0) + 1 + Math.floor(r() * 2)) % 3;
     }
 
-    return Object.freeze({ createAttempt, submit, resetForRetry, nextVariant, TIMEOUT_EXPLANATION });
+    return Object.freeze({
+        createAttempt,
+        submit,
+        resetForRetry,
+        nextVariant,
+        formatTimeoutExplanation,
+        TIMEOUT_EXPLANATION,
+    });
 });

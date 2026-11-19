@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="fr">
 <!--
-  DASHBOARD.HTML — EDUQUEST v1.26.0
-  Tableau de bord : progression des 13 matières, quêtes journalières, boutique et quiz.
+  DASHBOARD.HTML — EDUQUEST v1.27.0
+  Tableau de bord : progression des matières, quêtes journalières, boutique et quiz adaptatif.
 -->
 <head>
     <meta charset="UTF-8">
@@ -33,12 +33,13 @@
     <a class="options-wheel floating" href="index.html#options" title="Options">⚙️</a>
 
     <main class="container" id="dashboardPage" style="justify-content: flex-start; padding-top: 30px;">
+        <div id="siteAnnouncement" class="site-announcement-banner" hidden></div>
         <div id="dashboard-app" style="width: 100%; max-width: 960px;"></div>
         <a class="dash-back-btn" href="index.html">← RETOUR AU MENU</a>
     </main>
 
     <footer>
-        <div class="footer">Version 1.26.0</div>
+        <div class="footer">Version 1.27.0</div>
         <div class="legal-links"><a href="legal.html">Mentions légales</a> · <a href="legal.html#cookies" onclick="window.dispatchEvent(new Event('eduquest:cookie-reopen'))">Cookies</a></div>
     </footer>
 
@@ -46,6 +47,9 @@
     <script src="js/admin-store.js"></script>
     <script src="js/quiz-engine.js"></script>
     <script src="js/question-bank.js"></script>
+    <script src="js/core/audio-manager.js"></script>
+    <script src="js/core/quiz-timer.js"></script>
+    <script src="js/core/adaptive-engine.js"></script>
     <script src="js/ai-provider.js"></script>
     <script src="js/core/game-rules.js"></script>
     <script src="js/core/quiz-session.js"></script>

@@ -1,5 +1,5 @@
 -- =============================================================================
--- SCHEMA.SQL — EDUQUEST v1.26.0
+-- SCHEMA.SQL — EDUQUEST v1.27.0
 -- Script de création de la base de données SQL (MySQL / MariaDB / PostgreSQL / SQLite)
 -- =============================================================================
 --
@@ -242,6 +242,7 @@ INSERT IGNORE INTO parametres (joueur_id, cle, valeur) VALUES
     (1, 'ecoMode',           'false'),
     (1, 'modeChrono',        'false'),
     (1, 'pleinEcran',        'false'),
+    (1, 'btnBrightness',     '80'),
     (1, 'niveau_actuel',     '6eme');
 
 -- Configuration globale du site (synchronisée avec AdminStore.getSiteConfig)
@@ -260,6 +261,9 @@ INSERT IGNORE INTO configuration_ia (cle, valeur, description) VALUES
     ('generateWebhookUrl',   '',                                   'Webhook Make pour la génération de questions par IA'),
     ('validateWebhookUrl',   '',                                   'Webhook Make pour la validation de réponses ouvertes'),
     ('fetchTimeoutMs',       '8000',                               'Délai d’attente réseau maximal en millisecondes'),
+    ('adaptiveMode',         'true',                               'Activer le moteur adaptatif et la non-répétition'),
+    ('selectionStrategy',    'random',                             'Stratégie de sélection Multi-IA (random ou round_robin)'),
+    ('providers',            '[]',                                 'Pool JSON de fournisseurs IA (Make, OpenAI-compatible, Gemini)'),
     ('fallbackToOffline',    'true',                               'Basculer automatiquement sur la banque locale en cas d’erreur');
 
 -- Configuration des 13 matières de base avec leurs cycles et classes autorisées

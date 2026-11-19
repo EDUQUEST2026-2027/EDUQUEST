@@ -649,3 +649,51 @@ body > * { position: relative; z-index: 1; }
     color: var(--gold-soft);
 }
 
+/* Grilles & Pool Multi-IA (v1.27.0) */
+.adm-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+@media (max-width: 720px) {
+    .adm-grid-3 {
+        grid-template-columns: 1fr;
+    }
+}
+.adm-ai-pool {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 14px 0;
+}
+.adm-ai-provider-card {
+    background: rgba(14, 23, 52, 0.72);
+    border: 1px solid rgba(200, 168, 75, 0.25);
+    border-radius: 12px;
+    padding: 14px 16px;
+}
+.adm-ai-provider-card.is-disabled {
+    opacity: 0.58;
+    border-color: rgba(255, 255, 255, 0.12);
+}
+.adm-ai-provider-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+.adm-ai-provider-type {
+    display: inline-block;
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(95, 212, 230, 0.14);
+    border: 1px solid rgba(95, 212, 230, 0.35);
+    color: #9ae4f0;
+}
+
+

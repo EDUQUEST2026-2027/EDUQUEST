@@ -37,6 +37,11 @@ function setupTestEnv() {
     } else {
         globalThis.localStorage.clear();
     }
+    if (typeof globalThis.sessionStorage === 'undefined') {
+        globalThis.sessionStorage = createLocalStorageMock();
+    } else {
+        globalThis.sessionStorage.clear();
+    }
 }
 
 module.exports = {

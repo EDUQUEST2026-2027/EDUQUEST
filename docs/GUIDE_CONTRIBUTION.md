@@ -9,7 +9,7 @@ Ce guide décrit l'ensemble des bonnes pratiques, flux de tests et protocoles d'
 Le projet dispose de deux environnements de tests complémentaires sans aucune dépendance npm externe.
 
 ### A. Tests Node.js (CLI)
-Exécute la suite complète de **68 tests unitaires** via l'exécuteur natif `node:test` :
+Exécute la suite complète de **tests unitaires** (10 suites) via l'exécuteur natif `node:test` :
 
 ```bash
 node --test tests/*.test.js
@@ -19,14 +19,17 @@ node --test tests/*.test.js
 npm test
 ```
 
-#### Les 7 suites de tests automatisés :
-1. `tests/admin-store.test.js` : Validation des 6 types de questions, cycles scolaires (`band`), classes autorisées, aperçu procédural, configuration du site et configuration IA.
-2. `tests/cookies.test.js` : Conformité du bandeau RGPD/CNIL, durées d'expiration (12 mois) et granularité du consentement.
-3. `tests/daily-quests.test.js` : Déterminisme du PRNG Mulberry32, tirage Fisher-Yates et renouvellement à minuit.
-4. `tests/db.test.js` : Isolation des comptes locaux, gestion des consommables, combos et bouclier d'étoile.
-5. `tests/game-rules-and-session.test.js` : Règles pures, étoiles, bouclier, combos et pipeline de soumission de quiz.
-6. `tests/question-bank.test.js` : Déterminisme du générateur procédural et respect des bandes scolaires.
-7. `tests/quiz-engine.test.js` : Rendu et notation des 6 formats de questions avec algorithme Levenshtein.
+#### Les 10 suites de tests automatisés :
+1. `tests/admin-store.test.js` : Validation des 6 types de questions, cycles scolaires (`band`), classes autorisées (dont règles strictes Collège/Lycée/Terminale), aperçu procédural, configuration du site et pool Multi-IA.
+2. `tests/adaptive-and-multi-ai.test.js` : Anti-triche 3 étoiles persisté, réinitialisation sur échec, moteur adaptatif non-répétitif et sélection aléatoire/cascade Multi-IA.
+3. `tests/audio-manager.test.js` : Globalisation musicale, anti-réactivation après coupure manuelle, synchronisation inter-onglets et extinction totale au clic sur Quitter.
+4. `tests/cookies.test.js` : Conformité du bandeau RGPD/CNIL, durées d'expiration (12 mois) et granularité du consentement.
+5. `tests/daily-quests.test.js` : Déterminisme du PRNG Mulberry32, tirage Fisher-Yates et renouvellement à minuit.
+6. `tests/db.test.js` : Isolation des comptes locaux, gestion des consommables, combos, bouclier d'étoile et persistance anti-triche des tentatives.
+7. `tests/game-rules-and-session.test.js` : Règles pures, étoiles, bouclier, combos, multiplicateurs globaux et pipeline de soumission de quiz.
+8. `tests/question-bank.test.js` : Déterminisme du générateur procédural, non-répétition et respect strict des programmes Collège / Lycée / Terminale.
+9. `tests/quiz-engine.test.js` : Rendu et notation des 6 formats de questions avec algorithme Levenshtein.
+10. `tests/quiz-timer.test.js` : Chronomètre fiable par horloge murale sur exercices consécutifs, réessais et expiration unique.
 
 ### B. Contrôle statique de syntaxe
 Valide la syntaxe de l'ensemble des modules JavaScript du projet :
@@ -81,19 +84,21 @@ Chaque matière dispose :
 4. **Texte à trous (`type: 'texte_a_trous'`) :**
    ```javascript
    {
+       type: "texte_a_trous",
        q: "Complète la formule :",
        textWithBlanks: "E = m * ___^2",
        blanks: [["c", "C"]],
-       wordBank: ["c", "v", "a", "t"]
+       distractors: ["v", "a", "t"]
    }
    ```
 5. **Texte avec menu déroulant (`type: 'texte_a_choix'`) :**
    ```javascript
    {
+       type: "texte_a_choix",
        q: "Sélectionne le bon connecteur logique :",
-       textWithBlanks: "Il pleut, [___] je prends mon parapluie.",
+       textWithBlanks: "Il pleut, ___ je prends mon parapluie.",
        choices: [["donc", "mais", "car", "or"]],
-       correct: [0]
+       blanks: [["donc"]]
    }
    ```
 6. **Association / Paires (`type: 'drag_and_drop'`) :**

@@ -79,12 +79,13 @@
     }
 
     /** Bonus XP chrono proportionnel au temps restant. */
-    function chronoBonus(rewards, chronoEnabled, timeRemaining) {
+    function chronoBonus(rewards, chronoEnabled, timeRemaining, totalDuration) {
         if (!chronoEnabled) return 0;
-        const t = Math.max(0, Math.min(QUIZ_DURATION_S, Number(timeRemaining) || 0));
+        const duration = Number(totalDuration) > 0 ? Number(totalDuration) : QUIZ_DURATION_S;
+        const t = Math.max(0, Math.min(duration, Number(timeRemaining) || 0));
         if (t <= 0) return 0;
         const max = Number((rewards || DEFAULT_REWARDS).chronoBonusMaxXp) || 0;
-        return Math.floor(max * (t / QUIZ_DURATION_S));
+        return Math.floor(max * (t / duration));
     }
 
     /** Fusionne un barème partiel (admin) avec les valeurs par défaut. */
@@ -101,26 +102,31 @@
      * Calcule les gains d'un niveau réussi (1re réussite uniquement : c'est
      * à l'appelant de décider s'il crédite).
      * @param {object} p
-     * @param {number} p.stars            1..3
-     * @param {number} [p.multiplier=1]   multiplicateur combo
+     * @param {number} p.stars              1..3
+     * @param {number} [p.multiplier=1]     multiplicateur combo
      * @param {boolean} [p.chronoEnabled]
      * @param {number} [p.timeRemaining]
-     * @param {boolean} [p.doubleXp]      potion Double XP consommée
-     * @param {object} [p.rewards]        barème admin
+     * @param {number} [p.chronoDuration]   durée configurée du chrono (s)
+     * @param {boolean} [p.doubleXp]        potion Double XP consommée
+     * @param {object} [p.rewards]          barème admin
+     * @param {number} [p.siteXpMultiplier=1]   multiplicateur global XP (admin siteConfig)
+     * @param {number} [p.siteCoinMultiplier=1] multiplicateur global pièces (admin siteConfig)
      */
     function computeLevelRewards(p) {
         const params = p || {};
         const rewards = normalizeRewards(params.rewards);
         const stars = Math.max(1, Math.min(3, Number(params.stars) || 1));
         const mult = Number(params.multiplier) > 0 ? Number(params.multiplier) : 1;
-        const chrono = chronoBonus(rewards, params.chronoEnabled, params.timeRemaining);
+        const siteXpMult = Number(params.siteXpMultiplier) > 0 ? Number(params.siteXpMultiplier) : 1;
+        const siteCoinMult = Number(params.siteCoinMultiplier) > 0 ? Number(params.siteCoinMultiplier) : 1;
+        const chrono = chronoBonus(rewards, params.chronoEnabled, params.timeRemaining, params.chronoDuration);
         const perfectBonus = stars === 3 ? rewards.firstTryBonusXp : 0;
         let baseXp = rewards.xpBase + chrono + perfectBonus;
         if (params.doubleXp) baseXp *= 2;
         return {
             stars,
-            xp: Math.round(baseXp * mult),
-            coins: rewards.coinsBase,
+            xp: Math.round(baseXp * mult * siteXpMult),
+            coins: Math.round(rewards.coinsBase * siteCoinMult),
             score: Math.round(100 * stars * mult),
             chronoBonus: chrono,
             perfectBonus,

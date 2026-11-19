@@ -197,7 +197,7 @@ const DB = (() => {
         try {
             const key = _optionsKey();
             let raw = localStorage.getItem(key);
-            if (!raw) {
+            if (!raw && _userScope() === 'guest') {
                 const legacy = localStorage.getItem(KEYS.OPTIONS);
                 if (legacy) {
                     try { localStorage.setItem(key, legacy); } catch { }
@@ -352,8 +352,8 @@ const DB = (() => {
         try {
             const key = _progressKey(matiere, niveau);
             let saved = localStorage.getItem(key);
-            if (!saved) {
-                // Migration / repli depuis l'ancienne clé globale si elle existe
+            if (!saved && _userScope() === 'guest') {
+                // Migration / repli depuis l'ancienne clé globale uniquement pour le profil invité
                 const legacyKey = 'eduquest_' + String(matiere || '').toLowerCase() + '_' + niveau + '_progress';
                 saved = localStorage.getItem(legacyKey);
                 if (saved) {
@@ -386,7 +386,7 @@ const DB = (() => {
         try {
             const key = _progressKey(matiere, niveau);
             let saved = localStorage.getItem(key);
-            if (!saved) {
+            if (!saved && _userScope() === 'guest') {
                 const legacyKey = 'eduquest_' + String(matiere || '').toLowerCase() + '_' + (niveau || '6eme') + '_progress';
                 saved = localStorage.getItem(legacyKey);
                 if (saved) {
@@ -415,7 +415,10 @@ const DB = (() => {
      */
     function getNiveau() {
         try {
-            return localStorage.getItem(_niveauKey()) || localStorage.getItem(KEYS.NIVEAU) || null;
+            const scoped = localStorage.getItem(_niveauKey());
+            if (scoped) return scoped;
+            if (_userScope() === 'guest') return localStorage.getItem(KEYS.NIVEAU) || null;
+            return null;
         } catch { return null; }
     }
 
@@ -1047,6 +1050,112 @@ const DB = (() => {
     }
 
     /* -----------------------------------------------------------------------
+       SUIVI ANTI-TRICHE DES TENTATIVES PAR NIVEAU (v1.27.0)
+       Persiste les erreurs et le sel de réinitialisation des questions par
+       niveau pour empêcher de récupérer 3 étoiles via retour de page / F5.
+       ----------------------------------------------------------------------- */
+    function _attemptsKey() {
+        return 'eduquest_attempts_' + _userScope();
+    }
+
+    function _attemptSlot(subjectKey, niveau, levelNum) {
+        const s = String(subjectKey || '').toLowerCase().trim();
+        const n = String(niveau || '6eme').toLowerCase().trim();
+        const l = Number(levelNum) || 0;
+        return s + '::' + n + '::' + l;
+    }
+
+    function _readAttemptsMap() {
+        try { return JSON.parse(localStorage.getItem(_attemptsKey()) || '{}') || {}; }
+        catch { return {}; }
+    }
+
+    function _writeAttemptsMap(map) {
+        try { localStorage.setItem(_attemptsKey(), JSON.stringify(map || {})); } catch { }
+    }
+
+    function getLevelAttempt(subjectKey, niveau, levelNum) {
+        const map = _readAttemptsMap();
+        const entry = map[_attemptSlot(subjectKey, niveau, levelNum)];
+        if (!entry || typeof entry !== 'object') {
+            return { fails: 0, usedShield: false, questionSalt: 0, failedSignatures: [], lastFailedSig: null, lastProviderId: null };
+        }
+        const sigs = Array.isArray(entry.failedSignatures)
+            ? entry.failedSignatures.filter(Boolean)
+            : (entry.lastFailedSig ? [entry.lastFailedSig] : []);
+        return {
+            fails: Math.max(0, parseInt(entry.fails, 10) || 0),
+            usedShield: Boolean(entry.usedShield),
+            questionSalt: Math.max(0, parseInt(entry.questionSalt, 10) || 0),
+            failedSignatures: sigs,
+            lastFailedSig: sigs[sigs.length - 1] || entry.lastFailedSig || null,
+            lastProviderId: entry.lastProviderId || null,
+        };
+    }
+
+    function recordLevelFailure(subjectKey, niveau, levelNum, opts = {}) {
+        const map = _readAttemptsMap();
+        const slot = _attemptSlot(subjectKey, niveau, levelNum);
+        const cur = getLevelAttempt(subjectKey, niveau, levelNum);
+        const newSig = opts.failedSignature || opts.questionSig || '';
+        const sigs = cur.failedSignatures.slice();
+        if (newSig && !sigs.includes(newSig)) {
+            sigs.push(newSig);
+            if (sigs.length > 20) sigs.splice(0, sigs.length - 20);
+        }
+        const updated = {
+            fails: cur.fails + 1,
+            usedShield: Boolean(cur.usedShield || opts.usedShield || opts.shieldAbsorbed),
+            questionSalt: cur.questionSalt + 1,
+            failedSignatures: sigs,
+            lastFailedSig: newSig || cur.lastFailedSig || null,
+            lastProviderId: opts.providerId || cur.lastProviderId || null,
+            updatedAt: Date.now(),
+        };
+        map[slot] = updated;
+        _writeAttemptsMap(map);
+        return updated;
+    }
+
+    function clearLevelAttempt(subjectKey, niveau, levelNum) {
+        const map = _readAttemptsMap();
+        const slot = _attemptSlot(subjectKey, niveau, levelNum);
+        if (Object.prototype.hasOwnProperty.call(map, slot)) {
+            delete map[slot];
+            _writeAttemptsMap(map);
+        }
+    }
+
+    function clearSubjectAttempts(subjectKey, niveau) {
+        const map = _readAttemptsMap();
+        const prefix = String(subjectKey || '').toLowerCase().trim() + '::' + String(niveau || '6eme').toLowerCase().trim() + '::';
+        let changed = false;
+        Object.keys(map).forEach(k => {
+            if (k.startsWith(prefix)) {
+                delete map[k];
+                changed = true;
+            }
+        });
+        if (changed) _writeAttemptsMap(map);
+    }
+
+    /* -----------------------------------------------------------------------
+       PROFIL ADAPTATIF & HISTORIQUE ANTI-RÉPÉTITION (v1.27.0)
+       ----------------------------------------------------------------------- */
+    function _adaptiveKey() {
+        return 'eduquest_adaptive_' + _userScope();
+    }
+
+    function getAdaptiveState() {
+        try { return JSON.parse(localStorage.getItem(_adaptiveKey()) || '{}') || {}; }
+        catch { return {}; }
+    }
+
+    function saveAdaptiveState(data) {
+        try { localStorage.setItem(_adaptiveKey(), JSON.stringify(data || {})); } catch { }
+    }
+
+    /* -----------------------------------------------------------------------
        EXPORT PUBLIC — Interface de DB accessible depuis app.js et les pages HTML
        ----------------------------------------------------------------------- */
     return {
@@ -1101,9 +1210,19 @@ const DB = (() => {
         recordLevelVictory,     // Enregistre un niveau réussi (+1 streak)
         resetStreak,            // Réinitialise série et combo
 
-        // --- Quêtes (Phase 3.2 — isolées par compte) ---
+        // --- Quêtes (isolées par compte) ---
         getDailyQuests,
         saveDailyQuests,
+
+        // --- Anti-triche tentatives & réinitialisation questions (v1.27.0) ---
+        getLevelAttempt,
+        recordLevelFailure,
+        clearLevelAttempt,
+        clearSubjectAttempts,
+
+        // --- Profil adaptatif & anti-répétition (v1.27.0) ---
+        getAdaptiveState,
+        saveAdaptiveState,
 
         // --- Membres / comptes locaux (panneau d'administration) ---
         listLocalMembers,       // Liste des comptes locaux (email, pseudo, rôle, date)
