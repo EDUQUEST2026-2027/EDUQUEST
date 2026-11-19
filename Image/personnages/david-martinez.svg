@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <radialGradient id="bg" cx="35%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#00f0ff"/>
+      <stop offset="100%" stop-color="#0d1330"/>
+    </radialGradient>
+  </defs>
+  <rect width="120" height="120" fill="url(#bg)"/>
+  <!-- Sandevistan ghost aura -->
+  <ellipse cx="48" cy="70" rx="28" ry="36" fill="none" stroke="#00ff99" stroke-width="2" opacity="0.4"/>
+  <!-- High black collar -->
+  <rect x="34" y="72" width="52" height="22" rx="6" fill="#181a1f" stroke="#00f0ff" stroke-width="1.5"/>
+  <!-- Yellow Edgerunner Jacket -->
+  <path d="M22 120 L28 84 Q34 78 44 82 L44 120 Z" fill="#ffea00" stroke="#c7a500" stroke-width="2"/>
+  <path d="M98 120 L92 84 Q86 78 76 82 L76 120 Z" fill="#ffea00" stroke="#c7a500" stroke-width="2"/>
+  <!-- Black shirt & cross pendant -->
+  <rect x="44" y="84" width="32" height="36" fill="#181a1f"/>
+  <line x1="60" y1="92" x2="60" y2="104" stroke="#ffd700" stroke-width="2.5"/>
+  <line x1="55" y1="96" x2="65" y2="96" stroke="#ffd700" stroke-width="2.5"/>
+  <!-- Head -->
+  <rect x="40" y="38" width="40" height="42" rx="18" fill="#e6b38e" stroke="#8d5531" stroke-width="2.5"/>
+  <!-- Cheek cyberware lines -->
+  <line x1="42" y1="62" x2="50" y2="65" stroke="#7a3b1e" stroke-width="2"/>
+  <line x1="78" y1="62" x2="70" y2="65" stroke="#7a3b1e" stroke-width="2"/>
+  <!-- Eyes -->
+  <rect x="47" y="51" width="7" height="6" rx="2" fill="#3e1f0d"/>
+  <rect x="66" y="51" width="7" height="6" rx="2" fill="#3e1f0d"/>
+  <line x1="45" y1="49" x2="55" y2="51" stroke="#1a0f0a" stroke-width="2.5"/>
+  <line x1="75" y1="49" x2="65" y2="51" stroke="#1a0f0a" stroke-width="2.5"/>
+  <!-- Confident grin -->
+  <path d="M53 69 L68 67 Q66 73 54 72 Z" fill="#fff" stroke="#7a3b1e" stroke-width="1.2"/>
+  <!-- Spiky undercut hair -->
+  <path d="M38 44 Q36 26 48 22 L46 30 L58 18 L58 28 L72 20 L69 30 L82 26 Q84 36 80 44 Q60 36 38 44 Z" fill="#23140d" stroke="#120a06" stroke-width="2"/>
+</svg>

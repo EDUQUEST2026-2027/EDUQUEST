@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eduquest-cache-v1.27.0';
+const CACHE_NAME = 'eduquest-cache-v1.27.1';
 
 const PRECACHE_URLS = [
   './',
@@ -32,6 +32,13 @@ const PRECACHE_URLS = [
   'fonts/Silkscreen-Bold.woff2',
   'Image/logo.webp',
   'Image/personnages/robot.webp',
+  'Image/personnages/david-martinez.svg',
+  'Image/personnages/fall-guys.svg',
+  'Image/personnages/hope-fortnite.svg',
+  'Image/personnages/kasane-teto.svg',
+  'Image/personnages/helldiver.svg',
+  'Image/personnages/space-marine.svg',
+  'Image/personnages/doom-guy.svg',
   'Image/personnages/einstein.webp',
   'Image/personnages/marie-curie.webp',
   'Image/personnages/christophe-colomb.webp',

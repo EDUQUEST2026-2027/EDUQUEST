@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <radialGradient id="bg" cx="35%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#090d16"/>
+    </radialGradient>
+  </defs>
+  <rect width="120" height="120" fill="url(#bg)"/>
+  <!-- Massive Ultramarine Pauldrons with Gold Trim -->
+  <path d="M10 120 Q10 72 42 74 L44 120 Z" fill="#1d4ed8" stroke="#f59e0b" stroke-width="4"/>
+  <path d="M110 120 Q110 72 78 74 L76 120 Z" fill="#1d4ed8" stroke="#f59e0b" stroke-width="4"/>
+  <!-- Chest Armor & Golden Aquila -->
+  <rect x="38" y="80" width="44" height="40" fill="#1e40af" stroke="#1e3a8a" stroke-width="2"/>
+  <polygon points="44,94 60,100 76,94 70,104 60,102 50,104" fill="#fbbf24"/>
+  <!-- Astartes Mk X Helmet -->
+  <rect x="35" y="28" width="50" height="54" rx="18" fill="#1d4ed8" stroke="#1e3a8a" stroke-width="3"/>
+  <!-- Top Helmet Ridge -->
+  <rect x="55" y="24" width="10" height="20" rx="3" fill="#2563eb" stroke="#fbbf24" stroke-width="1.5"/>
+  <!-- Glowing Red Eye Lenses -->
+  <polygon points="41,50 56,54 54,60 41,56" fill="#ef4444" stroke="#fca5a5" stroke-width="1.5"/>
+  <polygon points="79,50 64,54 66,60 79,56" fill="#ef4444" stroke="#fca5a5" stroke-width="1.5"/>
+  <!-- Angular Vox-Grille Mouthplate -->
+  <polygon points="60,58 46,74 74,74" fill="#1e3a8a" stroke="#93c5fd" stroke-width="2"/>
+  <line x1="56" y1="65" x2="64" y2="65" stroke="#090d16" stroke-width="2"/>
+  <line x1="53" y1="70" x2="67" y2="70" stroke="#090d16" stroke-width="2"/>
+</svg>

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <radialGradient id="bg" cx="35%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#ff66b2"/>
+      <stop offset="100%" stop-color="#1a103c"/>
+    </radialGradient>
+  </defs>
+  <rect width="120" height="120" fill="url(#bg)"/>
+  <!-- Golden Winner Crown -->
+  <polygon points="36,34 42,16 52,27 60,13 68,27 78,16 84,34" fill="#ffd700" stroke="#b8860b" stroke-width="2.5" stroke-linejoin="round"/>
+  <circle cx="48" cy="28" r="2.5" fill="#e63946"/>
+  <circle cx="60" cy="26" r="3" fill="#00b4d8"/>
+  <circle cx="72" cy="28" r="2.5" fill="#e63946"/>
+  <!-- Pink Bean Body -->
+  <rect x="28" y="32" width="64" height="86" rx="32" fill="#ff3e9d" stroke="#b51763" stroke-width="3"/>
+  <!-- White Faceplate -->
+  <ellipse cx="60" cy="60" rx="21" ry="18" fill="#ffffff" stroke="#d9d9d9" stroke-width="2"/>
+  <!-- Bean Pill Eyes -->
+  <rect x="49" y="52" width="6" height="14" rx="3" fill="#1d1e2c"/>
+  <rect x="65" y="52" width="6" height="14" rx="3" fill="#1d1e2c"/>
+  <circle cx="51" cy="55" r="1.5" fill="#fff"/>
+  <circle cx="67" cy="55" r="1.5" fill="#fff"/>
+</svg>

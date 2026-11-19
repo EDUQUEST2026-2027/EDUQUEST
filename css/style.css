@@ -1012,7 +1012,238 @@
     stroke-width: 22px;
 }
 
-/* --- Personnage CSS (Magicien) --- */
+/* --- Sélecteur rapide de personnage sur la carte (map.html) --- */
+.map-skin-btn {
+    width: 44px;
+    height: 44px;
+    padding: 2px;
+    border-radius: 50%;
+    border: 2px solid var(--skin-accent, rgba(200, 168, 75, 0.7));
+    background: rgba(8, 14, 28, 0.78);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow:
+        0 0 14px color-mix(in srgb, var(--skin-accent, #c8a84b) 45%, transparent),
+        0 4px 14px rgba(0, 0, 0, 0.45);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    overflow: hidden;
+    font-size: 1.15rem;
+    color: #fff;
+    pointer-events: auto;
+    transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.map-skin-btn:hover,
+.map-skin-btn:focus-visible {
+    transform: translateY(-2px) scale(1.06);
+    box-shadow:
+        0 0 20px color-mix(in srgb, var(--skin-accent, #c8a84b) 70%, transparent),
+        0 8px 20px rgba(0, 0, 0, 0.55);
+    outline: none;
+}
+
+.map-skin-btn img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
+}
+
+.map-skin-popover {
+    position: fixed;
+    top: 76px;
+    right: 20px;
+    z-index: 95;
+    width: min(350px, calc(100vw - 24px));
+    max-height: min(74vh, 480px);
+    display: flex;
+    flex-direction: column;
+    background: rgba(8, 14, 28, 0.95);
+    backdrop-filter: blur(28px) saturate(1.4);
+    -webkit-backdrop-filter: blur(28px) saturate(1.4);
+    border: 1px solid rgba(200, 168, 75, 0.35);
+    border-top-color: rgba(200, 168, 75, 0.6);
+    border-radius: 18px;
+    box-shadow:
+        0 20px 55px rgba(0, 0, 0, 0.78),
+        0 0 30px rgba(200, 168, 75, 0.14);
+    overflow: hidden;
+    animation: modal-pop 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.map-skin-popover[hidden] {
+    display: none;
+}
+
+.map-skin-popover-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.map-skin-popover-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.6px;
+}
+
+.map-skin-popover-close {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.18s ease, color 0.18s ease;
+}
+
+.map-skin-popover-close:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+}
+
+.map-skin-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    padding: 14px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(200, 168, 75, 0.45) rgba(15, 23, 42, 0.5);
+}
+
+.map-skin-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 6px 8px;
+    border-radius: 12px;
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: #eef2ff;
+    cursor: pointer;
+    text-align: center;
+    transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+}
+
+.map-skin-item:hover:not(:disabled) {
+    transform: translateY(-2px);
+    border-color: var(--skin-accent, #c8a84b);
+    background: rgba(255, 255, 255, 0.09);
+}
+
+.map-skin-item.is-active {
+    border-color: var(--skin-accent, #ffd166);
+    background: color-mix(in srgb, var(--skin-accent, #c8a84b) 18%, rgba(8, 14, 28, 0.7));
+    box-shadow: 0 0 14px color-mix(in srgb, var(--skin-accent, #c8a84b) 35%, transparent);
+}
+
+.map-skin-item.is-locked {
+    opacity: 0.48;
+    cursor: not-allowed;
+    filter: grayscale(0.35);
+}
+
+.map-skin-thumb {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    padding: 2px;
+    background: radial-gradient(circle at 35% 30%, var(--skin-accent, #c8a84b), #0a1628 75%);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--skin-accent, #c8a84b) 40%, transparent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.map-skin-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
+}
+
+.map-skin-fallback {
+    font-size: 1.4rem;
+}
+
+.map-skin-badge {
+    position: absolute;
+    right: -4px;
+    bottom: -4px;
+    padding: 1px 5px;
+    border-radius: 99px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 1.3;
+    border: 1.5px solid #080e1c;
+    white-space: nowrap;
+}
+
+.map-skin-badge.is-equipped {
+    background: #22c55e;
+    color: #052e16;
+}
+
+.map-skin-badge.is-locked {
+    background: #1e293b;
+    color: #ffd166;
+}
+
+.map-skin-name {
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.2;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.map-skin-popover-foot {
+    padding: 10px 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    text-align: center;
+    background: rgba(0, 0, 0, 0.22);
+}
+
+.map-skin-shop-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #ffd166;
+    text-decoration: none;
+    transition: color 0.18s ease, transform 0.18s ease;
+}
+
+.map-skin-shop-link:hover {
+    color: #fff3c4;
+    transform: translateX(2px);
+}
+
+/* --- Personnage CSS sur la carte (base neutre + skins dynamiques) --- */
 .character {
     position: absolute;
     z-index: 20;
@@ -1020,6 +1251,7 @@
     height: 70px;
     /* Origine au centre en bas pour s'aligner sur les coordonnées */
     transform: translate(-50%, -100%);
+    transform-origin: center bottom;
     /* Animation fluide lors du déplacement de niveau en niveau (géré par JS style.left/top) */
     transition: left 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
                 top 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1032,24 +1264,26 @@
     width: 100%;
     height: 100%;
     animation: character-bounce 1.8s ease-in-out infinite;
+    filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3));
 }
 
 .character-head {
     position: absolute;
-    bottom: 10px;
+    bottom: 14px;
     left: 50%;
     transform: translateX(-50%);
-    width: 34px;
-    height: 34px;
-    background: radial-gradient(circle at 40% 35%, #ffe0b2, #ffb74d); /* Peau */
-    border-radius: 50%;
-    border: 3px solid #e09540;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+    width: 32px;
+    height: 30px;
+    background: radial-gradient(circle at 40% 35%, #ffe0b2, #f5b971); /* Peau neutre */
+    border-radius: 48% 48% 50% 50%;
+    border: 2.5px solid #c98643;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.28);
+    z-index: 3;
 }
 
 .character-eyes {
     position: absolute;
-    top: 35%;
+    top: 38%;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -1067,49 +1301,26 @@
 
 .character-mouth {
     position: absolute;
-    bottom: 7px;
+    bottom: 6px;
     left: 50%;
     transform: translateX(-50%);
     width: 8px;
     height: 4px;
     background: #c75030;
-    border-radius: 0 0 50% 50%; /* Sourit */
+    border-radius: 0 0 50% 50%; /* Sourire neutre */
 }
 
 .character-hat {
     position: absolute;
-    bottom: 36px;
+    bottom: 39px;
     left: 50%;
     transform: translateX(-50%);
-    width: 0; height: 0;
-    border-left: 18px solid transparent;
-    border-right: 18px solid transparent;
-    border-bottom: 30px solid #3949ab; /* Triangle bleu */
-    border-radius: 4px;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-}
-
-.character-hat::before { /* Étoile sur le chapeau */
-    content: "⭐";
-    position: absolute;
-    top: 14px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 10px;
-    filter: drop-shadow(0 0 3px rgba(255, 235, 59, 0.8));
-}
-
-.character-hat::after { /* Rebord du chapeau */
-    content: "";
-    position: absolute;
-    top: 28px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 42px;
-    height: 8px;
-    background: linear-gradient(to bottom, #5c6bc0, #3949ab);
-    border-radius: 50%;
-    border: 2px solid #283593;
+    width: 30px;
+    height: 14px;
+    background: linear-gradient(135deg, #3949ab, #283593);
+    border-radius: 60% 60% 20% 20% / 80% 80% 20% 20%;
+    border: 2px solid #1a237e;
+    z-index: 4;
 }
 
 .character-cape {
@@ -1117,13 +1328,13 @@
     bottom: -2px;
     left: 50%;
     transform: translateX(-50%);
-    width: 30px;
-    height: 18px;
+    width: 34px;
+    height: 20px;
     background: linear-gradient(to bottom, #5c6bc0, #3949ab);
-    border-radius: 0 0 12px 12px;
+    border-radius: 6px 6px 12px 12px;
     border: 2px solid #283593;
-    border-top: none;
     animation: cape-wave 2s ease-in-out infinite; /* Ondule au vent */
+    z-index: 2;
 }
 
 .character-shadow {
@@ -1136,6 +1347,552 @@
     background: rgba(0, 0, 0, 0.25);
     border-radius: 50%;
     animation: shadow-pulse 1.8s ease-in-out infinite; /* Suit le sautillement */
+}
+
+/* --- Variantes de personnages équipés sur la carte (Boutique & Sélecteur) --- */
+
+/* 1. David Martinez (Edgerunners — isolé pour ne pas fuiter sur les autres skins) */
+.character.skin-david-martinez .character-body {
+    filter: drop-shadow(-3px 0 0 rgba(0, 255, 170, 0.35))
+            drop-shadow(3px 0 0 rgba(0, 200, 255, 0.35));
+}
+.character.skin-david-martinez .character-head {
+    background: radial-gradient(circle at 40% 35%, #f3c6a5, #d99b72);
+    border-radius: 45% 45% 50% 50%;
+    border-color: #8d5531;
+}
+.character.skin-david-martinez .character-head::before,
+.character.skin-david-martinez .character-head::after {
+    content: "";
+    position: absolute;
+    top: 62%;
+    width: 5px;
+    height: 1.5px;
+    background: rgba(120, 65, 35, 0.75);
+}
+.character.skin-david-martinez .character-head::before {
+    left: 2px;
+    transform: rotate(15deg);
+}
+.character.skin-david-martinez .character-head::after {
+    right: 2px;
+    transform: rotate(-15deg);
+}
+.character.skin-david-martinez .eye {
+    height: 5px;
+    background: #3e1f0d;
+    border-top: 2px solid #1a0f08;
+    border-radius: 35% 35% 50% 50%;
+}
+.character.skin-david-martinez .character-mouth {
+    bottom: 5px;
+    left: 52%;
+    transform: translateX(-50%) rotate(-6deg);
+    height: 2.5px;
+    background: #fff;
+    border: 1px solid #7a3b1e;
+    border-radius: 1px 1px 4px 4px;
+}
+.character.skin-david-martinez .character-hat {
+    transform: translateX(-50%) rotate(-5deg);
+    background: linear-gradient(135deg, #2d1b12 0%, #1a0f0a 100%);
+    border-radius: 60% 40% 20% 20% / 80% 70% 20% 20%;
+    border-color: #120a06;
+    box-shadow:
+        -5px -2px 0 -1px #23140d,
+         5px -3px 0 -1px #23140d,
+         0px -5px 0 -1px #2d1b12;
+}
+.character.skin-david-martinez .character-hat::before {
+    content: "";
+    position: absolute;
+    top: 4px;
+    left: 2px;
+    width: 10px;
+    height: 11px;
+    background: #23140d;
+    clip-path: polygon(0 0, 100% 0, 35% 100%);
+}
+.character.skin-david-martinez .character-hat::after {
+    content: "";
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 32px;
+    height: 4px;
+    background: rgba(45, 27, 18, 0.55);
+    border-radius: 3px;
+    z-index: -1;
+}
+.character.skin-david-martinez .character-cape {
+    width: 36px;
+    height: 22px;
+    background:
+        radial-gradient(circle at 50% 42%, #ffd700 1.5px, transparent 2px),
+        linear-gradient(to right,
+            #ffea00 0%, #ffea00 32%,
+            #181a1f 32%, #181a1f 68%,
+            #ffea00 68%, #ffea00 100%);
+    border-color: #c7a500;
+    box-shadow:
+        0 -4px 0 1px #1c1e24,
+        inset 0 2px 0 #00f0ff,
+        0 2px 6px rgba(255, 234, 0, 0.35);
+}
+
+/* 2. Fall Guys (Haricot rose avec couronne dorée) */
+.character.skin-fall-guys .character-body {
+    filter: drop-shadow(0 2px 6px rgba(255, 62, 157, 0.45));
+}
+.character.skin-fall-guys .character-head {
+    width: 34px;
+    height: 44px;
+    bottom: 4px;
+    background: #ffffff;
+    border: 6px solid #ff3e9d;
+    border-radius: 18px;
+    box-shadow: inset 0 0 0 2px #d9d9d9, 0 3px 8px rgba(0, 0, 0, 0.35);
+}
+.character.skin-fall-guys .eye {
+    width: 4px;
+    height: 9px;
+    background: #1d1e2c;
+    border: none;
+    border-radius: 99px;
+}
+.character.skin-fall-guys .character-mouth {
+    display: none;
+}
+.character.skin-fall-guys .character-hat {
+    bottom: 45px;
+    width: 24px;
+    height: 12px;
+    background: linear-gradient(135deg, #ffd700, #f59e0b);
+    border: 1.5px solid #b45309;
+    border-radius: 2px;
+    clip-path: polygon(0% 100%, 0% 15%, 25% 55%, 50% 0%, 75% 55%, 100% 15%, 100% 100%);
+}
+.character.skin-fall-guys .character-cape {
+    width: 28px;
+    height: 12px;
+    background: #ff3e9d;
+    border: 2px solid #b51763;
+    border-radius: 0 0 12px 12px;
+}
+
+/* 3. Hope (Fortnite — cheveux bleus, bonnet noir oreilles de chat & lunettes roses) */
+.character.skin-hope-fortnite .character-body {
+    filter: drop-shadow(0 0 6px rgba(37, 99, 235, 0.45));
+}
+.character.skin-hope-fortnite .character-head {
+    background: radial-gradient(circle at 40% 35%, #fce7d6, #e6be9a);
+    border-color: #2563eb;
+}
+.character.skin-hope-fortnite .character-eyes {
+    gap: 4px;
+    top: 34%;
+}
+.character.skin-hope-fortnite .eye {
+    width: 8px;
+    height: 7px;
+    background: #f43f5e;
+    border: 1.5px solid #ffd166;
+    border-radius: 50%;
+    animation: none;
+}
+.character.skin-hope-fortnite .character-hat {
+    bottom: 38px;
+    width: 32px;
+    height: 16px;
+    background: #18181b;
+    border: 2px solid #ec4899;
+    border-radius: 6px 6px 2px 2px;
+    clip-path: polygon(0% 100%, 5% 0%, 32% 38%, 68% 38%, 95% 0%, 100% 100%);
+}
+.character.skin-hope-fortnite .character-cape {
+    background: linear-gradient(to bottom, #2563eb 0%, #2563eb 35%, #18181b 35%, #18181b 100%);
+    border-color: #1e40af;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+}
+
+/* 4. Kasane Teto (UTAU / SynthV — couettes rouges en forets & uniforme gris/rouge) */
+.character.skin-kasane-teto .character-body {
+    filter: drop-shadow(0 0 6px rgba(225, 29, 72, 0.45));
+}
+.character.skin-kasane-teto .character-head {
+    background: radial-gradient(circle at 40% 35%, #ffe5d9, #f3c6b6);
+    border-color: #be123c;
+}
+.character.skin-kasane-teto .character-head::before,
+.character.skin-kasane-teto .character-head::after {
+    content: "";
+    position: absolute;
+    top: 10%;
+    width: 8px;
+    height: 24px;
+    background: repeating-linear-gradient(to bottom, #e11d48 0px, #e11d48 5px, #881337 5px, #881337 7px);
+    border-radius: 4px;
+}
+.character.skin-kasane-teto .character-head::before {
+    left: -9px;
+    transform: rotate(8deg);
+}
+.character.skin-kasane-teto .character-head::after {
+    right: -9px;
+    transform: rotate(-8deg);
+}
+.character.skin-kasane-teto .eye {
+    background: #be123c;
+    border-top: 1.5px solid #881337;
+}
+.character.skin-kasane-teto .character-hat {
+    background: linear-gradient(135deg, #e11d48, #be123c);
+    border-color: #881337;
+    box-shadow: 0 -4px 0 -1px #e11d48;
+}
+.character.skin-kasane-teto .character-hat::before {
+    content: "";
+    position: absolute;
+    top: 4px;
+    left: 3px;
+    width: 10px;
+    height: 10px;
+    background: #e11d48;
+    clip-path: polygon(0 0, 100% 0, 35% 100%);
+}
+.character.skin-kasane-teto .character-cape {
+    background:
+        linear-gradient(to right,
+            #27272a 0%, #27272a 42%,
+            #e11d48 42%, #e11d48 58%,
+            #27272a 58%, #27272a 100%);
+    border-color: #e11d48;
+    box-shadow: 0 2px 6px rgba(225, 29, 72, 0.35);
+}
+
+/* 5. Helldiver (Casque noir & jaune Super-Terre, visière ambre, cape) */
+.character.skin-helldiver .character-body {
+    filter: drop-shadow(0 0 6px rgba(255, 214, 10, 0.4));
+}
+.character.skin-helldiver .character-head {
+    background: #212529;
+    border: 2.5px solid #ffd60a;
+    border-radius: 42% 42% 45% 45%;
+}
+.character.skin-helldiver .character-eyes {
+    top: 34%;
+    gap: 0;
+}
+.character.skin-helldiver .eye {
+    width: 11px;
+    height: 6px;
+    background: #ffd60a;
+    border: none;
+    border-radius: 2px;
+    box-shadow: 0 0 6px #ffd60a;
+    animation: none;
+}
+.character.skin-helldiver .character-mouth {
+    width: 10px;
+    height: 6px;
+    bottom: 4px;
+    background: #495057;
+    border: 1px solid #ffd60a;
+    border-radius: 2px;
+}
+.character.skin-helldiver .character-hat {
+    bottom: 40px;
+    width: 12px;
+    height: 8px;
+    background: #ffd60a;
+    border: 1.5px solid #111;
+    border-radius: 3px 3px 0 0;
+}
+.character.skin-helldiver .character-cape {
+    background: linear-gradient(to right, #161a1d 0%, #2b2d42 50%, #161a1d 100%);
+    border: 2px solid #ffd60a;
+    box-shadow: 0 -3px 0 1px #111, 0 2px 8px rgba(255, 214, 10, 0.3);
+}
+
+/* 6. Space Marine (Ultramarine bleu & or, lentilles rouges, épaulières massives) */
+.character.skin-space-marine .character-body {
+    filter: drop-shadow(0 0 6px rgba(37, 99, 235, 0.5));
+}
+.character.skin-space-marine .character-head {
+    background: radial-gradient(circle at 40% 35%, #2563eb, #1e3a8a);
+    border: 2.5px solid #fbbf24;
+    border-radius: 40% 40% 45% 45%;
+}
+.character.skin-space-marine .eye {
+    width: 7px;
+    height: 4px;
+    background: #ef4444;
+    border: none;
+    border-radius: 2px;
+    box-shadow: 0 0 6px #ef4444;
+    animation: none;
+}
+.character.skin-space-marine .character-mouth {
+    width: 12px;
+    height: 7px;
+    bottom: 3px;
+    background: #1e3a8a;
+    border: 1.5px solid #93c5fd;
+    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+    border-radius: 0;
+}
+.character.skin-space-marine .character-hat {
+    bottom: 41px;
+    width: 10px;
+    height: 9px;
+    background: #fbbf24;
+    border: 1.5px solid #1e3a8a;
+    border-radius: 3px 3px 0 0;
+}
+.character.skin-space-marine .character-cape {
+    width: 42px;
+    background:
+        radial-gradient(circle at 50% 45%, #fbbf24 3px, transparent 4px),
+        linear-gradient(to bottom, #1d4ed8, #1e3a8a);
+    border: 2.5px solid #fbbf24;
+    border-radius: 10px 10px 8px 8px;
+    box-shadow: 0 2px 8px rgba(29, 78, 216, 0.5);
+}
+
+/* 7. Doom Guy / Doom Slayer (Armure Praetor verte, visière verte lumineuse) */
+.character.skin-doom-guy .character-body {
+    filter: drop-shadow(0 0 7px rgba(239, 35, 60, 0.45));
+}
+.character.skin-doom-guy .character-head {
+    background: #4f772d;
+    border: 2.5px solid #283618;
+    border-radius: 38% 38% 45% 45%;
+}
+.character.skin-doom-guy .character-eyes {
+    top: 32%;
+    gap: 0;
+}
+.character.skin-doom-guy .eye {
+    width: 11px;
+    height: 8px;
+    background: #38b000;
+    border: 1px solid #132a13;
+    border-radius: 2px;
+    box-shadow: inset 0 2px 0 #70e000, 0 0 6px #38b000;
+    animation: none;
+}
+.character.skin-doom-guy .character-mouth {
+    width: 12px;
+    height: 5px;
+    bottom: 4px;
+    background: #2b2d42;
+    border: 1px solid #1b261d;
+    border-radius: 2px;
+}
+.character.skin-doom-guy .character-hat {
+    bottom: 40px;
+    width: 16px;
+    height: 6px;
+    background: #3a5a40;
+    border: 1.5px solid #ef233c;
+    border-radius: 3px 3px 0 0;
+}
+.character.skin-doom-guy .character-cape {
+    width: 40px;
+    background:
+        radial-gradient(circle at 50% 45%, #ef233c 2px, transparent 3px),
+        linear-gradient(to bottom, #588157, #3a5a40);
+    border: 2px solid #283618;
+    border-radius: 8px;
+    box-shadow: 0 -3px 0 1px #283618, 0 2px 8px rgba(56, 176, 0, 0.35);
+}
+
+/* 8. Robot Assistant (personnage par défaut harmonisé avec le Dashboard) */
+.character.skin-robot .character-body {
+    filter: drop-shadow(0 0 6px rgba(143, 184, 201, 0.5));
+}
+.character.skin-robot .character-head {
+    background: linear-gradient(135deg, #cbd5e1, #94a3b8);
+    border: 2.5px solid #475569;
+    border-radius: 8px;
+}
+.character.skin-robot .eye {
+    width: 6px;
+    height: 6px;
+    background: #00f5d4;
+    border: none;
+    border-radius: 2px;
+    box-shadow: 0 0 6px #00f5d4;
+}
+.character.skin-robot .character-mouth {
+    width: 12px;
+    height: 3px;
+    bottom: 5px;
+    background: #334155;
+    border: 1px solid #00f5d4;
+    border-radius: 1px;
+}
+.character.skin-robot .character-hat {
+    bottom: 42px;
+    width: 4px;
+    height: 10px;
+    background: #94a3b8;
+    border: 1px solid #475569;
+    border-radius: 2px;
+    box-shadow: 0 -4px 0 2px #00f5d4;
+}
+.character.skin-robot .character-cape {
+    background: linear-gradient(to bottom, #94a3b8, #64748b);
+    border: 2px solid #475569;
+    box-shadow: inset 0 2px 0 #00f5d4;
+}
+
+/* 9. Archimage du Savoir */
+.character.skin-mage .character-body {
+    filter: drop-shadow(0 0 6px rgba(157, 78, 221, 0.5));
+}
+.character.skin-mage .character-head {
+    border-radius: 50%;
+}
+.character.skin-mage .character-hat {
+    bottom: 36px;
+    width: 0;
+    height: 0;
+    background: transparent;
+    border-left: 18px solid transparent;
+    border-right: 18px solid transparent;
+    border-bottom: 30px solid #5a189a;
+    border-top: none;
+    border-radius: 4px;
+}
+.character.skin-mage .character-hat::before {
+    content: "⭐";
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    filter: drop-shadow(0 0 3px rgba(255, 235, 59, 0.8));
+}
+.character.skin-mage .character-hat::after {
+    content: "";
+    position: absolute;
+    top: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 42px;
+    height: 8px;
+    background: linear-gradient(to bottom, #9d4edd, #5a189a);
+    border-radius: 50%;
+    border: 2px solid #3c096c;
+}
+.character.skin-mage .character-cape {
+    background: linear-gradient(to bottom, #7b2cbf, #3c096c);
+    border: 2px solid #ffd166;
+    box-shadow: 0 2px 6px rgba(157, 78, 221, 0.4);
+}
+
+/* 10. Astronaute Céleste */
+.character.skin-astronaute .character-body {
+    filter: drop-shadow(0 0 6px rgba(241, 250, 238, 0.45));
+}
+.character.skin-astronaute .character-head {
+    background: #f8fafc;
+    border: 2.5px solid #94a3b8;
+    border-radius: 50%;
+}
+.character.skin-astronaute .character-hat,
+.character.skin-astronaute .character-mouth {
+    display: none;
+}
+.character.skin-astronaute .character-eyes {
+    top: 26%;
+    gap: 0;
+}
+.character.skin-astronaute .eye {
+    width: 11px;
+    height: 12px;
+    background: linear-gradient(135deg, #38bdf8, #1d4ed8);
+    border: none;
+    border-radius: 6px;
+    animation: none;
+}
+.character.skin-astronaute .character-cape {
+    background: linear-gradient(to bottom, #f8fafc, #e2e8f0);
+    border: 2px solid #64748b;
+    box-shadow: inset 0 2px 0 #ef4444;
+}
+
+/* 11. Figures historiques (Einstein, Marie Curie, Colomb, Lovelace, Pythagore, Da Vinci, Hugo) */
+.character.skin-einstein .character-hat {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    box-shadow: -5px -2px 0 -1px #e2e8f0, 5px -3px 0 -1px #e2e8f0, 0px -5px 0 -1px #f8fafc;
+}
+.character.skin-einstein .character-cape {
+    background: linear-gradient(to bottom, #64748b, #475569);
+    border-color: #334155;
+}
+
+.character.skin-marie-curie .character-body {
+    filter: drop-shadow(0 0 6px rgba(107, 202, 130, 0.4));
+}
+.character.skin-marie-curie .character-hat {
+    background: #78350f;
+    border-color: #451a03;
+    border-radius: 50%;
+}
+.character.skin-marie-curie .character-cape {
+    background: linear-gradient(to bottom, #065f46, #064e3b);
+    border-color: #6bca82;
+    box-shadow: 0 0 8px rgba(107, 202, 130, 0.5);
+}
+
+.character.skin-christophe-colomb .character-hat {
+    background: #7c2d12;
+    border-color: #f59e0b;
+    border-radius: 4px 4px 12px 12px;
+}
+.character.skin-christophe-colomb .character-cape {
+    background: linear-gradient(to bottom, #991b1b, #7f1d1d);
+    border-color: #f59e0b;
+}
+
+.character.skin-lovelace .character-hat {
+    background: #4c1d95;
+    border-color: #ec4899;
+}
+.character.skin-lovelace .character-cape {
+    background: linear-gradient(to bottom, #db2777, #9d174d);
+    border-color: #f472b6;
+}
+
+.character.skin-pythagore .character-hat {
+    background: #fef3c7;
+    border-color: #f59e0b;
+}
+.character.skin-pythagore .character-cape {
+    background: linear-gradient(135deg, #ffffff 0%, #ffffff 55%, #f59e0b 55%, #d97706 100%);
+    border-color: #d97706;
+}
+
+.character.skin-davinci .character-hat {
+    background: #991b1b;
+    border-color: #fbbf24;
+}
+.character.skin-davinci .character-cape {
+    background: linear-gradient(to bottom, #7c2d12, #451a03);
+    border-color: #fbbf24;
+}
+
+.character.skin-hugo .character-hat {
+    background: #cbd5e1;
+    border-color: #64748b;
+}
+.character.skin-hugo .character-cape {
+    background: linear-gradient(to bottom, #1e293b, #0f172a);
+    border-color: #457b9d;
 }
 
 /* --- Boutons de Niveaux (Level Dots) --- */
@@ -1517,6 +2274,21 @@
         flex-shrink: 0;
     }
 
+    .map-header .map-skin-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    .map-skin-popover {
+        top: 62px;
+        left: 12px;
+        right: 12px;
+        width: auto;
+        max-height: 70vh;
+    }
+
     .map-header .options-wheel {
         width: 36px;
         height: 36px;
@@ -1550,18 +2322,11 @@
 
     .level-map { min-height: 100vh; }
 
-    /* Réduction du personnage */
-    .character { width: 40px; height: 56px; }
-    .character-head { width: 28px; height: 28px; }
-    .character-hat {
-        border-left: 14px solid transparent;
-        border-right: 14px solid transparent;
-        border-bottom: 24px solid #3949ab;
-        bottom: 30px;
+    /* Réduction proportionnelle de tous les skins du personnage sur mobile */
+    .character {
+        transform: translate(-50%, -100%) scale(0.8);
+        transform-origin: center bottom;
     }
-    .character-hat::after { width: 34px; height: 6px; top: 22px; }
-    .character-hat::before { font-size: 8px; top: 10px; }
-    .character-cape { width: 24px; height: 14px; }
 
     .modal { padding: 20px 16px; border-radius: 16px; width: calc(100% - 24px); max-height: 90vh; max-height: 90dvh; overscroll-behavior: contain; }
     .modal-stars-choice { flex-direction: column; }
@@ -2848,8 +3613,18 @@
 /* --- Illustrations pixel-art : rendu net (pas d'interpolation floue) --- */
 .logo-image,
 .dash-skin-orb img,
-.dash-avatar img {
+.dash-avatar img,
+.map-skin-btn img,
+.map-skin-thumb img {
     image-rendering: pixelated;
+}
+
+/* Les portraits vectoriels SVG gardent un rendu vectoriel lisse */
+.dash-skin-orb img[src$=".svg"],
+.dash-avatar img[src$=".svg"],
+.map-skin-btn img[src$=".svg"],
+.map-skin-thumb img[src$=".svg"] {
+    image-rendering: auto;
 }
 
 /* --- Footer : lisible et bien dégagé --- */

@@ -214,4 +214,30 @@ test('AdminStore - Matières personnalisées et surcharges', async (t) => {
         assert.ok(Array.isArray(questionsTle.generated));
         assert.ok(questionsTle.generated.length > 0);
     });
+
+    await t.test('Cohérence des avatars Boutique, assets, skins CSS carte et Service Worker', () => {
+        const fs = require('node:fs');
+        const path = require('node:path');
+        const rootDir = path.resolve(__dirname, '..');
+        const styleCss = fs.readFileSync(path.join(rootDir, 'css', 'style.css'), 'utf8');
+        const swJs = fs.readFileSync(path.join(rootDir, 'service-worker.js'), 'utf8');
+
+        AdminStore.resetShopItems();
+        const avatars = AdminStore.getShopItems().filter(it => it.category === 'avatar');
+        assert.equal(avatars.length, 17, 'Les 17 avatars attendus (10 classiques + 7 SVG) doivent être présents');
+
+        const seenIds = new Set();
+        for (const av of avatars) {
+            assert.ok(!seenIds.has(av.id), `Doublon d'identifiant avatar : ${av.id}`);
+            seenIds.add(av.id);
+            assert.ok(av.img && av.img.startsWith('Image/personnages/'), `Chemin image invalide pour ${av.id}`);
+            assert.ok(fs.existsSync(path.join(rootDir, av.img)), `Fichier image manquant sur disque : ${av.img}`);
+            assert.ok(styleCss.includes(`.character.skin-${av.id}`), `Règle CSS manquante pour .character.skin-${av.id}`);
+            assert.ok(swJs.includes(`'${av.img}'`), `Asset manquant dans PRECACHE_URLS du service-worker : ${av.img}`);
+        }
+
+        // Vérifie que David Martinez est bien isolé dans sa propre classe et ne fuite pas sur .character de base
+        assert.ok(styleCss.includes('.character.skin-david-martinez .character-head::before'), 'Cyberware David Martinez isolé');
+        assert.equal(styleCss.includes('.character-head::before,\n.character-head::after {\n    content: "";\n    position: absolute;\n    top: 62%;'), false);
+    });
 });

@@ -49,6 +49,7 @@
             </div>
             <!-- Côté droit : boutons d'action -->
             <div style="display: flex; gap: 10px; align-items: center; pointer-events: auto;">
+                <button id="mapSkinBtn" class="map-skin-btn" type="button" title="Changer de personnage sur la carte" aria-label="Changer de personnage" aria-haspopup="dialog" aria-expanded="false">👤</button>
                 <a class="options-wheel" href="index.html#options" title="Options">⚙️</a>
                 <a class="back-button" href="dashboard.html">← RETOUR</a>
             </div>
@@ -165,6 +166,18 @@
             <h2 class="map-expel-title" id="mapExpelTitle">Changement de parcours</h2>
             <p class="map-expel-text" id="mapExpelText">Cette matière ne fait pas partie du programme de ta classe actuelle. Retour au tableau de bord…</p>
             <div class="map-expel-bar"><div class="map-expel-bar-fill"></div></div>
+        </div>
+    </div>
+
+    <!-- Sélecteur rapide de personnage sur la carte -->
+    <div id="mapSkinPopover" class="map-skin-popover" role="dialog" aria-label="Choisir ton personnage sur la carte" hidden>
+        <div class="map-skin-popover-head">
+            <span class="map-skin-popover-title">👤 Personnage</span>
+            <button id="mapSkinClose" class="map-skin-popover-close" type="button" aria-label="Fermer">✕</button>
+        </div>
+        <div id="mapSkinGrid" class="map-skin-grid"></div>
+        <div class="map-skin-popover-foot">
+            <a href="dashboard.html#boutique-avatars" class="map-skin-shop-link">🛍️ Débloquer plus d'avatars →</a>
         </div>
     </div>
 

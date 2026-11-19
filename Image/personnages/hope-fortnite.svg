@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <radialGradient id="bg" cx="35%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#4895ef"/>
+      <stop offset="100%" stop-color="#0b132b"/>
+    </radialGradient>
+  </defs>
+  <rect width="120" height="120" fill="url(#bg)"/>
+  <!-- Blue Hair Back -->
+  <path d="M30 48 Q26 88 34 115 L86 115 Q94 88 90 48 Z" fill="#1d4ed8" stroke="#1e3a8a" stroke-width="2"/>
+  <!-- Dark Jacket & Blue Scarf -->
+  <path d="M24 120 L32 88 L88 88 L96 120 Z" fill="#18181b" stroke="#09090b" stroke-width="2"/>
+  <rect x="38" y="82" width="44" height="14" rx="6" fill="#2563eb" stroke="#1e40af" stroke-width="2"/>
+  <!-- Face -->
+  <rect x="41" y="42" width="38" height="42" rx="17" fill="#fce7d6" stroke="#c89d7c" stroke-width="2"/>
+  <!-- Blue Hair Bangs -->
+  <path d="M36 46 Q46 34 60 36 Q74 34 84 46 L82 62 Q74 48 64 50 Q50 48 38 62 Z" fill="#2563eb"/>
+  <!-- Black Cat-Ears Beanie -->
+  <path d="M34 46 L36 22 L50 32 L70 32 L84 22 L86 46 Z" fill="#18181b" stroke="#ec4899" stroke-width="2" stroke-linejoin="round"/>
+  <!-- Round Pink Sunglasses -->
+  <circle cx="51" cy="59" r="7" fill="#f43f5e" stroke="#ffd166" stroke-width="2"/>
+  <circle cx="69" cy="59" r="7" fill="#f43f5e" stroke="#ffd166" stroke-width="2"/>
+  <line x1="58" y1="59" x2="62" y2="59" stroke="#ffd166" stroke-width="2"/>
+  <!-- Smile -->
+  <path d="M55 73 Q60 76 65 73" fill="none" stroke="#9d4edd" stroke-width="2" stroke-linecap="round"/>
+</svg>

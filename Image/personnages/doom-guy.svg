@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <radialGradient id="bg" cx="35%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#ef4444"/>
+      <stop offset="100%" stop-color="#141e12"/>
+    </radialGradient>
+  </defs>
+  <rect width="120" height="120" fill="url(#bg)"/>
+  <!-- Praetor Suit Heavy Shoulders & Chest -->
+  <path d="M14 120 L22 76 L98 76 L106 120 Z" fill="#3a5a40" stroke="#1b261d" stroke-width="3"/>
+  <rect x="44" y="84" width="32" height="28" rx="4" fill="#588157" stroke="#2d422f" stroke-width="2"/>
+  <!-- Red Slayer Mark on Chest -->
+  <path d="M55 92 L65 92 L60 104 Z" fill="#ef233c"/>
+  <!-- Praetor Helmet -->
+  <rect x="34" y="26" width="52" height="54" rx="16" fill="#4f772d" stroke="#283618" stroke-width="3"/>
+  <!-- Red Slayer Rune on Forehead -->
+  <line x1="60" y1="30" x2="60" y2="39" stroke="#ff2a2a" stroke-width="2.5"/>
+  <!-- Translucent Green Combat Visor -->
+  <polygon points="40,42 80,42 75,62 45,62" fill="#38b000" stroke="#132a13" stroke-width="2.5"/>
+  <polygon points="44,45 64,45 58,58 46,58" fill="#70e000" opacity="0.45"/>
+  <!-- Angry Brow Line & Mouth Vents -->
+  <path d="M40 42 L60 48 L80 42" fill="none" stroke="#283618" stroke-width="3"/>
+  <rect x="48" y="66" width="24" height="10" rx="3" fill="#2b2d42" stroke="#1b261d" stroke-width="2"/>
+</svg>

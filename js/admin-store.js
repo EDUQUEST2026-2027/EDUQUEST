@@ -70,6 +70,13 @@ const AdminStore = (() => {
 
         // --- PERSONNAGES & AVATARS ---
         { id: 'robot', name: 'Robot Assistant', category: 'avatar', color: '#8fb8c9', img: 'Image/personnages/robot.webp', cost: 0, desc: 'Le fidèle compagnon d\'aventure mécanique.' },
+        { id: 'david-martinez', name: 'David Martinez', category: 'avatar', color: '#ffea00', img: 'Image/personnages/david-martinez.svg', cost: 0, desc: 'Légende de Night City équipée de la veste d\'Edgerunner et du Sandevistan.' },
+        { id: 'fall-guys', name: 'Champion Fall Guys', category: 'avatar', color: '#ff3e9d', img: 'Image/personnages/fall-guys.svg', cost: 150, desc: 'Haricot rose bondissant coiffé de la couronne de la victoire.' },
+        { id: 'hope-fortnite', name: 'Hope (Fortnite)', category: 'avatar', color: '#2563eb', img: 'Image/personnages/hope-fortnite.svg', cost: 200, desc: 'Rebelle de l\'Ordre munie de son bonnet à oreilles de chat et de ses lunettes roses.' },
+        { id: 'kasane-teto', name: 'Kasane Teto', category: 'avatar', color: '#e11d48', img: 'Image/personnages/kasane-teto.svg', cost: 250, desc: 'Diva virtuelle UTAU/SynthV aux célèbres couettes rouges en forets.' },
+        { id: 'helldiver', name: 'Helldiver', category: 'avatar', color: '#ffd60a', img: 'Image/personnages/helldiver.svg', cost: 300, desc: 'Soldat d\'élite de la Super-Terre répandant la Démocratie Gérée !' },
+        { id: 'space-marine', name: 'Space Marine', category: 'avatar', color: '#1d4ed8', img: 'Image/personnages/space-marine.svg', cost: 350, desc: 'Ange de la Mort Astartes en armure énergétique Ultramarine.' },
+        { id: 'doom-guy', name: 'Doom Slayer', category: 'avatar', color: '#4f772d', img: 'Image/personnages/doom-guy.svg', cost: 400, desc: 'Guerrier implacable en armure Praetor. Rip and Tear !' },
         { id: 'einstein', name: 'Albert Einstein', category: 'avatar', color: '#7fb3d5', img: 'Image/personnages/einstein.webp', cost: 150, desc: 'Le génie de la physique et de la relativité.' },
         { id: 'marie-curie', name: 'Marie Curie', category: 'avatar', color: '#6bca82', img: 'Image/personnages/marie-curie.webp', cost: 150, desc: 'Pionnière de la radioactivité et double Prix Nobel.' },
         { id: 'christophe-colomb', name: 'Christophe Colomb', category: 'avatar', color: '#c8a84b', img: 'Image/personnages/christophe-colomb.webp', cost: 200, desc: 'Grand navigateur et explorateur des océans.' },

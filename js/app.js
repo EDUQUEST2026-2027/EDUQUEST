@@ -1429,6 +1429,64 @@ function renderQuizMetaStripHtml(attempt) {
     `;
 }
 
+/** Retourne le catalogue boutique effectif (AdminStore + surcharges, sinon DASH_SKINS). */
+function getShopCatalogSafe() {
+    return (typeof AdminStore !== 'undefined' && typeof AdminStore.getShopItems === 'function')
+        ? AdminStore.getShopItems()
+        : DASH_SKINS;
+}
+
+/** Normalise un identifiant de skin en nom de classe CSS sûr (lettres, chiffres, tirets). */
+function sanitizeSkinClassId(id) {
+    const clean = String(id || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    return clean || 'robot';
+}
+
+/** Lit la liste des articles possédés depuis DB sans jamais lever d'exception JSON. */
+function getOwnedSkinsSafe() {
+    try {
+        const raw = (typeof DB !== 'undefined' && typeof DB.getOption === 'function')
+            ? DB.getOption('dash_ownedSkins')
+            : null;
+        const parsed = JSON.parse(raw || '["aurore", "robot"]');
+        if (Array.isArray(parsed)) return parsed;
+    } catch { /* option corrompue -> repli par défaut */ }
+    return ['aurore', 'robot'];
+}
+
+/** Indique si un article de boutique est débloqué (offert, défaut ou acheté). */
+function isShopItemOwned(item, ownedList) {
+    if (!item) return false;
+    return item.id === 'default'
+        || Number(item.cost) === 0
+        || (Array.isArray(ownedList) && ownedList.includes(item.id));
+}
+
+/** Résout l'identifiant de l'avatar actuellement équipé (harmonisé Dashboard & Carte). */
+function getEquippedAvatarId() {
+    const savedAvatar = (typeof DB !== 'undefined' && typeof DB.getOption === 'function')
+        ? DB.getOption('dash_equippedAvatar')
+        : null;
+    if (savedAvatar) return savedAvatar;
+    const savedSkin = (typeof DB !== 'undefined' && typeof DB.getOption === 'function')
+        ? DB.getOption('dash_equippedSkin')
+        : null;
+    if (savedSkin) {
+        const item = getShopCatalogSafe().find(s => s.id === savedSkin);
+        if (item && item.category === 'avatar') return item.id;
+    }
+    return 'robot';
+}
+
+/** Vérifie qu'une URL d'image d'avatar est sûre pour un attribut src. */
+function isSafeAvatarImgSrc(src) {
+    if (typeof src !== 'string') return false;
+    const clean = src.trim();
+    if (!clean) return false;
+    if (/^(javascript|vbscript|data):/i.test(clean)) return false;
+    return true;
+}
+
 function initMap() {
     const mapHeader = document.querySelector('.map-header');
     if (!mapHeader) return; // Pas sur la page map.html → on sort
@@ -1691,13 +1749,16 @@ function initMap() {
             </button>`;
         }
 
+        const equippedAvatar = getEquippedAvatarId();
+        const safeSkin = sanitizeSkinClassId(equippedAvatar);
+
         trackEl.innerHTML = `
             <svg class="path" viewBox="0 0 100 ${trackHeight}" preserveAspectRatio="none" aria-hidden="true" style="width:100%; height:${trackHeight}px;">
                 <path class="path-shadow" d="${pathD}"></path>
                 <path class="path-ground" d="${pathD}"></path>
                 <path class="path-light"  d="${pathD}"></path>
             </svg>
-            <div id="character" class="character" aria-label="Personnage">
+            <div id="character" class="character skin-${safeSkin}" data-skin="${safeSkin}" aria-label="Personnage">
                 <div class="character-body">
                     <div class="character-head">
                         <div class="character-eyes">
@@ -1725,6 +1786,152 @@ function initMap() {
         });
     }
     buildLevelTrack();
+
+    /* --- Sélecteur rapide de personnage sur la carte --- */
+    function initMapSkinSelector() {
+        const btn = document.getElementById('mapSkinBtn');
+        const popover = document.getElementById('mapSkinPopover');
+        const closeBtn = document.getElementById('mapSkinClose');
+        const grid = document.getElementById('mapSkinGrid');
+
+        function getMapAvatars() {
+            const equippedId = getEquippedAvatarId();
+            return getShopCatalogSafe().filter(item => {
+                if ((item.category || 'aura') !== 'avatar') return false;
+                if (item.disabled && item.id !== equippedId) return false;
+                return true;
+            });
+        }
+
+        function updateTriggerVisual(activeId) {
+            if (!btn) return;
+            const avatars = getMapAvatars();
+            const current = avatars.find(a => a.id === activeId)
+                || getShopCatalogSafe().find(a => a.id === activeId);
+            const name = current ? current.name : 'Personnage';
+            const color = (current && current.color) ? current.color : '#c8a84b';
+            btn.style.setProperty('--skin-accent', color);
+            btn.title = `Personnage : ${name} (cliquer pour changer)`;
+            btn.setAttribute('aria-label', `Changer de personnage (actuel : ${name})`);
+            if (current && isSafeAvatarImgSrc(current.img)) {
+                btn.innerHTML = `<img src="${escapeHtml(current.img)}" alt="${escapeHtml(name)}">`;
+            } else {
+                btn.textContent = '👤';
+            }
+        }
+
+        function applyMapCharacterSkin(skinId) {
+            const activeId = skinId || getEquippedAvatarId();
+            const safeSkin = sanitizeSkinClassId(activeId);
+            const charEl = document.getElementById('character');
+            if (charEl) {
+                charEl.className = `character skin-${safeSkin}`;
+                charEl.dataset.skin = safeSkin;
+            }
+            updateTriggerVisual(activeId);
+        }
+
+        function renderSkinGrid() {
+            if (!grid) return;
+            const ownedList = getOwnedSkinsSafe();
+            const activeId = getEquippedAvatarId();
+            const avatars = getMapAvatars();
+            const unlocked = avatars.filter(a => isShopItemOwned(a, ownedList));
+            const locked = avatars.filter(a => !isShopItemOwned(a, ownedList));
+            const ordered = unlocked.concat(locked);
+
+            grid.innerHTML = ordered.map(avatar => {
+                const isUnlocked = isShopItemOwned(avatar, ownedList);
+                const isActive = avatar.id === activeId;
+                const imgHtml = isSafeAvatarImgSrc(avatar.img)
+                    ? `<img src="${escapeHtml(avatar.img)}" alt="${escapeHtml(avatar.name)}">`
+                    : `<span class="map-skin-fallback">👤</span>`;
+                const badgeHtml = isActive
+                    ? `<span class="map-skin-badge is-equipped">✓</span>`
+                    : (!isUnlocked
+                        ? `<span class="map-skin-badge is-locked">🔒 ${Number(avatar.cost) || 0}</span>`
+                        : '');
+                return `
+                    <button type="button"
+                        class="map-skin-item ${isActive ? 'is-active' : ''} ${isUnlocked ? '' : 'is-locked'}"
+                        data-skin-id="${escapeHtml(avatar.id)}"
+                        style="--skin-accent:${escapeHtml(avatar.color || '#c8a84b')}"
+                        ${isUnlocked ? '' : 'disabled'}
+                        title="${escapeHtml(avatar.name)}${isUnlocked ? '' : ` — À débloquer en boutique (${Number(avatar.cost) || 0} pièces)`}">
+                        <span class="map-skin-thumb">${imgHtml}${badgeHtml}</span>
+                        <span class="map-skin-name">${escapeHtml(avatar.name)}</span>
+                    </button>`;
+            }).join('');
+        }
+
+        function setPopoverOpen(open) {
+            if (!popover || !btn) return;
+            if (open) {
+                renderSkinGrid();
+                popover.hidden = false;
+                btn.setAttribute('aria-expanded', 'true');
+            } else {
+                popover.hidden = true;
+                btn.setAttribute('aria-expanded', 'false');
+            }
+        }
+
+        applyMapCharacterSkin();
+
+        if (btn && popover) {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                setPopoverOpen(popover.hidden);
+            });
+        }
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                setPopoverOpen(false);
+                if (btn) btn.focus();
+            });
+        }
+        if (grid) {
+            grid.addEventListener('click', (e) => {
+                const itemBtn = e.target.closest('.map-skin-item');
+                if (!itemBtn || itemBtn.disabled) return;
+                const id = itemBtn.dataset.skinId;
+                const targetAvatar = getMapAvatars().find(a => a.id === id);
+                if (!targetAvatar || !isShopItemOwned(targetAvatar, getOwnedSkinsSafe())) return;
+                saveOption('dash_equippedAvatar', targetAvatar.id);
+                applyMapCharacterSkin(targetAvatar.id);
+                if (typeof AudioManager !== 'undefined' && typeof AudioManager.playSfx === 'function') {
+                    AudioManager.playSfx('click');
+                }
+                setPopoverOpen(false);
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!popover || popover.hidden) return;
+            if (!popover.contains(e.target) && (!btn || !btn.contains(e.target))) {
+                setPopoverOpen(false);
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && popover && !popover.hidden) {
+                setPopoverOpen(false);
+                if (btn) btn.focus();
+            }
+        });
+
+        window.addEventListener('pageshow', () => {
+            applyMapCharacterSkin();
+            if (popover && !popover.hidden) renderSkinGrid();
+        });
+        window.addEventListener('storage', (e) => {
+            if (e.key && (e.key === 'eduquest_options' || e.key.startsWith('eduquest_opts_'))) {
+                applyMapCharacterSkin();
+                if (popover && !popover.hidden) renderSkinGrid();
+            }
+        });
+    }
+    initMapSkinSelector();
 
     /* --- Fonctions de gestion de la progression --- */
 
@@ -2290,6 +2497,13 @@ function initMap() {
             currentModalLevel = parseInt(btn.dataset.level, 10);
             positionCharacter(currentModalLevel, true);
 
+            const skinPop = document.getElementById('mapSkinPopover');
+            if (skinPop && !skinPop.hidden) {
+                skinPop.hidden = true;
+                const skinTrigger = document.getElementById('mapSkinBtn');
+                if (skinTrigger) skinTrigger.setAttribute('aria-expanded', 'false');
+            }
+
             if (!modal) return;
             document.getElementById('modal-title').textContent = 'Niveau ' + currentModalLevel;
             stopMapTimer();
@@ -2403,21 +2617,31 @@ function initMap() {
    ========================================================================== */
 /* ============ DONNÉES CONSTANTES ============ */
 const DASH_SKINS = [
-    { id: 'aurore',   name: 'Aurore Boréale',   color: '#4fd8c4', cost: 0 },
-    { id: 'robot',    name: 'Robot Assistant',  color: '#8fb8c9', img: 'Image/personnages/robot.webp', cost: 0 },
-    { id: 'or',       name: 'Comète Dorée',     color: '#c8a84b', cost: 60 },
-    { id: 'ametiste', name: 'Nova Améthyste',   color: '#b685f5', cost: 90 },
-    { id: 'rose',     name: 'Étoile Rose',      color: '#f58fc2', cost: 130 },
-    { id: 'braise',   name: 'Braise Cosmique',  color: '#f5714f', cost: 170 },
-    { id: 'neon',     name: 'Éclair Néon',      color: '#00ffcc', cost: 250 },
-    { id: 'magma',    name: 'Flamboiement Magma', color: '#ff3300', cost: 300 },
-    // Skins "personnage" (v2.2) — portraits au lieu d'un halo de couleur.
-    // `color` reste renseigné : il sert de couleur de halo derrière le
-    // portrait (voir renderHud/renderShop), le portrait lui-même vient de `img`.
-    { id: 'einstein',          name: 'Albert Einstein',     color: '#7fb3d5', img: 'Image/personnages/einstein.webp',          cost: 150 },
-    { id: 'marie-curie',       name: 'Marie Curie',         color: '#6bca82', img: 'Image/personnages/marie-curie.webp',       cost: 150 },
-    { id: 'christophe-colomb', name: 'Christophe Colomb',   color: '#c8a84b', img: 'Image/personnages/christophe-colomb.webp', cost: 200 },
-    { id: 'lovelace',          name: 'Ada Lovelace',        color: '#ff66b2', img: 'Image/personnages/lovelace.webp',          cost: 400 },
+    { id: 'aurore',   name: 'Aurore Boréale',   category: 'aura', color: '#4fd8c4', cost: 0 },
+    { id: 'or',       name: 'Comète Dorée',     category: 'aura', color: '#c8a84b', cost: 60 },
+    { id: 'ametiste', name: 'Nova Améthyste',   category: 'aura', color: '#b685f5', cost: 90 },
+    { id: 'rose',     name: 'Étoile Rose',      category: 'aura', color: '#f58fc2', cost: 130 },
+    { id: 'braise',   name: 'Braise Cosmique',  category: 'aura', color: '#f5714f', cost: 170 },
+    { id: 'neon',     name: 'Éclair Néon',      category: 'aura', color: '#00ffcc', cost: 250 },
+    { id: 'magma',    name: 'Flamboiement Magma', category: 'aura', color: '#ff3300', cost: 300 },
+    // Skins "personnage" — portraits dans la Boutique + habillage CSS sur la carte.
+    { id: 'robot',             name: 'Robot Assistant',    category: 'avatar', color: '#8fb8c9', img: 'Image/personnages/robot.webp',             cost: 0 },
+    { id: 'david-martinez',    name: 'David Martinez',     category: 'avatar', color: '#ffea00', img: 'Image/personnages/david-martinez.svg',     cost: 0 },
+    { id: 'fall-guys',         name: 'Champion Fall Guys', category: 'avatar', color: '#ff3e9d', img: 'Image/personnages/fall-guys.svg',          cost: 150 },
+    { id: 'hope-fortnite',     name: 'Hope (Fortnite)',    category: 'avatar', color: '#2563eb', img: 'Image/personnages/hope-fortnite.svg',      cost: 200 },
+    { id: 'kasane-teto',       name: 'Kasane Teto',        category: 'avatar', color: '#e11d48', img: 'Image/personnages/kasane-teto.svg',        cost: 250 },
+    { id: 'helldiver',         name: 'Helldiver',          category: 'avatar', color: '#ffd60a', img: 'Image/personnages/helldiver.svg',          cost: 300 },
+    { id: 'space-marine',      name: 'Space Marine',       category: 'avatar', color: '#1d4ed8', img: 'Image/personnages/space-marine.svg',       cost: 350 },
+    { id: 'doom-guy',          name: 'Doom Slayer',        category: 'avatar', color: '#4f772d', img: 'Image/personnages/doom-guy.svg',           cost: 400 },
+    { id: 'einstein',          name: 'Albert Einstein',    category: 'avatar', color: '#7fb3d5', img: 'Image/personnages/einstein.webp',          cost: 150 },
+    { id: 'marie-curie',       name: 'Marie Curie',        category: 'avatar', color: '#6bca82', img: 'Image/personnages/marie-curie.webp',       cost: 150 },
+    { id: 'christophe-colomb', name: 'Christophe Colomb',  category: 'avatar', color: '#c8a84b', img: 'Image/personnages/christophe-colomb.webp', cost: 200 },
+    { id: 'lovelace',          name: 'Ada Lovelace',       category: 'avatar', color: '#ff66b2', img: 'Image/personnages/lovelace.webp',          cost: 250 },
+    { id: 'pythagore',         name: 'Pythagore',          category: 'avatar', color: '#ffd166', img: 'Image/personnages/pythagore.webp',         cost: 300 },
+    { id: 'davinci',           name: 'Léonard de Vinci',   category: 'avatar', color: '#a8dadc', img: 'Image/personnages/davinci.webp',           cost: 350 },
+    { id: 'hugo',              name: 'Victor Hugo',        category: 'avatar', color: '#457b9d', img: 'Image/personnages/hugo.webp',              cost: 350 },
+    { id: 'astronaute',        name: 'Astronaute Céleste', category: 'avatar', color: '#f1faee', img: 'Image/personnages/astronaute.webp',        cost: 400 },
+    { id: 'mage',              name: 'Archimage du Savoir',category: 'avatar', color: '#9d4edd', img: 'Image/personnages/mage.webp',              cost: 500 },
 ];
 
 const RAW_DASH_SUBJECTS = [
@@ -2921,9 +3145,7 @@ function initDashboard() {
     if (!dashApp) return; // Pas sur la page dashboard.html → on sort
 
     function getShopCatalog() {
-        return (typeof AdminStore !== 'undefined' && typeof AdminStore.getShopItems === 'function')
-            ? AdminStore.getShopItems()
-            : DASH_SKINS;
+        return getShopCatalogSafe();
     }
 
     /* ============ ÉTAT PERSISTÉ ============ */
@@ -2935,15 +3157,19 @@ function initDashboard() {
     function loadState() {
         const savedSkin = getOption('dash_equippedSkin') || 'aurore';
         const savedAura = getOption('dash_equippedAura');
-        const savedAvatar = getOption('dash_equippedAvatar');
         const catalog = getShopCatalog();
         const curItem = catalog.find(s => s.id === savedSkin);
         const curCat = curItem ? (curItem.category || 'aura') : 'aura';
 
         const equippedAura = savedAura || (curCat === 'aura' ? savedSkin : 'aurore');
-        const equippedAvatar = savedAvatar || (curCat === 'avatar' ? savedSkin : 'robot');
+        const equippedAvatar = getEquippedAvatarId();
         const equippedTheme = getOption('dash_equippedTheme') || 'default';
         document.documentElement.setAttribute('data-theme', equippedTheme);
+
+        let parsedProgress = {};
+        try {
+            parsedProgress = JSON.parse(getOption('dash_progress') || '{}') || {};
+        } catch { parsedProgress = {}; }
 
         return {
             coins:          parseInt(getOption('dash_coins') || '30', 10),
@@ -2953,11 +3179,11 @@ function initDashboard() {
             equippedAvatar: equippedAvatar,
             equippedTitle:  getOption('dash_equippedTitle') || '',
             equippedTheme:  equippedTheme,
-            ownedSkins:     JSON.parse(getOption('dash_ownedSkins') || '["aurore", "robot"]'),
+            ownedSkins:     getOwnedSkinsSafe(),
             shopCategory:   'all',
             view:           'dashboard', // Toujours revenir au dashboard au chargement
             currentSubject: null,
-            progress:       JSON.parse(getOption('dash_progress') || '{}'),
+            progress:       parsedProgress,
             quiz:           null,
             badges:         DB.getBadges(), // Identifiants des badges déjà débloqués
         };
@@ -2977,6 +3203,12 @@ function initDashboard() {
     }
 
     let state = loadState();
+    // Lien direct vers la boutique (ex: depuis le sélecteur d'avatar de la carte)
+    if (window.location.hash === '#boutique-avatars' || window.location.hash === '#boutique' || window.location.hash === '#shop') {
+        state.view = 'shop';
+        state.shopCategory = (window.location.hash === '#boutique-avatars') ? 'avatar' : 'all';
+        try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch { /* ignore */ }
+    }
     // Initialise la progression pour les matières qui n'ont pas encore de données
     DASH_SUBJECTS.forEach(s => {
         if (!(s.id in state.progress)) state.progress[s.id] = 0;
@@ -2992,7 +3224,7 @@ function initDashboard() {
     function skinImage(id) {
         const targetId = id || state.equippedAvatar || 'robot';
         const item = getShopCatalog().find(s => s.id === targetId);
-        return (item && item.img) ? item.img : null;
+        return (item && isSafeAvatarImgSrc(item.img)) ? item.img : null;
     }
     function level() { return Math.floor(state.xp / 100) + 1; }
     function xpInLevel() { return state.xp % 100; }
@@ -3083,8 +3315,9 @@ function initDashboard() {
             ${multiplier > 1.0 ? `<span class="dash-combo-tag">x${multiplier}</span>` : ''}
         </div>`;
 
+        const hudAvatarImg = skinImage(state.equippedAvatar);
         return `<div class="dash-hud">
-            <div class="dash-avatar" style="--dash-skin:${skinColor(state.equippedAura)}">${skinImage(state.equippedAvatar) ? `<img src="${skinImage(state.equippedAvatar)}" alt="Avatar">` : `N${level()}`}</div>
+            <div class="dash-avatar" style="--dash-skin:${escapeHtml(skinColor(state.equippedAura))}">${hudAvatarImg ? `<img src="${escapeHtml(hudAvatarImg)}" alt="Avatar">` : `N${level()}`}</div>
             <div class="dash-hud-mid">
                 <div class="dash-hud-level">Niveau ${level()} <span class="mono">· ${pct}/100 XP</span> ${titleBadge}</div>
                 <div class="dash-xp-track"><div class="dash-xp-fill" style="width:${pct}%"></div></div>
@@ -3355,7 +3588,7 @@ function initDashboard() {
             const isBooster = cat === 'booster';
 
             const boosterStock = (typeof DB !== 'undefined' && DB.getBoosters) ? (DB.getBoosters()[s.id] || 0) : 0;
-            const owned = isBooster ? (boosterStock > 0) : (s.id === 'default' || state.ownedSkins.includes(s.id));
+            const owned = isBooster ? (boosterStock > 0) : isShopItemOwned(s, state.ownedSkins);
             const isEquipped = isAura
                 ? (state.equippedAura === s.id)
                 : isAvatar
@@ -3367,8 +3600,8 @@ function initDashboard() {
                             : false;
 
             let visualHtml = '';
-            if (s.img) {
-                visualHtml = `<div class="dash-skin-orb" style="--sc:${s.color || '#4fd8c4'}"><img src="${s.img}" alt="${escapeHtml(s.name)}"></div>`;
+            if (isSafeAvatarImgSrc(s.img)) {
+                visualHtml = `<div class="dash-skin-orb" style="--sc:${escapeHtml(s.color || '#4fd8c4')}"><img src="${escapeHtml(s.img)}" alt="${escapeHtml(s.name)}"></div>`;
             } else if (isTitle) {
                 visualHtml = `<div class="dash-shop-title-preview" style="color:${s.color || '#ffd166'}; border: 1px dashed ${s.color || '#ffd166'}88; background: rgba(0,0,0,0.3); border-radius: 4px; padding: 10px 6px; margin: 0 auto 12px; max-width: 140px; font-weight: 700; font-size: 13px;">${escapeHtml(s.name)}</div>`;
             } else if (isTheme) {
@@ -3967,6 +4200,14 @@ function initDashboard() {
         const item = getShopCatalog().find(s => s.id === id);
         if (!item) return;
         const cat = item.category || 'aura';
+        if (cat === 'booster') return;
+        if (!isShopItemOwned(item, state.ownedSkins)) {
+            showNotification('🔒 Débloque d\'abord cet article dans la Boutique !');
+            return;
+        }
+        if (typeof AudioManager !== 'undefined' && typeof AudioManager.playSfx === 'function') {
+            AudioManager.playSfx('click');
+        }
         if (cat === 'title') {
             state.equippedTitle = (state.equippedTitle === id ? '' : id);
             showNotification(state.equippedTitle ? `🏷️ Titre « ${item.name} » activé !` : 'Titre retiré.');
@@ -4009,7 +4250,10 @@ function initDashboard() {
         }
     });
 
-    window.addEventListener('pageshow', () => {
+    window.addEventListener('pageshow', (e) => {
+        // Sur chargement initial, initDashboard() vient déjà d'effectuer le premier rendu
+        // (évite aussi d'écraser une vue ouverte par ancre, ex: #boutique-avatars).
+        if (!e.persisted) return;
         // Resynchronise aussi les matières selon la classe courante (ex: modifiée dans Options)
         DASH_SUBJECTS = getEffectiveSubjects();
         state = loadState();
