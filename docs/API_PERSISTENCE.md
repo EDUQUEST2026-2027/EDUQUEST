@@ -12,8 +12,9 @@ Toutes les clés sont préfixées par `eduquest_` pour éviter tout conflit avec
 
 | Clé | Type | Description |
 |---|---|---|
-| `eduquest_options` | `Object` | Préférences du joueur (volume sonore, plein écran, défi chrono, éco-énergie) |
-| `eduquest_niveau` | `String` | Niveau scolaire sélectionné par l'élève (`6eme`, `5eme`, etc.) |
+| `eduquest_options` | `Object` | Préférences du joueur (audio, particules, animations, apparence, mode chrono, éco-énergie, état replié missions/menu bas mobile) |
+| `eduquest_niveau` | `String` | Niveau scolaire sélectionné par l'élève (`6eme` → `terminale`, `bts1`, `bts2`) |
+| `eduquest_filiere` | `String` | Filière scolaire sélectionnée au lycée/BTS (`generale`, `nsi_spe`, `stmg`, `sti2d`, `ciel`, `st2s`), isolée par compte |
 | `eduquest_session` | `Object` | Session active (`{ token, username }`) |
 | `eduquest_local_users` | `Array` | Comptes locaux enregistrés (`{ email, username, password, role }`) |
 | `eduquest_daily_quests` | `Object` | État des quêtes du jour et coffre bonus quotidien |

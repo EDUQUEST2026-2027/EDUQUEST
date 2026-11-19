@@ -1,5 +1,5 @@
 /* =============================================================================
-   COOKIES.JS — EDUQUEST v1.26.0
+   COOKIES.JS — EDUQUEST v1.28.1
    Bandeau de consentement aux cookies (RGPD / CNIL) + mémorisation du choix (12 mois).
 
    RÔLE :
@@ -52,14 +52,18 @@ const EduCookies = (() => {
 .eqck-root{position:fixed;left:0;right:0;bottom:0;z-index:2147483000;display:flex;
   justify-content:center;padding:12px 14px calc(12px + env(safe-area-inset-bottom));
   pointer-events:none;}
-.eqck-card{pointer-events:auto;width:min(680px,100%);background:rgba(13,19,48,.96);
+.eqck-card{position:relative;pointer-events:auto;width:min(680px,100%);background:rgba(13,19,48,.96);
   border:1px solid rgba(200,168,75,.45);border-radius:16px;
   box-shadow:0 18px 50px rgba(0,0,0,.55);padding:18px 20px;color:#e9edff;
   font-family:'Rajdhani','Segoe UI',system-ui,sans-serif;font-size:15px;line-height:1.5;
   backdrop-filter:blur(8px);max-height:85vh;max-height:85dvh;overflow-y:auto;
   overscroll-behavior:contain;}
+.eqck-close{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;
+  border:1px solid rgba(154,167,216,.35);background:rgba(255,255,255,.06);color:#e9edff;
+  font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.eqck-close:hover{border-color:#e6cf8a;color:#e6cf8a;background:rgba(200,168,75,.15);}
 .eqck-title{font-family:Cinzel,Georgia,serif;font-weight:700;letter-spacing:1px;
-  color:#e6cf8a;font-size:16px;margin-bottom:6px;}
+  color:#e6cf8a;font-size:16px;margin-bottom:6px;padding-right:34px;}
 .eqck-text{margin:0 0 12px;color:#c9d3f5;}
 .eqck-text a{color:#5fd4e6;}
 .eqck-text b{color:#e9edff;}
@@ -249,7 +253,9 @@ const EduCookies = (() => {
         // est pointer-events:none pour ne pas bloquer la page). Sans ce
         // wrapper, les boutons héritent de pointer-events:none et deviennent
         // inclicables → le bandeau semble « bloqué » sur la page.
-        root.innerHTML = '<div class="eqck-card">' + (view === 'custom' ? customizeHtml(saved) : mainHtml()) + '</div>';
+        root.innerHTML = '<div class="eqck-card"><button type="button" class="eqck-close" id="eqckCloseBtn" aria-label="Fermer et continuer sans cookies optionnels" title="Fermer">✕</button>' + (view === 'custom' ? customizeHtml(saved) : mainHtml()) + '</div>';
+        const closeX = root.querySelector('#eqckCloseBtn');
+        if (closeX) closeX.addEventListener('click', () => { writeConsent('refused', { analytics: false, marketing: false }); closeBanner(); });
         bindBanner(root, view);
 
         els = { root, view };

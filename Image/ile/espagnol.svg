@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
+  <!-- ILOT ESPAGNOL - EDUQUEST -->
+  <defs>
+    <linearGradient id="esRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6b2f1a"/>
+      <stop offset="0.6" stop-color="#3d180c"/>
+      <stop offset="1" stop-color="#1e0a05"/>
+    </linearGradient>
+    <linearGradient id="esRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b55b35"/>
+      <stop offset="0.6" stop-color="#7c371d"/>
+      <stop offset="1" stop-color="#481d0e"/>
+    </linearGradient>
+    <linearGradient id="esSand" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd166"/>
+      <stop offset="0.65" stop-color="#f4a261"/>
+      <stop offset="1" stop-color="#c86b32"/>
+    </linearGradient>
+    <linearGradient id="esSun" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff3b0"/>
+      <stop offset="0.55" stop-color="#ffb703"/>
+      <stop offset="1" stop-color="#fb8500"/>
+    </linearGradient>
+    <radialGradient id="esHalo" cx="0.5" cy="0.42" r="0.58">
+      <stop offset="0" stop-color="#ffb703" stop-opacity="0.38"/>
+      <stop offset="0.55" stop-color="#e63946" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="esShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+    <filter id="esGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <circle cx="210" cy="185" r="148" fill="url(#esHalo)"/>
+
+  <g filter="url(#esGlow)">
+    <circle cx="308" cy="108" r="34" fill="url(#esSun)"/>
+    <g stroke="#ffd166" stroke-width="3" stroke-linecap="round" opacity="0.85">
+      <line x1="308" y1="62" x2="308" y2="52"/>
+      <line x1="308" y1="154" x2="308" y2="164"/>
+      <line x1="262" y1="108" x2="252" y2="108"/>
+      <line x1="354" y1="108" x2="364" y2="108"/>
+      <line x1="276" y1="76" x2="269" y2="69"/>
+      <line x1="340" y1="140" x2="347" y2="147"/>
+      <line x1="340" y1="76" x2="347" y2="69"/>
+      <line x1="276" y1="140" x2="269" y2="147"/>
+    </g>
+  </g>
+
+  <g filter="url(#esShadow)">
+    <path d="M 75 250 Q 210 275 345 250 Q 372 292 320 342 Q 210 398 100 342 Q 48 292 75 250 Z" fill="url(#esRockDeep)"/>
+    <path d="M 85 245 Q 210 268 335 245 Q 358 278 320 314 Q 210 368 100 314 Q 62 278 85 245 Z" fill="url(#esRockTop)"/>
+    <ellipse cx="210" cy="245" rx="140" ry="42" fill="url(#esSand)"/>
+    <ellipse cx="210" cy="242" rx="126" ry="32" fill="#ffe8a3" fill-opacity="0.32"/>
+  </g>
+
+  <g filter="url(#esShadow)">
+    <rect x="132" y="162" width="142" height="78" rx="6" fill="#f7e1c1" stroke="#b55b35" stroke-width="2"/>
+    <rect x="124" y="152" width="158" height="14" rx="4" fill="#d62828"/>
+    <polygon points="122,152 284,152 203,124" fill="#c1121f"/>
+    <path d="M 148 240 L 148 202 Q 162 184 176 202 L 176 240 Z" fill="#4a1d11"/>
+    <path d="M 189 240 L 189 196 Q 203 176 217 196 L 217 240 Z" fill="#4a1d11"/>
+    <path d="M 230 240 L 230 202 Q 244 184 258 202 L 258 240 Z" fill="#4a1d11"/>
+    <circle cx="203" cy="140" r="7" fill="#ffd166"/>
+  </g>
+
+  <g filter="url(#esShadow)">
+    <rect x="104" y="110" width="5" height="128" rx="2" fill="#ffd166"/>
+    <path d="M 109 114 Q 134 106 160 116 L 160 156 Q 134 146 109 154 Z" fill="#c1121f"/>
+    <path d="M 109 124 Q 134 116 160 126 L 160 146 Q 134 136 109 144 Z" fill="#ffc300"/>
+  </g>
+
+  <g transform="translate(292, 206) rotate(-22)" filter="url(#esShadow)">
+    <ellipse cx="0" cy="22" rx="19" ry="22" fill="#d97706" stroke="#78350f" stroke-width="2"/>
+    <ellipse cx="0" cy="0" rx="14" ry="15" fill="#d97706" stroke="#78350f" stroke-width="2"/>
+    <circle cx="0" cy="10" r="6" fill="#451a03" stroke="#fde68a" stroke-width="1.5"/>
+    <rect x="-3.5" y="-44" width="7" height="44" rx="2" fill="#5c2d0c"/>
+    <rect x="-5.5" y="-54" width="11" height="12" rx="2" fill="#78350f"/>
+    <line x1="-1.5" y1="-44" x2="-1.5" y2="24" stroke="#fef3c7" stroke-width="0.9"/>
+    <line x1="1.5" y1="-44" x2="1.5" y2="24" stroke="#fef3c7" stroke-width="0.9"/>
+  </g>
+
+  <g filter="url(#esGlow)">
+    <rect x="160" y="84" width="84" height="28" rx="14" fill="#7f1d1d" stroke="#ffd166" stroke-width="2"/>
+    <text x="202" y="103" text-anchor="middle" fill="#fff3b0" font-family="Georgia, serif" font-size="15" font-weight="bold">¡Hola!</text>
+  </g>
+</svg>
+

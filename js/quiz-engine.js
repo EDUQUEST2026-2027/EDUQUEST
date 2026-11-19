@@ -1,5 +1,5 @@
 /* =============================================================================
-   QUIZ-ENGINE.JS — EDUQUEST v1.26.0
+   QUIZ-ENGINE.JS — EDUQUEST v1.28.1
    Moteur de rendu et de correction pour les questions du dashboard.
 
    RÔLE :

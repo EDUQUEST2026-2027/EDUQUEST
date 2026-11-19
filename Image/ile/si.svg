@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
+  <!-- ILOT SCIENCES DE L INGENIEUR - EDUQUEST -->
+  <defs>
+    <linearGradient id="siRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1e293b"/>
+      <stop offset="0.6" stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#060b14"/>
+    </linearGradient>
+    <linearGradient id="siRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#475569"/>
+      <stop offset="0.6" stop-color="#334155"/>
+      <stop offset="1" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="siSteel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f1f5f9"/>
+      <stop offset="0.5" stop-color="#94a3b8"/>
+      <stop offset="1" stop-color="#475569"/>
+    </linearGradient>
+    <linearGradient id="siOrange" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fde047"/>
+      <stop offset="0.55" stop-color="#f97316"/>
+      <stop offset="1" stop-color="#c2410c"/>
+    </linearGradient>
+    <radialGradient id="siHalo" cx="0.5" cy="0.42" r="0.6">
+      <stop offset="0" stop-color="#38bdf8" stop-opacity="0.34"/>
+      <stop offset="0.55" stop-color="#f97316" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="siShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+    <filter id="siGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <circle cx="210" cy="182" r="150" fill="url(#siHalo)"/>
+
+  <!-- Base rocheuse flottante -->
+  <g filter="url(#siShadow)">
+    <path d="M 75 250 Q 210 275 345 250 Q 372 294 320 344 Q 210 398 100 344 Q 48 294 75 250 Z" fill="url(#siRockDeep)"/>
+    <path d="M 85 245 Q 210 268 335 245 Q 358 278 320 314 Q 210 368 100 314 Q 62 278 85 245 Z" fill="url(#siRockTop)"/>
+    <!-- Plateau plan bleu technique -->
+    <ellipse cx="210" cy="245" rx="140" ry="42" fill="#0c4a6e"/>
+    <ellipse cx="210" cy="242" rx="130" ry="34" fill="none" stroke="#38bdf8" stroke-width="2" stroke-dasharray="6 4"/>
+  </g>
+
+  <!-- Grand engrenage mécanique gauche -->
+  <g transform="translate(168, 178)" filter="url(#siShadow)">
+    <g fill="url(#siSteel)" stroke="#1e293b" stroke-width="2">
+      <rect x="-8" y="-52" width="16" height="104" rx="3"/>
+      <rect x="-8" y="-52" width="16" height="104" rx="3" transform="rotate(45)"/>
+      <rect x="-8" y="-52" width="16" height="104" rx="3" transform="rotate(90)"/>
+      <rect x="-8" y="-52" width="16" height="104" rx="3" transform="rotate(135)"/>
+      <circle cx="0" cy="0" r="38"/>
+    </g>
+    <circle cx="0" cy="0" r="16" fill="#0f172a" stroke="#38bdf8" stroke-width="3"/>
+  </g>
+
+  <!-- Engrenage secondaire doré/orange -->
+  <g transform="translate(242, 134)" filter="url(#siShadow)">
+    <g fill="url(#siOrange)" stroke="#7c2d12" stroke-width="2">
+      <rect x="-6" y="-34" width="12" height="68" rx="2.5"/>
+      <rect x="-6" y="-34" width="12" height="68" rx="2.5" transform="rotate(45)"/>
+      <rect x="-6" y="-34" width="12" height="68" rx="2.5" transform="rotate(90)"/>
+      <rect x="-6" y="-34" width="12" height="68" rx="2.5" transform="rotate(135)"/>
+      <circle cx="0" cy="0" r="24"/>
+    </g>
+    <circle cx="0" cy="0" r="9" fill="#0f172a"/>
+  </g>
+
+  <!-- Bras robotique articulé à droite -->
+  <g filter="url(#siShadow)">
+    <rect x="260" y="220" width="44" height="22" rx="5" fill="#334155" stroke="#38bdf8" stroke-width="2"/>
+    <line x1="282" y1="220" x2="262" y2="176" stroke="url(#siOrange)" stroke-width="11" stroke-linecap="round"/>
+    <line x1="262" y1="176" x2="294" y2="146" stroke="url(#siSteel)" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="282" cy="220" r="7" fill="#38bdf8"/>
+    <circle cx="262" cy="176" r="7" fill="#38bdf8"/>
+    <!-- Pince -->
+    <path d="M 294 146 L 308 136 M 294 146 L 310 152" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" filter="url(#siGlow)"/>
+  </g>
+
+  <!-- Équerre / vecteurs SysML -->
+  <g filter="url(#siGlow)">
+    <text x="148" y="106" fill="#7dd3fc" font-family="monospace" font-size="14" font-weight="bold">P = C·ω</text>
+  </g>
+</svg>
+

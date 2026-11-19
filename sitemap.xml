@@ -1,24 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- sitemap.xml — EDUQUEST v1.27.0 : pages publiques autorisées à l'indexation.
+<!-- sitemap.xml — EDUQUEST v1.28.1 : pages publiques autorisées à l'indexation.
      Le panneau d'administration (admin.html) et le banc de test (test.html) sont réservés à l'usage interne. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>/index.html</loc>
+    <lastmod>2026-11-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>/dashboard.html</loc>
+    <lastmod>2026-11-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>/map.html</loc>
+    <lastmod>2026-11-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>/legal.html</loc>
+    <lastmod>2026-11-19</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>

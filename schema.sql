@@ -1,13 +1,14 @@
 -- =============================================================================
--- SCHEMA.SQL — EDUQUEST v1.27.0
+-- SCHEMA.SQL — EDUQUEST v1.28.1
 -- Script de création de la base de données SQL (MySQL / MariaDB / PostgreSQL / SQLite)
 -- =============================================================================
 --
 -- RÔLE :
 -- Schéma relationnel complet pour le mode serveur (backend d'établissement).
--- Il prend en charge l'authentification (élèves & administrateurs), les 13 matières
--- et leurs rattachements de cycles/classes, la configuration intégrale du site et de l'IA,
--- les leçons manuelles, les options, quêtes journalières et l'inventaire boutique.
+-- Il prend en charge l'authentification (élèves & administrateurs), les 26 matières
+-- officielles (Collège, Lycée & BTS, 6 filières : Générale, NSI, STMG, STI2D, CIEL, ST2S),
+-- la configuration intégrale du site et du pool Multi-IA, les leçons manuelles,
+-- les options, quêtes journalières et l'inventaire boutique.
 --
 -- COMPATIBILITÉ MOTEURS :
 --   - MySQL 8.0+ / MariaDB 10.5+ : syntaxe native directe
@@ -87,9 +88,10 @@ CREATE TABLE IF NOT EXISTS matieres_config (
     id           VARCHAR(50)  PRIMARY KEY,
     nom          VARCHAR(100) NOT NULL,
     icone        VARCHAR(100) NOT NULL,
-    bande        VARCHAR(50)  NOT NULL DEFAULT 'tous', -- 'college', 'lycee', 'primaire', 'superieur', 'tous'
-    classes_json JSON         NOT NULL,                -- Ex: '["6eme", "5eme", "4eme", "3eme"]'
-    active       BOOLEAN      NOT NULL DEFAULT TRUE,
+    bande         VARCHAR(50)  NOT NULL DEFAULT 'all', -- 'college', 'lycee', 'all'
+    classes_json  JSON         NOT NULL,               -- Ex: '["6eme", "5eme", "4eme", "3eme"]'
+    filieres_json JSON         NOT NULL,               -- Ex: '["all"]' ou '["ciel", "nsi_spe"]'
+    active        BOOLEAN      NOT NULL DEFAULT TRUE,
     est_custom   BOOLEAN      NOT NULL DEFAULT FALSE,
     description  TEXT         DEFAULT NULL,
     modifie_le   DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -114,13 +116,13 @@ CREATE TABLE IF NOT EXISTS lecons_manuelles (
 CREATE INDEX IF NOT EXISTS idx_lecons_matiere ON lecons_manuelles(matiere_id);
 
 -- =============================================================================
--- 7. TABLE : progression (Parcours des 13 matières et 100 niveaux)
+-- 7. TABLE : progression (Parcours des 26 matières et 100 niveaux)
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS progression (
     id           INT AUTO_INCREMENT PRIMARY KEY,
     joueur_id    INT          NOT NULL,
     matiere      VARCHAR(100) NOT NULL,
-    niveau       VARCHAR(50)  NOT NULL, -- '6eme' → 'terminale'
+    niveau       VARCHAR(50)  NOT NULL, -- '6eme' → 'terminale', 'bts1', 'bts2'
     niveau_num   INT          NOT NULL, -- 1 à 100
     etoiles      TINYINT      NOT NULL DEFAULT 0, -- 0 à 3 étoiles
     debloque     BOOLEAN      NOT NULL DEFAULT FALSE,
@@ -243,7 +245,8 @@ INSERT IGNORE INTO parametres (joueur_id, cle, valeur) VALUES
     (1, 'modeChrono',        'false'),
     (1, 'pleinEcran',        'false'),
     (1, 'btnBrightness',     '80'),
-    (1, 'niveau_actuel',     '6eme');
+    (1, 'niveau_actuel',     '6eme'),
+    (1, 'filiere_actuelle',  'generale');
 
 -- Configuration globale du site (synchronisée avec AdminStore.getSiteConfig)
 INSERT IGNORE INTO configuration_site (cle, valeur, description) VALUES
@@ -266,21 +269,34 @@ INSERT IGNORE INTO configuration_ia (cle, valeur, description) VALUES
     ('providers',            '[]',                                 'Pool JSON de fournisseurs IA (Make, OpenAI-compatible, Gemini)'),
     ('fallbackToOffline',    'true',                               'Basculer automatiquement sur la banque locale en cas d’erreur');
 
--- Configuration des 13 matières de base avec leurs cycles et classes autorisées
-INSERT IGNORE INTO matieres_config (id, nom, icone, bande, classes_json, active, est_custom, description) VALUES
-    ('mathematiques', 'Mathématiques', '📐', 'tous',    '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]', TRUE, FALSE, 'Algèbre, géométrie et logique'),
-    ('francais',      'Français',      '📖', 'tous',    '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]', TRUE, FALSE, 'Grammaire, littérature et orthographe'),
-    ('histoire',      'Histoire',      '🏛️', 'tous',    '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]', TRUE, FALSE, 'Grandes époques et repères historiques'),
-    ('geo',           'Géographie',    '🌍', 'tous',    '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]', TRUE, FALSE, 'Territoires, mondialisation et cartes'),
-    ('svt',           'SVT',           '🧬', 'tous',    '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]', TRUE, FALSE, 'Sciences de la Vie et de la Terre'),
-    ('anglais',       'Anglais',       '🇬🇧', 'tous',    '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]', TRUE, FALSE, 'Vocabulaire, verbes irréguliers et grammaire'),
-    ('physique',      'Physique',      '⚡', 'tous',    '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]', TRUE, FALSE, 'Électricité, mécanique et optique'),
-    ('chimie',        'Chimie',        '🧪', 'tous',    '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]', TRUE, FALSE, 'Atomes, molécules et réactions chimiques'),
-    ('technologie',   'Technologie',   '⚙️', 'college', '["6eme","5eme","4eme","3eme"]',                           TRUE, FALSE, 'Algorithmique, capteurs et réseaux du collège'),
-    ('nsi',           'NSI Numérique', '💻', 'lycee',   '["2nde","1ere","terminale"]',                             TRUE, FALSE, 'Informatique, Python, web et bases de données'),
-    ('ses',           'SES Économie',  '📊', 'lycee',   '["2nde","1ere","terminale"]',                             TRUE, FALSE, 'Économie, sociologie et sciences politiques'),
-    ('philo',         'Philosophie',   '🧠', 'lycee',   '["terminale"]',                                            TRUE, FALSE, 'Concepts et réflexions de Terminale'),
-    ('emc',           'EMC Citoyen',   '⚖️', 'tous',    '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]', TRUE, FALSE, 'Enseignement Moral et Civique');
+-- Configuration des 26 matières officielles (Collège, Lycée & BTS par filière)
+INSERT IGNORE INTO matieres_config (id, nom, icone, bande, classes_json, filieres_json, active, est_custom, description) VALUES
+    ('maths',         'Mathématiques',           'Image/ile/maths.webp',         'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale","bts1","bts2"]', '["all"]',                           TRUE, FALSE, 'Algèbre, géométrie, analyse, probabilités et maths appliquées BTS'),
+    ('francais',      'Français',                'Image/ile/francais.webp',      'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale","bts1","bts2"]', '["all"]',                           TRUE, FALSE, 'Grammaire, littérature, orthographe et culture générale'),
+    ('histoire',      'Histoire',                'Image/ile/histoire.webp',      'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["all"]',                           TRUE, FALSE, 'Grandes époques et repères historiques'),
+    ('geo',           'Géographie',              'Image/ile/geo.svg',            'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["all"]',                           TRUE, FALSE, 'Territoires, mondialisation, climat et cartes'),
+    ('emc',           'EMC',                     'Image/ile/emc.svg',            'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["all"]',                           TRUE, FALSE, 'Enseignement Moral et Civique, institutions et valeurs'),
+    ('anglais',       'Anglais',                 'Image/ile/anglais.webp',       'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale","bts1","bts2"]', '["all"]',                           TRUE, FALSE, 'Vocabulaire, temps verbaux, grammaire et anglais technique'),
+    ('espagnol',      'Espagnol',                'Image/ile/espagnol.svg',       'all',     '["5eme","4eme","3eme","2nde","1ere","terminale"]',                      '["generale","stmg","st2s"]',        TRUE, FALSE, 'Langue vivante 2 dès la 5ème : grammaire, lexique et culture hispanique'),
+    ('svt',           'SVT',                     'Image/ile/svt.webp',           'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["generale","st2s"]',               TRUE, FALSE, 'Sciences de la Vie et de la Terre'),
+    ('physique',      'Physique',                'Image/ile/physique.webp',      'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale","bts1","bts2"]', '["generale","nsi_spe","sti2d","ciel","st2s"]', TRUE, FALSE, 'Électricité, mécanique, énergie et optique'),
+    ('chimie',        'Chimie',                  'Image/ile/chimie.svg',         'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["generale","nsi_spe","sti2d","st2s"]', TRUE, FALSE, 'Atomes, molécules, pH et réactions chimiques'),
+    ('techno',        'Technologie',             'Image/ile/technologie.webp',   'college', '["6eme","5eme","4eme","3eme"]',                                         '["all"]',                           TRUE, FALSE, 'Algorithmique, capteurs, matériaux et réseaux du collège'),
+    ('arts',          'Arts & Musique',          'Image/ile/arts.svg',           'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["generale"]',                      TRUE, FALSE, 'Histoire des arts, perspective, couleurs et culture musicale'),
+    ('philo',         'Philosophie',             'Image/ile/philo.svg',          'lycee',   '["terminale"]',                                                         '["generale","nsi_spe","stmg","sti2d","st2s"]', TRUE, FALSE, 'Concepts, auteurs et grandes notions de Terminale'),
+    ('nsi',           'NSI & Numérique',         'Image/ile/nsi.svg',            'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["generale","nsi_spe","sti2d","ciel"]', TRUE, FALSE, 'Informatique, Python, algorithmique, Web, SQL et architectures'),
+    ('ses',           'SES (Économie)',          'Image/ile/ses.svg',            'lycee',   '["2nde","1ere","terminale"]',                                           '["generale"]',                      TRUE, FALSE, 'Économie, sociologie et sciences politiques'),
+    ('hggsp',         'HGGSP (Géopolitique)',    'Image/ile/hggsp.svg',          'lycee',   '["1ere","terminale"]',                                                  '["generale"]',                      TRUE, FALSE, 'Histoire-géographie, géopolitique et sciences politiques'),
+    ('si',            'Sciences de l\'Ingénieur','Image/ile/si.svg',             'lycee',   '["2nde","1ere","terminale"]',                                           '["generale","nsi_spe","sti2d"]',    TRUE, FALSE, 'SysML, chaînes d\'énergie et d\'information, mécanique'),
+    ('msgn',          'Management & Gestion',    'Image/ile/msgn.svg',           'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["stmg"]',                          TRUE, FALSE, 'Management, sciences de gestion et numérique (STMG / BTS)'),
+    ('droit_eco',     'Droit & Économie',        'Image/ile/droit_eco.svg',      'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["stmg","ciel"]',                   TRUE, FALSE, 'Droit des contrats, travail, RGPD et macroéconomie'),
+    ('mercatique',    'Mercatique (Marketing)',  'Image/ile/mercatique.svg',     'lycee',   '["1ere","terminale","bts1","bts2"]',                                    '["stmg"]',                          TRUE, FALSE, 'Marketing mix (4P), segmentation, gestion et analyse financière'),
+    ('i2d',           'I2D (Innovation & Éco)',  'Image/ile/i2d.svg',            'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["sti2d"]',                         TRUE, FALSE, 'Éco-conception, ACV, matériaux, thermique et développement durable'),
+    ('sin',           'SIN (Info & Numérique)',  'Image/ile/sin.svg',            'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["sti2d"]',                         TRUE, FALSE, 'Signaux numériques, CAN, PWM, logique booléenne et IoT'),
+    ('cybersecurite', 'Cybersécurité',           'Image/ile/cybersecurite.svg',  'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["ciel","nsi_spe"]',                TRUE, FALSE, 'Triade CIA, OWASP, cryptographie, RGPD/ANSSI et défense réseau'),
+    ('reseaux',       'Réseaux & Systèmes',      'Image/ile/reseaux.svg',        'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["ciel","nsi_spe"]',                TRUE, FALSE, 'Modèle OSI, TCP/IP, CIDR, routage, ports et administration Linux'),
+    ('electronique',  'Électronique & Systèmes', 'Image/ile/electronique.svg',   'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["ciel","sti2d"]',                  TRUE, FALSE, 'Loi d\'Ohm, Kirchhoff, diodes, transistors, PCB et embarqué'),
+    ('stss',          'STSS (Santé & Social)',   'Image/ile/stss.svg',           'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["st2s"]',                          TRUE, FALSE, 'Santé publique, épidémiologie, prévention et protection sociale');
 
 -- Inventaire initial de l'élève
 INSERT IGNORE INTO inventaire (joueur_id, item_id, categorie, quantite, equipe) VALUES
@@ -290,4 +306,4 @@ INSERT IGNORE INTO inventaire (joueur_id, item_id, categorie, quantite, equipe) 
 
 -- Déblocage du niveau 1 en Mathématiques pour la 6ème
 INSERT IGNORE INTO progression (joueur_id, matiere, niveau, niveau_num, etoiles, debloque) VALUES
-    (1, 'mathematiques', '6eme', 1, 0, TRUE);
+    (1, 'maths', '6eme', 1, 0, TRUE);

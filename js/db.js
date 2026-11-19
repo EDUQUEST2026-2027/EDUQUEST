@@ -1,5 +1,5 @@
 /* ==========================================================================
-   DB.JS — EDUQUEST v1.26.0
+   DB.JS — EDUQUEST v1.28.1
    Couche d'abstraction Base de Données (LocalStorage / API REST MySQL).
 
    RÔLE :
@@ -64,6 +64,7 @@ const DB = (() => {
     const KEYS = {
         OPTIONS: 'eduquest_options',        // Objet JSON de toutes les options du jeu
         NIVEAU: 'eduquest_niveau',          // Niveau scolaire sélectionné (ex: "6eme")
+        FILIERE: 'eduquest_filiere',        // Filière / voie sélectionnée (ex: "generale", "stmg", "sti2d", "ciel", "nsi_spe", "st2s")
         TRACK: 'eduquest_current_track',   // Index de la piste audio en cours
         MUSIC_TIME: 'eduquest_music_time',      // Position (secondes) dans la piste en cours
         SESSION: 'eduquest_session',         // Session utilisateur connecté (token + username)
@@ -438,6 +439,47 @@ const DB = (() => {
         if (USE_API) {
             // Synchronisation optionnelle vers le serveur
             saveOptionAsync('niveau_actuel', niveau).catch(() => { });
+        }
+    }
+
+    /* -----------------------------------------------------------------------
+       FILIÈRE / VOIE D'ÉTUDES SÉLECTIONNÉE (Lycée & BTS)
+       Valeurs : 'generale', 'nsi_spe', 'stmg', 'sti2d', 'ciel', 'st2s'
+    ----------------------------------------------------------------------- */
+
+    function _filiereKey() {
+        return 'eduquest_filiere_' + _userScope();
+    }
+
+    /**
+     * Retourne la filière actuellement sélectionnée pour l'utilisateur courant.
+     * @returns {string} Ex: 'generale', 'stmg', 'sti2d', 'ciel', 'nsi_spe', 'st2s'
+     */
+    function getFiliere() {
+        try {
+            const scoped = localStorage.getItem(_filiereKey());
+            if (scoped) return scoped;
+            if (_userScope() === 'guest') {
+                return localStorage.getItem(KEYS.FILIERE) || 'generale';
+            }
+            return 'generale';
+        } catch { return 'generale'; }
+    }
+
+    /**
+     * Sauvegarde la filière / voie d'études sélectionnée (isolée par utilisateur).
+     * @param {string} filiere
+     */
+    function setFiliere(filiere) {
+        const clean = String(filiere || 'generale').toLowerCase().trim() || 'generale';
+        try {
+            localStorage.setItem(_filiereKey(), clean);
+            if (_userScope() === 'guest') {
+                localStorage.setItem(KEYS.FILIERE, clean);
+            }
+        } catch { }
+        if (USE_API) {
+            saveOptionAsync('filiere_actuelle', clean).catch(() => { });
         }
     }
 
@@ -881,15 +923,91 @@ const DB = (() => {
         return users.filter(u => (u.role || 'eleve') === 'admin').length;
     }
 
-    /** Liste des comptes locaux (sans le mot de passe, avec rôle et création). */
+    function _scopeForEmail(email) {
+        return 'u_' + String(email || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+    }
+
+    /** Lit les statistiques locales (classe, filière, XP, pièces, badges) d'un compte donné. */
+    function getLocalMemberStats(email) {
+        const scope = _scopeForEmail(email);
+        let opts = {};
+        try { opts = JSON.parse(localStorage.getItem('eduquest_opts_' + scope) || '{}'); } catch { }
+        const niveau = (function () {
+            try { return localStorage.getItem('eduquest_niveau_' + scope) || '6eme'; } catch { return '6eme'; }
+        })();
+        const filiere = (function () {
+            try { return localStorage.getItem('eduquest_filiere_' + scope) || 'generale'; } catch { return 'generale'; }
+        })();
+        let badges = [];
+        try { badges = JSON.parse(opts.dash_badges || '[]'); } catch { }
+        return {
+            niveau,
+            filiere,
+            xp: parseInt(opts.dash_xp || '0', 10) || 0,
+            coins: parseInt(opts.dash_coins || '30', 10) || 0,
+            badgesCount: Array.isArray(badges) ? badges.length : 0,
+        };
+    }
+
+    /** Met à jour la classe, la filière, l'XP ou les pièces d'un compte local (panneau admin). */
+    function updateLocalMemberData(email, patch = {}) {
+        if (USE_API) return { ok: false, error: 'Mode API SQL : gérez les données depuis votre backend.' };
+        const users = _getLocalUsers();
+        if (!users.some(u => u.email === email)) return { ok: false, error: 'Compte introuvable.' };
+        const scope = _scopeForEmail(email);
+        try {
+            if (typeof patch.niveau === 'string' && patch.niveau.trim()) {
+                localStorage.setItem('eduquest_niveau_' + scope, patch.niveau.trim());
+            }
+            if (typeof patch.filiere === 'string' && patch.filiere.trim()) {
+                localStorage.setItem('eduquest_filiere_' + scope, patch.filiere.trim().toLowerCase());
+            }
+            if (patch.xp !== undefined || patch.coins !== undefined || patch.resetProgress) {
+                const optKey = 'eduquest_opts_' + scope;
+                let opts = {};
+                try { opts = JSON.parse(localStorage.getItem(optKey) || '{}'); } catch { }
+                if (patch.resetProgress) {
+                    opts.dash_xp = '0';
+                    opts.dash_coins = '30';
+                    opts.dash_badges = '[]';
+                    // Supprime les clés de progression associées à ce compte
+                    const remove = [];
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const k = localStorage.key(i);
+                        if (k && (k.startsWith('eduquest_prog_' + scope) || k.startsWith('eduquest_attempts_' + scope) || k.startsWith('eduquest_adaptive_' + scope) || k === 'eduquest_streak_' + scope || k === 'eduquest_quests_' + scope)) {
+                            remove.push(k);
+                        }
+                    }
+                    remove.forEach(k => localStorage.removeItem(k));
+                } else {
+                    if (patch.xp !== undefined) opts.dash_xp = String(Math.max(0, parseInt(patch.xp, 10) || 0));
+                    if (patch.coins !== undefined) opts.dash_coins = String(Math.max(0, parseInt(patch.coins, 10) || 0));
+                }
+                localStorage.setItem(optKey, JSON.stringify(opts));
+            }
+        } catch {
+            return { ok: false, error: 'Impossible de modifier le stockage local.' };
+        }
+        return { ok: true, stats: getLocalMemberStats(email) };
+    }
+
+    /** Liste des comptes locaux (sans le mot de passe, avec rôle, création et statistiques). */
     async function listLocalMembers() {
         if (USE_API) return { ok: false, error: 'Mode API SQL : gérez les membres depuis votre backend.' };
-        const data = _getLocalUsers().map(u => ({
-            email: u.email,
-            username: u.username,
-            role: u.role || 'eleve',
-            created: u.created || null,
-        }));
+        const data = _getLocalUsers().map(u => {
+            const stats = getLocalMemberStats(u.email);
+            return {
+                email: u.email,
+                username: u.username,
+                role: u.role || 'eleve',
+                created: u.created || null,
+                niveau: stats.niveau,
+                filiere: stats.filiere,
+                xp: stats.xp,
+                coins: stats.coins,
+                badgesCount: stats.badgesCount,
+            };
+        });
         return { ok: true, data };
     }
 
@@ -1171,9 +1289,11 @@ const DB = (() => {
         saveProgress,           // Sauvegarde la progression (async, toujours local + API si activé)
         getProgressSync,        // Lecture synchrone de la progression isolée par utilisateur
 
-        // --- Niveau scolaire ---
+        // --- Niveau scolaire & Filière ---
         getNiveau,              // Lecture du niveau scolaire actuel
         setNiveau,              // Changement du niveau scolaire actuel
+        getFiliere,             // Lecture de la filière / voie actuelle (Générale, STMG, STI2D, CIEL, NSI, ST2S)
+        setFiliere,             // Changement de la filière / voie actuelle
 
         // --- Authentification ---
         login,                  // Connexion par email/mot de passe
@@ -1225,7 +1345,9 @@ const DB = (() => {
         saveAdaptiveState,
 
         // --- Membres / comptes locaux (panneau d'administration) ---
-        listLocalMembers,       // Liste des comptes locaux (email, pseudo, rôle, date)
+        listLocalMembers,       // Liste des comptes locaux (email, pseudo, rôle, date, classe, filière, XP, pièces)
+        getLocalMemberStats,    // Lit classe, filière, XP, pièces et badges d'un compte local
+        updateLocalMemberData,  // Modifie classe, filière, XP, pièces ou réinitialise la progression d'un compte local
         createLocalMember,      // Crée un compte local
         updateLocalMember,      // Modifie pseudo / mot de passe / rôle d'un compte
         deleteLocalMember,      // Supprime un compte (protège le dernier admin)

@@ -1,5 +1,5 @@
 /* =============================================================================
-   DAILY-QUESTS.JS — EDUQUEST v1.26 (extrait d'app.js)
+   DAILY-QUESTS.JS — EDUQUEST v1.28.1 (extrait d'app.js)
    Quêtes journalières : 1 quête de connexion + 3 quêtes tirées chaque jour
    dans QUEST_POOL (tirage déterministe basé sur la date LOCALE), à réclamer
    sur le tableau de bord, puis coffre bonus quand tout est réclamé.
@@ -27,13 +27,26 @@
     const DEFAULT_COINS = 30; // Solde initial d'un nouveau joueur (cohérent avec app.js)
 
     const QUEST_POOL = [
-        { type: 'xp',       icon: '⚡', title: 'Gagne 30 XP',                      target: 30, xp: 20, coins: 10, color: '#ffb547' },
-        { type: 'xp',       icon: '🔥', title: 'Gagne 60 XP',                      target: 60, xp: 35, coins: 15, color: '#ff6b6b' },
-        { type: 'levels',   icon: '🏝️', title: 'Réussis 2 niveaux',                target: 2,  xp: 20, coins: 10, color: '#4cc9f0' },
-        { type: 'levels',   icon: '🗺️', title: 'Réussis 4 niveaux',                target: 4,  xp: 35, coins: 20, color: '#3ddc97' },
-        { type: 'perfect',  icon: '⭐', title: 'Décroche 3 étoiles sur un niveau', target: 1,  xp: 25, coins: 15, color: '#ffd166' },
-        { type: 'firstTry', icon: '🎯', title: 'Réponds juste du 1er coup 3 fois', target: 3,  xp: 30, coins: 15, color: '#b388ff' },
+        { type: 'xp',       icon: '⚡', title: 'Gagne 30 XP',                       target: 30, xp: 20, coins: 10, color: '#ffb547' },
+        { type: 'xp',       icon: '🔥', title: 'Gagne 60 XP',                       target: 60, xp: 35, coins: 15, color: '#ff6b6b' },
+        { type: 'xp',       icon: '🌟', title: 'Gagne 90 XP dans la journée',       target: 90, xp: 45, coins: 25, color: '#f59e0b' },
+        { type: 'levels',   icon: '🏝️', title: 'Réussis 2 niveaux',                 target: 2,  xp: 20, coins: 10, color: '#4cc9f0' },
+        { type: 'levels',   icon: '🗺️', title: 'Réussis 4 niveaux',                 target: 4,  xp: 35, coins: 20, color: '#3ddc97' },
+        { type: 'levels',   icon: '🧭', title: 'Explore et réussis 6 niveaux',      target: 6,  xp: 50, coins: 30, color: '#38bdf8' },
+        { type: 'perfect',  icon: '⭐', title: 'Décroche 3 étoiles sur un niveau',  target: 1,  xp: 25, coins: 15, color: '#ffd166' },
+        { type: 'perfect',  icon: '🏅', title: 'Décroche 3 étoiles sur 2 niveaux',  target: 2,  xp: 40, coins: 25, color: '#eab308' },
+        { type: 'firstTry', icon: '🎯', title: 'Réponds juste du 1er coup 3 fois',  target: 3,  xp: 30, coins: 15, color: '#b388ff' },
     ];
+
+    /** Retourne le pool actif (configuré dans AdminStore ou pool par défaut). */
+    function getEffectivePool() {
+        const A = root.AdminStore;
+        if (A && typeof A.getQuestPool === 'function') {
+            const custom = A.getQuestPool().filter(q => q && q.enabled !== false);
+            if (custom.length > 0) return custom;
+        }
+        return QUEST_POOL;
+    }
 
     /* Horloge injectable (tests) */
     let nowFn = () => new Date();
@@ -63,7 +76,7 @@
     /** Tirage reproductible de 3 quêtes de types distincts pour une date. */
     function seededPick(dateStr) {
         const rand = rngFromString('eduquest-quests:' + dateStr);
-        const pool = QUEST_POOL.slice();
+        const pool = getEffectivePool().slice();
         for (let i = pool.length - 1; i > 0; i--) {
             const j = Math.floor(rand() * (i + 1));
             [pool[i], pool[j]] = [pool[j], pool[i]];
@@ -75,7 +88,22 @@
             picked.push(q);
             if (picked.length === 3) break;
         }
+        // Si le pool personnalisé contient moins de 3 types distincts, complète jusqu'à 3 quêtes
+        if (picked.length < 3) {
+            for (const q of pool) {
+                if (picked.includes(q)) continue;
+                picked.push(q);
+                if (picked.length === 3) break;
+            }
+        }
         return picked;
+    }
+
+    /** Régénère immédiatement les quêtes du jour (utile depuis le panneau admin). */
+    function resetToday() {
+        const fresh = generate(todayKey());
+        save(fresh);
+        return fresh;
     }
 
     function generate(date) {
@@ -198,7 +226,7 @@
 
     return {
         get, track, claim, claimBonus, getBonusCoins, isComplete, timeLeftLabel, todayKey,
-        msUntilMidnight, scheduleMidnightRefresh, BONUS_COINS,
+        msUntilMidnight, scheduleMidnightRefresh, resetToday, getEffectivePool, BONUS_COINS,
         // Internes exposés pour les tests
         _seededPick: seededPick, _generate: generate, _setClock, QUEST_POOL,
     };

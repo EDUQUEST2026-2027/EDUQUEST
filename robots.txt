@@ -1,12 +1,15 @@
-# robots.txt — EDUQUEST (v1.27.0)
+# robots.txt — EDUQUEST (v1.28.1)
 # Règles normatives d'exploration. Manifeste complet pour agents IA : voir llms.txt.
 
 User-agent: *
 Allow: /
-# Panneau d'administration et banc de tests : usage interne, pas d'indexation
+# Panneau d'administration, banc de tests et fichiers techniques internes : pas d'indexation
 Disallow: /admin.html
 Disallow: /test.html
 Disallow: /tests/
+Disallow: /docs/
+Disallow: /schema.sql
+Disallow: /package.json
 Disallow: /js/admin.js
 Disallow: /js/admin-store.js
 Disallow: /css/admin.css
@@ -14,30 +17,35 @@ Disallow: /css/admin.css
 Disallow: /Musique/
 Disallow: /fonts/
 
-# Assistants IA et robots d'indexation conversationnels : autorisés sur les pages publiques
+# Assistants IA et robots d'indexation conversationnels : autorisés sur les pages publiques et llms.txt
 User-agent: GPTBot
 Allow: /
 Disallow: /admin.html
 Disallow: /test.html
+Disallow: /tests/
 
 User-agent: Google-Extended
 Allow: /
 Disallow: /admin.html
 Disallow: /test.html
+Disallow: /tests/
 
 User-agent: ClaudeBot
 Allow: /
 Disallow: /admin.html
 Disallow: /test.html
+Disallow: /tests/
 
 User-agent: PerplexityBot
 Allow: /
 Disallow: /admin.html
 Disallow: /test.html
+Disallow: /tests/
 
 User-agent: Applebot-Extended
 Allow: /
 Disallow: /admin.html
 Disallow: /test.html
+Disallow: /tests/
 
 Sitemap: /sitemap.xml

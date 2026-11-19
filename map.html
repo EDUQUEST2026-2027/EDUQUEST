@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="fr">
 <!--
-  MAP.HTML — EDUQUEST v1.27.0
-  Carte interactive : progression niveau par niveau, personnage, chronomètre et quiz adaptatif.
+  MAP.HTML — EDUQUEST v1.28.1
+  Carte interactive : progression niveau par niveau (1 à 100), personnage, chronomètre et quiz adaptatif par filière.
 -->
 <head>
     <meta charset="UTF-8">
@@ -64,9 +64,9 @@
         <section class="level-map" id="level-map-viewport" aria-label="Chemin des niveaux">
 
             <!-- Illustration de l'îlot de la matière en arrière-plan, discrète.
-                 src injecté par JS (initMap) à partir du même paramètre 'icon'
-                 que jouer.html — renforce l'identité visuelle entre les deux
-                 pages. aria-hidden : purement décoratif. -->
+                 src injecté par JS (initMap) à partir de l'icône canonique de la
+                 matière — renforce l'identité visuelle avec dashboard.html.
+                 aria-hidden : purement décoratif. -->
             <img id="subject-bg-island" class="subject-bg-island" alt="" aria-hidden="true">
 
             <!-- ============================================================
@@ -93,17 +93,16 @@
          MODALE DE RÉSULTAT DE NIVEAU (#level-modal)
          Affichée quand le joueur clique sur un niveau non verrouillé.
          Cachée par défaut (attribut HTML5 'hidden').
-         Permet de simuler la complétion d'un niveau en choisissant les étoiles.
 
-         v2.1 : quand la matière est reconnue (voir MATIERE_TO_SUBJECT_ID dans
-         app.js → initMap), cette modale affiche une vraie question via
-         QuizEngine au lieu du choix d'étoiles. Le choix d'étoiles reste le
-         repli pour les matières pas encore reliées à un quiz (Technologie, EMC).
+         Quand la matière est reconnue (voir MATIERE_TO_SUBJECT_ID dans
+         app.js → initMap — les 26 matières officielles + matières custom),
+         cette modale affiche une vraie question via QuizEngine. Le choix
+         d'étoiles reste un repli pour une matière personnalisée sans leçon.
 
          COMPOSANTS :
            #modal-title       → "Niveau N" (mis à jour par JS au clic)
            #modal-quiz-zone   → mode quiz réel (question + réponses + actions)
-           #modal-stars-zone  → mode étoiles (repli, ancien comportement)
+           #modal-stars-zone  → mode étoiles (repli, matière sans leçon)
            #modal-close       → annule sans sauvegarder (mode étoiles)
            #reset-progress    → remet la progression de la matière à zéro
     ================================================================ -->
@@ -113,11 +112,10 @@
             <h2 id="modal-title">Niveau 1</h2>
 
             <!-- ============================================================
-                 MODE QUIZ RÉEL (v2.1)
-                 Utilisé quand la matière est reconnue par MATIERE_TO_SUBJECT_ID
-                 (voir initMap dans app.js). Rempli dynamiquement par
-                 QuizEngine — mêmes classes .dash-* que le quiz du dashboard,
-                 pour un rendu identique.
+                 MODE QUIZ RÉEL (v2.1+)
+                 Utilisé pour toutes les matières officielles et personnalisées
+                 avec leçons. Rempli dynamiquement par QuizEngine — mêmes
+                 classes .dash-* que le quiz du dashboard.
             ============================================================ -->
             <div id="modal-quiz-zone" hidden>
                 <div id="modal-quiz-meta" class="quiz-meta-strip"></div>
@@ -129,9 +127,9 @@
             </div>
 
             <!-- ============================================================
-                 MODE ÉTOILES (ancien comportement, v2.0)
-                 Conservé comme repli pour les matières pas encore reliées à
-                 un quiz réel (Technologie, EMC — absentes de jouer.html).
+                 MODE ÉTOILES (repli)
+                 Conservé comme repli si une matière personnalisée créée par
+                 un enseignant n'a pas encore de leçon enregistrée.
             ============================================================ -->
             <div id="modal-stars-zone">
                 <p class="modal-subtitle">Choisissez votre résultat :</p>
@@ -182,7 +180,7 @@
     </div>
 
     <footer>
-        <div class="footer">Version 1.27.0</div>
+        <div class="footer">Version 1.29.0</div>
         <div class="legal-links"><a href="legal.html">Mentions légales</a> · <a href="legal.html#cookies" onclick="window.dispatchEvent(new Event('eduquest:cookie-reopen'))">Cookies</a></div>
     </footer>
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EDUQUEST — Banc de Tests Automatisés & Outil QA (v1.27.0)</title>
+    <title>EDUQUEST — Banc de Tests Automatisés &amp; Outil QA (v1.28.1)</title>
     <link rel="icon" href="Image/logo.webp" type="image/webp">
     <link rel="stylesheet" href="css/global.css">
     <style>
@@ -471,7 +471,7 @@
         <header class="qa-header">
             <div class="title-group">
                 <h1>🛡️ EDUQUEST — Suite QA & Banc de Tests</h1>
-                <p>Outil d'automatisation, validation unitaire, régression & stress tests (v1.27.0 - Zero Dependency)</p>
+                <p>Outil d'automatisation, validation unitaire, régression & stress tests (v1.28.1 - Zero Dependency)</p>
             </div>
             <div class="header-actions">
                 <a href="index.html" class="btn">← Menu Principal</a>
@@ -527,7 +527,7 @@
         <main id="suites-container"></main>
 
         <footer class="test-runner-footer">
-            EDUQUEST v1.27.0 • Banc de validation Vanilla ES6+ 100% hors-ligne & compatible double-clic <code>file:///</code><br>
+            EDUQUEST v1.28.1 • Banc de validation Vanilla ES6+ 100% hors-ligne & compatible double-clic <code>file:///</code><br>
             Les tests s'exécutent dans une mémoire isolée : vos données de joueur et comptes enregistrés sur cet appareil ne sont jamais altérés.
         </footer>
     </div>
@@ -1189,6 +1189,44 @@
             });
         });
 
+        // --- SUITE 13 : FILIÈRES (STMG, CIEL, STI2D, NSI, ST2S), BTS & 26 MATIÈRES (v1.28.1) ---
+        describe('Filières, BTS 1/2, 26 Matières & Anti-répétition (v1.28.1)', function (it) {
+            it('DB.getFiliere / setFiliere persiste la filière choisie', function () {
+                DB.setFiliere('ciel');
+                assert.strictEqual(DB.getFiliere(), 'ciel');
+                DB.setFiliere('stmg');
+                assert.strictEqual(DB.getFiliere(), 'stmg');
+                DB.setFiliere('generale');
+            });
+
+            it('Filières actives au Lycée & BTS, ignorées au Collège (6e→3e)', function () {
+                assert.strictEqual(AdminStore.isFiliereApplicable('3eme'), false);
+                assert.strictEqual(AdminStore.isFiliereApplicable('2nde'), true);
+                assert.strictEqual(AdminStore.isFiliereApplicable('bts1'), true);
+                assert.strictEqual(AdminStore.isFiliereApplicable('bts2'), true);
+                assert.strictEqual(AdminStore.isSubjectAllowedForNiveau({ id: 'cybersecurite' }, 'bts1', 'ciel'), true);
+                assert.strictEqual(AdminStore.isSubjectAllowedForNiveau({ id: 'cybersecurite' }, 'terminale', 'stmg'), false);
+                assert.strictEqual(AdminStore.isSubjectAllowedForNiveau({ id: 'msgn' }, 'terminale', 'stmg'), true);
+                assert.strictEqual(AdminStore.isSubjectAllowedForNiveau({ id: 'i2d' }, '1ere', 'sti2d'), true);
+                assert.strictEqual(AdminStore.isSubjectAllowedForNiveau({ id: 'stss' }, '1ere', 'st2s'), true);
+            });
+
+            it('QuestionBank génère sans doublon d\'options pour les 13 nouvelles matières de filière', function () {
+                const newSubs = [
+                    ['espagnol', '4eme'], ['arts', '5eme'], ['hggsp', '1ere'], ['si', '1ere'],
+                    ['msgn', '1ere'], ['droit_eco', 'terminale'], ['mercatique', 'terminale'],
+                    ['i2d', '1ere'], ['sin', 'terminale'], ['cybersecurite', 'bts1'],
+                    ['reseaux', 'bts2'], ['electronique', 'bts1'], ['stss', '1ere'],
+                ];
+                newSubs.forEach(([id, niv]) => {
+                    const q = QuestionBank.generateOne(id, 0, niv, 0);
+                    assert.ok(q && typeof q.q === 'string' && q.q.length > 5, `${id} énoncé valide`);
+                    assert.ok(Array.isArray(q.opts) && q.opts.length >= 2, `${id} options valides`);
+                    assert.ok(q.correct >= 0 && q.correct < q.opts.length, `${id} index correct`);
+                });
+            });
+        });
+
         /* =========================================================================
            5. MOTEUR D'EXÉCUTION, UI & EXPORT
            ========================================================================= */
@@ -1405,7 +1443,7 @@
             const pass = lastResults.filter(r => r.passed).length;
             const fail = total - pass;
             const md = [
-                `# 🛡️ EDUQUEST — Rapport QA v1.27.0`,
+                `# 🛡️ EDUQUEST — Rapport QA v1.28.1`,
                 `- **Date :** ${new Date().toISOString()}`,
                 `- **Total :** ${total} | **Succès :** ${pass} | **Échecs :** ${fail}`,
                 `- **Statut :** ${fail === 0 ? '✅ 100% PASSANT' : '⚠️ ' + fail + ' ÉCHECS'}`,
@@ -1424,7 +1462,7 @@
 
         document.getElementById('btn-export-json').addEventListener('click', () => {
             const report = {
-                version: '1.27.0',
+                version: '1.28.1',
                 timestamp: new Date().toISOString(),
                 summary: {
                     total: lastResults.length,

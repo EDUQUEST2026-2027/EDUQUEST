@@ -1,5 +1,5 @@
 /* ==========================================================================
-   APP.JS — EDUQUEST v1.27.0
+   APP.JS — EDUQUEST v1.28.1
    Contrôleur principal du jeu : cycle de vie des vues, apparence, audio,
    chronomètre, anti-triche, moteur adaptatif / multi-IA, HUD et modales.
    ========================================================================== */
@@ -93,7 +93,7 @@ setupGlobalErrorHandler();
    ========================================================================== */
 
 /** Version de l'application — affichée dans le footer de toutes les pages. */
-const APP_VERSION = '1.27.0';
+const APP_VERSION = '1.29.0';
 
 /**
  * Calcule une couleur de texte à fort contraste (#0b1220 ou #f0f4ff) selon
@@ -173,8 +173,16 @@ function applySiteAnnouncement() {
     const cfg = (typeof AdminStore !== 'undefined' && typeof AdminStore.getSiteConfig === 'function')
         ? AdminStore.getSiteConfig()
         : null;
+    const maint = cfg && cfg.maintenanceMode;
+    const maintMsg = (cfg && typeof cfg.maintenanceMessage === 'string') ? cfg.maintenanceMessage.trim() : '';
     const msg = (cfg && typeof cfg.announcement === 'string') ? cfg.announcement.trim() : '';
-    if (msg) {
+    if (maint && maintMsg) {
+        el.textContent = '⚠️ ' + maintMsg;
+        el.hidden = false;
+    } else if (maint) {
+        el.textContent = '⚠️ Mode maintenance / examen activé par l\'administrateur.';
+        el.hidden = false;
+    } else if (msg) {
         el.textContent = '📢 ' + msg;
         el.hidden = false;
     } else {
@@ -234,25 +242,47 @@ function refreshFooterCredits() {
     }
 }
 
-// Synchronisation temps réel des crédits, de l'annonce et de l'apparence (inter-onglets et événements locaux)
+/**
+ * Réapplique l'ensemble des préférences visuelles, particules, performances et audio.
+ * Appelée au chargement, lors du retour arrière (pageshow / bfcache), au focus et sur storage.
+ */
+function applyAllRuntimeSettings() {
+    applyAppearanceSettings();
+    applyParticulesSetting();
+    applyEcoModeSetting();
+    applyAnimationsSetting();
+    applySiteAnnouncement();
+    if (typeof AudioManager !== 'undefined' && typeof AudioManager.syncWithOptions === 'function') {
+        AudioManager.syncWithOptions(false);
+    }
+}
+
+// Synchronisation temps réel des crédits, de l'annonce, des particules et de tous les paramètres
 if (typeof window !== 'undefined') {
     window.addEventListener('storage', (event) => {
         if (event.key === 'eduquest_admin_data') {
+            if (typeof _effectiveSubjectsCache !== 'undefined') _effectiveSubjectsCache.clear();
             refreshFooterCredits();
             applySiteAnnouncement();
         }
         if (event.key && (event.key === 'eduquest_options' || event.key.startsWith('eduquest_opts_'))) {
-            applyAppearanceSettings();
-            applyParticulesSetting();
-            applyEcoModeSetting();
-            applyAnimationsSetting();
+            applyAllRuntimeSettings();
+            if (typeof window._syncOptionsModalUI === 'function') window._syncOptionsModalUI();
         }
     });
     window.addEventListener('eduquest:credits-updated', refreshFooterCredits);
     window.addEventListener('pageshow', () => {
-        applyAppearanceSettings();
-        applySiteAnnouncement();
+        applyAllRuntimeSettings();
+        if (typeof window._syncOptionsModalUI === 'function') window._syncOptionsModalUI();
     });
+    window.addEventListener('focus', () => {
+        applyAllRuntimeSettings();
+    });
+    if (typeof document !== 'undefined') {
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) applyAllRuntimeSettings();
+        });
+    }
 }
 
 /*
@@ -284,7 +314,27 @@ function currentNiveauBand() {
 }
 
 function currentNiveau() {
-    return (typeof DB !== 'undefined' && DB.getNiveau) ? (DB.getNiveau() || '6eme') : '6eme';
+    const saved = (typeof DB !== 'undefined' && DB.getNiveau) ? DB.getNiveau() : null;
+    if (saved) return saved;
+    const cfg = (typeof AdminStore !== 'undefined' && typeof AdminStore.getSiteConfig === 'function')
+        ? AdminStore.getSiteConfig()
+        : null;
+    return (cfg && cfg.defaultNiveau) ? cfg.defaultNiveau : '6eme';
+}
+
+function currentFiliere() {
+    const cfg = (typeof AdminStore !== 'undefined' && typeof AdminStore.getSiteConfig === 'function')
+        ? AdminStore.getSiteConfig()
+        : null;
+    const saved = (typeof DB !== 'undefined' && DB.getFiliere) ? DB.getFiliere() : null;
+    const active = (typeof AdminStore !== 'undefined' && typeof AdminStore.getActiveFilieres === 'function')
+        ? AdminStore.getActiveFilieres()
+        : null;
+    const candidate = saved || (cfg && cfg.defaultFiliere) || 'generale';
+    if (Array.isArray(active) && active.length > 0 && !active.some(f => f.id === candidate)) {
+        return active[0].id;
+    }
+    return candidate;
 }
 
 /**
@@ -304,33 +354,44 @@ function escapeHtml(str) {
 }
 
 /**
- * Active ou désactive l'affichage des nuages (particules).
- * Appelée automatiquement lors du chargement de la page et quand l'option
- * "particules" est modifiée dans la page options.
- *
- * L'option 'particules' est stockée sous forme de string 'true'/'false'
- * (comme toutes les options booléennes dans ce projet).
+ * Active ou désactive l'affichage des particules (nuages, étoiles scintillantes et confettis).
+ * Garantit que le réglage s'applique immédiatement et proprement sur toutes les pages.
  */
 function applyParticulesSetting() {
     const val = getOption('particules');
+    const disabled = (val === 'false');
+    if (document.body) {
+        document.body.classList.toggle('no-particles', disabled);
+    }
     const clouds = document.getElementById('clouds');
+    const stars = document.getElementById('stars') || document.getElementById('stars-bg');
     if (clouds) {
-        // Si l'option est explicitement 'false', on cache les nuages
-        // Sinon (valeur null ou 'true'), on les affiche
-        clouds.style.display = (val === 'false') ? 'none' : '';
+        clouds.style.display = disabled ? 'none' : '';
+    }
+    if (stars) {
+        stars.style.display = disabled ? 'none' : '';
+    }
+    if (disabled) {
+        if (typeof Celebrate !== 'undefined' && typeof Celebrate.clear === 'function') {
+            Celebrate.clear();
+        }
+    } else if ((clouds && clouds.children.length === 0) || (stars && stars.children.length === 0)) {
+        createEnvironment();
     }
 }
 
 /**
  * Active ou désactive le mode Économie d'énergie.
- * Ajoute une classe CSS sur <body> pour couper les animations.
+ * Ajoute une classe CSS sur <body> pour couper les animations et particules.
  */
 function applyEcoModeSetting() {
     const val = getOption('ecoMode');
-    if (val === 'true') {
-        document.body.classList.add('eco-mode-active');
-    } else {
-        document.body.classList.remove('eco-mode-active');
+    const isEco = (val === 'true');
+    if (document.body) {
+        document.body.classList.toggle('eco-mode-active', isEco);
+    }
+    if (isEco && typeof Celebrate !== 'undefined' && typeof Celebrate.clear === 'function') {
+        Celebrate.clear();
     }
 }
 
@@ -340,74 +401,66 @@ function applyEcoModeSetting() {
  */
 function applyAnimationsSetting() {
     const val = getOption('animationsActives');
-    if (val === 'false') {
-        document.body.classList.add('no-animations');
-    } else {
-        document.body.classList.remove('no-animations');
+    const noAnim = (val === 'false');
+    if (document.body) {
+        document.body.classList.toggle('no-animations', noAnim);
+    }
+    if (noAnim && typeof Celebrate !== 'undefined' && typeof Celebrate.clear === 'function') {
+        Celebrate.clear();
     }
 }
 
 /**
  * Génère et insère les éléments visuels de l'environnement (étoiles + nuages).
- * Créée des éléments <div class="star"> et <div class="cloud"> aléatoires
- * dans leurs conteneurs HTML respectifs.
- *
- * Cette fonction est idempotente : si les conteneurs ont déjà des enfants,
- * elle ne rajoute rien (empêche le doublement des éléments au rechargement).
- *
- * Appelée une seule fois au DOMContentLoaded.
+ * Optimisé : utilise DocumentFragment (1 seul reflow), adapte la densité sur mobile,
+ * et utilise des délais négatifs sur les nuages pour éviter l'empilement sur le bord gauche.
  */
 function createEnvironment() {
-    // Cherche le conteneur d'étoiles (deux IDs possibles selon la page)
     const starsContainer = document.getElementById('stars') || document.getElementById('stars-bg');
     const cloudsContainer = document.getElementById('clouds');
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
 
-    // Génération des étoiles (100 au total, positions et tailles aléatoires)
+    // Génération des étoiles (densité allégée sur mobile pour de meilleures performances)
     if (starsContainer && starsContainer.children.length === 0) {
-        for (let i = 0; i < 100; i++) {
+        const starCount = isMobile ? 36 : 72;
+        const frag = document.createDocumentFragment();
+        for (let i = 0; i < starCount; i++) {
             const star = document.createElement('div');
-            star.className = 'star'; // Animé par la keyframe 'twinkle' dans global.css
-
-            // Taille aléatoire entre 1px et 4px
-            star.style.width = (Math.random() * 3 + 1) + 'px';
-            star.style.height = star.style.width; // Carré → cercle (border-radius: 50% dans CSS)
-
-            // Position aléatoire dans toute la largeur et le haut de l'écran (60%)
-            star.style.left = (Math.random() * 100) + '%';
-            star.style.top = (Math.random() * 60) + '%';
-
-            // Délai d'animation aléatoire pour que toutes les étoiles ne clignotent pas en même temps
-            star.style.animationDelay = (Math.random() * 3) + 's';
-
-            starsContainer.appendChild(star);
+            star.className = 'star';
+            const size = (Math.random() * 2.5 + 1).toFixed(1) + 'px';
+            star.style.width = size;
+            star.style.height = size;
+            star.style.left = (Math.random() * 100).toFixed(2) + '%';
+            star.style.top = (Math.random() * 62).toFixed(2) + '%';
+            const dur = (2.4 + Math.random() * 2.6).toFixed(2) + 's';
+            const delay = (-Math.random() * 3).toFixed(2) + 's';
+            star.style.setProperty('--dur', dur);
+            star.style.setProperty('--delay', delay);
+            frag.appendChild(star);
         }
+        starsContainer.appendChild(frag);
     }
 
-    // Génération des nuages (5 au total, tailles et vitesses aléatoires)
+    // Génération des nuages (répartis dès la 1ère frame grâce aux délais négatifs)
     if (cloudsContainer && cloudsContainer.children.length === 0) {
-        for (let j = 0; j < 5; j++) {
+        const cloudCount = isMobile ? 3 : 5;
+        const frag = document.createDocumentFragment();
+        for (let j = 0; j < cloudCount; j++) {
             const cloud = document.createElement('div');
-            cloud.className = 'cloud'; // Animé par la keyframe 'float' dans global.css
-
-            // Dimensions aléatoires (largeur 100-300px, hauteur 40-100px)
-            cloud.style.width = (Math.random() * 200 + 100) + 'px';
-            cloud.style.height = (Math.random() * 60 + 40) + 'px';
-
-            // Les nuages sont positionnés à gauche et animés de manière fluide
-            cloud.style.left = '0px';
-            cloud.style.animationFillMode = 'backwards';
-
-            // Position verticale aléatoire dans la bande 20%-70% de l'écran
-            cloud.style.top = (Math.random() * 50 + 20) + '%';
-
-            // Durée d'animation aléatoire entre 20s et 40s (vitesse variable)
-            cloud.style.animationDuration = (Math.random() * 20 + 20) + 's';
-
-            // Délai aléatoire pour que les nuages n'arrivent pas tous en même temps
-            cloud.style.animationDelay = (Math.random() * 15) + 's';
-
-            cloudsContainer.appendChild(cloud);
+            cloud.className = 'cloud';
+            const width = Math.round(Math.random() * 180 + 110);
+            const height = Math.round(Math.random() * 52 + 38);
+            const duration = 26 + Math.random() * 18;
+            cloud.style.width = width + 'px';
+            cloud.style.height = height + 'px';
+            cloud.style.left = '-320px';
+            cloud.style.top = (18 + (j / cloudCount) * 52 + Math.random() * 6).toFixed(1) + '%';
+            cloud.style.animationDuration = duration.toFixed(1) + 's';
+            // Délai négatif : chaque nuage démarre déjà réparti dans le ciel sans jamais s'empiler au bord
+            cloud.style.animationDelay = (-(j / cloudCount) * duration).toFixed(1) + 's';
+            frag.appendChild(cloud);
         }
+        cloudsContainer.appendChild(frag);
     }
 
     applyParticulesSetting();
@@ -809,10 +862,29 @@ function initConnexion() {
             }, 600);
         });
     }
+
+    const modalLogin = document.getElementById('modalLogin');
+    const closeLoginX = document.getElementById('closeLoginX');
+    const closeLoginModal = () => {
+        if (modalLogin) modalLogin.hidden = true;
+    };
+    if (closeLoginX) closeLoginX.addEventListener('click', closeLoginModal);
+    if (modalLogin) {
+        modalLogin.addEventListener('click', (e) => {
+            if (e.target === modalLogin) closeLoginModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !modalLogin.hidden) closeLoginModal();
+        });
+    }
+    window._openLoginModal = function () {
+        updateUserDisplay();
+        if (modalLogin) modalLogin.hidden = false;
+    };
 }
 
 /* ==========================================================================
-   5. GESTION DES OPTIONS & APPARENCE (Modale #modalOptions — v1.27.0)
+   5. GESTION DES OPTIONS & APPARENCE (Modale #modalOptions — v1.28.0)
    ========================================================================== */
 let _optionsOpenedFromHash = false;
 
@@ -825,12 +897,16 @@ function initOptions() {
     const effetsActifs       = document.getElementById('effetsActifs');
     const saveOptionsBtn     = document.getElementById('saveOptions');
     const backButton         = document.getElementById('backButton');
+    const closeOptionsX      = document.getElementById('closeOptionsX');
+    const modalOptionsEl     = document.getElementById('modalOptions');
     const particulesCheckbox = document.getElementById('particules');
     const ecoModeCheckbox    = document.getElementById('ecoMode');
     const animationsCheckbox = document.getElementById('animationsActives');
     const modeChronoCheckbox = document.getElementById('modeChrono');
     const chronoDurLabel     = document.getElementById('chronoDurationLabel');
     const optNiveauSelect    = document.getElementById('optionsNiveauSelect');
+    const optFiliereGroup    = document.getElementById('optionsFiliereGroup');
+    const optFiliereSelect   = document.getElementById('optionsFiliereSelect');
 
     // Contrôles d'apparence (Couleur interface, Couleur boutons, Luminosité boutons)
     const uiColorPresets     = document.getElementById('uiColorPresets');
@@ -860,25 +936,52 @@ function initOptions() {
         const levels = AdminStore.getLevels();
         if (Array.isArray(levels) && levels.length > 0) {
             optNiveauSelect.innerHTML = levels.map(l => {
-                const cycle = l.band === 'lycee' ? 'Lycée' : 'Collège';
+                const isBts = l.id === 'bts1' || l.id === 'bts2';
+                const cycle = isBts ? 'Supérieur' : (l.band === 'lycee' ? 'Lycée' : 'Collège');
                 return `<option value="${escapeHtml(l.id)}">🎓 ${escapeHtml(l.label || l.id)} (${cycle})</option>`;
             }).join('');
         }
     }
 
+    // 3. Peuplement dynamique du sélecteur de filière (Lycée & BTS — filières actives)
+    if (optFiliereSelect && typeof AdminStore !== 'undefined') {
+        const filieres = (typeof AdminStore.getActiveFilieres === 'function')
+            ? AdminStore.getActiveFilieres()
+            : (typeof AdminStore.getFilieres === 'function' ? AdminStore.getFilieres() : []);
+        if (Array.isArray(filieres) && filieres.length > 0) {
+            optFiliereSelect.innerHTML = filieres.map(f =>
+                `<option value="${escapeHtml(f.id)}">${escapeHtml(f.icon || '🧭')} ${escapeHtml(f.label || f.id)}</option>`
+            ).join('');
+        }
+    }
+
+    function syncFiliereGroupVisibility() {
+        if (!optFiliereGroup || !optNiveauSelect) return;
+        const applicable = (typeof AdminStore !== 'undefined' && typeof AdminStore.isFiliereApplicable === 'function')
+            ? AdminStore.isFiliereApplicable(optNiveauSelect.value)
+            : ['2nde', '1ere', 'terminale', 'bts1', 'bts2'].includes(optNiveauSelect.value);
+        optFiliereGroup.hidden = !applicable;
+    }
+
     function updateVolumeMusique(applyLive = true) {
         const disp = document.getElementById('valueMusiqueDisplay');
         if (disp) disp.textContent = volumeMusique.value + '%';
-        if (applyLive && typeof AudioManager !== 'undefined' && typeof AudioManager.setMusicVolume === 'function') {
-            AudioManager.setMusicVolume(volumeMusique.value);
+        if (applyLive) {
+            saveOption('volumeMusique', volumeMusique.value);
+            if (typeof AudioManager !== 'undefined' && typeof AudioManager.setMusicVolume === 'function') {
+                AudioManager.setMusicVolume(volumeMusique.value);
+            }
         }
     }
 
     function updateVolumeEffets(applyLive = true) {
         const disp = document.getElementById('valueEffetsDisplay');
         if (disp) disp.textContent = volumeEffets.value + '%';
-        if (applyLive && typeof AudioManager !== 'undefined' && typeof AudioManager.setSfxVolume === 'function') {
-            AudioManager.setSfxVolume(volumeEffets.value);
+        if (applyLive) {
+            saveOption('volumeEffets', volumeEffets.value);
+            if (typeof AudioManager !== 'undefined' && typeof AudioManager.setSfxVolume === 'function') {
+                AudioManager.setSfxVolume(volumeEffets.value);
+            }
         }
     }
 
@@ -948,6 +1051,10 @@ function initOptions() {
         const defaultSfx = siteCfg && siteCfg.defaultSfxVolume != null ? String(siteCfg.defaultSfxVolume) : '60';
         const defaultSoundOn = !siteCfg || siteCfg.soundEnabledByDefault !== false;
 
+        if (chronoDurLabel && typeof QuizTimer !== 'undefined' && typeof QuizTimer.getConfiguredDuration === 'function') {
+            chronoDurLabel.textContent = QuizTimer.getConfiguredDuration() + 's';
+        }
+
         volumeMusique.value = getOption('volumeMusique') || defaultBgm;
         volumeEffets.value  = getOption('volumeEffets')  || defaultSfx;
         updateVolumeMusique(false);
@@ -971,6 +1078,10 @@ function initOptions() {
         if (optNiveauSelect && typeof DB !== 'undefined' && DB.getNiveau) {
             optNiveauSelect.value = DB.getNiveau() || '6eme';
         }
+        if (optFiliereSelect && typeof DB !== 'undefined' && DB.getFiliere) {
+            optFiliereSelect.value = DB.getFiliere() || 'generale';
+        }
+        syncFiliereGroupVisibility();
 
         if (!sonsActifs.checked) {
             musiqueActive.dataset.prevChecked = getOption('musiqueActive') || 'true';
@@ -1009,13 +1120,20 @@ function initOptions() {
         saveOption('btnPreset', curBtnPreset);
         saveOption('btnColor', curBtnColor);
         if (btnBrightness) saveOption('btnBrightness', String(btnBrightness.value));
-        applyAppearanceSettings();
 
         if (optNiveauSelect && typeof DB !== 'undefined' && DB.setNiveau) {
             DB.setNiveau(optNiveauSelect.value);
-            if (typeof getEffectiveSubjects === 'function') {
-                DASH_SUBJECTS = getEffectiveSubjects(optNiveauSelect.value);
-            }
+        }
+        if (optFiliereSelect && typeof DB !== 'undefined' && DB.setFiliere) {
+            DB.setFiliere(optFiliereSelect.value);
+        }
+        syncFiliereGroupVisibility();
+
+        if (typeof _effectiveSubjectsCache !== 'undefined') _effectiveSubjectsCache.clear();
+        if (typeof getEffectiveSubjects === 'function') {
+            const niv = optNiveauSelect ? optNiveauSelect.value : currentNiveau();
+            const fil = optFiliereSelect ? optFiliereSelect.value : currentFiliere();
+            DASH_SUBJECTS = getEffectiveSubjects(niv, fil);
         }
 
         if (sonsActifs.checked) {
@@ -1025,11 +1143,16 @@ function initOptions() {
             saveOption('musiqueActive', String(musiqueActive.dataset.prevChecked !== 'false'));
             saveOption('effetsActifs', String(effetsActifs.dataset.prevChecked !== 'false'));
         }
+
+        // Application immédiate de TOUS les paramètres visuels et de particules
+        applyAppearanceSettings();
+        applyParticulesSetting();
+        applyEcoModeSetting();
+        applyAnimationsSetting();
     }
 
     function closeOptionsModal() {
-        const modalEl = document.getElementById('modalOptions');
-        if (modalEl) modalEl.hidden = true;
+        if (modalOptionsEl) modalOptionsEl.hidden = true;
         if (_optionsOpenedFromHash) {
             _optionsOpenedFromHash = false;
             const ref = document.referrer || '';
@@ -1038,6 +1161,13 @@ function initOptions() {
             }
         }
     }
+
+    // Exposition globale : garantit une synchro fraîche à chaque ouverture de la modale
+    window._syncOptionsModalUI = chargerOptionsUI;
+    window._openOptionsModal = function () {
+        chargerOptionsUI();
+        if (modalOptionsEl) modalOptionsEl.hidden = false;
+    };
 
     chargerOptionsUI();
 
@@ -1105,7 +1235,10 @@ function initOptions() {
         });
     }
     if (btnBrightness) {
-        btnBrightness.addEventListener('input', updateBtnBrightnessDisplay);
+        btnBrightness.addEventListener('input', () => {
+            updateBtnBrightnessDisplay();
+            saveOption('btnBrightness', String(btnBrightness.value));
+        });
         btnBrightness.addEventListener('change', saveCurrentOptionsLocally);
     }
     if (resetAppearanceBtn) {
@@ -1125,39 +1258,74 @@ function initOptions() {
         });
     }
 
-    /* --- Écouteurs affichage & classe --- */
+    /* --- Écouteurs affichage, classe & filière --- */
     pleinEcran.addEventListener('change', () => {
         if (pleinEcran.checked) {
             const request = document.documentElement.requestFullscreen
                          || document.documentElement.webkitRequestFullscreen
                          || document.documentElement.msRequestFullscreen;
-            if (request) request.call(document.documentElement);
-        } else {
+            if (request) {
+                try { Promise.resolve(request.call(document.documentElement)).catch(() => {}); } catch (_) {}
+            }
+        } else if (document.fullscreenElement) {
             const exit = document.exitFullscreen
                       || document.webkitExitFullscreen
                       || document.msExitFullscreen;
-            if (exit) exit.call(document);
+            if (exit) {
+                try { Promise.resolve(exit.call(document)).catch(() => {}); } catch (_) {}
+            }
         }
         saveCurrentOptionsLocally();
     });
 
-    ecoModeCheckbox.addEventListener('change', () => { saveCurrentOptionsLocally(); applyEcoModeSetting(); });
-    particulesCheckbox.addEventListener('change', () => { saveCurrentOptionsLocally(); applyParticulesSetting(); });
-    if (animationsCheckbox) animationsCheckbox.addEventListener('change', () => { saveCurrentOptionsLocally(); applyAnimationsSetting(); });
+    ecoModeCheckbox.addEventListener('change', saveCurrentOptionsLocally);
+    particulesCheckbox.addEventListener('change', saveCurrentOptionsLocally);
+    if (animationsCheckbox) animationsCheckbox.addEventListener('change', saveCurrentOptionsLocally);
     if (modeChronoCheckbox) modeChronoCheckbox.addEventListener('change', saveCurrentOptionsLocally);
-    if (optNiveauSelect) optNiveauSelect.addEventListener('change', saveCurrentOptionsLocally);
+    if (optNiveauSelect) {
+        optNiveauSelect.addEventListener('change', () => {
+            syncFiliereGroupVisibility();
+            saveCurrentOptionsLocally();
+        });
+    }
+    if (optFiliereSelect) optFiliereSelect.addEventListener('change', saveCurrentOptionsLocally);
 
-    /* --- Boutons Sauvegarder & Retour --- */
+    /* --- Boutons Sauvegarder, Retour & Fermeture rapide --- */
     saveOptionsBtn.addEventListener('click', () => {
         saveCurrentOptionsLocally();
-        showNotification('⚙ Options sauvegardées !');
-        setTimeout(closeOptionsModal, 700);
+        if (typeof AudioManager !== 'undefined' && typeof AudioManager.syncWithOptions === 'function') {
+            AudioManager.syncWithOptions(true);
+        }
+        showNotification('⚙ Options sauvegardées et appliquées !');
+        setTimeout(closeOptionsModal, 600);
     });
 
     if (backButton) {
         backButton.addEventListener('click', () => {
             saveCurrentOptionsLocally();
             closeOptionsModal();
+        });
+    }
+
+    if (closeOptionsX) {
+        closeOptionsX.addEventListener('click', () => {
+            saveCurrentOptionsLocally();
+            closeOptionsModal();
+        });
+    }
+
+    if (modalOptionsEl) {
+        modalOptionsEl.addEventListener('click', (e) => {
+            if (e.target === modalOptionsEl) {
+                saveCurrentOptionsLocally();
+                closeOptionsModal();
+            }
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !modalOptionsEl.hidden) {
+                saveCurrentOptionsLocally();
+                closeOptionsModal();
+            }
         });
     }
 
@@ -1168,22 +1336,36 @@ function initOptions() {
 
 /* ==========================================================================
    6. CÉLÉBRATIONS (confettis)
-   Moteur de confettis Canvas autonome et partagé.
+   Moteur de confettis Canvas autonome, optimisé mobile & respectueux des options.
    ========================================================================== */
 
 /**
  * Moteur de confettis autonome (aucune dépendance externe / CDN) :
- * fonctionne hors-ligne et avec le service worker.
- *   Celebrate.confetti();                  // pluie depuis le haut
- *   Celebrate.burst(element);              // explosion depuis un élément
+ * - Respecte strictement les options Particules, Mode Éco et Animations.
+ * - Densité nettement allégée sur téléphone + plafond dur + anti-doublon (cooldown).
+ *   Celebrate.confetti();                  // célébration calibrée
+ *   Celebrate.burst(element);              // petite explosion sur un bouton
+ *   Celebrate.clear();                     // purge immédiate du canvas
  */
 const Celebrate = (() => {
     const COLORS = ['#ffd166', '#c8a84b', '#6bca82', '#4cc9f0', '#f72585', '#b388ff', '#ff9f43'];
     let canvas = null, ctx = null, particles = [], rafId = null;
+    let lastConfettiAt = 0;
+    const CONFETTI_COOLDOWN_MS = 1800;
 
-    function reducedMotion() {
-        const animSaved = (typeof getOption === 'function') ? getOption('animationsActives') : null;
-        if (animSaved === 'false') return true;
+    function isMobileViewport() {
+        if (typeof window === 'undefined') return false;
+        const narrow = window.innerWidth <= 768;
+        const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+        return narrow || coarse;
+    }
+
+    function particlesBlocked() {
+        if (typeof getOption === 'function') {
+            if (getOption('animationsActives') === 'false') return true;
+            if (getOption('particules') === 'false') return true;
+            if (getOption('ecoMode') === 'true') return true;
+        }
         return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     }
 
@@ -1206,43 +1388,65 @@ const Celebrate = (() => {
     }
 
     function resize() {
-        if (!canvas) return;
-        const dpr = window.devicePixelRatio || 1;
+        if (!canvas || !ctx) return;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
         canvas.width = window.innerWidth * dpr;
         canvas.height = window.innerHeight * dpr;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
+    function clear() {
+        particles = [];
+        if (rafId) {
+            cancelAnimationFrame(rafId);
+            rafId = null;
+        }
+        if (ctx && canvas) {
+            ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        }
+    }
+
     function spawn(x, y, count, spread, power, angle) {
-        for (let i = 0; i < count; i++) {
+        const mobile = isMobileViewport();
+        const maxParticles = mobile ? 36 : 110;
+        const room = Math.max(0, maxParticles - particles.length);
+        const actualCount = Math.min(count, room);
+        if (actualCount <= 0) return;
+
+        for (let i = 0; i < actualCount; i++) {
             const a = angle + (Math.random() - 0.5) * spread;
-            const v = power * (0.5 + Math.random() * 0.7);
+            const v = power * (0.5 + Math.random() * 0.65);
             particles.push({
                 x, y,
                 vx: Math.cos(a) * v,
                 vy: Math.sin(a) * v,
-                w: 6 + Math.random() * 6,
-                h: 4 + Math.random() * 6,
+                w: mobile ? (4.5 + Math.random() * 3.5) : (6 + Math.random() * 5),
+                h: mobile ? (3 + Math.random() * 3.5) : (4 + Math.random() * 5),
                 rot: Math.random() * Math.PI,
-                vr: (Math.random() - 0.5) * 0.3,
+                vr: (Math.random() - 0.5) * 0.28,
                 color: COLORS[(Math.random() * COLORS.length) | 0],
-                shape: Math.random() < 0.3 ? 'circle' : 'rect',
+                shape: Math.random() < 0.35 ? 'circle' : 'rect',
                 life: 0,
-                maxLife: 140 + Math.random() * 80,
+                maxLife: mobile ? (65 + Math.random() * 38) : (105 + Math.random() * 55),
             });
         }
         if (!rafId) rafId = requestAnimationFrame(tick);
     }
 
     function tick() {
+        if (particlesBlocked()) {
+            clear();
+            return;
+        }
         ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-        particles = particles.filter(p => p.life < p.maxLife && p.y < window.innerHeight + 40);
-        particles.forEach(p => {
+        particles = particles.filter(p => p.life < p.maxLife && p.y < window.innerHeight + 36);
+        for (let i = 0; i < particles.length; i++) {
+            const p = particles[i];
             p.life++;
-            p.vy += 0.18;          // gravité
-            p.vx *= 0.985;         // frottement de l'air
+            p.vy += 0.19;
+            p.vx *= 0.985;
             p.vy *= 0.985;
-            p.x += p.vx + Math.sin(p.life / 10) * 0.6; // léger flottement
+            p.x += p.vx + Math.sin(p.life / 10) * 0.45;
             p.y += p.vy;
             p.rot += p.vr;
             ctx.save();
@@ -1256,7 +1460,7 @@ const Celebrate = (() => {
                 ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.rot)));
             }
             ctx.restore();
-        });
+        }
         if (particles.length) {
             rafId = requestAnimationFrame(tick);
         } else {
@@ -1265,25 +1469,44 @@ const Celebrate = (() => {
         }
     }
 
+    function confettiEnabledBySite() {
+        const cfg = (typeof AdminStore !== 'undefined' && typeof AdminStore.getSiteConfig === 'function')
+            ? AdminStore.getSiteConfig()
+            : null;
+        return !cfg || cfg.enableConfetti !== false;
+    }
+
     return {
-        /** Grande célébration : deux canons latéraux + pluie centrale. */
+        /** Célébration calibrée (sobre sur mobile, anti-spam intégré). */
         confetti() {
-            if (reducedMotion()) return;
+            if (particlesBlocked() || !confettiEnabledBySite()) return;
+            const now = Date.now();
+            if (now - lastConfettiAt < CONFETTI_COOLDOWN_MS) return;
+            lastConfettiAt = now;
             ensureCanvas();
             const w = window.innerWidth, h = window.innerHeight;
-            spawn(0, h * 0.75, 70, 0.9, 17, -Math.PI / 3);
-            spawn(w, h * 0.75, 70, 0.9, 17, -Math.PI * 2 / 3);
-            setTimeout(() => spawn(w / 2, h * 0.35, 60, Math.PI * 2, 9, 0), 180);
+            if (isMobileViewport()) {
+                spawn(w * 0.2, h * 0.65, 11, 0.75, 11, -Math.PI / 2.5);
+                spawn(w * 0.8, h * 0.65, 11, 0.75, 11, -Math.PI * 1.5 / 2.5);
+            } else {
+                spawn(0, h * 0.75, 28, 0.85, 15, -Math.PI / 3);
+                spawn(w, h * 0.75, 28, 0.85, 15, -Math.PI * 2 / 3);
+                setTimeout(() => {
+                    if (!particlesBlocked() && confettiEnabledBySite()) spawn(w / 2, h * 0.35, 20, Math.PI * 2, 8, 0);
+                }, 160);
+            }
         },
         /** Petite explosion centrée sur un élément (ex : bouton « Réclamer »). */
         burst(el) {
-            if (reducedMotion()) return;
+            if (particlesBlocked() || !confettiEnabledBySite()) return;
             ensureCanvas();
             const r = el && el.getBoundingClientRect ? el.getBoundingClientRect() : null;
             const x = r ? r.left + r.width / 2 : window.innerWidth / 2;
             const y = r ? r.top + r.height / 2 : window.innerHeight / 2;
-            spawn(x, y, 55, Math.PI * 2, 10, 0);
+            const mobile = isMobileViewport();
+            spawn(x, y, mobile ? 12 : 24, Math.PI * 2, mobile ? 7 : 9, 0);
         },
+        clear,
     };
 })();
 window.Celebrate = Celebrate;
@@ -1303,7 +1526,7 @@ if (typeof window !== 'undefined' && !window.DailyQuests) {
  * Sort immédiatement si l'en-tête .map-header n'existe pas (pas sur cette page).
  *
  * FONCTIONNEMENT GÉNÉRAL :
- * - La matière et l'icône sont passées dans l'URL (ex: map.html?matiere=Maths&icon=maths.png)
+ * - La matière et l'icône sont passées dans l'URL (ex: map.html?matiere=Mathématiques&icon=Image/ile/maths.webp)
  * - La progression est chargée de façon asynchrone via DB.loadProgress()
  * - Les 6 boutons de niveau (dots) sont mis à jour visuellement selon la progression
  * - Un clic sur un dot ouvre une modale pour simuler la complétion d'un niveau
@@ -1382,8 +1605,126 @@ function getLessonHint(lesson, subjectId) {
     if (subj.includes('philo')) {
         return "Réfléchis au sens étymologique des concepts et aux grandes thèses de la philosophie.";
     }
+    if (subj.includes('espagnol')) {
+        return "Vérifie le genre (el / la), la conjugaison (ser vs estar) et le temps demandé en espagnol.";
+    }
+    if (subj.includes('arts')) {
+        return "Pense aux techniques artistiques (couleurs primaires/complémentaires, perspective) et aux grands mouvements culturels.";
+    }
+    if (subj.includes('hggsp')) {
+        return "Relie l'événement historique, l'enjeu géopolitique (frontières, puissances, traités) et les acteurs internationaux.";
+    }
+    if (subj === 'si') {
+        return "Pense à la chaîne d'énergie (alimenter → distribuer → convertir → transmettre) et aux lois de mécanique (P = C × ω, η = Pu / Pa).";
+    }
+    if (subj.includes('msgn')) {
+        return "Distingue l'entreprise (but lucratif), l'organisation publique et l'association, ainsi que les indicateurs (CA, VA, BFR, SWOT).";
+    }
+    if (subj.includes('droit_eco')) {
+        return "En droit, identifie les parties, le contrat ou la juridiction ; en économie, pense au PIB, à l'inflation et aux politiques budgétaire/monétaire.";
+    }
+    if (subj.includes('mercatique')) {
+        return "Rappelle-toi les 4P du marketing mix (Produit, Prix, Distribution, Communication) et les formules de marge ou de taux d'évolution.";
+    }
+    if (subj === 'i2d') {
+        return "Pense au développement durable (ACV, écoconception), à l'efficacité énergétique (E = P × t) et aux propriétés mécaniques/thermiques.";
+    }
+    if (subj === 'sin') {
+        return "Vérifie les bases numériques (binaire, hexadécimal), la logique booléenne (ET, OU, NON) et la résolution des CAN (2ⁿ niveaux).";
+    }
+    if (subj.includes('cyber')) {
+        return "Pense à la triade CIA (Confidentialité, Intégrité, Disponibilité), au chiffrement, au hachage et aux bonnes pratiques ANSSI.";
+    }
+    if (subj.includes('reseaux')) {
+        return "Repère la couche du modèle OSI (L2 = MAC/Switch, L3 = IP/Routeur, L4 = TCP/UDP) et les masques CIDR (/24 = 254 hôtes).";
+    }
+    if (subj.includes('electronique')) {
+        return "Applique les lois d'électricité (U = R·I, diviseur de tension, loi des mailles/nœuds) et les caractéristiques des diodes, transistors et PWM.";
+    }
+    if (subj.includes('stss')) {
+        return "Appuie-toi sur les déterminants de santé, la protection sociale (Sécurité sociale, ARS, PMI) et les démarches de prévention.";
+    }
+    if (subj.includes('nsi')) {
+        return "Vérifie la structure de données (pile LIFO, file FIFO, arbre, graphe), le binaire ou la complexité algorithmique.";
+    }
+    if (subj.includes('ses')) {
+        return "Distingue l'analyse économique (offre/demande, PIB, monnaie) de l'analyse sociologique (socialisation, stratification).";
+    }
 
     return "Lis attentivement l'énoncé et procède par élimination des réponses manifestement fausses.";
+}
+
+/**
+ * Affiche une explication claire et instantanée de la différence entre
+ * 🔥 Série (victoires consécutives) et ⚡ Énergie Combo (multiplicateur de points/XP).
+ */
+window._showStatHelp = function (kind) {
+    const streakData = (typeof DB !== 'undefined' && DB.getStreakData) ? DB.getStreakData() : { count: 0, combo: 0 };
+    const streakCount = streakData.count || 0;
+    const comboCount = streakData.combo || 0;
+    const mult = (typeof DB !== 'undefined' && DB.getMultiplier) ? DB.getMultiplier(comboCount) : 1.0;
+    if (kind === 'streak') {
+        showNotification(`🔥 SÉRIE (${streakCount}) : nombre de niveaux réussis d'affilée sans quitter ni abandonner.`);
+    } else {
+        showNotification(`⚡ ÉNERGIE COMBO (x${mult.toFixed(1)}, ${comboCount} justes) : augmente ton multiplicateur d'XP et de score à chaque bonne réponse consécutive !`);
+    }
+};
+
+/**
+ * Génère deux pastilles distinctes et sans ambiguïté :
+ * - 🔥 Série (niveaux réussis d'affilée — couleur feu)
+ * - ⚡ Énergie / Combo (multiplicateur d'XP & score — couleur électrique)
+ */
+function renderStreakAndComboPillsHtml(streakData, { compact = false } = {}) {
+    const data = streakData || { count: 0, combo: 0 };
+    const streakCount = data.count || 0;
+    const comboCount = data.combo || 0;
+    const multiplier = (typeof DB !== 'undefined' && DB.getMultiplier) ? DB.getMultiplier(comboCount) : 1.0;
+    const streakHot = streakCount >= 2;
+    const comboLit = comboCount >= 2 || multiplier > 1.0;
+
+    return `<div class="dash-stats-pills ${compact ? 'is-compact' : ''}">
+        <button type="button" class="dash-streak-pill ${streakHot ? 'is-hot' : ''}" onclick="window._showStatHelp('streak')" title="🔥 Série : ${streakCount} niveau${streakCount > 1 ? 'x' : ''} réussi${streakCount > 1 ? 's' : ''} d'affilée (clic pour info)" aria-label="Série de ${streakCount} victoires">
+            <span class="dash-pill-icon" aria-hidden="true">🔥</span>
+            <span class="dash-streak-count">${streakCount}</span>
+            <span class="dash-pill-label">Série</span>
+        </button>
+        <button type="button" class="dash-combo-pill ${comboLit ? 'is-lit' : ''}" onclick="window._showStatHelp('combo')" title="⚡ Énergie Combo : ${comboCount} bonne${comboCount > 1 ? 's' : ''} réponse${comboCount > 1 ? 's' : ''} de suite → Multiplicateur x${multiplier.toFixed(1)} XP &amp; score" aria-label="Énergie Combo multiplicateur x${multiplier.toFixed(1)}">
+            <span class="dash-pill-icon" aria-hidden="true">⚡</span>
+            <span class="dash-combo-val">x${multiplier.toFixed(1)}</span>
+            <span class="dash-pill-label">Combo</span>
+        </button>
+    </div>`;
+}
+
+/**
+ * Barre de combo dans une modale de quiz :
+ * ⚡ est TOUJOURS réservé à l'Énergie / Multiplicateur de Combo ;
+ * 🔥 est TOUJOURS réservé au rappel de la Série de victoires.
+ */
+function renderQuizComboBarHtml(streakData) {
+    const data = streakData || { count: 0, combo: 0 };
+    const streakCount = data.count || 0;
+    const comboCount = data.combo || 0;
+    const multiplier = (typeof DB !== 'undefined' && DB.getMultiplier) ? DB.getMultiplier(comboCount) : 1.0;
+    const tierName = (typeof window.comboTierName === 'function') ? window.comboTierName(comboCount) : '';
+    const streakMini = streakCount > 0
+        ? `<span class="dash-quiz-streak-mini" title="🔥 Série actuelle : ${streakCount} victoires d'affilée">🔥 ${streakCount}</span>`
+        : '';
+
+    return `<div class="dash-quiz-combo-bar ${comboCount >= 2 ? 'is-lit' : ''}">
+        <div class="dash-combo-left">
+            <span class="dash-combo-bolt" aria-hidden="true">⚡</span>
+            <div>
+                <div class="dash-combo-txt">Énergie Combo : <b>${comboCount}</b></div>
+                <div class="dash-combo-subtitle">${escapeHtml(tierName)}</div>
+            </div>
+        </div>
+        <div class="dash-combo-right">
+            ${streakMini}
+            <div class="dash-combo-mult-badge" title="Multiplicateur appliqué à l'XP et au score">⚡ <b>x${multiplier.toFixed(1)}</b></div>
+        </div>
+    </div>`;
 }
 
 window._toggleQuizHint = function(btn) {
@@ -1508,9 +1849,12 @@ function initMap() {
         'Géographie': 'geo',
         'SVT': 'svt',
         'Anglais': 'anglais',
+        'Espagnol': 'espagnol',
         'Physique': 'physique',
         'Chimie': 'chimie',
         'Technologie': 'techno',
+        'Arts & Musique': 'arts',
+        'Arts': 'arts',
         'Philosophie': 'philo',
         'Philo': 'philo',
         'EMC': 'emc',
@@ -1518,21 +1862,48 @@ function initMap() {
         'NSI': 'nsi',
         'SES (Économie)': 'ses',
         'SES': 'ses',
+        'HGGSP (Géopolitique)': 'hggsp',
+        'HGGSP': 'hggsp',
+        "Sciences de l'Ingénieur": 'si',
+        'SI': 'si',
+        'Management & Gestion': 'msgn',
+        'MSGN': 'msgn',
+        'Droit & Économie': 'droit_eco',
+        'Mercatique (Marketing)': 'mercatique',
+        'Mercatique': 'mercatique',
+        'I2D (Innovation & Éco)': 'i2d',
+        'I2D': 'i2d',
+        'SIN (Info & Numérique)': 'sin',
+        'SIN': 'sin',
+        'Cybersécurité': 'cybersecurite',
+        'Réseaux & Systèmes': 'reseaux',
+        'Électronique & Systèmes': 'electronique',
+        'STSS (Santé & Social)': 'stss',
+        'STSS': 'stss',
     };
 
     const urlParams = new URLSearchParams(window.location.search);
     let subject = urlParams.get('matiere');
     let icon    = urlParams.get('icon');
 
-    const niveauActuel = (typeof DB !== 'undefined' && DB.getNiveau) ? (DB.getNiveau() || '6eme') : '6eme';
+    const niveauActuel = currentNiveau();
+    const filiereActuelle = currentFiliere();
     const niveauLabel = (typeof AdminStore !== 'undefined' && typeof AdminStore.levelLabel === 'function')
         ? AdminStore.levelLabel(niveauActuel)
         : niveauActuel;
+    const isFiliereUsed = (typeof AdminStore !== 'undefined' && typeof AdminStore.isFiliereApplicable === 'function')
+        ? AdminStore.isFiliereApplicable(niveauActuel)
+        : false;
+    const filiereObj = (isFiliereUsed && typeof AdminStore !== 'undefined' && typeof AdminStore.getFiliere === 'function')
+        ? AdminStore.getFiliere(filiereActuelle)
+        : null;
 
-    // Affiche la classe en lecture seule dans l'en-tête (aucun changement de classe en exercice)
+    // Affiche la classe (et la filière au lycée/BTS) en lecture seule dans l'en-tête
     const mapGradeBadge = document.getElementById('mapGradeBadge');
     if (mapGradeBadge) {
-        mapGradeBadge.textContent = '🎓 ' + niveauLabel;
+        mapGradeBadge.textContent = filiereObj
+            ? `🎓 ${niveauLabel} · ${filiereObj.shortLabel || filiereObj.label}`
+            : `🎓 ${niveauLabel}`;
     }
 
     /** Transition dynamique d'expulsion vers le tableau de bord si la matière est hors programme. */
@@ -1551,8 +1922,8 @@ function initMap() {
         }
     }
 
-    // Rafraîchit la liste des matières autorisées pour la classe courante
-    DASH_SUBJECTS = getEffectiveSubjects(niveauActuel);
+    // Rafraîchit la liste des matières autorisées pour la classe et la filière courantes
+    DASH_SUBJECTS = getEffectiveSubjects(niveauActuel, filiereActuelle);
 
     if (!subject) {
         const defaultSubject = (DASH_SUBJECTS && DASH_SUBJECTS[0]) ? DASH_SUBJECTS[0] : null;
@@ -1565,23 +1936,24 @@ function initMap() {
         }
     }
 
-    // Recherche stricte dans les matières AUTORISÉES pour cette classe
+    // Recherche stricte dans les matières AUTORISÉES pour cette classe et cette filière
     const requestedId = MATIERE_TO_SUBJECT_ID[subject] || null;
     let carteSubject = DASH_SUBJECTS.find(s => (requestedId && s.id === requestedId) || s.name === subject);
 
     if (!carteSubject) {
-        // Vérifie si la matière existe dans le catalogue complet mais est interdite pour la classe actuelle
+        // Vérifie si la matière existe dans le catalogue complet mais est interdite pour la classe/filière actuelle
         const allRaw = (typeof AdminStore !== 'undefined' && typeof AdminStore.applyOverrides === 'function')
             ? AdminStore.applyOverrides(RAW_DASH_SUBJECTS)
             : RAW_DASH_SUBJECTS;
         const matchedRaw = allRaw.find(s => (requestedId && s.id === requestedId) || s.name === subject);
         if (matchedRaw) {
             const allowed = (typeof AdminStore !== 'undefined' && typeof AdminStore.isSubjectAllowedForNiveau === 'function')
-                ? AdminStore.isSubjectAllowedForNiveau(matchedRaw, niveauActuel)
+                ? AdminStore.isSubjectAllowedForNiveau(matchedRaw, niveauActuel, filiereActuelle)
                 : false;
             if (!allowed) {
+                const trackSuffix = filiereObj ? ` (${filiereObj.shortLabel || filiereObj.label})` : '';
                 triggerExpulsionToDashboard(
-                    `La matière « ${matchedRaw.name} » ne fait pas partie du programme de ${niveauLabel}. Retour dynamique vers le tableau de bord…`
+                    `La matière « ${matchedRaw.name} » ne fait pas partie du programme de ${niveauLabel}${trackSuffix}. Retour dynamique vers le tableau de bord…`
                 );
                 return;
             }
@@ -1591,22 +1963,23 @@ function initMap() {
         }
     }
 
-    // Surveillance dynamique : si la classe change ailleurs (Options ou autre onglet),
+    // Surveillance dynamique : si la classe ou la filière change ailleurs (Options ou autre onglet),
     // on expulse proprement si la matière n'est plus autorisée (ou on actualise si autorisée).
     function verifyGradeConsistency() {
-        const latestNiv = (typeof DB !== 'undefined' && DB.getNiveau) ? (DB.getNiveau() || '6eme') : '6eme';
-        if (latestNiv === niveauActuel) return;
+        const latestNiv = currentNiveau();
+        const latestFil = currentFiliere();
+        if (latestNiv === niveauActuel && latestFil === filiereActuelle) return;
         const allRaw = (typeof AdminStore !== 'undefined' && typeof AdminStore.applyOverrides === 'function')
             ? AdminStore.applyOverrides(RAW_DASH_SUBJECTS)
             : RAW_DASH_SUBJECTS;
         const rawSub = carteSubject ? allRaw.find(s => s.id === carteSubject.id) : null;
         const stillAllowed = rawSub && (typeof AdminStore !== 'undefined' && typeof AdminStore.isSubjectAllowedForNiveau === 'function')
-            ? AdminStore.isSubjectAllowedForNiveau(rawSub, latestNiv)
+            ? AdminStore.isSubjectAllowedForNiveau(rawSub, latestNiv, latestFil)
             : false;
         if (!stillAllowed) {
             const newLbl = (typeof AdminStore !== 'undefined' && AdminStore.levelLabel) ? AdminStore.levelLabel(latestNiv) : latestNiv;
             triggerExpulsionToDashboard(
-                `Ta classe a changé pour ${newLbl} : cette matière n'y est pas enseignée. Retour au tableau de bord…`
+                `Ton parcours a changé (${newLbl}) : cette matière n'y est plus au programme. Retour au tableau de bord…`
             );
         } else {
             window.location.reload();
@@ -1614,7 +1987,7 @@ function initMap() {
     }
     window.addEventListener('pageshow', verifyGradeConsistency);
     window.addEventListener('storage', (e) => {
-        if (e.key && (e.key === 'eduquest_niveau' || e.key.startsWith('eduquest_niveau_'))) {
+        if (e.key && (e.key === 'eduquest_niveau' || e.key.startsWith('eduquest_niveau_') || e.key === 'eduquest_filiere' || e.key.startsWith('eduquest_filiere_'))) {
             verifyGradeConsistency();
         }
     });
@@ -1675,26 +2048,14 @@ function initMap() {
         if (!headerRight) return;
         let streakEl = document.getElementById('mapHeaderStreakPill');
         const streakData = (typeof DB !== 'undefined' && DB.getStreakData) ? DB.getStreakData() : { count: 0, combo: 0 };
-        const streakCount = streakData.count || 0;
-        const comboCount = streakData.combo || 0;
-        const multiplier = (typeof DB !== 'undefined' && DB.getMultiplier) ? DB.getMultiplier(comboCount) : 1.0;
-        const isHot = streakCount >= 2 || comboCount >= 2;
-
-        const html = `<div class="dash-streak-pill ${isHot ? 'is-hot' : ''}" title="Série de victoires : ${streakCount} · Combo : x${comboCount}">
-            <span class="dash-streak-flame">${isHot ? '🔥' : '⚡'}</span>
-            <span class="dash-streak-count">${streakCount}</span>
-            <span class="dash-streak-label">SÉRIE</span>
-            ${multiplier > 1.0 ? `<span class="dash-combo-tag">x${multiplier}</span>` : ''}
-        </div>`;
 
         if (!streakEl) {
             streakEl = document.createElement('div');
             streakEl.id = 'mapHeaderStreakPill';
-            streakEl.style.display = 'inline-flex';
-            streakEl.style.alignItems = 'center';
+            streakEl.className = 'map-header-stats-slot';
             headerRight.insertBefore(streakEl, headerRight.firstChild);
         }
-        streakEl.innerHTML = html;
+        streakEl.innerHTML = renderStreakAndComboPillsHtml(streakData, { compact: true });
     }
     renderMapHeaderStreak();
 
@@ -2343,11 +2704,10 @@ function initMap() {
             metaEl.innerHTML = renderQuizMetaStripHtml(currentAttempt);
         }
 
-        // Barre visuelle de combo et multiplicateur
+        // Barre visuelle d'Énergie Combo (⚡) et rappel Série (🔥)
         const streakData = (typeof DB !== 'undefined' && DB.getStreakData) ? DB.getStreakData() : { count: 0, combo: 0 };
         const comboCount = streakData.combo || 0;
         const multiplier = (typeof DB !== 'undefined' && DB.getMultiplier) ? DB.getMultiplier(comboCount) : 1.0;
-        const tierName = (typeof window.comboTierName === 'function') ? window.comboTierName(comboCount) : '';
 
         let comboBarEl = document.getElementById('map-combo-bar-container');
         if (!comboBarEl) {
@@ -2355,17 +2715,7 @@ function initMap() {
             comboBarEl.id = 'map-combo-bar-container';
             questionEl.parentNode.insertBefore(comboBarEl, questionEl);
         }
-        comboBarEl.className = `dash-quiz-combo-bar ${comboCount >= 2 ? 'is-lit' : ''}`;
-        comboBarEl.innerHTML = `
-            <div class="dash-combo-left">
-                <span class="dash-streak-flame">${comboCount >= 2 ? '🔥' : '⚡'}</span>
-                <div>
-                    <div class="dash-combo-txt">Combo : <b>${comboCount}</b></div>
-                    <div class="dash-combo-subtitle">${tierName}</div>
-                </div>
-            </div>
-            <div class="dash-combo-mult-badge">Bonus <b>x${multiplier.toFixed(1)}</b></div>
-        `;
+        comboBarEl.innerHTML = renderQuizComboBarHtml(streakData);
 
         // Barre de chronomètre unifiée (créée / mise à jour proprement à chaque exercice)
         if (chronoEnabled && !answered && !checking) {
@@ -2445,9 +2795,6 @@ function initMap() {
 
             if (isCorrect) {
                 const starsNow = starsFromAttempts(currentAttempt.attempts, currentAttempt.usedShield);
-                if (starsNow === 3) {
-                    Celebrate.confetti();
-                }
                 actionsEl.innerHTML = `<button class="dash-btn-primary" id="modal-quiz-continue">Continuer (${'⭐'.repeat(starsNow)})</button>`;
                 document.getElementById('modal-quiz-continue').addEventListener('click', () => {
                     const res = unlockNextAndSave(starsNow, currentAttempt);
@@ -2645,63 +2992,63 @@ const DASH_SKINS = [
 ];
 
 const RAW_DASH_SUBJECTS = [
-    { id: "maths", name: "Mathématiques", icon: "∑", lessons: [
+    { id: "maths", name: "Mathématiques", icon: "∑", island: "Image/ile/maths.webp", lessons: [
         { title: "Les fractions", q: "Combien font 1/2 + 1/4 ?", opts: ["3/6", "1/6", "3/4", "2/6"], correct: 2, exp: "Au même dénominateur (4) : 2/4 + 1/4 = 3/4." },
         { title: "Le théorème de Pythagore", q: "Dans un triangle rectangle de côtés 3 et 4, quelle est la longueur de l'hypoténuse ?", opts: ["4,5", "7", "6", "5"], correct: 3, exp: "√(3² + 4²) = √25 = 5." },
         { title: "Équations du 1er degré", q: "Résous 2x + 3 = 11. Que vaut x ?", opts: ["3", "5,5", "7", "4"], correct: 3, exp: "2x = 8, donc x = 4." },
         { title: "Les probabilités", q: "On lance un dé à 6 faces. Quelle est la probabilité d'obtenir un nombre pair ?", opts: ["1/2", "1/3", "2/3", "1/6"], correct: 0, exp: "3 issues favorables (2,4,6) sur 6 : 3/6 = 1/2." },
         { type: "drag_and_drop", title: "Calcul mental", q: "Associe chaque opération à son résultat.", items: ["7 × 8", "144 ÷ 12", "9²", "√81"], targets: ["56", "12", "81", "9"], pairs: { "7 × 8": "56", "144 ÷ 12": "12", "9²": "81", "√81": "9" }, exp: "7 × 8 = 56, 144 ÷ 12 = 12, 9² = 81, √81 = 9." },
     ]},
-    { id: "francais", name: "Français", icon: "Aa", lessons: [
+    { id: "francais", name: "Français", icon: "Aa", island: "Image/ile/francais.webp", lessons: [
         { title: "Les classes grammaticales", q: "Dans « Le chat noir dort », quel mot est un adjectif ?", opts: ["noir", "le", "chat", "dort"], correct: 0, exp: "« Noir » qualifie le nom « chat »." },
         { title: "Le conditionnel", q: "Quelle est la terminaison du conditionnel présent à la 1ère personne du singulier pour « aimer » ?", opts: ["aimerais", "aimais", "aimerai", "aime"], correct: 0, exp: "Radical du futur + terminaisons de l'imparfait : j'aimerais." },
         { title: "Les figures de style", q: "« Il pleut des cordes » est une :", opts: ["comparaison", "anaphore", "métaphore", "litote"], correct: 2, exp: "L'image remplace directement la réalité, sans outil de comparaison : c'est une métaphore." },
         { type: "texte_a_choix", title: "L'argumentation", q: "Complète la phrase avec les connecteurs logiques appropriés.", textWithBlanks: "Il pleuvait des cordes, ___ nous sommes sortis ___ nous avions promis d'aider Marc.", choices: [["mais", "donc", "ainsi", "alors"], ["car", "pourtant", "cependant", "en effet"]], blanks: [["mais"], ["car"]], exp: "« Mais » marque l'opposition et « car » introduit la cause." },
         { type: "texte_a_trous", title: "Accord du participe passé", q: "Complète la règle.", textWithBlanks: "Avec l'auxiliaire être, le participe passé s'accorde avec le ___ ; avec avoir, il ne s'accorde en général pas avec le ___.", blanks: [["sujet"], ["sujet"]], distractors: ["verbe", "complément", "adjectif"], exp: "Être → accord avec le sujet ; avoir → pas d'accord avec le sujet (sauf COD placé avant, hors programme ici)." },
     ]},
-    { id: "physique", name: "Physique", icon: "⚛", lessons: [
+    { id: "physique", name: "Physique", icon: "⚛", island: "Image/ile/physique.webp", lessons: [
         { title: "Les états de la matière", q: "Comment appelle-t-on le passage direct de l'état solide à l'état gazeux ?", opts: ["condensation", "fusion", "évaporation", "sublimation"], correct: 3, exp: "La sublimation évite l'étape liquide." },
         { title: "La tension électrique", q: "Quelle unité mesure la tension électrique ?", opts: ["le volt", "l'ohm", "le watt", "l'ampère"], correct: 0, exp: "Le volt (V) mesure la tension." },
         { title: "Les atomes", q: "Combien de protons possède un atome d'hydrogène ?", opts: ["0", "2", "1", "8"], correct: 2, exp: "L'hydrogène a le numéro atomique 1." },
         { title: "Les mélanges", q: "L'eau salée est un exemple de :", opts: ["mélange homogène", "solide", "corps pur", "mélange hétérogène"], correct: 0, exp: "Le sel est totalement dissous : on ne distingue plus les constituants." },
         { type: "vrai_faux", title: "La lumière", q: "La lumière se déplace plus vite dans l'eau que dans le vide.", correct: false, exp: "Faux : la lumière est plus rapide dans le vide (≈300 000 km/s) que dans l'eau, où elle ralentit." },
     ]},
-    { id: "chimie", name: "Chimie", icon: "🧪", lessons: [
+    { id: "chimie", name: "Chimie", icon: "🧪", island: "Image/ile/chimie.svg", lessons: [
         { title: "Les états de l'eau", q: "Comment appelle-t-on le passage direct de l'état solide à l'état gazeux ?", opts: ["la sublimation", "la fusion", "la condensation", "la liquéfaction"], correct: 0, exp: "La sublimation transforme la glace directement en vapeur, sans passer par l'état liquide." },
         { title: "Les atomes", q: "Que représente le numéro atomique Z d'un élément ?", opts: ["le nombre de protons du noyau", "le nombre de neutrons", "la masse totale de l'atome", "le nombre d'électrons perdus"], correct: 0, exp: "Z compte les protons : c'est lui qui définit l'élément chimique." },
         { type: "vrai_faux", title: "Les acides", q: "Une solution acide a un pH inférieur à 7.", correct: true, exp: "Vrai : à 25 °C, pH < 7 = acide, pH = 7 = neutre, pH > 7 = basique." },
         { type: "texte_a_choix", title: "La neutralisation", q: "Complète le bilan de la réaction.", textWithBlanks: "La réaction entre un acide et une base produit un ___ et de l'___.", choices: [["sel", "gaz", "métal", "précipité"], ["eau", "alcool", "huile", "air"]], blanks: [["sel"], ["eau"]], exp: "Acide + Base → Sel + Eau : c'est la réaction de neutralisation acido-basique." },
         { type: "texte_a_trous", title: "La molécule d'eau", q: "Complète la formule de la molécule d'eau.", textWithBlanks: "La formule de l'eau est ___₂___ : deux atomes d'hydrogène pour un atome d'oxygène.", blanks: [["H"], ["O"]], distractors: ["C", "N", "Fe"], exp: "H₂O : deux hydrogènes (H) et un oxygène (O)." },
     ]},
-    { id: "svt", name: "SVT", icon: "❦", lessons: [
+    { id: "svt", name: "SVT", icon: "❦", island: "Image/ile/svt.webp", lessons: [
         { title: "La photosynthèse", q: "Quel gaz les plantes absorbent-elles lors de la photosynthèse ?", opts: ["le CO₂", "l'O₂", "l'hydrogène", "l'azote"], correct: 0, exp: "Le CO₂ est transformé en matière organique grâce à la lumière." },
         { title: "Le système digestif", q: "Où débute la digestion des glucides ?", opts: ["dans la bouche", "dans l'estomac", "dans le foie", "dans l'intestin grêle"], correct: 0, exp: "La salive contient une enzyme qui amorce la digestion de l'amidon." },
         { title: "La génétique", q: "L'ADN se trouve principalement dans :", opts: ["le cytoplasme", "la membrane", "le noyau de la cellule", "les ribosomes"], correct: 2, exp: "Le noyau protège et organise le matériel génétique." },
         { title: "Les écosystèmes", q: "Un organisme qui se nourrit exclusivement de végétaux est un :", opts: ["décomposeur", "carnivore", "herbivore", "omnivore"], correct: 2, exp: "Par définition, un herbivore ne consomme que des végétaux." },
         { type: "reponse_courte", title: "Le cœur", q: "Combien de cavités possède le cœur humain ?", accepted: ["4", "quatre"], exp: "Le cœur a 4 cavités : 2 oreillettes et 2 ventricules." },
     ]},
-    { id: "techno", name: "Technologie", icon: "⚙", band: "college", allowedNiveaux: ["6eme", "5eme", "4eme", "3eme"], lessons: [
+    { id: "techno", name: "Technologie", icon: "⚙", band: "college", allowedNiveaux: ["6eme", "5eme", "4eme", "3eme"], island: "Image/ile/technologie.webp", lessons: [
         { type: "texte_a_choix", title: "Les algorithmes", q: "Choisis les bons termes pour compléter la définition.", textWithBlanks: "Pour répéter des instructions tant qu'une condition est vraie, on utilise une boucle ___, et pour faire un choix, une condition ___.", choices: [["tant que", "pour", "infinie"], ["si", "sinon", "alors"]], blanks: [["tant que"], ["si"]], exp: "« Tant que » (while) et « si » (if) sont des structures fondamentales en programmation." },
         { title: "Les capteurs", q: "Un capteur de température mesure :", opts: ["la pression", "la chaleur ambiante", "le son", "la lumière"], correct: 1, exp: "C'est sa fonction première : convertir une température en signal exploitable." },
         { title: "Les matériaux", q: "Le PLA est un matériau souvent utilisé en :", opts: ["chauffage", "soudure", "impression 3D", "isolation électrique"], correct: 2, exp: "Le PLA est un plastique biodégradable très utilisé en fabrication additive." },
         { title: "Les réseaux", q: "Le Wi-Fi fait référence à :", opts: ["un câble réseau", "un type de processeur", "une connexion sans fil", "un logiciel"], correct: 2, exp: "Le Wi-Fi permet une connexion réseau sans câble." },
         { type: "drag_and_drop", title: "Composants électroniques", q: "Associe chaque composant à son rôle.", items: ["Résistance", "LED", "Capteur"], targets: ["Limite le courant", "Émet de la lumière", "Mesure une grandeur physique"], pairs: { "Résistance": "Limite le courant", LED: "Émet de la lumière", Capteur: "Mesure une grandeur physique" }, exp: "Chaque composant a une fonction précise dans un circuit." },
     ]},
-    { id: "anglais", name: "Anglais", icon: "En", lessons: [
+    { id: "anglais", name: "Anglais", icon: "En", island: "Image/ile/anglais.webp", lessons: [
         { title: "Present Perfect", q: "Choose the correct form: 'I ___ never been to London.'", opts: ["have", "having", "has", "had"], correct: 0, exp: "Subject 'I' + present perfect → 'have never been'." },
         { title: "Vocabulaire du quotidien", q: "What does 'to look forward to' mean?", opts: ["chercher quelque chose", "attendre avec impatience", "regarder devant soi", "avancer"], correct: 1, exp: "Cette expression exprime une attente positive d'un événement." },
         { title: "Comparatives", q: "'This book is ___ than the other one.'", opts: ["interesting", "more interesting", "most interesting", "interestinger"], correct: 1, exp: "Les adjectifs longs forment leur comparatif avec 'more'." },
         { title: "Modal verbs", q: "Which modal expresses obligation?", opts: ["must", "could", "would", "might"], correct: 0, exp: "'Must' exprime une obligation forte." },
         { type: "texte_a_trous", title: "Simple past", q: "Complète la phrase.", textWithBlanks: "Yesterday, she ___ (go) to the cinema and ___ (watch) a great film.", blanks: [["went"], ["watched"]], distractors: ["gone", "goes", "watches", "watching"], exp: "'Go' est irrégulier (went) ; 'watch' est régulier (+ed)." },
     ]},
-    { id: "histoire", name: "Histoire", icon: "⌂", lessons: [
+    { id: "histoire", name: "Histoire", icon: "⌂", island: "Image/ile/histoire.webp", lessons: [
         { title: "La Révolution française", q: "En quelle année la Révolution française a-t-elle débuté ?", opts: ["1804", "1715", "1848", "1789"], correct: 3, exp: "La prise de la Bastille a lieu le 14 juillet 1789." },
         { title: "La Première Guerre mondiale", q: "La Première Guerre mondiale se termine en :", opts: ["1920", "1918", "1945", "1914"], correct: 1, exp: "L'armistice est signé le 11 novembre 1918." },
         { title: "L'Empire romain", q: "Quelle ville était la capitale de l'Empire romain ?", opts: ["Carthage", "Byzance", "Rome", "Athènes"], correct: 2, exp: "Rome est le centre politique de l'Empire jusqu'à sa scission." },
         { title: "La décolonisation", q: "L'indépendance de l'Algérie a eu lieu en :", opts: ["1970", "1962", "1958", "1954"], correct: 1, exp: "Les accords d'Évian entérinent l'indépendance en 1962." },
         { type: "vrai_faux", title: "Napoléon", q: "Napoléon Bonaparte est devenu empereur des Français en 1804.", correct: true, exp: "Vrai : il est sacré empereur le 2 décembre 1804." },
     ]},
-    { id: "geo", name: "Géographie", icon: "⊕", lessons: [
+    { id: "geo", name: "Géographie", icon: "⊕", island: "Image/ile/geo.svg", lessons: [
         { title: "Les fuseaux horaires", q: "Combien de fuseaux horaires existe-t-il sur Terre ?", opts: ["12", "20", "24", "30"], correct: 2, exp: "La Terre est divisée en 24 fuseaux d'environ 15° chacun." },
         { title: "L'urbanisation", q: "Une mégapole compte généralement plus de :", opts: ["100 millions d'habitants", "500 000 habitants", "1 million d'habitants", "10 millions d'habitants"], correct: 3, exp: "Le seuil communément retenu pour une mégapole est 10 millions d'habitants." },
         { title: "Le climat", q: "Le climat équatorial se caractérise par :", opts: ["tempéré", "froid et sec", "aride", "chaud et humide toute l'année"], correct: 3, exp: "Proche de l'équateur, températures et précipitations restent élevées toute l'année." },
@@ -2722,19 +3069,110 @@ const RAW_DASH_SUBJECTS = [
         { type: "vrai_faux", title: "L'éthique et la morale", q: "Pour Emmanuel Kant, un acte moral doit être guidé par le devoir et l'impératif catégorique, sans rechercher son propre intérêt.", correct: true, exp: "Vrai : la morale déontologique kantienne repose sur le devoir désintéressé." },
         { type: "texte_a_trous", title: "Le contrat social", q: "Complète la citation de Jean-Jacques Rousseau.", textWithBlanks: "L'homme est né ___ et partout il est dans les ___.", blanks: [["libre"], ["fers"]], distractors: ["seul", "sage", "liens", "chaînes"], exp: "« L'homme est né libre et partout il est dans les fers » (Du contrat social, 1762)." },
     ]},
-    { id: "nsi", name: "NSI & Numérique", icon: "Image/ile/nsi.svg", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale"], island: "Image/ile/nsi.svg", lessons: [
+    { id: "nsi", name: "NSI & Numérique", icon: "Image/ile/nsi.svg", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["generale", "nsi_spe", "sti2d", "ciel"], island: "Image/ile/nsi.svg", lessons: [
         { title: "Binaire et Bits", q: "Quelle est la valeur décimale de l'octet binaire 00001010 ?", opts: ["8", "10", "12", "16"], correct: 1, exp: "En binaire : 8 + 2 = 10 (positions 2³ et 2¹)." },
         { title: "Algorithmique Python", q: "En Python, que renvoie l'expression [x * 2 for x in [1, 2, 3]] ?", opts: ["[1, 2, 3]", "[2, 4, 6]", "[2, 2, 2]", "Error"], correct: 1, exp: "C'est une compréhension de liste qui multiplie chaque élément par 2 : [2, 4, 6]." },
         { type: "vrai_faux", title: "Complexité algorithmique", q: "La recherche dichotomique dans un tableau trié de taille N a une complexité logarithmique O(log N).", correct: true, exp: "Vrai : à chaque étape, on divise par deux l'espace de recherche." },
         { type: "texte_a_trous", title: "Architecture Web", q: "Complète le rôle des langages du Web.", textWithBlanks: "Le langage ___ structure le contenu d'une page, le langage ___ gère sa présentation visuelle et ___ assure son interactivité dynamique.", blanks: [["HTML"], ["CSS"], ["JavaScript"]], distractors: ["SQL", "Python", "PHP"], exp: "Le trio fondamental du front-end est HTML (structure), CSS (style) et JavaScript (interactivité)." },
         { type: "drag_and_drop", title: "Réseaux & Protocoles", q: "Associe chaque protocole à son usage.", items: ["HTTP / HTTPS", "DNS", "SSH"], targets: ["Transfert de pages Web", "Résolution nom de domaine en IP", "Connexion à distance sécurisée"], pairs: { "HTTP / HTTPS": "Transfert de pages Web", "DNS": "Résolution nom de domaine en IP", "SSH": "Connexion à distance sécurisée" }, exp: "Ces protocoles fondamentaux structurent les communications sur Internet." },
     ]},
-    { id: "ses", name: "SES (Économie)", icon: "Image/ile/ses.svg", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale"], island: "Image/ile/ses.svg", lessons: [
+    { id: "ses", name: "SES (Économie)", icon: "Image/ile/ses.svg", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale"], allowedFilieres: ["generale"], island: "Image/ile/ses.svg", lessons: [
         { title: "Le marché et les prix", q: "Selon la loi de l'offre et de la demande, lorsque la demande d'un bien augmente sans que l'offre ne change, son prix :", opts: ["diminue", "tend à augmenter", "reste toujours fixe", "devient nul"], correct: 1, exp: "La rareté relative entraîne une hausse du prix d'équilibre." },
         { title: "La création monétaire", q: "Qui crée la majeure partie de la monnaie en circulation dans une économie moderne ?", opts: ["L'État par l'impôt", "Les banques commerciales lors de l'octroi de crédits", "La banque centrale par impression de billets", "Les entreprises industrielles"], correct: 1, exp: "« Les crédits font les dépôts » : les banques commerciales créent la monnaie scripturale lors d'un prêt." },
         { type: "vrai_faux", title: "Le PIB et la croissance", q: "Le Produit Intérieur Brut (PIB) mesure la richesse totale des patrimoines des ménages.", correct: false, exp: "Faux : le PIB mesure le flux de valeur ajoutée créée sur une période donnée (un an), pas le stock de patrimoine." },
         { type: "texte_a_choix", title: "La socialisation", q: "Complète les modes d'apprentissage social.", textWithBlanks: "La socialisation ___ se déroule pendant l'enfance au sein de la famille et de l'école, tandis que la socialisation ___ s'exerce à l'âge adulte dans le monde professionnel.", choices: [["primaire", "secondaire", "initiale"], ["secondaire", "primaire", "tertiaire"]], blanks: [["primaire"], ["secondaire"]], exp: "La sociologie distingue la socialisation primaire (enfance) de la socialisation secondaire (vie adulte)." },
         { type: "drag_and_drop", title: "Facteurs de production", q: "Associe chaque facteur de production à sa définition.", items: ["Facteur Travail", "Facteur Capital", "Progrès technique"], targets: ["Activité humaine rémunérée", "Biens durables utilisés pour produire (machines)", "Amélioration de l'efficacité productive"], pairs: { "Facteur Travail": "Activité humaine rémunérée", "Facteur Capital": "Biens durables utilisés pour produire (machines)", "Progrès technique": "Amélioration de l'efficacité productive" }, exp: "Le travail, le capital et la productivité globale des facteurs sont les moteurs de la production." },
+    ]},
+    { id: "espagnol", name: "Espagnol", icon: "Es", allowedNiveaux: ["5eme", "4eme", "3eme", "2nde", "1ere", "terminale"], allowedFilieres: ["generale", "stmg", "st2s"], island: "Image/ile/espagnol.svg", lessons: [
+        { title: "Ser ou Estar", q: "Complète : « Madrid ___ en España. »", opts: ["es", "está", "son", "estoy"], correct: 1, exp: "On emploie toujours « estar » pour situer un lieu dans l'espace." },
+        { title: "Vocabulaire du quotidien", q: "Que signifie le mot espagnol « biblioteca » ?", opts: ["librairie", "bibliothèque", "école", "cahier"], correct: 1, exp: "« Biblioteca » = bibliothèque (librairie se dit « librería »)." },
+        { type: "vrai_faux", title: "L'accent écrit", q: "En espagnol, le verbe « gustar » s'accorde avec ce qui plaît (ex : « Me gustan los libros »).", correct: true, exp: "Vrai : le sujet grammatical est « los libros », d'où « gustan » au pluriel." },
+        { type: "texte_a_choix", title: "Présent de l'indicatif", q: "Complète la phrase en espagnol.", textWithBlanks: "Nosotros ___ en la escuela y ___ español cada día.", choices: [["estamos", "somos", "están"], ["hablamos", "hablan", "habla"]], blanks: [["estamos"], ["hablamos"]], exp: "« Nosotros estamos » (lieu) et « hablamos » (1re personne du pluriel de hablar)." },
+        { type: "drag_and_drop", title: "Faux amis & lexique", q: "Associe chaque mot espagnol à sa traduction française.", items: ["La calle", "El verano", "El desayuno"], targets: ["La rue", "L'été", "Le petit-déjeuner"], pairs: { "La calle": "La rue", "El verano": "L'été", "El desayuno": "Le petit-déjeuner" }, exp: "Des mots incontournables du vocabulaire courant en LV2." },
+    ]},
+    { id: "arts", name: "Arts & Musique", icon: "🎨", allowedNiveaux: ["6eme", "5eme", "4eme", "3eme", "2nde", "1ere", "terminale"], allowedFilieres: ["generale"], island: "Image/ile/arts.svg", lessons: [
+        { title: "Couleurs primaires", q: "En peinture (synthèse soustractive), quelles sont les trois couleurs primaires ?", opts: ["Rouge, Vert, Bleu", "Cyan (bleu), Magenta (rouge), Jaune", "Orange, Vert, Violet", "Noir, Blanc, Gris"], correct: 1, exp: "En peinture, les primaires sont bleu/cyan, rouge/magenta et jaune." },
+        { title: "Histoire de l'art", q: "Qui a peint le célèbre tableau « Guernica » en 1937 ?", opts: ["Claude Monet", "Pablo Picasso", "Vincent van Gogh", "Salvador Dalí"], correct: 1, exp: "Pablo Picasso a peint Guernica pour dénoncer le bombardement de la ville basque." },
+        { type: "vrai_faux", title: "Rythme musical", q: "Une noire dure deux fois plus longtemps qu'une croche.", correct: true, exp: "Vrai : 1 noire = 2 croches (et 1 blanche = 2 noires)." },
+        { type: "texte_a_trous", title: "La perspective", q: "Complète la règle de la perspective linéaire.", textWithBlanks: "Dans un dessin en perspective, les droites parallèles fuyantes convergent vers un point appelé point de ___ situé sur la ligne d'___.", blanks: [["fuite"], ["horizon"]], distractors: ["centre", "sol", "ombre"], exp: "La perspective centrale de la Renaissance s'appuie sur la ligne d'horizon et le point de fuite." },
+        { type: "drag_and_drop", title: "Familles d'instruments", q: "Associe chaque instrument à sa famille orchestrale.", items: ["Violon", "Trompette", "Flûte traversière"], targets: ["Cordes frottées", "Cuivres", "Bois"], pairs: { "Violon": "Cordes frottées", "Trompette": "Cuivres", "Flûte traversière": "Bois" }, exp: "La flûte traversière appartient historiquement à la famille des bois." },
+    ]},
+    { id: "hggsp", name: "HGGSP (Géopolitique)", icon: "🌐", band: "lycee", allowedNiveaux: ["1ere", "terminale"], allowedFilieres: ["generale"], island: "Image/ile/hggsp.svg", lessons: [
+        { title: "Soft power & Hard power", q: "Qui a théorisé la distinction entre « hard power » et « soft power » ?", opts: ["Joseph Nye", "Karl Marx", "Montesquieu", "John Maynard Keynes"], correct: 0, exp: "Le politologue américain Joseph Nye a formulé le concept de soft power en 1990." },
+        { title: "Droit de la mer", q: "Jusqu'à quelle distance des côtes s'étend la Zone Économique Exclusive (ZEE) selon Montego Bay (1982) ?", opts: ["12 milles marins", "200 milles marins", "50 milles marins", "500 milles marins"], correct: 1, exp: "La ZEE s'étend jusqu'à 200 milles marins (~370 km) des côtes." },
+        { type: "vrai_faux", title: "Paix de Westphalie", q: "Les traités de Westphalie (1648) consacrent le principe de souveraineté des États.", correct: true, exp: "Vrai : ils mettent fin à la guerre de Trente Ans et fondent l'ordre interétatique moderne." },
+        { type: "texte_a_choix", title: "L'espace & les océans", q: "Complète les enjeux géopolitiques des nouveaux espaces.", textWithBlanks: "La conquête spatiale débute avec le satellite soviétique ___ en 1957, puis les États-Unis remportent la course à la Lune avec la mission ___ en 1969.", choices: [["Spoutnik", "Voyager", "Ariane"], ["Apollo 11", "Gemini 4", "Mir"]], blanks: [["Spoutnik"], ["Apollo 11"]], exp: "Spoutnik 1 (1957) et Apollo 11 (1969) marquent les jalons clés de la guerre froide spatiale." },
+        { type: "drag_and_drop", title: "Institutions internationales", q: "Associe chaque organisation à son rôle principal.", items: ["ONU", "UNESCO", "CPI"], targets: ["Maintien de la paix internationale", "Protection du patrimoine mondial", "Jugement des crimes contre l'humanité"], pairs: { "ONU": "Maintien de la paix internationale", "UNESCO": "Protection du patrimoine mondial", "CPI": "Jugement des crimes contre l'humanité" }, exp: "Chaque institution remplit un mandat distinct dans la gouvernance mondiale." },
+    ]},
+    { id: "si", name: "Sciences de l'Ingénieur", icon: "📐", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale"], allowedFilieres: ["generale", "nsi_spe", "sti2d"], island: "Image/ile/si.svg", lessons: [
+        { title: "Chaîne d'énergie", q: "Dans la chaîne d'énergie, quelle fonction réalise un moteur électrique ?", opts: ["Alimenter", "Convertir", "Transmettre", "Acquérir"], correct: 1, exp: "Un moteur convertit l'énergie électrique en énergie mécanique." },
+        { title: "Rendement énergétique", q: "Un système consomme 200 W et restitue 150 W utiles. Quel est son rendement η ?", opts: ["50 %", "75 %", "80 %", "133 %"], correct: 1, exp: "η = Pu / Pa = 150 / 200 = 0,75 soit 75 %." },
+        { type: "vrai_faux", title: "Puissance mécanique", q: "En rotation, la puissance mécanique vaut P = C × ω (couple en N·m fois vitesse angulaire en rad/s).", correct: true, exp: "Vrai : P (W) = C (N·m) × ω (rad/s)." },
+        { type: "texte_a_choix", title: "Ingénierie SysML", q: "Complète les diagrammes SysML fondamentaux.", textWithBlanks: "Le diagramme des ___ recense les contraintes du cahier des charges, tandis que le diagramme des ___ décrit les services attendus par l'utilisateur.", choices: [["exigences (req)", "séquences", "états"], ["cas d'utilisation (uc)", "blocs internes", "flux"]], blanks: [["exigences (req)"], ["cas d'utilisation (uc)"]], exp: "En SysML, « req » formalise les exigences et « uc » les cas d'utilisation." },
+        { type: "drag_and_drop", title: "Liaisons mécaniques", q: "Associe chaque liaison à ses degrés de liberté.", items: ["Encastrement", "Pivot", "Glissière"], targets: ["0 degré de liberté", "1 rotation uniquement", "1 translation uniquement"], pairs: { "Encastrement": "0 degré de liberté", "Pivot": "1 rotation uniquement", "Glissière": "1 translation uniquement" }, exp: "Les liaisons élémentaires définissent les mouvements possibles entre solides." },
+    ]},
+    { id: "msgn", name: "Management & Gestion", icon: "📊", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["stmg"], island: "Image/ile/msgn.svg", lessons: [
+        { title: "Types d'organisations", q: "Quelle est la finalité principale d'une entreprise privée ?", opts: ["Réaliser un profit pour assurer sa pérennité", "Fournir un service public gratuit", "Défendre une cause bénévole sans bénéfice", "Voter des lois"], correct: 0, exp: "Une entreprise a une finalité lucrative (créer de la valeur et dégager un profit)." },
+        { title: "Valeur ajoutée", q: "Comment calcule-t-on la Valeur Ajoutée (VA) d'une entreprise ?", opts: ["Chiffre d'affaires + Achats", "Chiffre d'affaires − Consommations intermédiaires", "Bénéfice × Salaires", "Actif − Passif"], correct: 1, exp: "VA = Chiffre d'affaires (production) − Consommations intermédiaires." },
+        { type: "vrai_faux", title: "Diagnostic SWOT", q: "Dans une matrice SWOT, les Forces et Faiblesses relèvent du diagnostic interne de l'organisation.", correct: true, exp: "Vrai : Forces/Faiblesses = interne ; Opportunités/Menaces = environnement externe." },
+        { type: "texte_a_choix", title: "Styles de direction (Likert)", q: "Complète les styles de management.", textWithBlanks: "Un manager qui décide seul sans consulter ses équipes adopte un style ___, tandis que celui qui associe les salariés aux décisions adopte un style ___.", choices: [["autoritaire", "participatif", "délégatif"], ["participatif", "autoritaire", "paternaliste"]], blanks: [["autoritaire"], ["participatif"]], exp: "Rensis Likert distingue autoritaire, paternaliste, consultatif et participatif." },
+        { type: "drag_and_drop", title: "Indicateurs comptables", q: "Associe chaque document ou notion à sa définition.", items: ["Bilan comptable", "Compte de résultat", "Seuil de rentabilité"], targets: ["Patrimoine (Actif / Passif) à une date donnée", "Produits et charges sur un exercice", "CA à partir duquel l'entreprise fait un bénéfice"], pairs: { "Bilan comptable": "Patrimoine (Actif / Passif) à une date donnée", "Compte de résultat": "Produits et charges sur un exercice", "Seuil de rentabilité": "CA à partir duquel l'entreprise fait un bénéfice" }, exp: "Ces outils clés pilotent la performance financière en STMG." },
+    ]},
+    { id: "droit_eco", name: "Droit & Économie", icon: "⚖️", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["stmg", "ciel"], island: "Image/ile/droit_eco.svg", lessons: [
+        { title: "Contrat de travail", q: "Quel est le contrat de travail de droit commun en France ?", opts: ["Le CDD", "Le CDI", "Le contrat d'intérim", "La convention de stage"], correct: 1, exp: "Le Contrat à Durée Indéterminée (CDI) est la forme normale et générale de la relation de travail." },
+        { title: "Politique monétaire", q: "Quelle institution conduit la politique monétaire dans la zone euro ?", opts: ["Le Parlement français", "La Banque Centrale Européenne (BCE)", "L'ONU", "La Cour de cassation"], correct: 1, exp: "La BCE fixe les taux directeurs afin de maintenir la stabilité des prix (~2 % d'inflation)." },
+        { type: "vrai_faux", title: "Responsabilité civile", q: "Pour engager la responsabilité civile délictuelle, il faut prouver un fait générateur, un dommage et un lien de causalité.", correct: true, exp: "Vrai : ce sont les trois conditions cumulatives prévues par le Code civil." },
+        { type: "texte_a_choix", title: "Juridictions françaises", q: "Identifie les juridictions compétentes.", textWithBlanks: "Un litige individuel entre un salarié et son employeur est jugé par le ___, tandis qu'un litige entre deux commerçants relève du ___.", choices: [["Conseil de prud'hommes", "Tribunal administratif", "Tribunal correctionnel"], ["Tribunal de commerce", "Conseil d'État", "Cour d'assises"]], blanks: [["Conseil de prud'hommes"], ["Tribunal de commerce"]], exp: "Chaque ordre et juridiction spécialisée dispose d'une compétence d'attribution précise." },
+        { type: "drag_and_drop", title: "Notions économiques", q: "Associe chaque terme à sa définition.", items: ["Inflation", "Chômage conjoncturel", "Balance commerciale"], targets: ["Hausse générale et durable des prix", "Lié à un ralentissement de l'activité économique", "Exportations moins Importations de biens"], pairs: { "Inflation": "Hausse générale et durable des prix", "Chômage conjoncturel": "Lié à un ralentissement de l'activité économique", "Balance commerciale": "Exportations moins Importations de biens" }, exp: "Des repères essentiels de macroéconomie au programme STMG et BTS." },
+    ]},
+    { id: "mercatique", name: "Mercatique (Marketing)", icon: "📈", band: "lycee", allowedNiveaux: ["1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["stmg"], island: "Image/ile/mercatique.svg", lessons: [
+        { title: "Le Marketing Mix (4P)", q: "Quels sont les 4 piliers historiques du plan de marchéage (4P) ?", opts: ["Produit, Prix, Distribution (Place), Communication (Promotion)", "Profit, Personnel, Production, Publicité", "Part de marché, Panier, Promotion, Pénurie", "Plan, Projet, Pilote, Partenaire"], correct: 0, exp: "Le marketing mix articule Produit, Prix, Place (distribution) et Promotion (communication)." },
+        { title: "Stratégie de prix", q: "Fixer volontairement un prix élevé au lancement pour cibler une clientèle haut de gamme s'appelle :", opts: ["l'écrémage", "la pénétration", "l'alignement", "le dumping"], correct: 0, exp: "La stratégie d'écrémage privilégie une forte marge unitaire et une image premium." },
+        { type: "vrai_faux", title: "Segmentation de marché", q: "Segmenter un marché consiste à le découper en groupes homogènes de consommateurs aux attentes similaires.", correct: true, exp: "Vrai : la segmentation précède le ciblage puis le positionnement (SCP)." },
+        { type: "texte_a_choix", title: "Distribution", q: "Complète les types de réseaux de distribution.", textWithBlanks: "Vendre un produit dans un maximum de points de vente correspond à une distribution ___, alors que réserver la vente à un seul distributeur par zone est une distribution ___.", choices: [["intensive", "exclusive", "sélective"], ["exclusive", "intensive", "directe"]], blanks: [["intensive"], ["exclusive"]], exp: "On distingue distribution intensive (grande conso), sélective (parfums) et exclusive (luxe/auto)." },
+        { type: "drag_and_drop", title: "Cycle de vie du produit", q: "Associe chaque phase du cycle de vie à sa caractéristique.", items: ["Lancement", "Croissance", "Maturité"], targets: ["Ventes faibles et forts coûts de communication", "Forte hausse des ventes et arrivée de concurrents", "Ventes au sommet et fidélisation prioritaire"], pairs: { "Lancement": "Ventes faibles et forts coûts de communication", "Croissance": "Forte hausse des ventes et arrivée de concurrents", "Maturité": "Ventes au sommet et fidélisation prioritaire" }, exp: "Le cycle de vie compte 4 phases : Lancement, Croissance, Maturité, Déclin." },
+    ]},
+    { id: "i2d", name: "I2D (Innovation & Éco)", icon: "🔋", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["sti2d"], island: "Image/ile/i2d.svg", lessons: [
+        { title: "Analyse du Cycle de Vie", q: "Que permet d'évaluer une Analyse du Cycle de Vie (ACV) d'un produit ?", opts: ["Uniquement son prix en magasin", "Ses impacts environnementaux de l'extraction au recyclage", "Sa couleur dominante", "Son nombre de brevets"], correct: 1, exp: "L'ACV quantifie les impacts (CO₂, eau, énergie) du berceau à la tombe." },
+        { title: "Énergie électrique", q: "Un radiateur de 2 kW fonctionne pendant 3 heures. Quelle énergie consomme-t-il ?", opts: ["5 kWh", "6 kWh", "1,5 kWh", "600 Wh"], correct: 1, exp: "E = P × t = 2 kW × 3 h = 6 kWh." },
+        { type: "vrai_faux", title: "Résistance thermique", q: "Plus la résistance thermique R d'une paroi est élevée, meilleure est son isolation.", correct: true, exp: "Vrai : R = e / λ (épaisseur divisée par la conductivité thermique)." },
+        { type: "texte_a_choix", title: "Écoconception & Matériaux", q: "Complète les principes du développement durable.", textWithBlanks: "Un matériau dont la conductivité thermique λ est très faible est un bon ___, et l'énergie issue du vent est appelée énergie ___.", choices: [["isolant thermique", "conducteur thermique", "aimant"], ["éolienne", "fossile", "nucléaire"]], blanks: [["isolant thermique"], ["éolienne"]], exp: "Faible λ = bon isolant (ex : laine de bois, polystyrène) ; le vent alimente les éoliennes." },
+        { type: "drag_and_drop", title: "Sollicitations mécaniques", q: "Associe chaque sollicitation mécanique à son effet.", items: ["Traction", "Compression", "Flexion"], targets: ["Allonge une poutre", "Écrase ou raccourcit une pièce", "Courbe une poutre sous charge"], pairs: { "Traction": "Allonge une poutre", "Compression": "Écrase ou raccourcit une pièce", "Flexion": "Courbe une poutre sous charge" }, exp: "La résistance des matériaux (RDM) analyse ces sollicitations pour dimensionner les structures." },
+    ]},
+    { id: "sin", name: "SIN (Info & Numérique)", icon: "📡", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["sti2d"], island: "Image/ile/sin.svg", lessons: [
+        { title: "Conversion Hexadécimale", q: "Quelle est la valeur décimale du nombre hexadécimal 0x1A ?", opts: ["16", "26", "30", "110"], correct: 1, exp: "1 × 16 + 10 (A) = 26." },
+        { title: "Convertisseur CAN", q: "Combien de niveaux numériques distincts peut coder un CAN sur 8 bits ?", opts: ["8", "64", "128", "256"], correct: 3, exp: "Sur n bits, un CAN possède 2ⁿ niveaux : 2⁸ = 256 (de 0 à 255)." },
+        { type: "vrai_faux", title: "Théorème de Shannon", q: "Pour numériser un signal sans perte d'information spectrale, la fréquence d'échantillonnage doit être au moins le double de la fréquence maximale du signal.", correct: true, exp: "Vrai : c'est le critère de Nyquist-Shannon (fe ≥ 2 × fmax)." },
+        { type: "texte_a_choix", title: "Logique booléenne", q: "Complète les portes logiques de base.", textWithBlanks: "La sortie d'une porte ___ vaut 1 uniquement si toutes ses entrées valent 1, tandis qu'une porte ___ inverse l'état de son entrée.", choices: [["ET (AND)", "OU (OR)", "XOR"], ["NON (NOT)", "ET (AND)", "OU (OR)"]], blanks: [["ET (AND)"], ["NON (NOT)"]], exp: "ET (A·B) exige toutes les entrées à 1 ; NON (Ā) inverse 0↔1." },
+        { type: "drag_and_drop", title: "Bus embarqués", q: "Associe chaque interface embarquée à sa caractéristique.", items: ["I2C", "PWM (MLI)", "UART / Série"], targets: ["Bus 2 fils (SDA, SCL) maître-esclave", "Signal carré à rapport cyclique variable", "Liaison asynchrone TX / RX"], pairs: { "I2C": "Bus 2 fils (SDA, SCL) maître-esclave", "PWM (MLI)": "Signal carré à rapport cyclique variable", "UART / Série": "Liaison asynchrone TX / RX" }, exp: "Ces protocoles relient microcontrôleurs, capteurs et actionneurs en STI2D SIN." },
+    ]},
+    { id: "cybersecurite", name: "Cybersécurité", icon: "🛡️", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["ciel", "nsi_spe"], island: "Image/ile/cybersecurite.svg", lessons: [
+        { title: "Triade CIA", q: "Quels sont les trois piliers fondamentaux de la sécurité informatique (CIA) ?", opts: ["Confidentialité, Intégrité, Disponibilité", "Code, Internet, Antivirus", "Cryptage, IP, Authentification", "Cloud, Identité, Accès"], correct: 0, exp: "CIA = Confidentiality (Confidentialité), Integrity (Intégrité), Availability (Disponibilité)." },
+        { title: "Attaques Web", q: "Quelle attaque consiste à injecter des commandes SQL malveillantes via un champ de formulaire ?", opts: ["Phishing", "Injection SQL (SQLi)", "DDoS", "Ransomware"], correct: 1, exp: "Une injection SQL exploite une requête non préparée pour lire ou altérer la base de données." },
+        { type: "vrai_faux", title: "Fonctions de hachage", q: "Une fonction de hachage cryptographique comme SHA-256 est conçue pour être irréversible (à sens unique).", correct: true, exp: "Vrai : on ne peut pas retrouver le message d'origine à partir de son empreinte SHA-256." },
+        { type: "texte_a_choix", title: "Chiffrement", q: "Distingue chiffrement symétrique et asymétrique.", textWithBlanks: "L'algorithme ___ utilise la même clé secrète pour chiffrer et déchiffrer (symétrique), tandis que ___ utilise une paire clé publique / clé privée (asymétrique).", choices: [["AES", "RSA", "SHA-256"], ["RSA", "AES", "MD5"]], blanks: [["AES"], ["RSA"]], exp: "AES est le standard de chiffrement symétrique ; RSA repose sur une paire de clés asymétriques." },
+        { type: "drag_and_drop", title: "Menaces cyber", q: "Associe chaque menace à son mode opératoire.", items: ["Phishing (Hameçonnage)", "Ransomware (Rançongiciel)", "DDoS"], targets: ["Usurpation d'identité pour voler des identifiants", "Chiffrement des fichiers contre une rançon", "Saturation d'un serveur par un flot de requêtes"], pairs: { "Phishing (Hameçonnage)": "Usurpation d'identité pour voler des identifiants", "Ransomware (Rançongiciel)": "Chiffrement des fichiers contre une rançon", "DDoS": "Saturation d'un serveur par un flot de requêtes" }, exp: "Reconnaître chaque vecteur d'attaque est la base de la cyberdéfense en CIEL." },
+    ]},
+    { id: "reseaux", name: "Réseaux & Systèmes", icon: "🌐", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["ciel", "nsi_spe"], island: "Image/ile/reseaux.svg", lessons: [
+        { title: "Modèle OSI", q: "À quelle couche du modèle OSI opère un routeur IP ?", opts: ["Couche 1 (Physique)", "Couche 2 (Liaison)", "Couche 3 (Réseau)", "Couche 7 (Application)"], correct: 2, exp: "Le routeur achemine les paquets selon les adresses IP (couche 3 — Réseau)." },
+        { title: "Adressage IPv4 / CIDR", q: "Combien d'adresses d'hôtes utilisables offre un sous-réseau IPv4 en /24 ?", opts: ["256", "254", "126", "510"], correct: 1, exp: "2⁸ − 2 = 254 hôtes (on retire l'adresse réseau et l'adresse de broadcast)." },
+        { type: "vrai_faux", title: "Protocole DHCP", q: "Le protocole DHCP attribue automatiquement une adresse IP, un masque et une passerelle aux machines d'un réseau.", correct: true, exp: "Vrai : DHCP évite la configuration IP manuelle de chaque poste." },
+        { type: "texte_a_choix", title: "Ports TCP/UDP usuels", q: "Associe les ports standards.", textWithBlanks: "Le trafic Web chiffré HTTPS utilise par défaut le port TCP ___, et la connexion distante sécurisée SSH utilise le port TCP ___.", choices: [["443", "80", "21"], ["22", "53", "25"]], blanks: [["443"], ["22"]], exp: "HTTP = 80, HTTPS = 443, SSH = 22, DNS = 53." },
+        { type: "drag_and_drop", title: "Équipements réseau", q: "Associe chaque équipement à sa fonction.", items: ["Switch (Commutateur)", "Routeur", "Pare-feu (Firewall)"], targets: ["Transmet les trames selon les adresses MAC (L2)", "Interconnecte différents réseaux IP (L3)", "Filtre le trafic selon des règles de sécurité"], pairs: { "Switch (Commutateur)": "Transmet les trames selon les adresses MAC (L2)", "Routeur": "Interconnecte différents réseaux IP (L3)", "Pare-feu (Firewall)": "Filtre le trafic selon des règles de sécurité" }, exp: "Maîtriser le rôle de chaque équipement est indispensable en Bac Pro et BTS CIEL." },
+    ]},
+    { id: "electronique", name: "Électronique & Systèmes", icon: "🔌", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["ciel", "sti2d"], island: "Image/ile/electronique.svg", lessons: [
+        { title: "Loi d'Ohm", q: "Une résistance de 220 Ω est traversée par un courant de 0,05 A (50 mA). Quelle est la tension à ses bornes ?", opts: ["4,4 V", "11 V", "22 V", "0,11 V"], correct: 1, exp: "U = R × I = 220 × 0,05 = 11 V." },
+        { title: "Diode & LED", q: "Quel est le rôle principal d'une résistance placée en série avec une LED ?", opts: ["Augmenter la tension d'alimentation", "Limiter l'intensité du courant pour ne pas détruire la LED", "Redresser le courant alternatif", "Amplifier le signal audio"], correct: 1, exp: "Sans résistance de limitation, le courant excessif détruirait instantanément la jonction de la LED." },
+        { type: "vrai_faux", title: "Résistances en série", q: "Deux résistances R1 et R2 montées en série ont une résistance équivalente Réq = R1 + R2.", correct: true, exp: "Vrai : en série les résistances s'additionnent ; en parallèle, ce sont les inverses (1/Réq = 1/R1 + 1/R2)." },
+        { type: "texte_a_choix", title: "Mesures électriques", q: "Complète les règles de branchement des appareils de mesure.", textWithBlanks: "Un voltmètre se branche toujours en ___ du composant étudié, tandis qu'un ampèremètre se branche toujours en ___.", choices: [["dérivation (parallèle)", "série", "court-circuit"], ["série", "dérivation (parallèle)", "boucle ouverte"]], blanks: [["dérivation (parallèle)"], ["série"]], exp: "Voltmètre en parallèle (mesure de tension) ; ampèremètre en série (mesure d'intensité)." },
+        { type: "drag_and_drop", title: "Composants électroniques", q: "Associe chaque composant à son unité ou sa fonction.", items: ["Condensateur", "Transistor MOSFET", "Oscilloscope"], targets: ["Stocke de l'énergie électrique (Farad)", "Interrupteur commandé en tension", "Visualise l'évolution d'une tension dans le temps"], pairs: { "Condensateur": "Stocke de l'énergie électrique (Farad)", "Transistor MOSFET": "Interrupteur commandé en tension", "Oscilloscope": "Visualise l'évolution d'une tension dans le temps" }, exp: "Des bases incontournables en électronique et systèmes embarqués (CIEL / STI2D)." },
+    ]},
+    { id: "stss", name: "STSS (Santé & Social)", icon: "🩺", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["st2s"], island: "Image/ile/stss.svg", lessons: [
+        { title: "Définition de la santé (OMS)", q: "Selon l'OMS (1946), la santé est un état de complet bien-être :", opts: ["uniquement physique", "physique, mental et social", "financier et sportif", "biologique seulement"], correct: 1, exp: "L'OMS définit la santé comme un bien-être physique, mental et social, et non seulement l'absence de maladie." },
+        { title: "Niveaux de prévention", q: "La vaccination vise à éviter l'apparition d'une maladie : de quel niveau de prévention s'agit-il ?", opts: ["Prévention primaire", "Prévention secondaire", "Prévention tertiaire", "Réadaptation"], correct: 0, exp: "La prévention primaire agit avant l'apparition de la maladie (vaccination, hygiène)." },
+        { type: "vrai_faux", title: "Sécurité sociale", q: "En France, la Sécurité sociale a été créée par les ordonnances de 1945 selon le principe de solidarité nationale.", correct: true, exp: "Vrai : créée en octobre 1945 pour protéger contre les grands risques sociaux." },
+        { type: "texte_a_choix", title: "Indicateurs démographiques", q: "Complète les notions d'épidémiologie.", textWithBlanks: "L'___ mesure le nombre de nouveaux cas d'une maladie sur une période donnée, tandis que la ___ mesure le nombre total de cas présents à un instant donné.", choices: [["incidence", "prévalence", "mortalité"], ["prévalence", "incidence", "natalité"]], blanks: [["incidence"], ["prévalence"]], exp: "Incidence = nouveaux cas sur une période ; Prévalence = total des cas existants." },
+        { type: "drag_and_drop", title: "Acteurs de santé publique", q: "Associe chaque organisme à sa mission.", items: ["ARS", "PMI", "HAS"], targets: ["Pilote la politique de santé en région", "Protection maternelle et infantile", "Évalue les soins et publie des recommandations médicales"], pairs: { "ARS": "Pilote la politique de santé en région", "PMI": "Protection maternelle et infantile", "HAS": "Évalue les soins et publie des recommandations médicales" }, exp: "Ces acteurs structurent le système de santé et la protection sociale en ST2S." },
     ]},
 ];
 
@@ -2742,23 +3180,38 @@ if (typeof AdminStore !== 'undefined' && AdminStore.registerDefaults) {
     AdminStore.registerDefaults(RAW_DASH_SUBJECTS);
 }
 
+// Cache mémoire des matières étendues par (niveau, filière) — évite de régénérer 26×100 leçons à chaque navigation
+const _effectiveSubjectsCache = new Map();
+
 /**
- * Retourne les matières effectives autorisées pour le niveau scolaire courant,
- * étendues jusqu'à 100 niveaux.
- * Délègue strictement à AdminStore.isSubjectAllowedForNiveau() :
- *   - Collège (6e → 3e) : JAMAIS de SES, Philosophie ni NSI.
- *   - 2nde / 1ère : SES & NSI présents, pas de Technologie ni Philosophie.
- *   - Terminale : Philosophie, SES & NSI présents, pas de Technologie.
+ * Retourne les matières effectives autorisées pour le niveau scolaire et la filière courants,
+ * étendues jusqu'à 100 niveaux, avec les spécialités de la filière mises en avant.
+ * Délègue strictement à AdminStore.isSubjectAllowedForNiveau(subject, niveau, filiere).
  */
-function getEffectiveSubjects(niveau) {
-    const currentNiv = niveau || (typeof DB !== 'undefined' && DB.getNiveau ? DB.getNiveau() : '6eme') || '6eme';
+function getEffectiveSubjects(niveau, filiere) {
+    const currentNiv = niveau || currentNiveau();
+    const currentFil = filiere || currentFiliere();
+    const cacheKey = `${currentNiv}::${currentFil}`;
+    const hasAdminCustom = (typeof AdminStore !== 'undefined' && typeof AdminStore.load === 'function')
+        ? (() => {
+            try {
+                const cfg = AdminStore.load();
+                return Boolean(cfg && ((cfg.customSubjects && cfg.customSubjects.length) || (cfg.subjectOverrides && Object.keys(cfg.subjectOverrides).length)));
+            } catch { return false; }
+        })()
+        : false;
+
+    if (!hasAdminCustom && _effectiveSubjectsCache.has(cacheKey)) {
+        return _effectiveSubjectsCache.get(cacheKey);
+    }
+
     const raw = (typeof AdminStore !== 'undefined' && typeof AdminStore.applyOverrides === 'function')
         ? AdminStore.applyOverrides(RAW_DASH_SUBJECTS)
         : RAW_DASH_SUBJECTS;
 
     const filtered = raw.filter(s => {
         if (typeof AdminStore !== 'undefined' && typeof AdminStore.isSubjectAllowedForNiveau === 'function') {
-            return AdminStore.isSubjectAllowedForNiveau(s, currentNiv);
+            return AdminStore.isSubjectAllowedForNiveau(s, currentNiv, currentFil);
         }
         if (s.enabled === false) return false;
         if (Array.isArray(s.allowedNiveaux) && s.allowedNiveaux.length > 0) {
@@ -2771,40 +3224,63 @@ function getEffectiveSubjects(niveau) {
         return true;
     });
 
-    return filtered.map(s => s._custom ? s : QuestionBank.extend(s, 100, currentNiv));
+    const isFiliereUsed = (typeof AdminStore !== 'undefined' && typeof AdminStore.isFiliereApplicable === 'function')
+        ? AdminStore.isFiliereApplicable(currentNiv)
+        : false;
+
+    // Place les spécialités phares de la filière en tête de liste au lycée / BTS pour un accès immédiat
+    if (isFiliereUsed && typeof AdminStore !== 'undefined' && typeof AdminStore.isSubjectSpecialtyForFiliere === 'function') {
+        filtered.sort((a, b) => {
+            const aSpec = AdminStore.isSubjectSpecialtyForFiliere(a, currentFil) ? 1 : 0;
+            const bSpec = AdminStore.isSubjectSpecialtyForFiliere(b, currentFil) ? 1 : 0;
+            return bSpec - aSpec;
+        });
+    }
+
+    const extended = filtered.map(s => {
+        const out = s._custom ? s : QuestionBank.extend(s, 100, currentNiv);
+        out._isSpecialty = isFiliereUsed
+            && typeof AdminStore !== 'undefined'
+            && typeof AdminStore.isSubjectSpecialtyForFiliere === 'function'
+            && AdminStore.isSubjectSpecialtyForFiliere(s, currentFil);
+        return out;
+    });
+
+    if (!hasAdminCustom) {
+        _effectiveSubjectsCache.set(cacheKey, extended);
+    }
+    return extended;
 }
 
 let DASH_SUBJECTS = getEffectiveSubjects();
 
-/**
- * Catalogue des badges (succès) disponibles.
- * `test(ctx)` reçoit un petit contexte et retourne true si le badge doit
- * être débloqué. Appelé après chaque quiz terminé et chaque achat de
- * skin (voir checkBadges ci-dessous). Idempotent : DB.unlockBadge()
- * ignore un badge déjà possédé.
- */
-/**
- * Correspondance matière (id DASH_SUBJECTS) → nom affiché + icône attendus
- * par map.html (?matiere=...&icon=...). Utilisée par _dashOpenMap pour
- * rediriger vers la vraie carte de progression (v2.3, 100 niveaux) plutôt
- * que la constellation interne du dashboard (voir renderMap plus bas,
- * conservée uniquement en repli pour les matières sans îlot graphique
- * dédié — actuellement seule l'EMC est dans ce cas).
- */
 const SUBJECT_TO_MATIERE = {
-    maths:    { name: 'Mathématiques', icon: 'maths.webp' },
-    francais: { name: 'Français',      icon: 'francais.webp' },
-    histoire: { name: 'Histoire',      icon: 'histoire.webp' },
-    geo:      { name: 'Géographie',    icon: 'geo.svg' },
-    svt:      { name: 'SVT',           icon: 'svt.webp' },
-    anglais:  { name: 'Anglais',       icon: 'anglais.webp' },
-    physique: { name: 'Physique',      icon: 'physique.webp' },
-    chimie:   { name: 'Chimie',        icon: 'chimie.svg' },
-    techno:   { name: 'Technologie',   icon: 'technologie.webp' },
-    philo:    { name: 'Philosophie',   icon: 'philo.svg' },
-    emc:      { name: 'EMC',           icon: 'emc.svg' },
-    nsi:      { name: 'NSI & Numérique', icon: 'nsi.svg' },
-    ses:      { name: 'SES (Économie)', icon: 'ses.svg' },
+    maths:         { name: 'Mathématiques',          icon: 'maths.webp' },
+    francais:      { name: 'Français',               icon: 'francais.webp' },
+    histoire:      { name: 'Histoire',               icon: 'histoire.webp' },
+    geo:           { name: 'Géographie',             icon: 'geo.svg' },
+    svt:           { name: 'SVT',                    icon: 'svt.webp' },
+    anglais:       { name: 'Anglais',                icon: 'anglais.webp' },
+    espagnol:      { name: 'Espagnol',               icon: 'espagnol.svg' },
+    physique:      { name: 'Physique',               icon: 'physique.webp' },
+    chimie:        { name: 'Chimie',                 icon: 'chimie.svg' },
+    techno:        { name: 'Technologie',            icon: 'technologie.webp' },
+    arts:          { name: 'Arts & Musique',         icon: 'arts.svg' },
+    philo:         { name: 'Philosophie',            icon: 'philo.svg' },
+    emc:           { name: 'EMC',                    icon: 'emc.svg' },
+    nsi:           { name: 'NSI & Numérique',        icon: 'nsi.svg' },
+    ses:           { name: 'SES (Économie)',         icon: 'ses.svg' },
+    hggsp:         { name: 'HGGSP (Géopolitique)',   icon: 'hggsp.svg' },
+    si:            { name: "Sciences de l'Ingénieur",icon: 'si.svg' },
+    msgn:          { name: 'Management & Gestion',   icon: 'msgn.svg' },
+    droit_eco:     { name: 'Droit & Économie',       icon: 'droit_eco.svg' },
+    mercatique:    { name: 'Mercatique (Marketing)', icon: 'mercatique.svg' },
+    i2d:           { name: 'I2D (Innovation & Éco)', icon: 'i2d.svg' },
+    sin:           { name: 'SIN (Info & Numérique)', icon: 'sin.svg' },
+    cybersecurite: { name: 'Cybersécurité',          icon: 'cybersecurite.svg' },
+    reseaux:       { name: 'Réseaux & Systèmes',     icon: 'reseaux.svg' },
+    electronique:  { name: 'Électronique & Systèmes',icon: 'electronique.svg' },
+    stss:          { name: 'STSS (Santé & Social)',  icon: 'stss.svg' },
 };
 
 /**
@@ -2815,17 +3291,16 @@ function getSubjectIslandSrc(subject) {
     if (!subject) return null;
     if (subject.image) return subject.image;
     if (subject.island) return subject.island;
-    if (subject.id === 'nsi') return 'Image/ile/nsi.svg';
-    if (subject.id === 'ses') return 'Image/ile/ses.svg';
-    if (subject.id === 'emc') return 'Image/ile/emc.svg';
 
     const iconStr = typeof subject.icon === 'string' ? subject.icon.trim() : '';
-    if (iconStr && (iconStr.startsWith('http://') || iconStr.startsWith('https://') || iconStr.startsWith('data:') || /\.(png|webp|svg|jpg)$/i.test(iconStr))) {
+    if (iconStr && (iconStr.startsWith('http://') || iconStr.startsWith('https://') || iconStr.startsWith('data:') || /\.(png|webp|svg|jpg|jpeg)$/i.test(iconStr))) {
         if (iconStr.startsWith('http') || iconStr.startsWith('data:') || iconStr.startsWith('/') || iconStr.startsWith('Image/')) {
             return iconStr;
         }
         return 'Image/ile/' + iconStr;
     }
+
+    if (subject._iconOverridden) return null;
 
     const mapping = SUBJECT_TO_MATIERE[subject.id];
     if (mapping && mapping.icon && /\.(png|webp|svg)$/i.test(mapping.icon)) {
@@ -2844,42 +3319,61 @@ function getSubjectIslandSrc(subject) {
 const BADGES_CATALOG = (typeof AdminStore !== 'undefined' && AdminStore.DEFAULT_BADGES)
     ? AdminStore.DEFAULT_BADGES
     : [
-        { id: 'premier_quiz', icon: '🎯', name: 'Premier pas', desc: 'Réussis ta toute première question.', category: 'progression', condition: 'totalCompleted >= 1' },
-        { id: 'sans_faute', icon: '✨', name: 'Sans-faute', desc: 'Réponds juste du premier coup, sans réessayer.', category: 'precision', condition: 'justAnsweredFirstTry' },
-        { id: 'toutes_matieres', icon: '🌐', name: 'Touche-à-tout', desc: 'Termine au moins une leçon dans chaque matière.', category: 'exploration', condition: 'allSubjectsStarted' },
-        { id: 'matiere_complete', icon: '🏆', name: 'Expert(e)', desc: 'Termine au moins 5 leçons d\'une même matière.', category: 'maitrise', condition: 'oneSubjectAdvanced' },
-        { id: 'collectionneur', icon: '🎨', name: 'Collectionneur', desc: 'Possède 3 skins ou articles différents.', category: 'boutique', condition: 'ownedSkins >= 3' },
-        { id: 'niveau_5', icon: '🚀', name: 'Étoile montante', desc: 'Atteins le niveau 5 (400+ XP).', category: 'niveau', condition: 'playerLevel >= 5' },
-        { id: 'niveau_10', icon: '👑', name: 'Grand Maître', desc: 'Atteins le niveau 10 (900+ XP).', category: 'niveau', condition: 'playerLevel >= 10' },
-        { id: 'riche', icon: '💰', name: 'Bourse pleine', desc: 'Accumule au moins 100 pièces d\'or.', category: 'economie', condition: 'coins >= 100' },
-        { id: 'magnat', icon: '🏦', name: 'Magnat d\'Eduquest', desc: 'Accumule au moins 250 pièces d\'or.', category: 'economie', condition: 'coins >= 250' },
-        { id: 'alchimiste', icon: '🧪', name: 'Alchimiste', desc: 'Achète ou possède une potion magique.', category: 'potions', condition: 'hasBooster' },
-        { id: 'potion_double_xp', icon: '⚡', name: 'Surtension', desc: 'Utilise une Potion Double XP.', category: 'potions', condition: 'usedDoubleXp' },
-        { id: 'bouclier_etoile', icon: '🛡️', name: 'Invulnérable', desc: 'Utilise un Bouclier d\'Étoile pour protéger un score parfait.', category: 'potions', condition: 'usedShield' },
-        { id: 'maths_fan', icon: '📐', name: 'Arithméticien', desc: 'Atteins le niveau 5 en Mathématiques.', category: 'matieres', condition: 'mathsLevel >= 5' },
-        { id: 'francais_fan', icon: '📚', name: 'Littéraire', desc: 'Atteins le niveau 5 en Français.', category: 'matieres', condition: 'francaisLevel >= 5' },
-        { id: 'histoire_fan', icon: '📜', name: 'Chroniqueur', desc: 'Atteins le niveau 5 en Histoire.', category: 'matieres', condition: 'histoireLevel >= 5' },
-        { id: 'sciences_fan', icon: '🔬', name: 'Scientifique', desc: 'Atteins le niveau 5 en SVT, Physique ou Chimie.', category: 'matieres', condition: 'scienceLevel >= 5' },
-        { id: 'philo_fan', icon: '🏛️', name: 'Penseur Antique', desc: 'Atteins le niveau 5 en Philosophie.', category: 'matieres', condition: 'philoLevel >= 5' },
-        { id: 'polyglotte', icon: '🇬🇧', name: 'Polyglotte', desc: 'Atteins le niveau 5 en Anglais.', category: 'matieres', condition: 'anglaisLevel >= 5' },
-        { id: 'citoyen', icon: '⚖️', name: 'Citoyen Éclairé', desc: 'Atteins le niveau 5 en EMC.', category: 'matieres', condition: 'emcLevel >= 5' },
-        { id: 'technophile', icon: '💻', name: 'Technophile', desc: 'Atteins le niveau 5 en Technologie.', category: 'matieres', condition: 'technoLevel >= 5' },
-        { id: 'fashion_victim', icon: '✨', name: 'Aura Éclatante', desc: 'Équipe une aura scintillante pour ton avatar.', category: 'personnalisation', condition: 'auraEquipped' },
-        { id: 'theme_custom', icon: '🎭', name: 'Nouveau Décor', desc: 'Applique un thème visuel personnalisé.', category: 'personnalisation', condition: 'themeEquipped' },
-        { id: 'streak_3', icon: '🔥', name: 'Série Ardente', desc: 'Réussis 3 leçons d\'affilée.', category: 'progression', condition: 'streakCount >= 3' },
-        { id: 'streak_5', icon: '⚡', name: 'Inarrêtable', desc: 'Atteins une série de 5 victoires d\'affilée.', category: 'progression', condition: 'streakCount >= 5' },
-        { id: 'combo_5', icon: '👑', name: 'Maître du Combo', desc: 'Enchaîne 5 bonnes réponses consécutives.', category: 'precision', condition: 'comboCount >= 5' },
-        { id: 'queteur', icon: '📋', name: 'Assidu', desc: 'Réclame une récompense de quête journalière.', category: 'quetes', condition: 'questClaimed' },
-        { id: 'coffre_ouvert', icon: '🎁', name: 'Chasseur de Trésor', desc: 'Ouvre le coffre quotidien bonus.', category: 'quetes', condition: 'dailyChestOpened' },
+        { id: 'premier_quiz', icon: '🎯', name: 'Premier pas', desc: 'Réussis ta toute première question.', category: 'progression', band: 'all', allowedFilieres: ['all'], condition: 'totalCompleted >= 1' },
+        { id: 'sans_faute', icon: '✨', name: 'Sans-faute', desc: 'Réponds juste du premier coup, sans réessayer.', category: 'precision', band: 'all', allowedFilieres: ['all'], condition: 'justAnsweredFirstTry' },
+        { id: 'toutes_matieres', icon: '🌐', name: 'Touche-à-tout', desc: 'Termine au moins une leçon dans chaque matière de ton parcours.', category: 'exploration', band: 'all', allowedFilieres: ['all'], condition: 'allSubjectsStarted' },
+        { id: 'matiere_complete', icon: '🏆', name: 'Expert(e)', desc: 'Termine au moins 5 leçons d\'une même matière.', category: 'maitrise', band: 'all', allowedFilieres: ['all'], condition: 'oneSubjectAdvanced' },
+        { id: 'collectionneur', icon: '🎨', name: 'Collectionneur', desc: 'Possède 3 skins ou articles différents.', category: 'boutique', band: 'all', allowedFilieres: ['all'], condition: 'ownedSkins >= 3' },
+        { id: 'niveau_5', icon: '🚀', name: 'Étoile montante', desc: 'Atteins le niveau 5 (400+ XP).', category: 'niveau', band: 'all', allowedFilieres: ['all'], condition: 'playerLevel >= 5' },
+        { id: 'niveau_10', icon: '👑', name: 'Grand Maître', desc: 'Atteins le niveau 10 (900+ XP).', category: 'niveau', band: 'all', allowedFilieres: ['all'], condition: 'playerLevel >= 10' },
+        { id: 'riche', icon: '💰', name: 'Bourse pleine', desc: 'Accumule au moins 100 pièces d\'or.', category: 'economie', band: 'all', allowedFilieres: ['all'], condition: 'coins >= 100' },
+        { id: 'magnat', icon: '🏦', name: 'Magnat d\'Eduquest', desc: 'Accumule au moins 250 pièces d\'or.', category: 'economie', band: 'all', allowedFilieres: ['all'], condition: 'coins >= 250' },
+        { id: 'alchimiste', icon: '🧪', name: 'Alchimiste', desc: 'Achète ou possède une potion magique.', category: 'potions', band: 'all', allowedFilieres: ['all'], condition: 'hasBooster' },
+        { id: 'potion_double_xp', icon: '⚡', name: 'Surtension', desc: 'Utilise une Potion Double XP.', category: 'potions', band: 'all', allowedFilieres: ['all'], condition: 'usedDoubleXp' },
+        { id: 'bouclier_etoile', icon: '🛡️', name: 'Invulnérable', desc: 'Utilise un Bouclier d\'Étoile pour protéger un score parfait.', category: 'potions', band: 'all', allowedFilieres: ['all'], condition: 'usedShield' },
+        { id: 'maths_fan', icon: '📐', name: 'Arithméticien', desc: 'Atteins le niveau 5 en Mathématiques.', category: 'matieres', band: 'all', allowedFilieres: ['all'], condition: 'mathsLevel >= 5' },
+        { id: 'francais_fan', icon: '📚', name: 'Littéraire', desc: 'Atteins le niveau 5 en Français.', category: 'matieres', band: 'all', allowedFilieres: ['all'], condition: 'francaisLevel >= 5' },
+        { id: 'histoire_fan', icon: '📜', name: 'Chroniqueur', desc: 'Atteins le niveau 5 en Histoire.', category: 'matieres', band: 'all', allowedFilieres: ['all'], condition: 'histoireLevel >= 5' },
+        { id: 'explorateur_geo', icon: '🌍', name: 'Cartographe', desc: 'Atteins le niveau 5 en Géographie.', category: 'matieres', band: 'all', allowedFilieres: ['all'], condition: 'geoLevel >= 5' },
+        { id: 'polyglotte', icon: '🇬🇧', name: 'Polyglotte', desc: 'Atteins le niveau 5 en Anglais.', category: 'matieres', band: 'all', allowedFilieres: ['all'], condition: 'anglaisLevel >= 5' },
+        { id: 'citoyen', icon: '⚖️', name: 'Citoyen Éclairé', desc: 'Atteins le niveau 5 en EMC.', category: 'matieres', band: 'all', allowedFilieres: ['all'], condition: 'emcLevel >= 5' },
+        { id: 'fashion_victim', icon: '✨', name: 'Aura Éclatante', desc: 'Équipe une aura scintillante pour ton avatar.', category: 'personnalisation', band: 'all', allowedFilieres: ['all'], condition: 'auraEquipped' },
+        { id: 'theme_custom', icon: '🎭', name: 'Nouveau Décor', desc: 'Applique un thème visuel personnalisé.', category: 'personnalisation', band: 'all', allowedFilieres: ['all'], condition: 'themeEquipped' },
+        { id: 'streak_3', icon: '🔥', name: 'Série Ardente', desc: 'Réussis 3 leçons d\'affilée.', category: 'progression', band: 'all', allowedFilieres: ['all'], condition: 'streakCount >= 3' },
+        { id: 'streak_5', icon: '⚡', name: 'Inarrêtable', desc: 'Atteins une série de 5 victoires d\'affilée.', category: 'progression', band: 'all', allowedFilieres: ['all'], condition: 'streakCount >= 5' },
+        { id: 'combo_5', icon: '👑', name: 'Maître du Combo', desc: 'Enchaîne 5 bonnes réponses consécutives.', category: 'precision', band: 'all', allowedFilieres: ['all'], condition: 'comboCount >= 5' },
+        { id: 'queteur', icon: '📋', name: 'Assidu', desc: 'Réclame une récompense de quête journalière.', category: 'quetes', band: 'all', allowedFilieres: ['all'], condition: 'questClaimed' },
+        { id: 'coffre_ouvert', icon: '🎁', name: 'Chasseur de Trésor', desc: 'Ouvre le coffre quotidien bonus.', category: 'quetes', band: 'all', allowedFilieres: ['all'], condition: 'dailyChestOpened' },
+        { id: 'technophile', icon: '💻', name: 'Technophile', desc: 'Atteins le niveau 5 en Technologie (Collège).', category: 'matieres', band: 'college', allowedFilieres: ['all'], condition: 'technoLevel >= 5' },
+        { id: 'sciences_fan', icon: '🔬', name: 'Scientifique', desc: 'Atteins le niveau 5 en SVT, Physique ou Chimie.', category: 'matieres', band: 'all', allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel', 'st2s'], condition: 'scienceLevel >= 5' },
+        { id: 'hispanophone', icon: '🇪🇸', name: 'Hispanophone', desc: 'Atteins le niveau 5 en Espagnol (LV2).', category: 'matieres', band: 'all', allowedFilieres: ['generale', 'stmg', 'st2s'], condition: 'espagnolLevel >= 5' },
+        { id: 'artiste_melomane', icon: '🎨', name: 'Esprit Créatif', desc: 'Atteins le niveau 5 en Arts & Musique.', category: 'matieres', band: 'all', allowedFilieres: ['generale'], condition: 'artsLevel >= 5' },
+        { id: 'philo_fan', icon: '🏛️', name: 'Penseur Antique', desc: 'Atteins le niveau 5 en Philosophie.', category: 'matieres', band: 'lycee', allowedFilieres: ['generale', 'nsi_spe', 'stmg', 'sti2d', 'st2s'], condition: 'philoLevel >= 5' },
+        { id: 'geopoliticien', icon: '🗺️', name: 'Géopoliticien', desc: 'Atteins le niveau 5 en HGGSP (Géopolitique).', category: 'matieres', band: 'lycee', allowedFilieres: ['generale'], condition: 'hggspLevel >= 5' },
+        { id: 'economiste_ses', icon: '💹', name: 'Économiste SES', desc: 'Atteins le niveau 5 en SES (Économie & Sociologie).', category: 'matieres', band: 'lycee', allowedFilieres: ['generale'], condition: 'sesLevel >= 5' },
+        { id: 'nsi_fan', icon: '💻', name: 'Codeur NSI', desc: 'Atteins le niveau 5 en NSI & Numérique.', category: 'matieres', band: 'lycee', allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel'], condition: 'nsiLevel >= 5' },
+        { id: 'ciel_fan', icon: '🛡️', name: 'Expert CIEL', desc: 'Atteins le niveau 5 en Cybersécurité, Réseaux ou Électronique.', category: 'matieres', band: 'lycee', allowedFilieres: ['ciel', 'nsi_spe'], condition: 'cielLevel >= 5' },
+        { id: 'cyber_gardien', icon: '🔐', name: 'Gardien Cyber', desc: 'Atteins le niveau 5 en Cybersécurité.', category: 'matieres', band: 'lycee', allowedFilieres: ['ciel', 'nsi_spe'], condition: 'cyberLevel >= 5' },
+        { id: 'architecte_reseau', icon: '🌐', name: 'Architecte Réseau', desc: 'Atteins le niveau 5 en Réseaux & Systèmes.', category: 'matieres', band: 'lycee', allowedFilieres: ['ciel', 'nsi_spe'], condition: 'reseauxLevel >= 5' },
+        { id: 'maitre_electronique', icon: '🔌', name: 'Maître des Circuits', desc: 'Atteins le niveau 5 en Électronique & Systèmes.', category: 'matieres', band: 'lycee', allowedFilieres: ['ciel', 'sti2d'], condition: 'electroniqueLevel >= 5' },
+        { id: 'stmg_fan', icon: '📊', name: 'Manager STMG', desc: 'Atteins le niveau 5 en MSGN, Droit-Éco ou Mercatique.', category: 'matieres', band: 'lycee', allowedFilieres: ['stmg'], condition: 'stmgLevel >= 5' },
+        { id: 'juriste_junior', icon: '⚖️', name: 'Juriste Junior', desc: 'Atteins le niveau 5 en Droit & Économie.', category: 'matieres', band: 'lycee', allowedFilieres: ['stmg', 'ciel'], condition: 'droitEcoLevel >= 5' },
+        { id: 'as_mercatique', icon: '📈', name: 'As du Marketing', desc: 'Atteins le niveau 5 en Mercatique.', category: 'matieres', band: 'lycee', allowedFilieres: ['stmg'], condition: 'mercatiqueLevel >= 5' },
+        { id: 'sti2d_fan', icon: '⚙️', name: 'Ingénieur STI2D', desc: 'Atteins le niveau 5 en I2D, SIN ou Sciences de l\'Ingénieur.', category: 'matieres', band: 'lycee', allowedFilieres: ['sti2d'], condition: 'sti2dLevel >= 5' },
+        { id: 'eco_concepteur', icon: '🌿', name: 'Éco-Concepteur', desc: 'Atteins le niveau 5 en I2D (Innovation & Éco).', category: 'matieres', band: 'lycee', allowedFilieres: ['sti2d'], condition: 'i2dLevel >= 5' },
+        { id: 'dompteur_signaux', icon: '📡', name: 'Dompteur de Signaux', desc: 'Atteins le niveau 5 en SIN (Info & Numérique).', category: 'matieres', band: 'lycee', allowedFilieres: ['sti2d'], condition: 'sinLevel >= 5' },
+        { id: 'ingenieur_systeme', icon: '📐', name: 'Ingénieur Système', desc: 'Atteins le niveau 5 en Sciences de l\'Ingénieur.', category: 'matieres', band: 'lycee', allowedFilieres: ['generale', 'nsi_spe', 'sti2d'], condition: 'siLevel >= 5' },
+        { id: 'st2s_fan', icon: '🩺', name: 'Spécialiste ST2S', desc: 'Atteins le niveau 5 en STSS.', category: 'matieres', band: 'lycee', allowedFilieres: ['st2s'], condition: 'stssLevel >= 5' },
+        { id: 'acteur_sante', icon: '🏥', name: 'Acteur de Santé', desc: 'Atteins le niveau 10 en STSS (Santé & Social).', category: 'matieres', band: 'lycee', allowedFilieres: ['st2s'], condition: 'stssLevel >= 10' },
     ];
 
 function comboTierName(combo) {
-    if (!combo || combo <= 1) return 'Standard (+0%)';
-    if (combo === 2) return 'En rythme (+20%)';
-    if (combo === 3) return 'En feu ! (+40%) 🔥';
-    if (combo === 4) return 'Surtension ! (+60%) ⚡';
-    if (combo < 10) return 'Inarrêtable ! (+100%) 👑';
-    return 'Légendaire ! (+150%) 🌌';
+    if (!combo || combo <= 1) return 'Multiplicateur standard (+0%)';
+    if (combo === 2) return 'Énergie chargée (+20%) ⚡';
+    if (combo === 3) return 'Haute tension (+40%) ⚡';
+    if (combo === 4) return 'Surtension ! (+60%) ⚡⚡';
+    if (combo < 10) return 'Supercharge ! (+100%) 👑';
+    return 'Énergie légendaire ! (+150%) 🌌';
 }
 window.comboTierName = comboTierName;
 
@@ -3051,6 +3545,63 @@ function checkBadges(extra = {}) {
             case 'technophile':
                 pass = (completedPerSubject['techno'] || 0) >= 5;
                 break;
+            case 'nsi_fan':
+                pass = (completedPerSubject['nsi'] || 0) >= 5;
+                break;
+            case 'stmg_fan':
+                pass = (completedPerSubject['msgn'] || 0) >= 5 || (completedPerSubject['droit_eco'] || 0) >= 5 || (completedPerSubject['mercatique'] || 0) >= 5;
+                break;
+            case 'sti2d_fan':
+                pass = (completedPerSubject['i2d'] || 0) >= 5 || (completedPerSubject['sin'] || 0) >= 5 || (completedPerSubject['si'] || 0) >= 5;
+                break;
+            case 'ciel_fan':
+                pass = (completedPerSubject['cybersecurite'] || 0) >= 5 || (completedPerSubject['reseaux'] || 0) >= 5 || (completedPerSubject['electronique'] || 0) >= 5;
+                break;
+            case 'st2s_fan':
+                pass = (completedPerSubject['stss'] || 0) >= 5;
+                break;
+            case 'hispanophone':
+                pass = (completedPerSubject['espagnol'] || 0) >= 5;
+                break;
+            case 'explorateur_geo':
+                pass = (completedPerSubject['geo'] || 0) >= 5;
+                break;
+            case 'artiste_melomane':
+                pass = (completedPerSubject['arts'] || 0) >= 5;
+                break;
+            case 'geopoliticien':
+                pass = (completedPerSubject['hggsp'] || 0) >= 5;
+                break;
+            case 'economiste_ses':
+                pass = (completedPerSubject['ses'] || 0) >= 5;
+                break;
+            case 'cyber_gardien':
+                pass = (completedPerSubject['cybersecurite'] || 0) >= 5;
+                break;
+            case 'architecte_reseau':
+                pass = (completedPerSubject['reseaux'] || 0) >= 5;
+                break;
+            case 'maitre_electronique':
+                pass = (completedPerSubject['electronique'] || 0) >= 5;
+                break;
+            case 'juriste_junior':
+                pass = (completedPerSubject['droit_eco'] || 0) >= 5;
+                break;
+            case 'as_mercatique':
+                pass = (completedPerSubject['mercatique'] || 0) >= 5;
+                break;
+            case 'eco_concepteur':
+                pass = (completedPerSubject['i2d'] || 0) >= 5;
+                break;
+            case 'dompteur_signaux':
+                pass = (completedPerSubject['sin'] || 0) >= 5;
+                break;
+            case 'ingenieur_systeme':
+                pass = (completedPerSubject['si'] || 0) >= 5;
+                break;
+            case 'acteur_sante':
+                pass = (completedPerSubject['stss'] || 0) >= 10;
+                break;
             case 'queteur':
                 pass = !!extra.questClaimed;
                 break;
@@ -3088,11 +3639,30 @@ function checkBadges(extra = {}) {
                     mathsLevel: completedPerSubject['maths'] || 0,
                     francaisLevel: completedPerSubject['francais'] || 0,
                     histoireLevel: completedPerSubject['histoire'] || 0,
+                    geoLevel: completedPerSubject['geo'] || 0,
                     scienceLevel: Math.max(completedPerSubject['svt'] || 0, completedPerSubject['physique'] || 0, completedPerSubject['chimie'] || 0),
                     philoLevel: completedPerSubject['philo'] || 0,
                     anglaisLevel: completedPerSubject['anglais'] || 0,
+                    espagnolLevel: completedPerSubject['espagnol'] || 0,
+                    artsLevel: completedPerSubject['arts'] || 0,
                     emcLevel: completedPerSubject['emc'] || 0,
                     technoLevel: completedPerSubject['techno'] || 0,
+                    nsiLevel: completedPerSubject['nsi'] || 0,
+                    sesLevel: completedPerSubject['ses'] || 0,
+                    hggspLevel: completedPerSubject['hggsp'] || 0,
+                    siLevel: completedPerSubject['si'] || 0,
+                    msgnLevel: completedPerSubject['msgn'] || 0,
+                    droitEcoLevel: completedPerSubject['droit_eco'] || 0,
+                    mercatiqueLevel: completedPerSubject['mercatique'] || 0,
+                    i2dLevel: completedPerSubject['i2d'] || 0,
+                    sinLevel: completedPerSubject['sin'] || 0,
+                    cyberLevel: completedPerSubject['cybersecurite'] || 0,
+                    reseauxLevel: completedPerSubject['reseaux'] || 0,
+                    electroniqueLevel: completedPerSubject['electronique'] || 0,
+                    stmgLevel: Math.max(completedPerSubject['msgn'] || 0, completedPerSubject['droit_eco'] || 0, completedPerSubject['mercatique'] || 0),
+                    sti2dLevel: Math.max(completedPerSubject['i2d'] || 0, completedPerSubject['sin'] || 0, completedPerSubject['si'] || 0),
+                    cielLevel: Math.max(completedPerSubject['cybersecurite'] || 0, completedPerSubject['reseaux'] || 0, completedPerSubject['electronique'] || 0),
+                    stssLevel: completedPerSubject['stss'] || 0,
                     hasBooster: hasAnyBooster ? 1 : 0,
                     usedDoubleXp: (extra.usedDoubleXp || extra.usedBooster === 'boost-xp') ? 1 : 0,
                     usedShield: (extra.usedShield || extra.usedBooster === 'boost-shield') ? 1 : 0,
@@ -3101,6 +3671,11 @@ function checkBadges(extra = {}) {
                     maxCombo: (typeof extra.maxCombo === 'number') ? extra.maxCombo : ((typeof DB !== 'undefined' && DB.getStreakData) ? DB.getStreakData().maxCombo : 0),
                     totalScore: (typeof extra.totalScore === 'number') ? extra.totalScore : parseInt((typeof DB !== 'undefined' && DB.getOption) ? (DB.getOption('dash_total_score') || '0') : '0', 10)
                 };
+                // Supporte aussi toute matière personnalisée via <subjectId>Level
+                Object.keys(completedPerSubject).forEach(sid => {
+                    const k = sid + 'Level';
+                    if (!(k in ctx)) ctx[k] = completedPerSubject[sid] || 0;
+                });
                 const m = cond.match(/^([a-zA-Z0-9_]+)\s*(>=|<=|>|<|===|==)\s*([0-9]+)$/);
                 if (m) {
                     const varVal = ctx[m[1]] ?? 0;
@@ -3181,6 +3756,13 @@ function initDashboard() {
             equippedTheme:  equippedTheme,
             ownedSkins:     getOwnedSkinsSafe(),
             shopCategory:   'all',
+            subjectFilter:  'all',
+            badgeShowAll:   false,
+            badgeFiliereFilter: 'mine', // 'mine' | 'all' | 'universal' | 'college' | <filiereId>
+            badgeStatusFilter:  'all',  // 'all' | 'unlocked' | 'locked'
+            badgeSort:      'relevance',// 'relevance' | 'unlocked_first' | 'locked_first' | 'filiere' | 'alpha'
+            questsCollapsed: getOption('dash_quests_collapsed') === 'true',
+            bottomNavHidden: getOption('mobile_bottom_nav_hidden') === 'true',
             view:           'dashboard', // Toujours revenir au dashboard au chargement
             currentSubject: null,
             progress:       parsedProgress,
@@ -3239,10 +3821,27 @@ function initDashboard() {
 
     /* ============ RENDU ============ */
 
+    let _lastDashSyncSig = '';
+    function computeDashSyncSig() {
+        return [
+            currentNiveau(),
+            currentFiliere(),
+            getOption('dash_xp') || '0',
+            getOption('dash_coins') || '30',
+            getOption('dash_equippedTheme') || 'default',
+            getOption('dash_equippedAvatar') || 'robot',
+            getOption('dash_equippedAura') || 'aurore',
+        ].join('|');
+    }
+
     /** Point d'entrée du rendu — reconstruit tout le contenu de #dashboard-app */
     function render() {
         document.documentElement.style.setProperty('--dash-skin', skinColor(state.equippedAura));
         document.documentElement.setAttribute('data-theme', state.equippedTheme || 'default');
+        if (document.body) {
+            document.body.classList.toggle('bnav-collapsed', Boolean(state.bottomNavHidden));
+        }
+        _lastDashSyncSig = computeDashSyncSig();
         dashApp.innerHTML = `
             ${renderHeader()}
             ${renderHud()}
@@ -3251,44 +3850,66 @@ function initDashboard() {
             ${state.view === 'map' ? renderMap() : ''}
             ${state.view === 'shop' ? renderShop() : ''}
             ${state.view === 'badges' ? renderBadges() : ''}
-            <div class="dash-footer-note">EDUQUEST — Contenus pédagogiques rédigés à titre d'exemple.</div>
+            <div class="dash-footer-note">EDUQUEST — Contenus alignés sur les programmes officiels.</div>
         `;
         if (state.quiz) renderQuizModal();
     }
 
     function renderHeader() {
-        // Affiche le pseudo du joueur connecté (login.html) s'il y en a un ;
-        // le dashboard reste utilisable sans compte (progression stockée
-        // localement dans ce cas, comme pour un invité).
         const user = DB.getCurrentUser();
         const greeting = user ? `<span class="dash-user-greeting">Salut, ${escapeHtml(user.username)} 👋</span>` : '';
-        
-        // --- Sélecteur de niveau scolaire (remplace jouer.html) ---
-        const niveaux = (window.AdminStore && typeof AdminStore.getNiveauxScolaires === 'function') 
-            ? AdminStore.getNiveauxScolaires() 
+
+        // --- Sélecteur de classe (6ème → Terminale + BTS) ---
+        const niveaux = (window.AdminStore && typeof AdminStore.getNiveauxScolaires === 'function')
+            ? AdminStore.getNiveauxScolaires()
             : [
-                { id: '6eme', label: '6ème', name: '6ème' },
-                { id: '5eme', label: '5ème', name: '5ème' },
-                { id: '4eme', label: '4ème', name: '4ème' },
-                { id: '3eme', label: '3ème', name: '3ème' },
-                { id: '2nde', label: '2nde', name: '2nde' },
-                { id: '1ere', label: '1ère', name: '1ère' },
-                { id: 'terminale', label: 'Terminale', name: 'Terminale' }
+                { id: '6eme', label: '6ème' },
+                { id: '5eme', label: '5ème' },
+                { id: '4eme', label: '4ème' },
+                { id: '3eme', label: '3ème' },
+                { id: '2nde', label: '2nde' },
+                { id: '1ere', label: '1ère' },
+                { id: 'terminale', label: 'Terminale' },
+                { id: 'bts1', label: 'BTS 1ère année' },
+                { id: 'bts2', label: 'BTS 2ème année' },
             ];
-        const currentNiveau = (typeof DB !== 'undefined' && DB.getNiveau) ? (DB.getNiveau() || '6eme') : '6eme';
+        const curNiv = currentNiveau();
         const optionsHtml = niveaux.map(n => {
             const label = n.label || n.name || n.id;
-            const isSelected = n.id === currentNiveau;
+            const isSelected = n.id === curNiv;
             return `<option value="${escapeHtml(n.id)}"${isSelected ? ' selected' : ''}>🎓 ${escapeHtml(label)}</option>`;
         }).join('');
 
+        // --- Sélecteur de filière (Lycée & BTS : Générale, NSI, STMG, STI2D, CIEL, ST2S) ---
+        const showFiliere = (typeof AdminStore !== 'undefined' && typeof AdminStore.isFiliereApplicable === 'function')
+            ? AdminStore.isFiliereApplicable(curNiv)
+            : ['2nde', '1ere', 'terminale', 'bts1', 'bts2'].includes(curNiv);
+        let filiereSelectHtml = '';
+        if (showFiliere) {
+            const filieres = (typeof AdminStore !== 'undefined' && typeof AdminStore.getActiveFilieres === 'function')
+                ? AdminStore.getActiveFilieres()
+                : (typeof AdminStore !== 'undefined' && typeof AdminStore.getFilieres === 'function'
+                    ? AdminStore.getFilieres()
+                    : [{ id: 'generale', label: 'Voie Générale', icon: '📚' }]);
+            const curFil = currentFiliere();
+            const filOpts = filieres.map(f => {
+                const selected = f.id === curFil ? ' selected' : '';
+                return `<option value="${escapeHtml(f.id)}"${selected}>${escapeHtml(f.icon || '🧭')} ${escapeHtml(f.shortLabel || f.label)}</option>`;
+            }).join('');
+            filiereSelectHtml = `
+                <select class="dash-grade-select dash-filiere-select" id="dashFiliereSelect" ${state.quiz ? 'disabled title="Changement de filière verrouillé pendant un exercice"' : ''} onchange="window._dashChangeFiliere(this.value)" aria-label="Choisir sa filière">
+                    ${filOpts}
+                </select>`;
+        }
+
         return `<header class="dash-header">
-            <div class="dash-header-left" style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+            <div class="dash-header-left">
                 <div class="dash-brand"><b>EDU</b><span>QUEST</span></div>
-                <div class="dash-grade-wrap" style="display: inline-flex; align-items: center;">
+                <div class="dash-header-controls">
                     <select class="dash-grade-select" id="dashGradeSelect" ${state.quiz ? 'disabled title="Changement de classe verrouillé pendant un exercice"' : ''} onchange="window._dashChangeNiveau(this.value)" aria-label="Choisir sa classe">
                         ${optionsHtml}
                     </select>
+                    ${filiereSelectHtml}
                 </div>
             </div>
             ${greeting}
@@ -3303,17 +3924,7 @@ function initDashboard() {
             : '';
 
         const streakData = (typeof DB !== 'undefined' && DB.getStreakData) ? DB.getStreakData() : { count: 0, combo: 0 };
-        const streakCount = streakData.count || 0;
-        const comboCount = streakData.combo || 0;
-        const multiplier = (typeof DB !== 'undefined' && DB.getMultiplier) ? DB.getMultiplier(comboCount) : 1.0;
-        const isHot = streakCount >= 2 || comboCount >= 2;
-
-        const streakPill = `<div class="dash-streak-pill ${isHot ? 'is-hot' : ''}" title="Série de victoires : ${streakCount} d'affilée · Combo : x${comboCount}">
-            <span class="dash-streak-flame">${isHot ? '🔥' : '⚡'}</span>
-            <span class="dash-streak-count">${streakCount}</span>
-            <span class="dash-streak-label">SÉRIE</span>
-            ${multiplier > 1.0 ? `<span class="dash-combo-tag">x${multiplier}</span>` : ''}
-        </div>`;
+        const statsPillsHtml = renderStreakAndComboPillsHtml(streakData);
 
         const hudAvatarImg = skinImage(state.equippedAvatar);
         return `<div class="dash-hud">
@@ -3322,39 +3933,59 @@ function initDashboard() {
                 <div class="dash-hud-level">Niveau ${level()} <span class="mono">· ${pct}/100 XP</span> ${titleBadge}</div>
                 <div class="dash-xp-track"><div class="dash-xp-fill" style="width:${pct}%"></div></div>
             </div>
-            ${streakPill}
-            <div class="dash-coins"><span class="dash-coin-dot"></span>${state.coins}</div>
+            <div class="dash-hud-right">
+                ${statsPillsHtml}
+                <div class="dash-coins" title="Pièces d'or disponibles en boutique"><span class="dash-coin-dot"></span>${state.coins}</div>
+            </div>
         </div>`;
     }
 
+    function isBadgeForCurrentTrack(badge, curNiv, curFil) {
+        if (typeof AdminStore !== 'undefined' && typeof AdminStore.isBadgeRelevantFor === 'function') {
+            return AdminStore.isBadgeRelevantFor(badge, curNiv, curFil);
+        }
+        return true;
+    }
+
     function renderTabs() {
-        const badgesTotal = getBadgesCatalog().length;
-        const unlockedCount = (typeof DB !== 'undefined' && DB.getBadges) ? DB.getBadges().length : state.badges.length;
+        const siteCfg = (typeof AdminStore !== 'undefined' && typeof AdminStore.getSiteConfig === 'function')
+            ? AdminStore.getSiteConfig()
+            : {};
+        const showShop = siteCfg.enableShop !== false;
+        const showBadges = siteCfg.enableBadges !== false;
+
+        const curNiv = currentNiveau();
+        const curFil = currentFiliere();
+        const allCatalog = getBadgesCatalog();
+        const myCatalog = allCatalog.filter(b => isBadgeForCurrentTrack(b, curNiv, curFil));
+        const unlockedIds = (typeof DB !== 'undefined' && DB.getBadges) ? DB.getBadges() : state.badges;
+        const myUnlockedCount = myCatalog.filter(b => unlockedIds.includes(b.id)).length;
+        const navHidden = Boolean(state.bottomNavHidden);
         return `
         <!-- Onglets bureau classiques -->
         <nav class="dash-tabs" aria-label="Navigation principale">
             <button class="dash-tab ${state.view === 'dashboard' || state.view === 'map' ? 'active' : ''}" onclick="window._dashGoDashboard()">🏝️ Matières</button>
-            <button class="dash-tab ${state.view === 'shop' ? 'active' : ''}" onclick="window._dashGoShop()">🛍️ Boutique</button>
-            <button class="dash-tab ${state.view === 'badges' ? 'active' : ''}" onclick="window._dashGoBadges()">🏆 Succès (${unlockedCount}/${badgesTotal})</button>
+            ${showShop ? `<button class="dash-tab ${state.view === 'shop' ? 'active' : ''}" onclick="window._dashGoShop()">🛍️ Boutique</button>` : ''}
+            ${showBadges ? `<button class="dash-tab ${state.view === 'badges' ? 'active' : ''}" onclick="window._dashGoBadges()">🏆 Succès (${myUnlockedCount}/${myCatalog.length})</button>` : ''}
         </nav>
 
-        <!-- Barre de navigation inférieure ergonomique pour mobile (Bottom Navigation Bar) -->
-        <nav class="dash-bottom-nav" aria-label="Navigation mobile">
-            <button class="dash-bnav-item ${state.view === 'dashboard' || state.view === 'map' ? 'active' : ''}" onclick="window._dashGoDashboard()" aria-label="Matières">
+        <!-- Barre de navigation inférieure ergonomique et repliable pour mobile -->
+        <nav class="dash-bottom-nav ${navHidden ? 'is-collapsed' : ''}" aria-label="Navigation mobile" ${navHidden ? 'aria-hidden="true"' : ''}>
+            <button type="button" class="dash-bnav-item ${state.view === 'dashboard' || state.view === 'map' ? 'active' : ''}" onclick="window._dashGoDashboard()" aria-label="Matières">
                 <span class="dash-bnav-icon">🏝️</span>
                 <span class="dash-bnav-label">Matières</span>
             </button>
-            <button class="dash-bnav-item ${state.view === 'shop' ? 'active' : ''}" onclick="window._dashGoShop()" aria-label="Boutique">
+            ${showShop ? `<button type="button" class="dash-bnav-item ${state.view === 'shop' ? 'active' : ''}" onclick="window._dashGoShop()" aria-label="Boutique">
                 <span class="dash-bnav-icon">🛍️</span>
                 <span class="dash-bnav-label">Boutique</span>
-            </button>
-            <button class="dash-bnav-item ${state.view === 'badges' ? 'active' : ''}" onclick="window._dashGoBadges()" aria-label="Succès">
+            </button>` : ''}
+            ${showBadges ? `<button type="button" class="dash-bnav-item ${state.view === 'badges' ? 'active' : ''}" onclick="window._dashGoBadges()" aria-label="Succès">
                 <span class="dash-bnav-icon">
                     🏆
-                    <span class="dash-bnav-badge">${unlockedCount}</span>
+                    <span class="dash-bnav-badge">${myUnlockedCount}</span>
                 </span>
                 <span class="dash-bnav-label">Succès</span>
-            </button>
+            </button>` : ''}
             <a class="dash-bnav-item" href="index.html#options" aria-label="Options">
                 <span class="dash-bnav-icon">⚙️</span>
                 <span class="dash-bnav-label">Options</span>
@@ -3363,50 +3994,213 @@ function initDashboard() {
                 <span class="dash-bnav-icon">🏠</span>
                 <span class="dash-bnav-label">Accueil</span>
             </a>
-        </nav>`;
+            <button type="button" class="dash-bnav-item dash-bnav-close-btn" onclick="window._dashToggleBottomNav(true)" aria-label="Fermer le bandeau du bas" title="Fermer la barre du bas">
+                <span class="dash-bnav-icon">✕</span>
+                <span class="dash-bnav-label">Fermer</span>
+            </button>
+        </nav>
+        ${navHidden ? `<button type="button" class="dash-bnav-reopen-btn" onclick="window._dashToggleBottomNav(false)" aria-label="Afficher le menu du bas">☰ Menu</button>` : ''}`;
     }
 
-    /** Vue "Succès" : catalogue complet des badges, débloqués ou non. */
+    /** Vue "Succès" : filtrée par filière/classe par défaut, avec bouton « Tout voir » et tri complet. */
     function renderBadges() {
         const unlockedIds = (typeof DB !== 'undefined' && DB.getBadges) ? DB.getBadges() : state.badges;
         state.badges = unlockedIds;
         const catalog = getBadgesCatalog();
-        const cards = catalog.map(badge => {
+        const curNiv = currentNiveau();
+        const curFil = currentFiliere();
+        const isFilUsed = (typeof AdminStore !== 'undefined' && typeof AdminStore.isFiliereApplicable === 'function')
+            ? AdminStore.isFiliereApplicable(curNiv)
+            : ['2nde', '1ere', 'terminale', 'bts1', 'bts2'].includes(curNiv);
+        const nivLabel = (typeof AdminStore !== 'undefined' && typeof AdminStore.levelLabel === 'function')
+            ? AdminStore.levelLabel(curNiv)
+            : curNiv;
+        const filObj = (isFilUsed && typeof AdminStore !== 'undefined' && typeof AdminStore.getFiliere === 'function')
+            ? AdminStore.getFiliere(curFil)
+            : null;
+        const trackLabel = filObj
+            ? `${filObj.icon || '🧭'} ${filObj.shortLabel || filObj.label}`
+            : `🏫 ${nivLabel}`;
+
+        const myTrackBadges = catalog.filter(b => isBadgeForCurrentTrack(b, curNiv, curFil));
+        const myUnlockedCount = myTrackBadges.filter(b => unlockedIds.includes(b.id)).length;
+        const globalUnlockedCount = catalog.filter(b => unlockedIds.includes(b.id)).length;
+
+        const showAll = Boolean(state.badgeShowAll);
+        const filFilter = state.badgeFiliereFilter || (showAll ? 'all' : 'mine');
+        const statusFilter = state.badgeStatusFilter || 'all';
+        const sortMode = state.badgeSort || 'relevance';
+
+        // 1. Filtrage par filière / portée
+        let list = catalog.filter(b => {
+            const allowedFil = Array.isArray(b.allowedFilieres) && b.allowedFilieres.length ? b.allowedFilieres : ['all'];
+            const band = b.band || 'all';
+            if (filFilter === 'mine') {
+                return isBadgeForCurrentTrack(b, curNiv, curFil);
+            }
+            if (filFilter === 'all') {
+                return true;
+            }
+            if (filFilter === 'universal') {
+                return band === 'all' && allowedFil.includes('all');
+            }
+            if (filFilter === 'college') {
+                return band === 'college';
+            }
+            // Filière spécifique (ex: 'ciel', 'stmg', 'sti2d', 'nsi_spe', 'st2s', 'generale')
+            return band !== 'college' && (allowedFil.includes(filFilter) && !allowedFil.includes('all'));
+        });
+
+        // 2. Filtrage par statut (débloqué / verrouillé)
+        if (statusFilter === 'unlocked') {
+            list = list.filter(b => unlockedIds.includes(b.id));
+        } else if (statusFilter === 'locked') {
+            list = list.filter(b => !unlockedIds.includes(b.id));
+        }
+
+        // 3. Tri configurable
+        const scopeText = b => (typeof AdminStore !== 'undefined' && typeof AdminStore.getBadgeScopeLabel === 'function')
+            ? AdminStore.getBadgeScopeLabel(b)
+            : '🌐 Tous';
+        const isTrackSpecific = b => {
+            const allowed = Array.isArray(b.allowedFilieres) ? b.allowedFilieres : ['all'];
+            return !allowed.includes('all') || (b.band && b.band !== 'all');
+        };
+
+        list = list.slice().sort((a, b) => {
+            const aUn = unlockedIds.includes(a.id) ? 1 : 0;
+            const bUn = unlockedIds.includes(b.id) ? 1 : 0;
+            if (sortMode === 'unlocked_first') {
+                if (bUn !== aUn) return bUn - aUn;
+                return String(a.name || '').localeCompare(String(b.name || ''), 'fr');
+            }
+            if (sortMode === 'locked_first') {
+                if (aUn !== bUn) return aUn - bUn;
+                return String(a.name || '').localeCompare(String(b.name || ''), 'fr');
+            }
+            if (sortMode === 'filiere') {
+                const cmp = scopeText(a).localeCompare(scopeText(b), 'fr');
+                return cmp !== 0 ? cmp : String(a.name || '').localeCompare(String(b.name || ''), 'fr');
+            }
+            if (sortMode === 'alpha') {
+                return String(a.name || '').localeCompare(String(b.name || ''), 'fr');
+            }
+            // 'relevance' : succès dédiés à ma filière d'abord, puis débloqués, puis universels
+            const aMine = isBadgeForCurrentTrack(a, curNiv, curFil) ? 1 : 0;
+            const bMine = isBadgeForCurrentTrack(b, curNiv, curFil) ? 1 : 0;
+            if (bMine !== aMine) return bMine - aMine;
+            const aSpec = (aMine && isTrackSpecific(a)) ? 1 : 0;
+            const bSpec = (bMine && isTrackSpecific(b)) ? 1 : 0;
+            if (bSpec !== aSpec) return bSpec - aSpec;
+            if (bUn !== aUn) return bUn - aUn;
+            return 0;
+        });
+
+        const allFilieres = (typeof AdminStore !== 'undefined' && typeof AdminStore.getFilieres === 'function')
+            ? AdminStore.getFilieres()
+            : [];
+
+        const filiereOptionsHtml = [
+            `<option value="mine"${filFilter === 'mine' ? ' selected' : ''}>🎯 Ma filière (${escapeHtml(trackLabel)} · ${myTrackBadges.length})</option>`,
+            `<option value="all"${filFilter === 'all' ? ' selected' : ''}>👁️ Toutes les filières (${catalog.length})</option>`,
+            `<option value="universal"${filFilter === 'universal' ? ' selected' : ''}>🌐 Succès universels uniquement</option>`,
+            `<option value="college"${filFilter === 'college' ? ' selected' : ''}>🏫 Collège uniquement</option>`,
+            ...allFilieres.map(f => {
+                const cnt = catalog.filter(b => b.band !== 'college' && Array.isArray(b.allowedFilieres) && b.allowedFilieres.includes(f.id) && !b.allowedFilieres.includes('all')).length;
+                return `<option value="${escapeHtml(f.id)}"${filFilter === f.id ? ' selected' : ''}>${escapeHtml(f.icon || '🧭')} Spé ${escapeHtml(f.shortLabel || f.label)} (${cnt})</option>`;
+            }),
+        ].join('');
+
+        const cards = list.map(badge => {
             const unlocked = unlockedIds.includes(badge.id);
-            return `<div class="dash-skin-card dash-badge-card ${unlocked ? 'is-unlocked' : 'locked'}">
+            const mine = isBadgeForCurrentTrack(badge, curNiv, curFil);
+            const scopeLbl = scopeText(badge);
+            const isGlobalScope = !isTrackSpecific(badge);
+            return `<div class="dash-skin-card dash-badge-card ${unlocked ? 'is-unlocked' : 'locked'} ${!mine ? 'is-other-filiere' : ''}">
+                <span class="dash-badge-scope-pill ${isGlobalScope ? 'is-global' : ''}">${escapeHtml(scopeLbl)}</span>
                 <div class="dash-badge-icon">${unlocked ? badge.icon : '🔒'}</div>
                 <div class="dash-skin-name">${escapeHtml(badge.name)}</div>
                 <div class="dash-badge-desc">${escapeHtml(badge.desc)}</div>
-                <div class="dash-badge-status" style="margin-top:8px; font-size:0.75rem; font-weight:700; color:${unlocked ? '#4ade80' : '#8fa1d0'};">
+                <div class="dash-badge-status" style="margin-top:auto; padding-top:8px; font-size:0.75rem; font-weight:700; color:${unlocked ? '#4ade80' : '#8fa1d0'};">
                     ${unlocked ? '✓ DÉBLOQUÉ' : '🔒 VERROUILLÉ'}
                 </div>
             </div>`;
         }).join('');
-        return `<section>
-            <div class="dash-eyebrow">Succès</div>
-            <h2 style="font-family:'Cinzel',serif; font-size:22px; color:#fff; text-shadow:0 0 10px rgba(200,168,75,0.4), 2px 2px 6px rgba(0,0,0,0.7); letter-spacing:1px;">Tes accomplissements (${unlockedIds.length}/${catalog.length})</h2>
-            <div class="dash-skins-grid">${cards}</div>
+
+        const hiddenCount = Math.max(0, catalog.length - myTrackBadges.length);
+
+        return `<section class="dash-section">
+            <div class="dash-badges-head">
+                <div>
+                    <div class="dash-eyebrow">Succès · ${escapeHtml(trackLabel)}</div>
+                    <h2 class="dash-section-title">Tes accomplissements (${filFilter === 'all' ? `${globalUnlockedCount}/${catalog.length}` : `${myUnlockedCount}/${myTrackBadges.length}`})</h2>
+                    <div class="dash-badges-subtitle">
+                        ${filFilter === 'mine'
+                            ? `Affichage adapté à ton parcours (${hiddenCount} succès d'autres filières masqués).`
+                            : `Affichage étendu : ${list.length} succès affichés sur ${catalog.length} au total.`}
+                    </div>
+                </div>
+                <button type="button" class="dash-badge-filter-btn show-all-btn ${filFilter === 'all' ? 'active' : ''}" id="dashBadgesToggleAllBtn" onclick="window._dashToggleBadgesShowAll(${filFilter === 'all' ? 'false' : 'true'})">
+                    ${filFilter === 'all' ? `🎯 Filtrer sur ma filière (${myTrackBadges.length})` : `👁️ Tout voir (${catalog.length})`}
+                </button>
+            </div>
+
+            <div class="dash-badges-toolbar">
+                <div class="dash-badges-modes">
+                    <button type="button" class="dash-badge-filter-btn ${statusFilter === 'all' ? 'active' : ''}" onclick="window._dashSetBadgeStatusFilter('all')">Tous</button>
+                    <button type="button" class="dash-badge-filter-btn ${statusFilter === 'unlocked' ? 'active' : ''}" onclick="window._dashSetBadgeStatusFilter('unlocked')">✓ Débloqués</button>
+                    <button type="button" class="dash-badge-filter-btn ${statusFilter === 'locked' ? 'active' : ''}" onclick="window._dashSetBadgeStatusFilter('locked')">🔒 À débloquer</button>
+                </div>
+                <div class="dash-badges-controls">
+                    <select class="dash-badge-select" id="dashBadgeFiliereSelect" aria-label="Filtrer les succès par filière" onchange="window._dashSetBadgeFiliereFilter(this.value)">
+                        ${filiereOptionsHtml}
+                    </select>
+                    <select class="dash-badge-select" id="dashBadgeSortSelect" aria-label="Trier les succès" onchange="window._dashSetBadgeSort(this.value)">
+                        <option value="relevance"${sortMode === 'relevance' ? ' selected' : ''}>Tri : Pertinence filière</option>
+                        <option value="unlocked_first"${sortMode === 'unlocked_first' ? ' selected' : ''}>Tri : Débloqués d'abord</option>
+                        <option value="locked_first"${sortMode === 'locked_first' ? ' selected' : ''}>Tri : À débloquer d'abord</option>
+                        <option value="filiere"${sortMode === 'filiere' ? ' selected' : ''}>Tri : Par filière</option>
+                        <option value="alpha"${sortMode === 'alpha' ? ' selected' : ''}>Tri : Alphabétique (A→Z)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="dash-skins-grid">
+                ${cards || `<div class="dash-badges-empty">Aucun succès ne correspond à ce filtre. <br><button type="button" class="dash-badge-filter-btn" style="margin-top:10px;" onclick="window._dashToggleBadgesShowAll(true)">👁️ Afficher tous les succès</button></div>`}
+            </div>
         </section>`;
     }
 
     function renderDashboard() {
-        const currentNiveau = (typeof DB !== 'undefined' && DB.getNiveau) ? (DB.getNiveau() || '6eme') : '6eme';
-        const cards = DASH_SUBJECTS.map(s => {
+        const curNiv = currentNiveau();
+        const curFil = currentFiliere();
+        const nivLabel = (typeof AdminStore !== 'undefined' && AdminStore.levelLabel) ? AdminStore.levelLabel(curNiv) : curNiv;
+        const isFilUsed = (typeof AdminStore !== 'undefined' && AdminStore.isFiliereApplicable) ? AdminStore.isFiliereApplicable(curNiv) : false;
+        const filObj = (isFilUsed && typeof AdminStore !== 'undefined' && AdminStore.getFiliere) ? AdminStore.getFiliere(curFil) : null;
+        const filShort = filObj ? (filObj.shortLabel || filObj.label) : '';
+
+        const specCount = DASH_SUBJECTS.filter(s => s._isSpecialty).length;
+        const coreCount = DASH_SUBJECTS.length - specCount;
+        const activeFilter = (isFilUsed && specCount > 0) ? (state.subjectFilter || 'all') : 'all';
+
+        const visibleSubjects = DASH_SUBJECTS.filter(s => {
+            if (activeFilter === 'specialites') return Boolean(s._isSpecialty);
+            if (activeFilter === 'tronc') return !s._isSpecialty;
+            return true;
+        });
+
+        const cards = visibleSubjects.map(s => {
             let done = 0;
             const data = (typeof DB !== 'undefined' && DB.getProgressSync)
-                ? DB.getProgressSync(s.name, currentNiveau)
+                ? DB.getProgressSync(s.name, curNiv)
                 : null;
             if (data && data.levels) {
                 for (let key in data.levels) {
-                    if (data.levels[key].stars > 0) {
-                        done++;
-                    }
+                    if (data.levels[key].stars > 0) done++;
                 }
             }
-            if (done === 0) {
-                done = state.progress[s.id] || 0;
-            }
-            
+            if (done === 0) done = state.progress[s.id] || 0;
+
             const total = s.lessons.length;
             const pct = Math.round((done / total) * 100);
             const islandSrc = getSubjectIslandSrc(s);
@@ -3415,8 +4209,12 @@ function initDashboard() {
                      <img src="${escapeHtml(islandSrc)}" alt="${escapeHtml(s.name)}" class="dash-subject-island" loading="lazy">
                    </div>`
                 : `<div class="dash-subject-icon">${escapeHtml(s.icon || '📘')}</div>`;
+            const specBadge = s._isSpecialty
+                ? `<span class="dash-subject-badge" title="Matière phare de la filière ${escapeHtml(filShort)}">★ ${escapeHtml(filShort || 'Spé')}</span>`
+                : '';
 
-            return `<div class="dash-subject-card" onclick="window._dashOpenMap('${escapeHtml(s.id)}')" tabindex="0" role="button" aria-label="${escapeHtml(s.name)}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window._dashOpenMap('${escapeHtml(s.id)}');}">
+            return `<div class="dash-subject-card ${s._isSpecialty ? 'is-specialty' : ''}" onclick="window._dashOpenMap('${escapeHtml(s.id)}')" tabindex="0" role="button" aria-label="${escapeHtml(s.name)}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window._dashOpenMap('${escapeHtml(s.id)}');}">
+                ${specBadge}
                 <span class="dash-pct mono">${done}/${total}</span>
                 ${iconHtml}
                 <h3>${escapeHtml(s.name)}</h3>
@@ -3424,21 +4222,44 @@ function initDashboard() {
             </div>`;
         }).join('');
 
+        const filterBarHtml = (isFilUsed && specCount > 0) ? `
+            <div class="dash-subject-filters" role="tablist" aria-label="Filtrer les matières">
+                <button type="button" class="dash-filter-chip ${activeFilter === 'all' ? 'active' : ''}" onclick="window._dashSetSubjectFilter('all')">Toutes (${DASH_SUBJECTS.length})</button>
+                <button type="button" class="dash-filter-chip ${activeFilter === 'specialites' ? 'active' : ''}" onclick="window._dashSetSubjectFilter('specialites')">★ Spécialités ${escapeHtml(filShort)} (${specCount})</button>
+                <button type="button" class="dash-filter-chip ${activeFilter === 'tronc' ? 'active' : ''}" onclick="window._dashSetSubjectFilter('tronc')">Tronc commun (${coreCount})</button>
+            </div>` : '';
+
+        const programSummary = filObj
+            ? `Programme officiel · <b>${escapeHtml(nivLabel)}</b> · ${escapeHtml(filObj.icon || '')} <b>${escapeHtml(filObj.label)}</b>`
+            : `Programme officiel · <b>${escapeHtml(nivLabel)}</b>`;
+
         return `
         ${renderQuests()}
-        <section>
-            <div class="dash-eyebrow">Ta progression</div>
-            <h2 style="font-family:'Cinzel',serif; font-size:22px; color:#fff; text-shadow:0 0 10px rgba(200,168,75,0.4), 2px 2px 6px rgba(0,0,0,0.7); letter-spacing:1px;">Choisis une matière à explorer</h2>
+        <section class="dash-section dash-subjects-section">
+            <div class="dash-subjects-head">
+                <div>
+                    <div class="dash-eyebrow">Ta progression</div>
+                    <h2 class="dash-section-title">Choisis une matière à explorer</h2>
+                    <div class="dash-curriculum-bar">${programSummary} — ${DASH_SUBJECTS.length} matières</div>
+                </div>
+                ${filterBarHtml}
+            </div>
             <div class="dash-subjects-grid">${cards}</div>
         </section>`;
     }
 
-    /** Tableau des quêtes journalières : cartes avec anneau de progression. */
+    /** Tableau des quêtes journalières : compact, repliable et optimisé mobile. */
     function renderQuests() {
+        const siteCfg = (typeof AdminStore !== 'undefined' && typeof AdminStore.getSiteConfig === 'function')
+            ? AdminStore.getSiteConfig()
+            : {};
+        if (siteCfg.enableQuests === false) return '';
         const data = DailyQuests.get();
         const total = data.quests.length;
         const claimedCount = data.quests.filter(q => q.claimed).length;
+        const readyCount = data.quests.filter(q => !q.claimed && DailyQuests.isComplete(q)).length;
         const allClaimed = claimedCount === total;
+        const collapsed = Boolean(state.questsCollapsed);
         const R = 26, C = 2 * Math.PI * R; // Anneau SVG
 
         const cards = data.quests.map((q, i) => {
@@ -3446,11 +4267,11 @@ function initDashboard() {
             const pct = Math.min(1, q.progress / q.target);
             const status = q.claimed ? 'claimed' : done ? 'ready' : 'active';
             const action = q.claimed
-                ? `<div class="quest-stamp">✓ Réclamée</div>`
+                ? `<div class="quest-stamp">✓ Fait</div>`
                 : done
-                    ? `<button class="quest-claim-btn" id="quest-claim-${q.id}" onclick="window._dashClaimQuest('${q.id}', this)">Réclamer</button>`
-                    : `<div class="quest-progress-label mono">${q.progress} / ${q.target}</div>`;
-            return `<article class="quest-card is-${status}" style="--q-color:${q.color}; --q-delay:${i * 70}ms">
+                    ? `<button type="button" class="quest-claim-btn" id="quest-claim-${q.id}" onclick="window._dashClaimQuest('${q.id}', this)">Réclamer</button>`
+                    : `<div class="quest-progress-label mono">${q.progress}/${q.target}</div>`;
+            return `<article class="quest-card is-${status}" style="--q-color:${q.color}; --q-delay:${i * 55}ms">
                 <div class="quest-ring">
                     <svg viewBox="0 0 64 64" aria-hidden="true">
                         <circle class="quest-ring-bg" cx="32" cy="32" r="${R}"></circle>
@@ -3459,30 +4280,38 @@ function initDashboard() {
                     </svg>
                     <span class="quest-icon">${q.icon}</span>
                 </div>
-                <h3 class="quest-title">${escapeHtml(q.title)}</h3>
-                <div class="quest-rewards">
-                    <span class="quest-chip xp">+${q.xp} XP</span>
-                    <span class="quest-chip coin"><span class="dash-coin-dot"></span>${q.coins}</span>
+                <div class="quest-card-body">
+                    <h3 class="quest-title">${escapeHtml(q.title)}</h3>
+                    <div class="quest-rewards">
+                        <span class="quest-chip xp">+${q.xp} XP</span>
+                        <span class="quest-chip coin"><span class="dash-coin-dot"></span>${q.coins}</span>
+                    </div>
                 </div>
-                ${action}
+                <div class="quest-card-action">${action}</div>
             </article>`;
         }).join('');
 
         const bonusCoins = (typeof DailyQuests.getBonusCoins === 'function') ? DailyQuests.getBonusCoins() : DailyQuests.BONUS_COINS;
         const chestState = data.bonusClaimed ? 'opened' : allClaimed ? 'ready' : 'locked';
-        const chest = `<button class="quest-chest is-${chestState}" id="quest-bonus-chest"
+        const chest = `<button type="button" class="quest-chest is-${chestState}" id="quest-bonus-chest"
                 ${chestState === 'ready' ? `onclick="window._dashClaimBonus(this)"` : 'disabled'}
                 title="${chestState === 'opened' ? 'Coffre ouvert — reviens demain !' : `Réclame toutes les quêtes pour +${bonusCoins} pièces`}">
                 <span class="quest-chest-icon">${chestState === 'opened' ? '🎁' : chestState === 'ready' ? '🎁' : '🔒'}</span>
-                <span class="quest-chest-text">${chestState === 'opened' ? 'Bonus récupéré' : chestState === 'ready' ? `Ouvrir (+${bonusCoins})` : `Bonus +${bonusCoins}`}</span>
+                <span class="quest-chest-text">${chestState === 'opened' ? 'Récupéré' : chestState === 'ready' ? `Ouvrir +${bonusCoins}` : `+${bonusCoins}`}</span>
             </button>`;
 
-        return `<section class="quest-board" aria-labelledby="quest-board-title">
+        const readyPill = (readyCount > 0 && collapsed)
+            ? `<span class="quest-ready-pill">${readyCount} à réclamer</span>`
+            : '';
+
+        return `<section class="quest-board ${collapsed ? 'is-collapsed' : ''}" aria-labelledby="quest-board-title">
             <div class="quest-board-head">
-                <div>
-                    <div class="dash-eyebrow quest-eyebrow">Quêtes du jour</div>
-                    <h2 id="quest-board-title" class="quest-board-title">Tes missions quotidiennes</h2>
-                    <div class="quest-timer">⏳ Nouvelles quêtes dans <b>${DailyQuests.timeLeftLabel()}</b></div>
+                <div class="quest-board-head-main">
+                    <div class="quest-board-title-row">
+                        <h2 id="quest-board-title" class="quest-board-title">📋 Missions du jour</h2>
+                        ${readyPill}
+                    </div>
+                    <div class="quest-timer">⏳ Renouvellement dans <b>${DailyQuests.timeLeftLabel()}</b></div>
                 </div>
                 <div class="quest-board-side">
                     <div class="quest-overall">
@@ -3490,9 +4319,12 @@ function initDashboard() {
                         <div class="quest-overall-track"><div class="quest-overall-fill" style="width:${(claimedCount / total) * 100}%"></div></div>
                     </div>
                     ${chest}
+                    <button type="button" class="quest-toggle-btn" onclick="window._dashToggleQuests()" aria-expanded="${String(!collapsed)}" aria-label="${collapsed ? 'Afficher les missions quotidiennes' : 'Réduire les missions quotidiennes'}" title="${collapsed ? 'Afficher les missions' : 'Réduire'}">
+                        ${collapsed ? '▸' : '▾'}
+                    </button>
                 </div>
             </div>
-            <div class="quest-grid">${cards}</div>
+            ${collapsed ? '' : `<div class="quest-grid">${cards}</div>`}
         </section>`;
     }
 
@@ -3611,7 +4443,8 @@ function initDashboard() {
                     <div style="width: 16px; height: 16px; border-radius: 50%; background: #ffd166;"></div>
                 </div>`;
             } else if (isBooster) {
-                visualHtml = `<div class="dash-shop-booster-preview" style="width: 48px; height: 48px; line-height: 48px; border-radius: 50%; margin: 0 auto 12px; background: radial-gradient(circle, ${s.color}66, rgba(0,0,0,0.5)); border: 1px solid ${s.color}; font-size: 22px;">⚡</div>`;
+                const boosterGlyph = s.id === 'boost-shield' ? '🛡️' : '🧪';
+                visualHtml = `<div class="dash-shop-booster-preview" style="width: 48px; height: 48px; line-height: 48px; border-radius: 50%; margin: 0 auto 12px; background: radial-gradient(circle, ${s.color}66, rgba(0,0,0,0.5)); border: 1px solid ${s.color}; font-size: 22px;">${boosterGlyph}</div>`;
             } else {
                 visualHtml = `<div class="dash-skin-orb" style="--sc:${s.color || '#4fd8c4'}"></div>`;
             }
@@ -3756,17 +4589,7 @@ function initDashboard() {
         const streakData = (typeof DB !== 'undefined' && DB.getStreakData) ? DB.getStreakData() : { count: 0, combo: 0 };
         const comboCount = streakData.combo || 0;
         const multiplier = (typeof DB !== 'undefined' && DB.getMultiplier) ? DB.getMultiplier(comboCount) : 1.0;
-        const tierName = (typeof window.comboTierName === 'function') ? window.comboTierName(comboCount) : '';
-        const comboBarHtml = `<div class="dash-quiz-combo-bar ${comboCount >= 2 ? 'is-lit' : ''}">
-            <div class="dash-combo-left">
-                <span class="dash-streak-flame">${comboCount >= 2 ? '🔥' : '⚡'}</span>
-                <div>
-                    <div class="dash-combo-txt">Combo : <b>${comboCount}</b></div>
-                    <div class="dash-combo-subtitle">${tierName}</div>
-                </div>
-            </div>
-            <div class="dash-combo-mult-badge">Bonus <b>x${multiplier.toFixed(1)}</b></div>
-        </div>`;
+        const comboBarHtml = renderQuizComboBarHtml(streakData);
 
         const lesson = state.quiz.lesson;
         const hintText = getLessonHint(lesson, subjectId);
@@ -3910,9 +4733,15 @@ function initDashboard() {
             return;
         }
         DB.setNiveau(val);
+        _effectiveSubjectsCache.clear();
+        const curFil = currentFiliere();
         if (typeof getEffectiveSubjects === 'function') {
-            DASH_SUBJECTS = getEffectiveSubjects(val);
+            DASH_SUBJECTS = getEffectiveSubjects(val, curFil);
         }
+        DASH_SUBJECTS.forEach(s => {
+            if (!(s.id in state.progress)) state.progress[s.id] = 0;
+        });
+        state.subjectFilter = 'all';
         const niveaux = (window.AdminStore && typeof AdminStore.getNiveauxScolaires === 'function')
             ? AdminStore.getNiveauxScolaires()
             : [];
@@ -3924,6 +4753,77 @@ function initDashboard() {
             showNotification(`🎓 Programme actualisé (${label}) : retour aux matières autorisées.`, 'info');
         } else {
             showNotification(`🎓 Programme actualisé pour la classe : ${label}`, 'info');
+        }
+        render();
+    };
+
+    window._dashChangeFiliere = function(val) {
+        if (state.quiz) {
+            showNotification('Termine ou ferme l\'exercice en cours avant de changer de filière.', 'error');
+            return;
+        }
+        if (typeof DB !== 'undefined' && DB.setFiliere) {
+            DB.setFiliere(val);
+        }
+        _effectiveSubjectsCache.clear();
+        const curNiv = currentNiveau();
+        if (typeof getEffectiveSubjects === 'function') {
+            DASH_SUBJECTS = getEffectiveSubjects(curNiv, val);
+        }
+        DASH_SUBJECTS.forEach(s => {
+            if (!(s.id in state.progress)) state.progress[s.id] = 0;
+        });
+        state.subjectFilter = 'all';
+        const filLabel = (typeof AdminStore !== 'undefined' && typeof AdminStore.filiereLabel === 'function')
+            ? AdminStore.filiereLabel(val)
+            : val;
+        if (state.view === 'map' && state.currentSubject && !DASH_SUBJECTS.some(s => s.id === state.currentSubject)) {
+            state.view = 'dashboard';
+            state.currentSubject = null;
+        }
+        showNotification(`🧭 Filière actualisée : ${filLabel} (${DASH_SUBJECTS.length} matières)`);
+        render();
+    };
+
+    window._dashSetSubjectFilter = function(filter) {
+        state.subjectFilter = filter || 'all';
+        render();
+    };
+
+    window._dashToggleBadgesShowAll = function(showAll) {
+        state.badgeShowAll = Boolean(showAll);
+        state.badgeFiliereFilter = state.badgeShowAll ? 'all' : 'mine';
+        render();
+    };
+
+    window._dashSetBadgeFiliereFilter = function(val) {
+        const clean = val || 'mine';
+        state.badgeFiliereFilter = clean;
+        state.badgeShowAll = (clean === 'all');
+        render();
+    };
+
+    window._dashSetBadgeStatusFilter = function(status) {
+        state.badgeStatusFilter = status || 'all';
+        render();
+    };
+
+    window._dashSetBadgeSort = function(sortMode) {
+        state.badgeSort = sortMode || 'relevance';
+        render();
+    };
+
+    window._dashToggleQuests = function() {
+        state.questsCollapsed = !state.questsCollapsed;
+        saveOption('dash_quests_collapsed', String(state.questsCollapsed));
+        render();
+    };
+
+    window._dashToggleBottomNav = function(hidden) {
+        state.bottomNavHidden = Boolean(hidden);
+        saveOption('mobile_bottom_nav_hidden', String(state.bottomNavHidden));
+        if (document.body) {
+            document.body.classList.toggle('bnav-collapsed', state.bottomNavHidden);
         }
         render();
     };
@@ -4251,12 +5151,18 @@ function initDashboard() {
     });
 
     window.addEventListener('pageshow', (e) => {
+        applyAllRuntimeSettings();
+        const sig = computeDashSyncSig();
         // Sur chargement initial, initDashboard() vient déjà d'effectuer le premier rendu
         // (évite aussi d'écraser une vue ouverte par ancre, ex: #boutique-avatars).
-        if (!e.persisted) return;
-        // Resynchronise aussi les matières selon la classe courante (ex: modifiée dans Options)
+        if (!e.persisted && sig === _lastDashSyncSig) return;
+        _effectiveSubjectsCache.clear();
         DASH_SUBJECTS = getEffectiveSubjects();
+        const prevView = state.view;
+        const prevFilter = state.subjectFilter;
         state = loadState();
+        state.view = prevView;
+        state.subjectFilter = prevFilter;
         DASH_SUBJECTS.forEach(s => {
             if (!(s.id in state.progress)) state.progress[s.id] = 0;
         });
@@ -4308,7 +5214,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const modalOptions = document.getElementById('modalOptions');
         if (modalOptions) {
             _optionsOpenedFromHash = true;
-            modalOptions.hidden = false;
+            if (typeof window._openOptionsModal === 'function') {
+                window._openOptionsModal();
+            } else {
+                modalOptions.hidden = false;
+            }
             history.replaceState(null, null, window.location.pathname + window.location.search);
         }
     }

@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
+  <!-- ILOT SIN SYSTEMES D INFORMATION ET NUMERIQUE - EDUQUEST -->
+  <defs>
+    <linearGradient id="snRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#271b52"/>
+      <stop offset="0.6" stop-color="#140d2e"/>
+      <stop offset="1" stop-color="#080517"/>
+    </linearGradient>
+    <linearGradient id="snRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4c3599"/>
+      <stop offset="0.6" stop-color="#2d1f61"/>
+      <stop offset="1" stop-color="#191038"/>
+    </linearGradient>
+    <linearGradient id="snCyan" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#a855f7"/>
+    </linearGradient>
+    <radialGradient id="snHalo" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#a855f7" stop-opacity="0.34"/>
+      <stop offset="0.55" stop-color="#38bdf8" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="snShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+    <filter id="snGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <circle cx="210" cy="182" r="150" fill="url(#snHalo)"/>
+
+  <!-- Base rocheuse flottante -->
+  <g filter="url(#snShadow)">
+    <path d="M 75 250 Q 210 275 345 250 Q 372 294 320 344 Q 210 398 100 344 Q 48 294 75 250 Z" fill="url(#snRockDeep)"/>
+    <path d="M 85 245 Q 210 268 335 245 Q 358 278 320 314 Q 210 368 100 314 Q 62 278 85 245 Z" fill="url(#snRockTop)"/>
+    <ellipse cx="210" cy="245" rx="140" ry="42" fill="#171238"/>
+    <ellipse cx="210" cy="242" rx="130" ry="34" fill="none" stroke="#38bdf8" stroke-width="2" opacity="0.85"/>
+  </g>
+
+  <!-- Microcontrôleur / Puce centrale -->
+  <g filter="url(#snShadow)">
+    <!-- Broches latérales -->
+    <g stroke="#cbd5e1" stroke-width="4" stroke-linecap="round">
+      <line x1="142" y1="164" x2="156" y2="164"/>
+      <line x1="142" y1="180" x2="156" y2="180"/>
+      <line x1="142" y1="196" x2="156" y2="196"/>
+      <line x1="142" y1="212" x2="156" y2="212"/>
+      <line x1="264" y1="164" x2="278" y2="164"/>
+      <line x1="264" y1="180" x2="278" y2="180"/>
+      <line x1="264" y1="196" x2="278" y2="196"/>
+      <line x1="264" y1="212" x2="278" y2="212"/>
+    </g>
+    <rect x="156" y="148" width="108" height="84" rx="10" fill="#0f172a" stroke="url(#snCyan)" stroke-width="3"/>
+    <!-- Signal numérique PWM / Oscilloscope à l'écran -->
+    <path d="M 168 202 L 182 202 L 182 174 L 200 174 L 200 202 L 218 202 L 218 174 L 236 174 L 236 202 L 252 202" fill="none" stroke="#4ade80" stroke-width="3.5" stroke-linejoin="round" filter="url(#snGlow)"/>
+  </g>
+
+  <!-- Antenne IoT / Ondes radio au sommet -->
+  <g filter="url(#snGlow)">
+    <line x1="210" y1="148" x2="210" y2="112" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="210" cy="108" r="6" fill="#f472b6"/>
+    <path d="M 186 116 A 28 28 0 0 1 234 116" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+    <path d="M 172 102 A 44 44 0 0 1 248 102" fill="none" stroke="#a855f7" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+
+  <!-- Étiquette Hexa -->
+  <text x="210" y="254" text-anchor="middle" fill="#7dd3fc" font-family="monospace" font-size="13" font-weight="bold">0xFF · CAN</text>
+</svg>
+

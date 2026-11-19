@@ -1,96 +1,102 @@
 # EDUQUEST — llms.txt
 # Documentation destinée aux agents IA et assistants conversationnels.
 # Standard : https://llmstxt.org/
-# Dernière mise à jour : 2026-10-17
+# Dernière mise à jour : 2026-11-19
 
 > EDUQUEST est une application web éducative française de révision gamifiée
-> pour les élèves du collège et du lycée (6e → Terminale). 100 % front-end,
+> pour les élèves du collège, du lycée et de BTS (6e → Terminale, BTS 1 & 2,
+> 6 filières : Générale, NSI, STMG, STI2D, CIEL, ST2S). 100 % front-end,
 > 100 % gratuit, sans publicité, sans traceur, fonctionnelle hors-ligne.
 
 ## Identité
 
 - **Nom** : EDUQUEST
-- **Version** : 1.27.0
+- **Version** : 1.28.1
 - **Type** : Application web éducative (jeu de révision gamifié)
 - **Langue** : français (fr-FR)
-- **Public** : élèves (6e → Terminale), enseignants, établissements scolaires, familles
+- **Public** : élèves & étudiants (6e → Terminale, BTS 1/2), enseignants, établissements scolaires, familles
 - **Catégorie** : éducation / apprentissage gamifié / révision scolaire
 - **Accès** : 100 % gratuit, sans abonnement, sans publicité
-- **Installation** : aucune — fonctionne dans le navigateur moderne, 100 % hors-ligne après premier chargement (PWA / Service Worker)
+- **Installation** : aucune — fonctionne dans tout navigateur moderne, 100 % hors-ligne après premier chargement (PWA / Service Worker)
 
 ## Pitch
 
-**Court** : Le jeu de révision pour le collège et le lycée.
+**Court** : Le jeu de révision gamifié pour le collège, le lycée et le BTS (26 matières officielles, 6 filières).
 
 **Complet** : EDUQUEST transforme les révisions en aventure : l'élève choisit
-sa matière, son niveau scolaire (6e → Terminale ou classe personnalisée), puis
-gravit des îles flottantes en répondant à des quiz variés (QCM avec choix mélangés à chaque essai,
-vrai/faux, réponse courte, texte à trous avec banque de mots et tolérance aux fautes de frappe,
-texte à choix avec menus déroulants, association). Bouton d'indice pédagogique 💡,
-3 variantes de questions par niveau avec renouvellement aléatoire à chaque échec. Séries de victoires (streak),
-combos en chaîne avec multiplicateur de score et d'XP dynamique (x1.0 à x2.5), potions consommables
-(Double XP, Bouclier d'Étoile), quêtes quotidiennes, succès, boutique de personnalisation
-(halos, avatars historiques, titres, thème astral d'origine offert, thèmes visuels, boosters)
-et mode chronométré maintiennent une motivation constante. 13 matières adaptées au cycle scolaire
-(Technologie au collège, NSI & Numérique et SES au lycée, Philosophie, EMC, Chimie dédiée), 100 niveaux par matière,
-îlots flottants vectoriels animés, barre de navigation mobile basse, contrôle des animations d'interface.
-Contenus, matières, niveaux d'étude autorisés, boutique, succès, crédits GitHub, configuration générale du site et IA
-ajustables via un panneau d'administration unifié et complet.
+sa classe (6e → Terminale, BTS 1ère et 2ème année) et, dès le lycée, sa filière
+(Voie Générale, Spécialité NSI, STMG, STI2D, CIEL, ST2S), puis gravit 26 îles
+flottantes alignées sur les programmes officiels. 6 types de quiz interactifs
+(QCM avec choix mélangés, vrai/faux, réponse courte avec tolérance Levenshtein,
+texte à trous avec banque de mots, texte à choix déroulant, association),
+bouton d'indice pédagogique 💡, moteur adaptatif anti-répétition (mémoire de 240
+questions, rotation FIFO et paliers Consolidation/Standard/Défi +) et pool Multi-IA optionnel.
+Interface claire et accessible sur PC comme sur smartphone : séparation nette entre
+🔥 Série de victoires et ⚡ Énergie Combo (multiplicateur d'XP et score x1.0 à x2.5),
+missions quotidiennes compactes et repliables, barre de navigation mobile fermable,
+confettis calibrés respectant les options Particules / Mode Éco / Animations,
+potions consommables, 33 succès, 17 avatars, thèmes et couleurs personnalisables.
+
+## Matières & Filières (26 matières officielles, 100 niveaux chacune)
+
+- **Collège (6e → 3e)** : Mathématiques, Français, Histoire, Géographie, EMC, Anglais, Espagnol LV2 (dès la 5ème), SVT, Physique, Chimie, Technologie, Arts & Musique.
+- **Voie Générale (2nde → Terminale)** : Tronc commun + SES, NSI & Numérique, HGGSP (1ère/Tle), Sciences de l'Ingénieur, Philosophie (Tle).
+- **Spécialité NSI** : NSI & Numérique, Cybersécurité, Réseaux & Systèmes, Sciences de l'Ingénieur + tronc commun scientifique.
+- **STMG** : Management & Gestion (MSGN), Droit & Économie, Mercatique (1ère → BTS) + tronc commun.
+- **STI2D** : I2D (Innovation & Développement Durable), SIN (Systèmes d'Information & Numérique), Électronique & Systèmes, Sciences de l'Ingénieur, NSI + tronc commun.
+- **CIEL (Bac Pro / BTS)** : Cybersécurité, Réseaux & Systèmes, Électronique & Systèmes, NSI & Numérique, Droit & Économie + Maths BTS / Physique / Anglais / Français.
+- **ST2S** : STSS (Santé & Social), SVT, Physique, Chimie + tronc commun.
 
 ## Mots-clés
 
-révision, jeu éducatif, quiz, collège, lycée, mathématiques, français, SVT,
-histoire, anglais, physique, chimie, philosophie, technologie, nsi, ses, numérique,
-apprentissage gamifié, streak, combo, éducation nationale, gratuit, pwa, offline
+révision, jeu éducatif, quiz, collège, lycée, BTS, STMG, STI2D, CIEL, NSI, ST2S,
+mathématiques, français, SVT, histoire, géographie, anglais, espagnol, physique,
+chimie, philosophie, technologie, cybersécurité, réseaux, électronique, mercatique,
+droit, économie, management, HGGSP, STSS, apprentissage gamifié, streak, combo,
+éducation nationale, gratuit, pwa, offline
 
 ## Pages publiques
 
 | Route | Description |
 |-------|-------------|
-| `index.html` | Accueil — point d'entrée, options de jeu (audio, mode chrono, éco-énergie), connexion/inscription |
-| `dashboard.html` | Tableau de bord élève : sélecteur de classe/niveau d'étude, quêtes journalières, matières, boutique, succès |
-| `map.html` | Carte de la matière : parcours des îles, niveaux de quiz (1 à 100), mode chrono optionnel |
+| `index.html` | Accueil — menu principal, modales Options (classe, filière, audio, particules, apparence, mode chrono, éco-énergie), connexion/inscription et confirmation Quitter |
+| `dashboard.html` | Tableau de bord élève : sélecteurs classe & filière, HUD 🔥 Série / ⚡ Combo, missions quotidiennes repliables, 26 matières filtrables par spécialités, boutique, 33 succès |
+| `map.html` | Carte de la matière : parcours des îles (niveaux 1 à 100), personnage, badge classe/filière en lecture seule, expulsion hors programme, quiz adaptatif |
 | `legal.html` | Mentions légales, politique de confidentialité et gestion des cookies |
 
 ## Pages et outils internes
 
 | Route | Rôle |
 |-------|------|
-| `admin.html` | Panneau d'administration unifié (membres, niveaux, matières, cycles, leçons manuelles & procédurales, boutique, succès, réglages généraux & IA) |
-| `test.html` | Banc de tests automatisés autonome (68 tests, runner visuel, benchmark de performance et banc interactif en direct) |
+| `admin.html` | Panneau d'administration unifié (membres, niveaux 6e → BTS, 26 matières, leçons manuelles & procédurales, boutique, 33 succès, réglages généraux, pool Multi-IA & crédits) |
+| `test.html` | Banc de tests navigateur autonome avec runner visuel, benchmark et test interactif en direct |
 
 ## Architecture technique
 
 | Fichier / Dossier | Rôle |
 |-------------------|------|
-| `js/app.js` | Contrôleur principal du jeu, gestionnaire d'état, HUD, boutique, confettis Canvas |
-| `js/db.js` | Couche d'accès aux données isolée par utilisateur (localStorage / API SQL optionnelle) |
-| `js/question-bank.js` | Banque de questions et générateur procédural déterministe (100 niveaux par matière) |
+| `js/app.js` | Contrôleur principal, vues, apparence, particules, HUD 🔥/⚡, boutique, confettis Canvas calibrés |
+| `js/db.js` | Persistance isolée par compte (`localStorage` / API SQL optionnelle) : progression, classe, filière, tentatives anti-triche, profil adaptatif |
+| `js/question-bank.js` | Banque officielle des 26 matières et générateurs procéduraux déterministes (100 niveaux/matière, lazy variants) |
 | `js/quiz-engine.js` | Moteur de rendu et validation des 6 types de questions avec tolérance Levenshtein |
-| `js/core/game-rules.js` | Règles de jeu pures partagées (calcul étoiles, bouclier, combos, barèmes) |
-| `js/core/quiz-session.js` | Pipeline unifié de soumission des quiz et consommation des boosters |
-| `js/features/daily-quests.js` | Moteur de quêtes journalières déterministes (PRNG, tirage Fisher-Yates, minuit) |
-| `js/ai-provider.js` | Pont IA (Make webhook) avec repli transparent sur la banque locale |
-| `js/admin-store.js` | Configuration centrale du panneau d'administration (niveaux, matières, leçons, réglages site & IA) |
+| `js/core/audio-manager.js` | Gestionnaire audio global continu inter-pages, coupure manuelle persistée et bruitages Web Audio |
+| `js/core/quiz-timer.js` | Chronomètre unifié à horloge réelle (`Date.now`) sur tous les exercices et réessais |
+| `js/core/adaptive-engine.js` | Moteur adaptatif local anti-répétition (240 signatures, rotation FIFO, reset sur échec, paliers adaptatifs) |
+| `js/core/game-rules.js` | Règles de jeu pures partagées (étoiles, bouclier, combos, barèmes, multiplicateurs) |
+| `js/core/quiz-session.js` | Pipeline unifié de soumission des quiz et consommation sécurisée des boosters |
+| `js/features/daily-quests.js` | Quêtes journalières déterministes (PRNG Mulberry32, tirage Fisher-Yates, renouvellement minuit) |
+| `js/ai-provider.js` | Orchestrateur Multi-IA (Make, OpenAI-compatible, Gemini) avec bascule en cascade et repli local |
+| `js/admin-store.js` | Configuration centrale : 9 niveaux (6e → BTS 2), 6 filières, règles officielles des 26 matières, 33 badges, boutique & IA |
 | `js/admin.js` | Interface et moteur du panneau d'administration |
-| `js/cookies.js` | Bandeau de consentement RGPD/CNIL (mémorisation 12 mois) |
-| `css/global.css` | Design system, polices locales, univers spatial et utilitaires |
-| `css/style.css` | Styles spécifiques aux pages de jeu, modales et composants interactifs |
-| `css/quests.css` | Styles des cartes de quêtes journalières et conteneur de confettis |
-| `css/admin.css` | Thème glassmorphism pour le panneau d'administration |
-| `service-worker.js` | PWA et mise en cache hors-ligne intégrale (v1.26.0) |
-| `schema.sql` | Schéma relationnel complet SQL (tables utilisateurs, configuration site, IA, matières, leçons manuelles) |
-| `tests/` | Suite de 68 tests automatisés native Node.js (`node --test tests/*.test.js`) |
+| `js/cookies.js` | Bandeau de consentement RGPD/CNIL avec fermeture rapide (mémorisation 12 mois) |
+| `css/` | `global.css`, `style.css`, `quests.css`, `admin.css` |
+| `service-worker.js` | PWA et pré-cache hors-ligne intégral (`eduquest-cache-v1.28.1` — 73 ressources) |
+| `schema.sql` | Schéma relationnel SQL (joueurs, paramètres, 26 matières + filières, leçons, progression, quêtes, inventaire) |
+| `tests/` | Suite de **101 tests unitaires** natifs Node.js sur 11 fichiers (`node --test tests/*.test.js`) |
 
 ## Données personnelles & Confidentialité
 
 - Aucune donnée personnelle n'est transmise à un serveur distant par défaut.
-- Tout est stocké localement dans le `localStorage` du navigateur.
+- Tout est stocké localement dans le `localStorage` du navigateur, isolé par compte.
 - Aucun cookie publicitaire, aucun traceur tiers, aucun profilage comportemental.
-- Bandeau de consentement conforme RGPD/CNIL à la première visite.
-- Page de référence : `legal.html`
-
-## Contact & Crédits
-
-L'éditeur et les crédits sont configurables via l'onglet « ✨ Crédits » du panneau
-d'administration (`admin.html`), puis répercutés dynamiquement sur `legal.html`.
+- Bandeau de consentement conforme RGPD/CNIL à la première visite (`legal.html`).

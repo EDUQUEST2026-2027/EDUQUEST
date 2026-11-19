@@ -1,5 +1,5 @@
 /* ==========================================================================
-   GLOBAL.CSS — EDUQUEST v2.0
+   GLOBAL.CSS — EDUQUEST v1.28.1
    Feuille de style partagée entre TOUTES les pages HTML.
 
    CONTENU :
@@ -161,6 +161,12 @@ body {
 /* Les étoiles occupent seulement le haut de l'écran (ciel) */
 .stars { height: 65%; }
 
+/* Option « Particules » désactivée : coupe proprement étoiles et nuages partout */
+body.no-particles .stars,
+body.no-particles .clouds {
+    display: none !important;
+}
+
 /* Style d'une étoile individuelle (créée par JS dans createEnvironment)
    La taille et la position sont définies en JS via style.width, style.left, style.top */
 .star {
@@ -180,10 +186,11 @@ body {
    La taille, position et durée d'animation sont définies en JS */
 .cloud {
     position: absolute;
-    background: rgba(255, 255, 255, 0.07); /* Très transparent → effet brume */
+    background: rgba(255, 255, 255, 0.06); /* Très transparent → effet brume */
     border-radius: 100px;                  /* Forme arrondie (ellipse) */
     animation: float 30s infinite linear;  /* Dérive de gauche à droite */
     filter: blur(2px);                     /* Flou pour l'aspect nuageux */
+    will-change: transform;
 }
 
 /* Classe utilitaire pour cacher un élément (utilisé sur #exitPage par ex.) */
@@ -214,8 +221,26 @@ body {
     user-select: none;
     position: relative;
     overflow: hidden;
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
     filter: brightness(var(--btn-brightness, 0.80));
+}
+
+.menu-btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.4em;
+    flex-shrink: 0;
+    font-size: 1.05em;
+    line-height: 1;
+}
+
+.menu-btn-text {
+    display: inline-block;
+    line-height: 1.2;
 }
 
 /* Correctif v1.27.0 : style sombre et confortable pour TOUS les .option-button
@@ -271,39 +296,6 @@ body {
     background: rgba(20, 30, 50, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.18);
     color: rgba(235, 242, 255, 0.88);
-}
-
-/* Couleur personnalisée des boutons (activée dans Options → Apparence) */
-[data-btn-custom="true"] .menu-button:not(.danger),
-[data-btn-custom="true"] .dash-btn-primary,
-[data-btn-custom="true"] .option-button:not(.danger) {
-    background: linear-gradient(180deg,
-        color-mix(in srgb, var(--ui-btn-bg) 88%, #ffffff 12%) 0%,
-        color-mix(in srgb, var(--ui-btn-bg) 88%, #000000 12%) 100%) !important;
-    border-color: var(--ui-btn-border) !important;
-    color: var(--ui-btn-text, #ffffff) !important;
-}
-
-/* Couleur personnalisée de l'interface (activée dans Options → Apparence) */
-[data-ui-custom="true"] .background {
-    background:
-        radial-gradient(ellipse at 25% 15%, color-mix(in srgb, var(--ui-accent) 34%, transparent) 0%, transparent 56%),
-        radial-gradient(ellipse at 82% 82%, color-mix(in srgb, var(--ui-bg-tint) 65%, transparent) 0%, transparent 54%),
-        linear-gradient(175deg,
-            color-mix(in srgb, var(--ui-bg-tint) 38%, #050912 62%) 0%,
-            color-mix(in srgb, var(--ui-bg-tint) 62%, #060b16 38%) 48%,
-            color-mix(in srgb, var(--ui-bg-tint) 30%, #04070e 70%) 100%) !important;
-}
-[data-ui-custom="true"] .options-container,
-[data-ui-custom="true"] .login-container,
-[data-ui-custom="true"] .dash-card,
-[data-ui-custom="true"] .dash-header,
-[data-ui-custom="true"] .modal-content {
-    border-color: color-mix(in srgb, var(--ui-accent) 36%, rgba(255, 255, 255, 0.12));
-    box-shadow:
-        0 2px 0 rgba(255, 255, 255, 0.06) inset,
-        0 24px 64px rgba(0, 0, 0, 0.65),
-        0 0 40px color-mix(in srgb, var(--ui-accent) 14%, transparent);
 }
 
 /* Effet de lumière coulissante qui traverse le bouton au survol */
@@ -619,9 +611,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
    (roue ⚙, pied de page, liens légaux, boutons retour) qui se chevauchent
    sur petit écran. Les adaptations par page restent dans style.css/admin.css.
    -------------------------------------------------------------------------- */
-@media (max-width: 600px) {
-    /* Roue ⚙ flottante : réduite et décollée du bord pour laisser la place
-       au titre « Choisis ton niveau » qui passe en dessous (voir style.css) */
+@media (max-width: 768px) {
     .options-wheel.floating {
         top: 10px;
         right: 10px;
@@ -638,20 +628,53 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
         font-size: 1.05rem;
     }
 
-    /* Pied de page « crédits » : pleine largeur en bas de l'écran, au-dessus
-       des liens légaux — ne recouvre plus les boutons et les cartes. */
+    /* Sur le dashboard mobile, .options-wheel.floating est masquée : on colle le bouton audio à droite */
+    body:has(#dashboardPage) .audio-toggle-fab:not(.in-header) {
+        right: 12px;
+        top: 12px;
+    }
+
+    /* Notifications en haut sur mobile pour ne jamais masquer la barre de navigation du bas */
+    .notification {
+        top: 14px;
+        bottom: auto;
+        left: 12px;
+        right: 12px;
+        padding: 12px 16px;
+        font-size: 0.92rem;
+        text-align: center;
+    }
+
+    /* Sur dashboard et carte mobile, on retire la position fixe du footer et des liens légaux
+       pour éviter tout chevauchement avec le bandeau du bas ou la piste des niveaux */
+    body:has(#dashboardPage) .footer,
+    body:has(#dashboardPage) .legal-links,
+    body:has(.subject-page) .footer,
+    body:has(.subject-page) .legal-links {
+        position: static;
+        transform: none;
+        left: auto;
+        right: auto;
+        bottom: auto;
+        display: block;
+        margin: 8px auto 12px;
+        text-align: center;
+    }
+}
+
+@media (max-width: 600px) {
+    /* Pied de page « crédits » sur l'accueil : pleine largeur en bas de l'écran, au-dessus
+       des liens légaux — ne recouvre plus les boutons. */
     .footer.footer-with-links {
         left: 8px;
         right: 8px;
         transform: none;
-        bottom: 34px; /* au-dessus de la rangée .legal-links */
+        bottom: 36px;
         font-size: 11px;
         padding: 5px 10px;
         text-align: center;
     }
 
-    /* Rangée du bas : liens légaux alignés à droite, pastille de crédits
-       (.footer.footer-with-links) au-dessus à bottom:34px */
     .legal-links {
         left: auto;
         right: 8px;
@@ -660,8 +683,6 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
         font-size: 11.5px;
     }
 
-    /* Lien « 🔐 Administration » de l'accueil : en bas à gauche, sur la
-       même ligne que les liens légaux (le menu ne descend pas plus bas) */
     .admin-panel-link {
         left: 8px;
         bottom: 8px;
@@ -670,10 +691,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
     }
 }
 
-/* Nuage : déplacement horizontal continu de gauche à droite */
+/* Nuage : déplacement horizontal continu depuis left: -320px jusqu'au-delà du bord droit */
 @keyframes float {
-    from { transform: translateX(-300px); }  /* Commence hors écran à gauche */
-    to   { transform: translateX(calc(100vw + 300px)); } /* Finit hors écran à droite */
+    from { transform: translateX(0); }
+    to   { transform: translateX(calc(100vw + 640px)); }
 }
 
 /* Apparition simple : fondu + montée légère (utilisé sur plusieurs éléments) */
@@ -760,5 +781,74 @@ button::after,
 [data-theme="theme-or"] .background {
     background: radial-gradient(circle at 50% 20%, rgba(243, 198, 72, 0.25), transparent 60%),
                 linear-gradient(135deg, #140e05 0%, #241909 50%, #1a1005 100%) !important;
+}
+
+[data-theme="theme-emeraude"] {
+    --c-night: #04130f;
+    --c-deep: #07221b;
+    --c-ocean: #0d3a2f;
+    --c-blue: #10b981;
+    --c-gold: #34d399;
+    --dash-skin: #10b981;
+}
+[data-theme="theme-emeraude"] .background {
+    background: radial-gradient(circle at 45% 20%, rgba(16, 185, 129, 0.22), transparent 60%),
+                radial-gradient(circle at 80% 80%, rgba(52, 211, 153, 0.14), transparent 55%),
+                linear-gradient(135deg, #04130f 0%, #07221b 52%, #05161a 100%) !important;
+}
+
+[data-theme="theme-matrix"] {
+    --c-night: #020804;
+    --c-deep: #051409;
+    --c-ocean: #0a2612;
+    --c-blue: #22c55e;
+    --c-gold: #4ade80;
+    --dash-skin: #22c55e;
+}
+[data-theme="theme-matrix"] .background {
+    background: radial-gradient(circle at 50% 18%, rgba(34, 197, 94, 0.18), transparent 62%),
+                linear-gradient(180deg, #020804 0%, #051409 55%, #010502 100%) !important;
+}
+
+/* --------------------------------------------------------------------------
+   PERSONNALISATION D'APPARENCE (Options → Apparence, prioritaire sur data-theme)
+   Placé en fin de feuille pour que les couleurs choisies dans Options
+   s'appliquent toujours immédiatement, même si un thème boutique est actif.
+   -------------------------------------------------------------------------- */
+[data-btn-custom="true"] .menu-button:not(.danger),
+[data-btn-custom="true"] .dash-btn-primary,
+[data-btn-custom="true"] .dash-tab.active,
+[data-btn-custom="true"] .dash-skin-btn:not(:disabled),
+[data-btn-custom="true"] .back-button,
+[data-btn-custom="true"] .dash-back-btn,
+[data-btn-custom="true"] .option-button:not(.danger) {
+    background: linear-gradient(180deg,
+        color-mix(in srgb, var(--ui-btn-bg) 88%, #ffffff 12%) 0%,
+        color-mix(in srgb, var(--ui-btn-bg) 88%, #000000 12%) 100%) !important;
+    border-color: var(--ui-btn-border) !important;
+    color: var(--ui-btn-text, #ffffff) !important;
+}
+
+[data-ui-custom="true"] .background {
+    background:
+        radial-gradient(ellipse at 25% 15%, color-mix(in srgb, var(--ui-accent) 34%, transparent) 0%, transparent 56%),
+        radial-gradient(ellipse at 82% 82%, color-mix(in srgb, var(--ui-bg-tint) 65%, transparent) 0%, transparent 54%),
+        linear-gradient(175deg,
+            color-mix(in srgb, var(--ui-bg-tint) 38%, #050912 62%) 0%,
+            color-mix(in srgb, var(--ui-bg-tint) 62%, #060b16 38%) 48%,
+            color-mix(in srgb, var(--ui-bg-tint) 30%, #04070e 70%) 100%) !important;
+}
+[data-ui-custom="true"] .options-container,
+[data-ui-custom="true"] .login-container,
+[data-ui-custom="true"] .dash-card,
+[data-ui-custom="true"] .dash-header,
+[data-ui-custom="true"] .dash-hud,
+[data-ui-custom="true"] .quest-board,
+[data-ui-custom="true"] .modal-content {
+    border-color: color-mix(in srgb, var(--ui-accent) 36%, rgba(255, 255, 255, 0.12));
+    box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.06) inset,
+        0 24px 64px rgba(0, 0, 0, 0.65),
+        0 0 40px color-mix(in srgb, var(--ui-accent) 14%, transparent);
 }
 

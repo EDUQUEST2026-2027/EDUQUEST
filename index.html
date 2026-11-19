@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="fr">
 <!--
-  INDEX.HTML — EDUQUEST v1.27.0
-  Page d'accueil : navigation principale, modales Options, Apparence, Connexion & Quitter.
+  INDEX.HTML — EDUQUEST v1.28.1
+  Page d'accueil : navigation principale, modales Options (classe, filière, apparence), Connexion & Quitter.
 -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EDUQUEST — Le jeu de révision pour le collège et le lycée</title>
-    <meta name="description" content="Apprends en t'amusant : 13 matières, 100 niveaux, quiz variés, XP, badges et avatars. 100 % gratuit, sans publicité, du 6ème à la Terminale.">
+    <title>EDUQUEST — Le jeu de révision Collège, Lycée &amp; BTS</title>
+    <meta name="description" content="Apprends en t'amusant : 26 matières du programme officiel (Collège, Lycée Général, NSI, STMG, STI2D, CIEL, ST2S, BTS), 100 niveaux, quiz variés, XP, badges et avatars. 100 % gratuit, sans publicité.">
     <meta name="theme-color" content="#0d1330">
     <meta name="robots" content="index, follow">
     <meta property="og:type" content="website">
@@ -52,19 +52,18 @@
         <!-- Menu de navigation principal -->
         <!-- Les classes 'primary', 'secondary', 'danger' définissent la couleur du bouton -->
         <!-- Voir global.css → .menu-button et ses variantes -->
-        <nav class="menu">
+        <nav class="menu" aria-label="Menu principal">
             <!-- Lien vers le tableau de bord (matières, quiz, boutique) -->
-            <a class="menu-button primary" href="dashboard.html">⚔ JOUER</a>
+            <a class="menu-button primary" href="dashboard.html"><span class="menu-btn-icon" aria-hidden="true">⚔</span><span class="menu-btn-text">JOUER</span></a>
 
             <!-- Lien vers les préférences du jeu -->
-            <button class="menu-button" onclick="document.getElementById('modalOptions').hidden = false;">⚙ OPTIONS</button>
+            <button type="button" class="menu-button" id="openOptionsBtn" onclick="window._openOptionsModal ? window._openOptionsModal() : (document.getElementById('modalOptions').hidden = false);"><span class="menu-btn-icon" aria-hidden="true">⚙</span><span class="menu-btn-text">OPTIONS</span></button>
 
             <!-- Lien vers la page de connexion/inscription -->
-            <button class="menu-button secondary" onclick="document.getElementById('modalLogin').hidden = false;">👤 SE CONNECTER</button>
+            <button type="button" class="menu-button secondary" id="openLoginBtn" onclick="window._openLoginModal ? window._openLoginModal() : (document.getElementById('modalLogin').hidden = false);"><span class="menu-btn-icon" aria-hidden="true">👤</span><span class="menu-btn-text">SE CONNECTER</span></button>
 
             <!-- Bouton Quitter : géré par JS (initAccueil → #quitButton) -->
-            <!-- Note : c'est un <button> et non un <a> car il n'a pas d'URL destination -->
-            <button class="menu-button danger" id="quitButton">✕ QUITTER</button>
+            <button type="button" class="menu-button danger" id="quitButton"><span class="menu-btn-icon" aria-hidden="true">✕</span><span class="menu-btn-text">QUITTER</span></button>
         </nav>
 
     </main>
@@ -84,7 +83,7 @@
     </section>
 
     <footer>
-        <div class="footer">Version 1.27.0</div>
+        <div class="footer">Version 1.29.0</div>
         <div class="legal-links"><a href="legal.html">Mentions légales</a> · <a href="legal.html#cookies" onclick="window.dispatchEvent(new Event('eduquest:cookie-reopen'))">Cookies</a></div>
     </footer>
 
@@ -93,8 +92,9 @@
 
     <!-- MODALS -->
     <div id="modalOptions" class="modal-overlay" hidden>
-<section class="options-container">
-            <h1 class="options-header">⚙ OPTIONS</h1>
+<section class="options-container" role="dialog" aria-modal="true" aria-labelledby="optionsModalTitle">
+            <button type="button" class="modal-top-close" id="closeOptionsX" aria-label="Fermer les options" title="Fermer">✕</button>
+            <h1 class="options-header" id="optionsModalTitle">⚙ OPTIONS</h1>
 
             <!-- ============================================================
                  STRUCTURE D'UNE OPTION CHECKBOX :
@@ -267,7 +267,7 @@
             <div class="option-group">
                 <label class="option-label" for="optionsNiveauSelect">🎓 Classe / Niveau scolaire</label>
                 <div style="margin-top: 8px;">
-                    <select class="dash-grade-select" id="optionsNiveauSelect" style="width: 100%;">
+                    <select class="dash-grade-select" id="optionsNiveauSelect" style="width: 100%; max-width: 100%;">
                         <option value="6eme">🎓 6ème (Collège)</option>
                         <option value="5eme">🎓 5ème (Collège)</option>
                         <option value="4eme">🎓 4ème (Collège)</option>
@@ -275,10 +275,30 @@
                         <option value="2nde">🎓 2nde (Lycée)</option>
                         <option value="1ere">🎓 1ère (Lycée)</option>
                         <option value="terminale">🎓 Terminale (Lycée)</option>
+                        <option value="bts1">🎓 BTS 1ère année (Supérieur)</option>
+                        <option value="bts2">🎓 BTS 2ème année (Supérieur)</option>
                     </select>
                 </div>
                 <p class="adm-hint" style="margin-top: 4px; padding-left: 4px;">
-                    Adapte automatiquement l'ensemble des questions aux programmes scolaires officiels.
+                    Adapte automatiquement les matières et questions aux programmes officiels.
+                </p>
+            </div>
+
+            <!-- Option 9.5 : Filière / Voie d'études (Lycée & BTS) -->
+            <div class="option-group" id="optionsFiliereGroup">
+                <label class="option-label" for="optionsFiliereSelect">🧭 Filière / Spécialité (Lycée &amp; BTS)</label>
+                <div style="margin-top: 8px;">
+                    <select class="dash-grade-select" id="optionsFiliereSelect" style="width: 100%; max-width: 100%;">
+                        <option value="generale">📚 Voie Générale (SES, NSI, HGGSP, SI…)</option>
+                        <option value="nsi_spe">💻 Spécialité NSI &amp; Numérique</option>
+                        <option value="stmg">📊 STMG (Management, Droit-Éco, Mercatique)</option>
+                        <option value="sti2d">⚙️ STI2D (I2D, SIN, Électronique)</option>
+                        <option value="ciel">🛡️ CIEL (Cybersécurité, Réseaux, Électronique)</option>
+                        <option value="st2s">🩺 ST2S (Santé &amp; Social — STSS)</option>
+                    </select>
+                </div>
+                <p class="adm-hint" style="margin-top: 4px; padding-left: 4px;">
+                    Débloque les matières officielles propres à ta filière.
                 </p>
             </div>
 
@@ -346,10 +366,11 @@
 </div>
 
 <div id="modalLogin" class="modal-overlay" hidden>
-<section class="login-container">
+<section class="login-container" role="dialog" aria-modal="true" aria-labelledby="loginModalTitle">
+            <button type="button" class="modal-top-close" id="closeLoginX" onclick="document.getElementById('modalLogin').hidden = true;" aria-label="Fermer" title="Fermer">✕</button>
 
             <!-- Titre de la page -->
-            <h1 class="options-header">🔐 COMPTE</h1>
+            <h1 class="options-header" id="loginModalTitle">🔐 COMPTE</h1>
 
             <!-- ============================================================
                  PANNEAU UTILISATEUR CONNECTÉ (#userInfo)

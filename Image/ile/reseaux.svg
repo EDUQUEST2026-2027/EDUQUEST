@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
+  <!-- ILOT RESEAUX ET SYSTEMES CIEL - EDUQUEST -->
+  <defs>
+    <linearGradient id="rxRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#13264d"/>
+      <stop offset="0.6" stop-color="#09152e"/>
+      <stop offset="1" stop-color="#040917"/>
+    </linearGradient>
+    <linearGradient id="rxRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#254c96"/>
+      <stop offset="0.6" stop-color="#163063"/>
+      <stop offset="1" stop-color="#0b1a38"/>
+    </linearGradient>
+    <linearGradient id="rxNode" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+    <radialGradient id="rxHalo" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#38bdf8" stop-opacity="0.38"/>
+      <stop offset="0.55" stop-color="#6366f1" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="rxShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+    <filter id="rxGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <circle cx="210" cy="182" r="150" fill="url(#rxHalo)"/>
+
+  <!-- Base rocheuse flottante -->
+  <g filter="url(#rxShadow)">
+    <path d="M 75 250 Q 210 275 345 250 Q 372 294 320 344 Q 210 398 100 344 Q 48 294 75 250 Z" fill="url(#rxRockDeep)"/>
+    <path d="M 85 245 Q 210 268 335 245 Q 358 278 320 314 Q 210 368 100 314 Q 62 278 85 245 Z" fill="url(#rxRockTop)"/>
+    <ellipse cx="210" cy="245" rx="140" ry="42" fill="#0d1b38"/>
+    <ellipse cx="210" cy="242" rx="130" ry="34" fill="none" stroke="#38bdf8" stroke-width="2" filter="url(#rxGlow)"/>
+  </g>
+
+  <!-- Liens fibre optique lumineux entre nœuds -->
+  <g stroke="#38bdf8" stroke-width="3" filter="url(#rxGlow)">
+    <line x1="210" y1="204" x2="128" y2="152"/>
+    <line x1="210" y1="204" x2="292" y2="152"/>
+    <line x1="210" y1="204" x2="210" y2="112"/>
+    <line x1="128" y1="152" x2="210" y2="112" stroke="#818cf8" stroke-dasharray="4 4"/>
+    <line x1="292" y1="152" x2="210" y2="112" stroke="#818cf8" stroke-dasharray="4 4"/>
+  </g>
+
+  <!-- Routeur / Switch central sur le plateau -->
+  <g filter="url(#rxShadow)">
+    <rect x="158" y="196" width="104" height="36" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="2.5"/>
+    <!-- LEDs de ports Ethernet -->
+    <circle cx="176" cy="214" r="4" fill="#4ade80"/>
+    <circle cx="192" cy="214" r="4" fill="#4ade80"/>
+    <circle cx="208" cy="214" r="4" fill="#fbbf24"/>
+    <circle cx="224" cy="214" r="4" fill="#38bdf8"/>
+    <circle cx="240" cy="214" r="4" fill="#4ade80"/>
+  </g>
+
+  <!-- 3 Nœuds réseau (Serveur Cloud haut, Postes gauche et droite) -->
+  <g filter="url(#rxShadow)">
+    <!-- Nœud supérieur (Cloud / Routeur cœur) -->
+    <circle cx="210" cy="112" r="24" fill="url(#rxNode)" stroke="#e0f2fe" stroke-width="2.5"/>
+    <text x="210" y="117" text-anchor="middle" fill="#ffffff" font-family="monospace" font-size="13" font-weight="bold">IP</text>
+
+    <!-- Nœud gauche -->
+    <circle cx="128" cy="152" r="20" fill="#1e3a8a" stroke="#38bdf8" stroke-width="2.5"/>
+    <rect x="118" y="144" width="20" height="13" rx="2" fill="#bae6fd"/>
+    <rect x="123" y="159" width="10" height="3" fill="#38bdf8"/>
+
+    <!-- Nœud droite -->
+    <circle cx="292" cy="152" r="20" fill="#1e3a8a" stroke="#38bdf8" stroke-width="2.5"/>
+    <rect x="282" y="144" width="20" height="13" rx="2" fill="#bae6fd"/>
+    <rect x="287" y="159" width="10" height="3" fill="#38bdf8"/>
+  </g>
+
+  <!-- Étiquette CIDR -->
+  <text x="210" y="254" text-anchor="middle" fill="#93c5fd" font-family="monospace" font-size="12" font-weight="bold">TCP/IP · /24</text>
+</svg>
+

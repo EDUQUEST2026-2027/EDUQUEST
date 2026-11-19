@@ -1,5 +1,6 @@
 /**
- * EDUQUEST — Moteur d'apprentissage adaptatif & anti-répétition (UMD)
+ * ADAPTIVE-ENGINE.JS — EDUQUEST v1.28.1
+ * Moteur d'apprentissage adaptatif & anti-répétition (UMD)
  *
  * - Mémorise par élève, matière et classe l'historique des questions déjà vues
  *   afin d'éviter les répétitions sur les exercices consécutifs et d'une session à l'autre.
@@ -19,8 +20,8 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (NodeQuestionBank) {
     'use strict';
 
-    const MAX_SEEN_SIGNATURES = 80;
-    const MAX_RECENT_QUESTIONS = 15;
+    const MAX_SEEN_SIGNATURES = 240;
+    const MAX_RECENT_QUESTIONS = 30;
     const MAX_RECENT_RESULTS = 8;
 
     const TIER_META = {
@@ -66,6 +67,8 @@
         if (qb && typeof qb.normalizeNiveau === 'function') return qb.normalizeNiveau(niveau);
         const s = String(niveau || '6eme').toLowerCase()
             .normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+        if (s === 'bts2' || (s.includes('bts') && s.includes('2'))) return 'bts2';
+        if (s === 'bts1' || s.includes('bts')) return 'bts1';
         if (s.includes('term')) return 'terminale';
         if (s.includes('1')) return '1ere';
         if (s.includes('2') || s.includes('sec')) return '2nde';
@@ -300,17 +303,22 @@
                 }
             }
 
-            // Générer jusqu'à 48 candidats distincts en faisant tourner variante et index
-            for (let attempt = 0; attempt < 48; attempt++) {
-                const variant = cleanSalt + attempt + (tier === 'approfondissement' ? 2 : 0);
-                const idxOffset = attempt < 6 ? 0 : Math.floor(attempt / 2);
+            // Générer jusqu'à 96 candidats distincts en explorant largement banque + variantes procédurales
+            const candidateSigs = new Set();
+            for (let attempt = 0; attempt < 96; attempt++) {
+                const variant = cleanSalt + (attempt % 7) + (tier === 'approfondissement' ? 2 : 0);
+                const idxOffset = attempt < 6 ? attempt : (attempt * 3 + Math.floor(attempt / 5));
                 const targetIdx = Math.max(0, baseIdx + tierIndexShift + idxOffset);
                 const generated = qb.generateOne(sid, targetIdx, norm, variant);
                 if (generated) {
-                    candidates.push({
-                        ...generated,
-                        title: 'Niveau ' + (baseIdx + 1),
-                    });
+                    const gSig = signatureOf(generated);
+                    if (gSig && !candidateSigs.has(gSig)) {
+                        candidateSigs.add(gSig);
+                        candidates.push({
+                            ...generated,
+                            title: 'Niveau ' + (baseIdx + 1),
+                        });
+                    }
                 }
             }
         } else if (subject && Array.isArray(subject.lessons) && subject.lessons[baseIdx]) {
@@ -331,18 +339,35 @@
         }
         if (fallbackUnseen) return wrapLesson(fallbackUnseen);
 
-        // Passe 2 : si tout le vivier a déjà été vu, éviter strictement hardExcluded + les 6 plus récentes
+        // Passe 2 : si tout le vivier a déjà été vu, choisir la question vue le PLUS ANCIENNEMENT (FIFO)
+        // en évitant strictement hardExcluded et les plus récentes.
+        let oldestCand = null;
+        let oldestPos = Infinity;
         for (const cand of candidates) {
             const sig = signatureOf(cand);
             if (!sig || hardExcluded.has(sig) || veryRecentSet.has(sig)) continue;
-            return wrapLesson(cand);
+            const pos = bucket.seenSignatures.indexOf(sig);
+            if (pos < oldestPos) {
+                oldestPos = pos;
+                oldestCand = cand;
+            }
         }
+        if (oldestCand) return wrapLesson(oldestCand);
 
-        // Passe 3 : dernier recours — au moins différente de hardExcluded
+        // Passe 3 : dernier recours — la plus ancienne différente de hardExcluded
+        let fallbackOldest = null;
+        let fallbackPos = Infinity;
         for (const cand of candidates) {
             const sig = signatureOf(cand);
-            if (sig && !hardExcluded.has(sig)) return wrapLesson(cand);
+            if (sig && !hardExcluded.has(sig)) {
+                const pos = bucket.seenSignatures.indexOf(sig);
+                if (pos < fallbackPos) {
+                    fallbackPos = pos;
+                    fallbackOldest = cand;
+                }
+            }
         }
+        if (fallbackOldest) return wrapLesson(fallbackOldest);
 
         // Ultime repli
         const finalLesson = candidates[0] || {

@@ -1,5 +1,5 @@
 /* =============================================================================
-   ADMIN-STORE.JS — EDUQUEST v1.27.0
+   ADMIN-STORE.JS — EDUQUEST v1.28.1
    Couche de configuration centrale du panneau d'administration (admin.html).
 
    RÔLE :
@@ -27,20 +27,58 @@ const AdminStore = (() => {
     // Clé localStorage unique pour toute la configuration administrateur
     const LS_KEY = 'eduquest_admin_data';
 
-    // Règles pédagogiques strictes par défaut (Collège vs Lycée)
+    // Filières / voies officielles (Lycée & Post-Bac BTS)
+    const DEFAULT_FILIERES = [
+        { id: 'generale', label: 'Voie Générale', shortLabel: 'Générale', icon: '📚', enabled: true, desc: 'Tronc commun et spécialités du lycée général (SES, NSI, HGGSP, SI, Sciences)' },
+        { id: 'nsi_spe',  label: 'Spécialité NSI & Numérique', shortLabel: 'Spé NSI', icon: '💻', enabled: true, desc: 'Parcours informatique, algorithmique, réseaux, cybersécurité et sciences' },
+        { id: 'stmg',     label: 'STMG (Management & Gestion)', shortLabel: 'STMG', icon: '📊', enabled: true, desc: 'Management (MSGN), Droit & Économie, Mercatique & Gestion-Finance' },
+        { id: 'sti2d',    label: 'STI2D (Industrie & Dév. Durable)', shortLabel: 'STI2D', icon: '⚙️', enabled: true, desc: 'Innovation Technologique (I2D), Systèmes d\'Info & Énergie (SIN), Électronique' },
+        { id: 'ciel',     label: 'CIEL (Cyber, Réseaux & Électronique)', shortLabel: 'CIEL', icon: '🛡️', enabled: true, desc: 'Bac Pro & BTS CIEL : Cybersécurité, Réseaux & Systèmes, Électronique, Code' },
+        { id: 'st2s',     label: 'ST2S (Santé & Social)', shortLabel: 'ST2S', icon: '🩺', enabled: true, desc: 'Sciences Sanitaires & Sociales (STSS), Biologie humaine & Sciences' },
+    ];
+
+    const ALL_NIVEAUX = ['6eme', '5eme', '4eme', '3eme', '2nde', '1ere', 'terminale', 'bts1', 'bts2'];
+    const COLLEGE_LYCEE = ['6eme', '5eme', '4eme', '3eme', '2nde', '1ere', 'terminale'];
+    const LYCEE_ONLY = ['2nde', '1ere', 'terminale'];
+    const LYCEE_BTS = ['2nde', '1ere', 'terminale', 'bts1', 'bts2'];
+
+    // Règles pédagogiques conformes au programme officiel (Collège, Lycée & BTS, par filière)
     // - Technologie : Collège uniquement (6e → 3e)
-    // - NSI & SES : Lycée uniquement (2nde, 1ère, Terminale) — jamais au collège
+    // - Espagnol LV2 : dès la 5ème (5e → Terminale)
+    // - NSI & SES : Lycée uniquement — jamais au collège
     // - Philosophie : Terminale uniquement — jamais au collège
+    // - Matières de spécialité & filières (HGGSP, SI, MSGN, Droit-Éco, Mercatique, I2D, SIN,
+    //   Cybersécurité, Réseaux, Électronique, STSS) : Lycée / BTS selon la filière choisie.
     const SUBJECT_DEFAULT_RULES = {
-        techno: { band: 'college', allowedNiveaux: ['6eme', '5eme', '4eme', '3eme'] },
-        nsi:    { band: 'lycee',   allowedNiveaux: ['2nde', '1ere', 'terminale'] },
-        ses:    { band: 'lycee',   allowedNiveaux: ['2nde', '1ere', 'terminale'] },
-        philo:  { band: 'lycee',   allowedNiveaux: ['terminale'] },
+        maths:         { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['all'], specialtyFilieres: [] },
+        francais:      { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['all'], specialtyFilieres: [] },
+        histoire:      { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['all'], specialtyFilieres: [] },
+        geo:           { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['all'], specialtyFilieres: [] },
+        emc:           { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['all'], specialtyFilieres: [] },
+        anglais:       { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['all'], specialtyFilieres: [] },
+        espagnol:      { band: 'all',     allowedNiveaux: ['5eme', '4eme', '3eme', '2nde', '1ere', 'terminale'], allowedFilieres: ['generale', 'stmg', 'st2s'], specialtyFilieres: [] },
+        svt:           { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['generale', 'st2s'], specialtyFilieres: ['st2s'] },
+        physique:      { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel', 'st2s'], specialtyFilieres: [] },
+        chimie:        { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'st2s'], specialtyFilieres: [] },
+        techno:        { band: 'college', allowedNiveaux: ['6eme', '5eme', '4eme', '3eme'], allowedFilieres: ['all'], specialtyFilieres: [] },
+        arts:          { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['generale'], specialtyFilieres: [] },
+        philo:         { band: 'lycee',   allowedNiveaux: ['terminale'], allowedFilieres: ['generale', 'nsi_spe', 'stmg', 'sti2d', 'st2s'], specialtyFilieres: [] },
+        nsi:           { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel'], specialtyFilieres: ['nsi_spe', 'ciel'] },
+        ses:           { band: 'lycee',   allowedNiveaux: LYCEE_ONLY, allowedFilieres: ['generale'], specialtyFilieres: ['generale'] },
+        hggsp:         { band: 'lycee',   allowedNiveaux: ['1ere', 'terminale'], allowedFilieres: ['generale'], specialtyFilieres: ['generale'] },
+        si:            { band: 'lycee',   allowedNiveaux: LYCEE_ONLY, allowedFilieres: ['generale', 'nsi_spe', 'sti2d'], specialtyFilieres: ['nsi_spe', 'sti2d', 'generale'] },
+        msgn:          { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stmg'], specialtyFilieres: ['stmg'] },
+        droit_eco:     { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stmg', 'ciel'], specialtyFilieres: ['stmg', 'ciel'] },
+        mercatique:    { band: 'lycee',   allowedNiveaux: ['1ere', 'terminale', 'bts1', 'bts2'], allowedFilieres: ['stmg'], specialtyFilieres: ['stmg'] },
+        i2d:           { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['sti2d'], specialtyFilieres: ['sti2d'] },
+        sin:           { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['sti2d'], specialtyFilieres: ['sti2d'] },
+        cybersecurite: { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['ciel', 'nsi_spe'], specialtyFilieres: ['ciel', 'nsi_spe'] },
+        reseaux:       { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['ciel', 'nsi_spe'], specialtyFilieres: ['ciel', 'nsi_spe'] },
+        electronique:  { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['ciel', 'sti2d'], specialtyFilieres: ['ciel', 'sti2d'] },
+        stss:          { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['st2s'], specialtyFilieres: ['st2s'] },
     };
 
-    // Niveaux scolaires par défaut (6ème → Terminale) : id stable
-    // (utilisé dans DB.setNiveau et les clés de progression), label affiché,
-    // bande de contenu collège/lycée (voir QuestionBank.bandForNiveau).
+    // Niveaux scolaires par défaut (6ème → Terminale + BTS 1/2)
     const DEFAULT_LEVELS = [
         { id: '6eme', label: '6ème', band: 'college' },
         { id: '5eme', label: '5ème', band: 'college' },
@@ -49,6 +87,8 @@ const AdminStore = (() => {
         { id: '2nde', label: '2nde', band: 'lycee' },
         { id: '1ere', label: '1ère', band: 'lycee' },
         { id: 'terminale', label: 'Terminale', band: 'lycee' },
+        { id: 'bts1', label: 'BTS 1ère année', band: 'lycee' },
+        { id: 'bts2', label: 'BTS 2ème année', band: 'lycee' },
     ];
 
     // Types de leçons pris en charge par quiz-engine.js
@@ -67,6 +107,8 @@ const AdminStore = (() => {
         { id: 'nebuleuse', name: 'Nébuleuse Profonde', category: 'aura', color: '#8a2be2', cost: 350, desc: 'Vortex stellaire aux teintes cosmiques.' },
         { id: 'supernova', name: 'Supernova Suprême', category: 'aura', color: '#ffd700', cost: 450, desc: 'Explosion d\'énergie céleste aveuglante.' },
         { id: 'dragon-aura', name: 'Flamme du Dragon', category: 'aura', color: '#00e5ff', cost: 600, desc: 'Aura mythique d\'azur et de flammes spectrales.' },
+        { id: 'halo-cyber-grid', name: 'Bouclier Quantique', category: 'aura', color: '#00f5d4', cost: 280, desc: 'Halo cybernétique inspiré des filières CIEL & NSI.' },
+        { id: 'halo-sante', name: 'Lueur Vitale', category: 'aura', color: '#34d399', cost: 220, desc: 'Rayonnement émeraude apaisant et énergisant.' },
 
         // --- PERSONNAGES & AVATARS ---
         { id: 'robot', name: 'Robot Assistant', category: 'avatar', color: '#8fb8c9', img: 'Image/personnages/robot.webp', cost: 0, desc: 'Le fidèle compagnon d\'aventure mécanique.' },
@@ -92,16 +134,37 @@ const AdminStore = (() => {
         { id: 'titre-chrono', name: '⚡ Maître du Temps', category: 'title', color: '#ffbe0b', cost: 120, desc: 'Titre réservé aux as de la rapidité en mode chrono.' },
         { id: 'titre-explorateur', name: '🌌 Explorateur Cosmique', category: 'title', color: '#7209b7', cost: 200, desc: 'Titre des grands arpenteurs des îles du savoir.' },
         { id: 'titre-erudit', name: '👑 Érudit Suprême', category: 'title', color: '#f72585', cost: 500, desc: 'La plus haute distinction académique d\'EDUQUEST.' },
+        { id: 'titre-cyber', name: '🛡️ Cyber-Défenseur', category: 'title', color: '#38bdf8', cost: 160, desc: 'Distinction des experts en Cybersécurité et Réseaux (CIEL).' },
+        { id: 'titre-codeur', name: '💻 Architecte du Code', category: 'title', color: '#22d3ee', cost: 160, desc: 'Titre décerné aux bâtisseurs d\'algorithmes (NSI & CIEL).' },
+        { id: 'titre-stratege', name: '📊 Stratège STMG', category: 'title', color: '#fbbf24', cost: 160, desc: 'Titre des décideurs en Management, Droit et Mercatique.' },
+        { id: 'titre-ingenieur', name: '⚙️ Ingénieur Éco-Tech', category: 'title', color: '#34d399', cost: 160, desc: 'Distinction des innovateurs en STI2D & Sciences de l\'Ingénieur.' },
+        { id: 'titre-soignant', name: '🩺 Acteur Santé & Social', category: 'title', color: '#f472b6', cost: 160, desc: 'Titre dédié aux spécialistes des Sciences Sanitaires et Sociales.' },
+        { id: 'titre-geopolitique', name: '🌐 Diplomate & Analyste', category: 'title', color: '#a78bfa', cost: 160, desc: 'Titre des passionnés d\'Histoire, Géopolitique et SES.' },
 
         // --- THÈMES & EFFETS ---
         { id: 'default', name: '🌌 Thème Astral (Origine)', category: 'theme', color: '#c8a84b', cost: 0, desc: 'Le décor cosmique classique d\'EDUQUEST, offert par défaut.' },
         { id: 'theme-cyber', name: '🌐 Thème Cyber Néon', category: 'theme', color: '#00f5d4', cost: 180, desc: 'Ambiance futuriste aux teintes cyan et magenta.' },
         { id: 'theme-galaxie', name: '🌌 Thème Abysses Stellaires', category: 'theme', color: '#7b2cbf', cost: 220, desc: 'Fond spatial étoilé et nébuleuses profondes.' },
         { id: 'theme-or', name: '✨ Thème Palais Doré', category: 'theme', color: '#e0a96d', cost: 300, desc: 'Cadre impérial et dorures antiques.' },
+        { id: 'theme-emeraude', name: '🌿 Thème Émeraude Tech', category: 'theme', color: '#10b981', cost: 200, desc: 'Palette éco-technologique vert émeraude et ardoise sombre.' },
+        { id: 'theme-matrix', name: '🖥️ Thème Terminal Matrix', category: 'theme', color: '#22c55e', cost: 240, desc: 'Esthétique console développeur noir profond et vert phosphore.' },
 
         // --- BOOSTERS ---
         { id: 'boost-xp', name: '🧪 Potion Double XP', category: 'booster', color: '#38b000', cost: 75, desc: 'Double l\'XP gagnée au prochain niveau réussi !' },
         { id: 'boost-shield', name: '🛡️ Bouclier d\'Étoile', category: 'booster', color: '#0077b6', cost: 100, desc: 'Préserve tes 3 étoiles même en cas de première erreur.' },
+    ];
+
+    // Pool par défaut des Quêtes Quotidiennes (pilotable depuis le panneau admin)
+    const DEFAULT_QUEST_POOL = [
+        { type: 'xp',       icon: '⚡', title: 'Gagne 30 XP',                       target: 30, xp: 20, coins: 10, color: '#ffb547', enabled: true },
+        { type: 'xp',       icon: '🔥', title: 'Gagne 60 XP',                       target: 60, xp: 35, coins: 15, color: '#ff6b6b', enabled: true },
+        { type: 'xp',       icon: '🌟', title: 'Gagne 90 XP dans la journée',       target: 90, xp: 45, coins: 25, color: '#f59e0b', enabled: true },
+        { type: 'levels',   icon: '🏝️', title: 'Réussis 2 niveaux',                 target: 2,  xp: 20, coins: 10, color: '#4cc9f0', enabled: true },
+        { type: 'levels',   icon: '🗺️', title: 'Réussis 4 niveaux',                 target: 4,  xp: 35, coins: 20, color: '#3ddc97', enabled: true },
+        { type: 'levels',   icon: '🧭', title: 'Explore et réussis 6 niveaux',      target: 6,  xp: 50, coins: 30, color: '#38bdf8', enabled: true },
+        { type: 'perfect',  icon: '⭐', title: 'Décroche 3 étoiles sur un niveau',  target: 1,  xp: 25, coins: 15, color: '#ffd166', enabled: true },
+        { type: 'perfect',  icon: '🏅', title: 'Décroche 3 étoiles sur 2 niveaux',  target: 2,  xp: 40, coins: 25, color: '#eab308', enabled: true },
+        { type: 'firstTry', icon: '🎯', title: 'Réponds juste du 1er coup 3 fois',  target: 3,  xp: 30, coins: 15, color: '#b388ff', enabled: true },
     ];
 
     // Configuration par défaut des récompenses
@@ -114,12 +177,14 @@ const AdminStore = (() => {
         questRewardMultiplier: 1,// Multiplicateur récompenses des quêtes
     };
 
-    // Configuration par défaut globale du site (v1.26.0+)
+    // Configuration par défaut globale du site (v1.29.0+)
     const DEFAULT_SITE_CONFIG = {
         title: 'EDUQUEST',
         siteTitle: 'EDUQUEST',
-        tagline: 'Le jeu de révision pour le collège et le lycée',
+        tagline: 'Le jeu de révision Collège, Lycée & BTS',
         announcement: '',
+        defaultNiveau: '6eme',
+        defaultFiliere: 'generale',
         quizTimerSeconds: 45,         // Durée standard en secondes du compte à rebours chrono
         xpMultiplier: 1.0,            // Multiplicateur global d'XP
         coinMultiplier: 1.0,          // Multiplicateur global de pièces
@@ -130,6 +195,14 @@ const AdminStore = (() => {
         defaultSfxVolume: 60,         // Volume effets sonores par défaut (0-100)
         soundEnabledByDefault: true,  // Son actif par défaut
         allowRegistration: true,      // Autoriser de nouveaux élèves à créer un compte
+        enableShop: true,             // Activer l'onglet Boutique
+        enableQuests: true,           // Activer le bloc Missions quotidiennes
+        enableBadges: true,           // Activer l'onglet Succès
+        enableChrono: true,           // Autoriser le Mode Défi Chronométré
+        enableParticlesByDefault: true, // Particules étoilées actives par défaut
+        enableConfetti: true,         // Confettis de célébration actifs globalement
+        maintenanceMode: false,       // Mode bandeau d'alerte / examen
+        maintenanceMessage: '',
     };
 
     // Configuration par défaut de l'intégration IA (Multi-IA + Make.com + Adaptatif)
@@ -145,35 +218,69 @@ const AdminStore = (() => {
         fallbackToLocal: true,
     };
 
-    // Catalogue des 24 succès / badges par défaut d'EDUQUEST
+    // Catalogue des 46 succès / badges par défaut d'EDUQUEST (filtrables par filière & cycle)
     const DEFAULT_BADGES = [
-        { id: 'premier_quiz', icon: '🎯', name: 'Premier pas', desc: 'Réussis ta toute première question.', category: 'progression', condition: 'totalCompleted >= 1' },
-        { id: 'sans_faute', icon: '✨', name: 'Sans-faute', desc: 'Réponds juste du premier coup, sans réessayer.', category: 'precision', condition: 'justAnsweredFirstTry' },
-        { id: 'toutes_matieres', icon: '🌐', name: 'Touche-à-tout', desc: 'Termine au moins une leçon dans chaque matière.', category: 'exploration', condition: 'allSubjectsStarted' },
-        { id: 'matiere_complete', icon: '🏆', name: 'Expert(e)', desc: 'Termine au moins 5 leçons d\'une même matière.', category: 'maitrise', condition: 'oneSubjectAdvanced' },
-        { id: 'collectionneur', icon: '🎨', name: 'Collectionneur', desc: 'Possède 3 skins ou articles différents.', category: 'boutique', condition: 'ownedSkins >= 3' },
-        { id: 'niveau_5', icon: '🚀', name: 'Étoile montante', desc: 'Atteins le niveau 5 (400+ XP).', category: 'niveau', condition: 'playerLevel >= 5' },
-        { id: 'niveau_10', icon: '👑', name: 'Grand Maître', desc: 'Atteins le niveau 10 (900+ XP).', category: 'niveau', condition: 'playerLevel >= 10' },
-        { id: 'riche', icon: '💰', name: 'Bourse pleine', desc: 'Accumule au moins 100 pièces d\'or.', category: 'economie', condition: 'coins >= 100' },
-        { id: 'magnat', icon: '🏦', name: 'Magnat d\'Eduquest', desc: 'Accumule au moins 250 pièces d\'or.', category: 'economie', condition: 'coins >= 250' },
-        { id: 'alchimiste', icon: '🧪', name: 'Alchimiste', desc: 'Achète ou possède une potion magique.', category: 'potions', condition: 'hasBooster' },
-        { id: 'potion_double_xp', icon: '⚡', name: 'Surtension', desc: 'Utilise une Potion Double XP.', category: 'potions', condition: 'usedDoubleXp' },
-        { id: 'bouclier_etoile', icon: '🛡️', name: 'Invulnérable', desc: 'Utilise un Bouclier d\'Étoile pour protéger un score parfait.', category: 'potions', condition: 'usedShield' },
-        { id: 'maths_fan', icon: '📐', name: 'Arithméticien', desc: 'Atteins le niveau 5 en Mathématiques.', category: 'matieres', condition: 'mathsLevel >= 5' },
-        { id: 'francais_fan', icon: '📚', name: 'Littéraire', desc: 'Atteins le niveau 5 en Français.', category: 'matieres', condition: 'francaisLevel >= 5' },
-        { id: 'histoire_fan', icon: '📜', name: 'Chroniqueur', desc: 'Atteins le niveau 5 en Histoire.', category: 'matieres', condition: 'histoireLevel >= 5' },
-        { id: 'sciences_fan', icon: '🔬', name: 'Scientifique', desc: 'Atteins le niveau 5 en SVT, Physique ou Chimie.', category: 'matieres', condition: 'scienceLevel >= 5' },
-        { id: 'philo_fan', icon: '🏛️', name: 'Penseur Antique', desc: 'Atteins le niveau 5 en Philosophie.', category: 'matieres', condition: 'philoLevel >= 5' },
-        { id: 'polyglotte', icon: '🇬🇧', name: 'Polyglotte', desc: 'Atteins le niveau 5 en Anglais.', category: 'matieres', condition: 'anglaisLevel >= 5' },
-        { id: 'citoyen', icon: '⚖️', name: 'Citoyen Éclairé', desc: 'Atteins le niveau 5 en EMC.', category: 'matieres', condition: 'emcLevel >= 5' },
-        { id: 'technophile', icon: '💻', name: 'Technophile', desc: 'Atteins le niveau 5 en Technologie.', category: 'matieres', condition: 'technoLevel >= 5' },
-        { id: 'fashion_victim', icon: '✨', name: 'Aura Éclatante', desc: 'Équipe une aura scintillante pour ton avatar.', category: 'personnalisation', condition: 'auraEquipped' },
-        { id: 'theme_custom', icon: '🎭', name: 'Nouveau Décor', desc: 'Applique un thème visuel personnalisé.', category: 'personnalisation', condition: 'themeEquipped' },
-        { id: 'streak_3', icon: '🔥', name: 'Série Ardente', desc: 'Réussis 3 leçons d\'affilée.', category: 'progression', condition: 'streakCount >= 3' },
-        { id: 'streak_5', icon: '⚡', name: 'Inarrêtable', desc: 'Atteins une série de 5 victoires d\'affilée.', category: 'progression', condition: 'streakCount >= 5' },
-        { id: 'combo_5', icon: '👑', name: 'Maître du Combo', desc: 'Enchaîne 5 bonnes réponses consécutives.', category: 'precision', condition: 'comboCount >= 5' },
-        { id: 'queteur', icon: '📋', name: 'Assidu', desc: 'Réclame une récompense de quête journalière.', category: 'quetes', condition: 'questClaimed' },
-        { id: 'coffre_ouvert', icon: '🎁', name: 'Chasseur de Trésor', desc: 'Ouvre le coffre quotidien bonus.', category: 'quetes', condition: 'dailyChestOpened' },
+        // --- SUCCÈS UNIVERSELS (TOUTES FILIÈRES & TOUS CYCLES) ---
+        { id: 'premier_quiz', icon: '🎯', name: 'Premier pas', desc: 'Réussis ta toute première question.', category: 'progression', band: 'all', allowedFilieres: ['all'], condition: 'totalCompleted >= 1' },
+        { id: 'sans_faute', icon: '✨', name: 'Sans-faute', desc: 'Réponds juste du premier coup, sans réessayer.', category: 'precision', band: 'all', allowedFilieres: ['all'], condition: 'justAnsweredFirstTry' },
+        { id: 'toutes_matieres', icon: '🌐', name: 'Touche-à-tout', desc: 'Termine au moins une leçon dans chaque matière de ton parcours.', category: 'exploration', band: 'all', allowedFilieres: ['all'], condition: 'allSubjectsStarted' },
+        { id: 'matiere_complete', icon: '🏆', name: 'Expert(e)', desc: 'Termine au moins 5 leçons d\'une même matière.', category: 'maitrise', band: 'all', allowedFilieres: ['all'], condition: 'oneSubjectAdvanced' },
+        { id: 'collectionneur', icon: '🎨', name: 'Collectionneur', desc: 'Possède 3 skins ou articles différents.', category: 'boutique', band: 'all', allowedFilieres: ['all'], condition: 'ownedSkins >= 3' },
+        { id: 'niveau_5', icon: '🚀', name: 'Étoile montante', desc: 'Atteins le niveau 5 (400+ XP).', category: 'niveau', band: 'all', allowedFilieres: ['all'], condition: 'playerLevel >= 5' },
+        { id: 'niveau_10', icon: '👑', name: 'Grand Maître', desc: 'Atteins le niveau 10 (900+ XP).', category: 'niveau', band: 'all', allowedFilieres: ['all'], condition: 'playerLevel >= 10' },
+        { id: 'riche', icon: '💰', name: 'Bourse pleine', desc: 'Accumule au moins 100 pièces d\'or.', category: 'economie', band: 'all', allowedFilieres: ['all'], condition: 'coins >= 100' },
+        { id: 'magnat', icon: '🏦', name: 'Magnat d\'Eduquest', desc: 'Accumule au moins 250 pièces d\'or.', category: 'economie', band: 'all', allowedFilieres: ['all'], condition: 'coins >= 250' },
+        { id: 'alchimiste', icon: '🧪', name: 'Alchimiste', desc: 'Achète ou possède une potion magique.', category: 'potions', band: 'all', allowedFilieres: ['all'], condition: 'hasBooster' },
+        { id: 'potion_double_xp', icon: '⚡', name: 'Surtension', desc: 'Utilise une Potion Double XP.', category: 'potions', band: 'all', allowedFilieres: ['all'], condition: 'usedDoubleXp' },
+        { id: 'bouclier_etoile', icon: '🛡️', name: 'Invulnérable', desc: 'Utilise un Bouclier d\'Étoile pour protéger un score parfait.', category: 'potions', band: 'all', allowedFilieres: ['all'], condition: 'usedShield' },
+        { id: 'maths_fan', icon: '📐', name: 'Arithméticien', desc: 'Atteins le niveau 5 en Mathématiques.', category: 'matieres', band: 'all', allowedFilieres: ['all'], condition: 'mathsLevel >= 5' },
+        { id: 'francais_fan', icon: '📚', name: 'Littéraire', desc: 'Atteins le niveau 5 en Français.', category: 'matieres', band: 'all', allowedFilieres: ['all'], condition: 'francaisLevel >= 5' },
+        { id: 'histoire_fan', icon: '📜', name: 'Chroniqueur', desc: 'Atteins le niveau 5 en Histoire.', category: 'matieres', band: 'all', allowedFilieres: ['all'], condition: 'histoireLevel >= 5' },
+        { id: 'explorateur_geo', icon: '🌍', name: 'Cartographe', desc: 'Atteins le niveau 5 en Géographie.', category: 'matieres', band: 'all', allowedFilieres: ['all'], condition: 'geoLevel >= 5' },
+        { id: 'polyglotte', icon: '🇬🇧', name: 'Polyglotte', desc: 'Atteins le niveau 5 en Anglais.', category: 'matieres', band: 'all', allowedFilieres: ['all'], condition: 'anglaisLevel >= 5' },
+        { id: 'citoyen', icon: '⚖️', name: 'Citoyen Éclairé', desc: 'Atteins le niveau 5 en EMC.', category: 'matieres', band: 'all', allowedFilieres: ['all'], condition: 'emcLevel >= 5' },
+        { id: 'fashion_victim', icon: '✨', name: 'Aura Éclatante', desc: 'Équipe une aura scintillante pour ton avatar.', category: 'personnalisation', band: 'all', allowedFilieres: ['all'], condition: 'auraEquipped' },
+        { id: 'theme_custom', icon: '🎭', name: 'Nouveau Décor', desc: 'Applique un thème visuel personnalisé.', category: 'personnalisation', band: 'all', allowedFilieres: ['all'], condition: 'themeEquipped' },
+        { id: 'streak_3', icon: '🔥', name: 'Série Ardente', desc: 'Réussis 3 leçons d\'affilée.', category: 'progression', band: 'all', allowedFilieres: ['all'], condition: 'streakCount >= 3' },
+        { id: 'streak_5', icon: '⚡', name: 'Inarrêtable', desc: 'Atteins une série de 5 victoires d\'affilée.', category: 'progression', band: 'all', allowedFilieres: ['all'], condition: 'streakCount >= 5' },
+        { id: 'combo_5', icon: '👑', name: 'Maître du Combo', desc: 'Enchaîne 5 bonnes réponses consécutives.', category: 'precision', band: 'all', allowedFilieres: ['all'], condition: 'comboCount >= 5' },
+        { id: 'queteur', icon: '📋', name: 'Assidu', desc: 'Réclame une récompense de quête journalière.', category: 'quetes', band: 'all', allowedFilieres: ['all'], condition: 'questClaimed' },
+        { id: 'coffre_ouvert', icon: '🎁', name: 'Chasseur de Trésor', desc: 'Ouvre le coffre quotidien bonus.', category: 'quetes', band: 'all', allowedFilieres: ['all'], condition: 'dailyChestOpened' },
+
+        // --- SUCCÈS COLLÈGE / TRANSVERSE SCIENTIFIQUE & LANGUES ---
+        { id: 'technophile', icon: '💻', name: 'Technophile', desc: 'Atteins le niveau 5 en Technologie (Collège).', category: 'matieres', band: 'college', allowedFilieres: ['all'], condition: 'technoLevel >= 5' },
+        { id: 'sciences_fan', icon: '🔬', name: 'Scientifique', desc: 'Atteins le niveau 5 en SVT, Physique ou Chimie.', category: 'matieres', band: 'all', allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel', 'st2s'], condition: 'scienceLevel >= 5' },
+        { id: 'hispanophone', icon: '🇪🇸', name: 'Hispanophone', desc: 'Atteins le niveau 5 en Espagnol (LV2).', category: 'matieres', band: 'all', allowedFilieres: ['generale', 'stmg', 'st2s'], condition: 'espagnolLevel >= 5' },
+        { id: 'artiste_melomane', icon: '🎨', name: 'Esprit Créatif', desc: 'Atteins le niveau 5 en Arts & Musique.', category: 'matieres', band: 'all', allowedFilieres: ['generale'], condition: 'artsLevel >= 5' },
+
+        // --- SUCCÈS LYCÉE GÉNÉRAL & PHILOSOPHIE ---
+        { id: 'philo_fan', icon: '🏛️', name: 'Penseur Antique', desc: 'Atteins le niveau 5 en Philosophie.', category: 'matieres', band: 'lycee', allowedFilieres: ['generale', 'nsi_spe', 'stmg', 'sti2d', 'st2s'], condition: 'philoLevel >= 5' },
+        { id: 'geopoliticien', icon: '🗺️', name: 'Géopoliticien', desc: 'Atteins le niveau 5 en HGGSP (Géopolitique).', category: 'matieres', band: 'lycee', allowedFilieres: ['generale'], condition: 'hggspLevel >= 5' },
+        { id: 'economiste_ses', icon: '💹', name: 'Économiste SES', desc: 'Atteins le niveau 5 en SES (Économie & Sociologie).', category: 'matieres', band: 'lycee', allowedFilieres: ['generale'], condition: 'sesLevel >= 5' },
+
+        // --- SUCCÈS SPÉCIALITÉ NSI & NUMÉRIQUE ---
+        { id: 'nsi_fan', icon: '💻', name: 'Codeur NSI', desc: 'Atteins le niveau 5 en NSI & Numérique.', category: 'matieres', band: 'lycee', allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel'], condition: 'nsiLevel >= 5' },
+
+        // --- SUCCÈS FILIÈRE CIEL (CYBER, RÉSEAUX & ÉLECTRONIQUE) ---
+        { id: 'ciel_fan', icon: '🛡️', name: 'Expert CIEL', desc: 'Atteins le niveau 5 en Cybersécurité, Réseaux ou Électronique.', category: 'matieres', band: 'lycee', allowedFilieres: ['ciel', 'nsi_spe'], condition: 'cielLevel >= 5' },
+        { id: 'cyber_gardien', icon: '🔐', name: 'Gardien Cyber', desc: 'Atteins le niveau 5 en Cybersécurité.', category: 'matieres', band: 'lycee', allowedFilieres: ['ciel', 'nsi_spe'], condition: 'cyberLevel >= 5' },
+        { id: 'architecte_reseau', icon: '🌐', name: 'Architecte Réseau', desc: 'Atteins le niveau 5 en Réseaux & Systèmes.', category: 'matieres', band: 'lycee', allowedFilieres: ['ciel', 'nsi_spe'], condition: 'reseauxLevel >= 5' },
+        { id: 'maitre_electronique', icon: '🔌', name: 'Maître des Circuits', desc: 'Atteins le niveau 5 en Électronique & Systèmes.', category: 'matieres', band: 'lycee', allowedFilieres: ['ciel', 'sti2d'], condition: 'electroniqueLevel >= 5' },
+
+        // --- SUCCÈS FILIÈRE STMG (MANAGEMENT, DROIT & MERCATIQUE) ---
+        { id: 'stmg_fan', icon: '📊', name: 'Manager STMG', desc: 'Atteins le niveau 5 en MSGN, Droit-Éco ou Mercatique.', category: 'matieres', band: 'lycee', allowedFilieres: ['stmg'], condition: 'stmgLevel >= 5' },
+        { id: 'juriste_junior', icon: '⚖️', name: 'Juriste Junior', desc: 'Atteins le niveau 5 en Droit & Économie.', category: 'matieres', band: 'lycee', allowedFilieres: ['stmg', 'ciel'], condition: 'droitEcoLevel >= 5' },
+        { id: 'as_mercatique', icon: '📈', name: 'As du Marketing', desc: 'Atteins le niveau 5 en Mercatique.', category: 'matieres', band: 'lycee', allowedFilieres: ['stmg'], condition: 'mercatiqueLevel >= 5' },
+
+        // --- SUCCÈS FILIÈRE STI2D & SCIENCES DE L'INGÉNIEUR ---
+        { id: 'sti2d_fan', icon: '⚙️', name: 'Ingénieur STI2D', desc: 'Atteins le niveau 5 en I2D, SIN ou Sciences de l\'Ingénieur.', category: 'matieres', band: 'lycee', allowedFilieres: ['sti2d'], condition: 'sti2dLevel >= 5' },
+        { id: 'eco_concepteur', icon: '🌿', name: 'Éco-Concepteur', desc: 'Atteins le niveau 5 en I2D (Innovation & Éco).', category: 'matieres', band: 'lycee', allowedFilieres: ['sti2d'], condition: 'i2dLevel >= 5' },
+        { id: 'dompteur_signaux', icon: '📡', name: 'Dompteur de Signaux', desc: 'Atteins le niveau 5 en SIN (Info & Numérique).', category: 'matieres', band: 'lycee', allowedFilieres: ['sti2d'], condition: 'sinLevel >= 5' },
+        { id: 'ingenieur_systeme', icon: '📐', name: 'Ingénieur Système', desc: 'Atteins le niveau 5 en Sciences de l\'Ingénieur.', category: 'matieres', band: 'lycee', allowedFilieres: ['generale', 'nsi_spe', 'sti2d'], condition: 'siLevel >= 5' },
+
+        // --- SUCCÈS FILIÈRE ST2S (SANTÉ & SOCIAL) ---
+        { id: 'st2s_fan', icon: '🩺', name: 'Spécialiste ST2S', desc: 'Atteins le niveau 5 en STSS.', category: 'matieres', band: 'lycee', allowedFilieres: ['st2s'], condition: 'stssLevel >= 5' },
+        { id: 'acteur_sante', icon: '🏥', name: 'Acteur de Santé', desc: 'Atteins le niveau 10 en STSS (Santé & Social).', category: 'matieres', band: 'lycee', allowedFilieres: ['st2s'], condition: 'stssLevel >= 10' },
     ];
 
     /* -----------------------------------------------------------------------
@@ -206,6 +313,8 @@ const AdminStore = (() => {
             if (!d.badges) d.badges = { overrides: {}, customs: [] };
             if (!d.siteConfig) d.siteConfig = null;
             if (!d.aiConfig) d.aiConfig = null;
+            if (d.filieres === undefined) d.filieres = null;
+            if (d.quests === undefined) d.quests = null;
             cache = d;
         } else {
             cache = {
@@ -213,6 +322,8 @@ const AdminStore = (() => {
                 siteConfig: null,
                 aiConfig: null,
                 levels: null,
+                filieres: null,
+                quests: null,
                 subjects: { overrides: {}, customs: [] },
                 credits: {},
                 shop: { overrides: {}, customs: [] },
@@ -503,13 +614,122 @@ const AdminStore = (() => {
         return getLevels().filter(l => l.band === band).map(l => l.id);
     }
 
+    /** Retourne la liste complète des filières (config admin ou valeurs par défaut). */
+    function getFilieres() {
+        const stored = _data().filieres;
+        const list = (Array.isArray(stored) && stored.length > 0) ? _clone(stored) : _clone(DEFAULT_FILIERES);
+        return list.map(f => ({
+            id: String(f.id || '').trim().toLowerCase(),
+            label: String(f.label || f.id || '').trim(),
+            shortLabel: String(f.shortLabel || f.label || f.id || '').trim(),
+            icon: String(f.icon || '🧭').trim() || '🧭',
+            enabled: f.enabled !== false,
+            desc: String(f.desc || '').trim(),
+        }));
+    }
+
+    /** Retourne uniquement les filières actives (pour les sélecteurs du jeu). */
+    function getActiveFilieres() {
+        const active = getFilieres().filter(f => f.enabled !== false);
+        return active.length > 0 ? active : getFilieres().slice(0, 1);
+    }
+
+    /** true si l'administrateur a personnalisé les filières. */
+    function filieresModified() {
+        return Array.isArray(_data().filieres) && _data().filieres.length > 0;
+    }
+
+    /** Valide et enregistre la liste des filières. */
+    function saveFilieres(list) {
+        if (!Array.isArray(list) || list.length === 0) {
+            return { ok: false, error: 'Il faut au moins une filière.' };
+        }
+        const ids = new Set();
+        const clean = [];
+        for (const f of list) {
+            const id = String(f && f.id || '').trim().toLowerCase();
+            if (!id || !/^[a-z0-9_-]+$/i.test(id) || id === 'all') {
+                return { ok: false, error: 'Identifiant de filière invalide (lettres, chiffres, tirets uniquement, ≠ "all").' };
+            }
+            if (ids.has(id)) return { ok: false, error: 'Identifiant de filière en double : ' + id };
+            ids.add(id);
+            const label = String(f.label || '').trim();
+            if (!label) return { ok: false, error: 'Libellé de filière vide pour ' + id + '.' };
+            clean.push({
+                id,
+                label,
+                shortLabel: String(f.shortLabel || label).trim() || label,
+                icon: String(f.icon || '🧭').trim() || '🧭',
+                enabled: f.enabled !== false,
+                desc: String(f.desc || '').trim(),
+            });
+        }
+        if (!clean.some(f => f.enabled !== false)) {
+            return { ok: false, error: 'Au moins une filière doit rester active.' };
+        }
+        _data().filieres = clean;
+        _save();
+        return { ok: true, filieres: getFilieres() };
+    }
+
+    /** Rétablit les filières officielles par défaut. */
+    function resetFilieres() {
+        _data().filieres = null;
+        _save();
+        return { ok: true, filieres: getFilieres() };
+    }
+
+    function getFiliere(filiereId) {
+        const clean = String(filiereId || 'generale').toLowerCase().trim();
+        const list = getFilieres();
+        return list.find(f => f.id === clean) || list.find(f => f.enabled !== false) || list[0];
+    }
+
+    function filiereLabel(filiereId) {
+        const f = getFiliere(filiereId);
+        return f ? f.label : 'Voie Générale';
+    }
+
+    /** Indique si la sélection de filière s'applique à ce niveau (Lycée & BTS uniquement, pas au Collège). */
+    function isFiliereApplicable(niveauId) {
+        const norm = (typeof QuestionBank !== 'undefined' && typeof QuestionBank.normalizeNiveau === 'function')
+            ? QuestionBank.normalizeNiveau(niveauId)
+            : String(niveauId || '6eme').toLowerCase().trim();
+        const b = levelBand(norm) || (['2nde', '1ere', 'terminale', 'bts1', 'bts2'].includes(norm) ? 'lycee' : 'college');
+        return b === 'lycee';
+    }
+
+    /** Retourne les filières autorisées pour une matière ('all' ou tableau d'ids). */
+    function defaultAllowedFilieresForSubject(subject) {
+        if (!subject) return ['all'];
+        if (Array.isArray(subject.allowedFilieres) && subject.allowedFilieres.length > 0) {
+            return subject.allowedFilieres.slice();
+        }
+        const id = typeof subject === 'string' ? subject : subject.id;
+        if (SUBJECT_DEFAULT_RULES[id] && Array.isArray(SUBJECT_DEFAULT_RULES[id].allowedFilieres)) {
+            return SUBJECT_DEFAULT_RULES[id].allowedFilieres.slice();
+        }
+        return ['all'];
+    }
+
+    /** Indique si une matière est une spécialité phare de la filière sélectionnée. */
+    function isSubjectSpecialtyForFiliere(subject, filiereId) {
+        if (!subject || !filiereId) return false;
+        const f = String(filiereId).toLowerCase().trim();
+        const specs = Array.isArray(subject.specialtyFilieres)
+            ? subject.specialtyFilieres
+            : (SUBJECT_DEFAULT_RULES[subject.id] ? (SUBJECT_DEFAULT_RULES[subject.id].specialtyFilieres || []) : []);
+        return specs.includes(f);
+    }
+
     /**
      * Source unique de vérité : retourne true si et seulement si `subject`
-     * est active et autorisée pour la classe `niveauId`.
-     * Garantit notamment l'absence totale de SES, Philosophie et NSI au collège,
-     * de Technologie au lycée, et de Philosophie avant la Terminale.
+     * est active et autorisée pour la classe `niveauId` (et la filière `filiereId`
+     * lorsque le niveau est au lycée ou en BTS).
+     * Garantit notamment l'absence totale de SES, Philosophie, NSI et matières
+     * de filières au collège, de Technologie au lycée, et de Philosophie avant la Terminale.
      */
-    function isSubjectAllowedForNiveau(subject, niveauId) {
+    function isSubjectAllowedForNiveau(subject, niveauId, filiereId) {
         if (!subject || subject.enabled === false) return false;
         const norm = (typeof QuestionBank !== 'undefined' && typeof QuestionBank.normalizeNiveau === 'function')
             ? QuestionBank.normalizeNiveau(niveauId)
@@ -517,13 +737,29 @@ const AdminStore = (() => {
         const allowed = Array.isArray(subject.allowedNiveaux) && subject.allowedNiveaux.length > 0
             ? subject.allowedNiveaux
             : defaultAllowedNiveauxForSubject(subject);
+        let levelOk = false;
         if (allowed.length > 0) {
-            return allowed.includes(norm);
+            levelOk = allowed.includes(norm);
+        } else {
+            const band = defaultBandForSubject(subject);
+            if (band === 'all') {
+                levelOk = true;
+            } else {
+                const nBand = levelBand(norm) || ((['2nde', '1ere', 'terminale', 'bts1', 'bts2'].includes(norm)) ? 'lycee' : 'college');
+                levelOk = (band === nBand);
+            }
         }
-        const band = defaultBandForSubject(subject);
-        if (band === 'all') return true;
-        const nBand = levelBand(norm) || ((['2nde', '1ere', 'terminale'].includes(norm)) ? 'lycee' : 'college');
-        return band === nBand;
+        if (!levelOk) return false;
+
+        // Au lycée / BTS : filtrage selon la filière choisie (par défaut 'generale')
+        if (isFiliereApplicable(norm)) {
+            const effectiveFiliere = String(filiereId || 'generale').toLowerCase().trim() || 'generale';
+            const allowedFil = defaultAllowedFilieresForSubject(subject);
+            if (allowedFil.length > 0 && !allowedFil.includes('all')) {
+                return allowedFil.includes(effectiveFiliere);
+            }
+        }
+        return true;
     }
 
     /**
@@ -540,12 +776,17 @@ const AdminStore = (() => {
             const allowedNiveaux = (Array.isArray(s.allowedNiveaux) && s.allowedNiveaux.length > 0)
                 ? _clone(s.allowedNiveaux)
                 : (rule ? _clone(rule.allowedNiveaux) : []);
+            const allowedFilieres = (Array.isArray(s.allowedFilieres) && s.allowedFilieres.length > 0)
+                ? _clone(s.allowedFilieres)
+                : (rule && Array.isArray(rule.allowedFilieres) ? _clone(rule.allowedFilieres) : ['all']);
             defaults[s.id] = {
                 id: s.id,
                 name: s.name,
                 icon: s.icon,
+                island: s.island || '',
                 band,
                 allowedNiveaux,
+                allowedFilieres,
                 enabled: s.enabled !== false,
                 description: s.description || '',
                 lessons: _clone(s.lessons || []),
@@ -592,13 +833,29 @@ const AdminStore = (() => {
             if ((!Array.isArray(out.allowedNiveaux) || out.allowedNiveaux.length === 0) && rule) {
                 out.allowedNiveaux = _clone(rule.allowedNiveaux);
             }
+            if ((!Array.isArray(out.allowedFilieres) || out.allowedFilieres.length === 0) && rule && Array.isArray(rule.allowedFilieres)) {
+                out.allowedFilieres = _clone(rule.allowedFilieres);
+            }
+            if ((!Array.isArray(out.specialtyFilieres) || out.specialtyFilieres.length === 0) && rule && Array.isArray(rule.specialtyFilieres)) {
+                out.specialtyFilieres = _clone(rule.specialtyFilieres);
+            }
             const ov = data.subjects.overrides[raw.id];
             if (!ov) return out;
             if (typeof ov.name === 'string' && ov.name.trim()) out.name = ov.name.trim();
-            if (typeof ov.icon === 'string' && ov.icon.trim()) out.icon = ov.icon.trim();
+            if (typeof ov.icon === 'string' && ov.icon.trim()) {
+                out.icon = ov.icon.trim();
+                out.island = '';
+                out._iconOverridden = true;
+            }
             if (ov.band) out.band = ov.band;
             if (Array.isArray(ov.allowedNiveaux) && ov.allowedNiveaux.length > 0) {
                 out.allowedNiveaux = _clone(ov.allowedNiveaux);
+            }
+            if (Array.isArray(ov.allowedFilieres) && ov.allowedFilieres.length > 0) {
+                out.allowedFilieres = _clone(ov.allowedFilieres);
+            }
+            if (Array.isArray(ov.specialtyFilieres)) {
+                out.specialtyFilieres = _clone(ov.specialtyFilieres);
             }
             if (typeof ov.enabled === 'boolean') out.enabled = ov.enabled;
             if (typeof ov.description === 'string') out.description = ov.description;
@@ -612,6 +869,8 @@ const AdminStore = (() => {
                 icon: c.icon,
                 band: c.band || 'all',
                 allowedNiveaux: _clone(c.allowedNiveaux || []),
+                allowedFilieres: (Array.isArray(c.allowedFilieres) && c.allowedFilieres.length > 0) ? _clone(c.allowedFilieres) : ['all'],
+                specialtyFilieres: Array.isArray(c.specialtyFilieres) ? _clone(c.specialtyFilieres) : [],
                 enabled: c.enabled !== false,
                 description: c.description || '',
                 lessons: _clone(c.lessons),
@@ -641,12 +900,24 @@ const AdminStore = (() => {
             const effectiveAllowed = (ov && Array.isArray(ov.allowedNiveaux) && ov.allowedNiveaux.length > 0)
                 ? _clone(ov.allowedNiveaux)
                 : defAllowed;
+            const effectiveSpec = (ov && Array.isArray(ov.specialtyFilieres))
+                ? _clone(ov.specialtyFilieres)
+                : (Array.isArray(raw.specialtyFilieres) && raw.specialtyFilieres.length > 0
+                    ? _clone(raw.specialtyFilieres)
+                    : (rule && Array.isArray(rule.specialtyFilieres) ? _clone(rule.specialtyFilieres) : []));
             return {
                 id: raw.id,
                 name: ov && ov.name ? ov.name : raw.name,
                 icon: ov && ov.icon ? ov.icon : raw.icon,
+                island: ov && ov.icon ? '' : (raw.island || ''),
                 band: ov && ov.band ? ov.band : defBand,
                 allowedNiveaux: effectiveAllowed,
+                allowedFilieres: (ov && Array.isArray(ov.allowedFilieres) && ov.allowedFilieres.length > 0)
+                    ? _clone(ov.allowedFilieres)
+                    : (Array.isArray(raw.allowedFilieres) && raw.allowedFilieres.length > 0
+                        ? _clone(raw.allowedFilieres)
+                        : (rule && Array.isArray(rule.allowedFilieres) ? _clone(rule.allowedFilieres) : ['all'])),
+                specialtyFilieres: effectiveSpec,
                 enabled: ov && typeof ov.enabled === 'boolean' ? ov.enabled : (raw.enabled !== false),
                 description: ov && typeof ov.description === 'string' ? ov.description : (raw.description || ''),
                 isCustom: false,
@@ -661,6 +932,8 @@ const AdminStore = (() => {
                 icon: c.icon,
                 band: c.band || 'all',
                 allowedNiveaux: _clone(c.allowedNiveaux || []),
+                allowedFilieres: (Array.isArray(c.allowedFilieres) && c.allowedFilieres.length > 0) ? _clone(c.allowedFilieres) : ['all'],
+                specialtyFilieres: Array.isArray(c.specialtyFilieres) ? _clone(c.specialtyFilieres) : [],
                 enabled: c.enabled !== false,
                 description: c.description || '',
                 isCustom: true,
@@ -671,7 +944,7 @@ const AdminStore = (() => {
         return out;
     }
 
-    /** Applique un renommage / changement d'icône / cycle / niveaux / visibilité. */
+    /** Applique un renommage / changement d'icône / cycle / niveaux / filières / visibilité. */
     function saveSubjectMeta(id, patch = {}) {
         if (!id) return { ok: false, error: 'Identifiant de matière manquant.' };
         const data = _data();
@@ -679,6 +952,12 @@ const AdminStore = (() => {
         const iconV = typeof patch.icon === 'string' ? patch.icon.trim() : '';
         const bandV = (patch.band === 'college' || patch.band === 'lycee' || patch.band === 'all') ? patch.band : undefined;
         const allowedNiveaux = Array.isArray(patch.allowedNiveaux) ? patch.allowedNiveaux.map(String) : undefined;
+        const allowedFilieres = Array.isArray(patch.allowedFilieres)
+            ? (patch.allowedFilieres.length > 0 ? patch.allowedFilieres.map(f => String(f).toLowerCase().trim()).filter(Boolean) : ['all'])
+            : undefined;
+        const specialtyFilieres = Array.isArray(patch.specialtyFilieres)
+            ? patch.specialtyFilieres.map(f => String(f).toLowerCase().trim()).filter(f => f && f !== 'all')
+            : undefined;
         const enabled = typeof patch.enabled === 'boolean' ? patch.enabled : undefined;
         const descV = typeof patch.description === 'string' ? patch.description.trim() : undefined;
 
@@ -688,6 +967,8 @@ const AdminStore = (() => {
             if (iconV) custom.icon = iconV;
             if (bandV !== undefined) custom.band = bandV;
             if (allowedNiveaux !== undefined) custom.allowedNiveaux = allowedNiveaux;
+            if (allowedFilieres !== undefined) custom.allowedFilieres = allowedFilieres;
+            if (specialtyFilieres !== undefined) custom.specialtyFilieres = specialtyFilieres;
             if (enabled !== undefined) custom.enabled = enabled;
             if (descV !== undefined) custom.description = descV;
             _save();
@@ -699,6 +980,8 @@ const AdminStore = (() => {
         if (iconV) ov.icon = iconV;
         if (bandV !== undefined) ov.band = bandV;
         if (allowedNiveaux !== undefined) ov.allowedNiveaux = allowedNiveaux;
+        if (allowedFilieres !== undefined) ov.allowedFilieres = allowedFilieres;
+        if (specialtyFilieres !== undefined) ov.specialtyFilieres = specialtyFilieres;
         if (enabled !== undefined) ov.enabled = enabled;
         if (descV !== undefined) ov.description = descV;
         _save();
@@ -725,7 +1008,7 @@ const AdminStore = (() => {
         return { ok: true, lessons: clean };
     }
 
-    /** Crée une matière personnalisée (avec son cycle d'études, ses niveaux et sa première leçon). */
+    /** Crée une matière personnalisée (avec son cycle d'études, ses niveaux, ses filières et sa première leçon). */
     function createCustomSubject(name, icon, firstLesson, meta = {}) {
         const nameV = typeof name === 'string' ? name.trim() : '';
         if (!nameV) return { ok: false, error: 'Donnez un nom à la matière.' };
@@ -748,6 +1031,12 @@ const AdminStore = (() => {
 
         const band = (meta && (meta.band === 'college' || meta.band === 'lycee')) ? meta.band : 'all';
         const allowedNiveaux = (meta && Array.isArray(meta.allowedNiveaux)) ? meta.allowedNiveaux : [];
+        const allowedFilieres = (meta && Array.isArray(meta.allowedFilieres) && meta.allowedFilieres.length > 0)
+            ? meta.allowedFilieres.map(f => String(f).toLowerCase().trim()).filter(Boolean)
+            : ['all'];
+        const specialtyFilieres = (meta && Array.isArray(meta.specialtyFilieres))
+            ? meta.specialtyFilieres.map(f => String(f).toLowerCase().trim()).filter(f => f && f !== 'all')
+            : [];
         const enabled = (meta && typeof meta.enabled === 'boolean') ? meta.enabled : true;
         const description = (meta && typeof meta.description === 'string') ? meta.description.trim() : '';
 
@@ -757,6 +1046,8 @@ const AdminStore = (() => {
             icon: (icon || '📘').trim(),
             band,
             allowedNiveaux,
+            allowedFilieres,
+            specialtyFilieres,
             enabled,
             description,
             lessons: [clean]
@@ -909,20 +1200,97 @@ const AdminStore = (() => {
     }
 
     /* -----------------------------------------------------------------------
-       GESTION DES SUCCÈS (BADGES)
+       QUÊTES QUOTIDIENNES (POOL PILOTABLE DEPUIS L'ADMIN)
        ----------------------------------------------------------------------- */
+
+    const VALID_QUEST_TYPES = ['xp', 'levels', 'perfect', 'firstTry'];
+
+    /** Retourne le pool de quêtes quotidiennes (personnalisé ou par défaut). */
+    function getQuestPool() {
+        const stored = _data().quests;
+        const list = (Array.isArray(stored) && stored.length > 0) ? _clone(stored) : _clone(DEFAULT_QUEST_POOL);
+        return list.map(q => ({
+            type: VALID_QUEST_TYPES.includes(q.type) ? q.type : 'levels',
+            icon: String(q.icon || '🎯').trim() || '🎯',
+            title: String(q.title || 'Mission du jour').trim(),
+            target: Math.max(1, parseInt(q.target, 10) || 1),
+            xp: Math.max(0, parseInt(q.xp, 10) || 0),
+            coins: Math.max(0, parseInt(q.coins, 10) || 0),
+            color: String(q.color || '#4cc9f0').trim() || '#4cc9f0',
+            enabled: q.enabled !== false,
+        }));
+    }
+
+    /** Sauvegarde le pool personnalisé de quêtes quotidiennes. */
+    function saveQuestPool(list) {
+        if (!Array.isArray(list) || list.length === 0) {
+            return { ok: false, error: 'Le pool doit contenir au moins une quête.' };
+        }
+        const clean = [];
+        for (const q of list) {
+            const title = String(q && q.title || '').trim();
+            if (!title) return { ok: false, error: 'Chaque quête doit avoir un titre.' };
+            const type = VALID_QUEST_TYPES.includes(q.type) ? q.type : 'levels';
+            clean.push({
+                type,
+                icon: String(q.icon || '🎯').trim() || '🎯',
+                title,
+                target: Math.max(1, parseInt(q.target, 10) || 1),
+                xp: Math.max(0, parseInt(q.xp, 10) || 0),
+                coins: Math.max(0, parseInt(q.coins, 10) || 0),
+                color: String(q.color || '#4cc9f0').trim() || '#4cc9f0',
+                enabled: q.enabled !== false,
+            });
+        }
+        if (!clean.some(q => q.enabled !== false)) {
+            return { ok: false, error: 'Au moins une quête doit rester active.' };
+        }
+        _data().quests = clean;
+        _save();
+        return { ok: true, quests: getQuestPool() };
+    }
+
+    /** Rétablit le pool de quêtes par défaut. */
+    function resetQuestPool() {
+        _data().quests = null;
+        _save();
+        return { ok: true, quests: getQuestPool() };
+    }
+
+    /* -----------------------------------------------------------------------
+       GESTION DES SUCCÈS (BADGES) & FILTRAGE PAR FILIÈRE
+       ----------------------------------------------------------------------- */
+
+    function _normalizeBadgeFilieres(val) {
+        if (!Array.isArray(val) || val.length === 0) return ['all'];
+        const clean = val.map(f => String(f || '').toLowerCase().trim()).filter(Boolean);
+        if (clean.length === 0 || clean.includes('all')) return ['all'];
+        return Array.from(new Set(clean));
+    }
+
+    function _normalizeBadgeBand(val) {
+        return (val === 'college' || val === 'lycee') ? val : 'all';
+    }
 
     function getBadges() {
         const data = _data();
         const store = data.badges || { overrides: {}, customs: [] };
         const list = DEFAULT_BADGES.map(b => {
             const ov = store.overrides ? store.overrides[b.id] : null;
-            return ov ? { ..._clone(b), ...ov } : _clone(b);
+            const merged = ov ? { ..._clone(b), ...ov } : _clone(b);
+            merged.band = _normalizeBadgeBand(merged.band);
+            merged.allowedFilieres = _normalizeBadgeFilieres(merged.allowedFilieres);
+            return merged;
         }).filter(b => !b._deleted);
 
         if (Array.isArray(store.customs)) {
             store.customs.forEach(c => {
-                if (!c._deleted) list.push(_clone(c));
+                if (!c._deleted) {
+                    const item = _clone(c);
+                    item.band = _normalizeBadgeBand(item.band);
+                    item.allowedFilieres = _normalizeBadgeFilieres(item.allowedFilieres);
+                    list.push(item);
+                }
             });
         }
         return list;
@@ -932,10 +1300,54 @@ const AdminStore = (() => {
         return getBadges().find(b => b.id === id) || null;
     }
 
+    /**
+     * Source unique de vérité : retourne true si un succès correspond au parcours
+     * de l'élève (classe `niveauId` + filière `filiereId`).
+     * Ex : un élève CIEL voit les succès universels + CIEL, mais pas les succès STSS/STMG.
+     */
+    function isBadgeRelevantFor(badge, niveauId, filiereId) {
+        if (!badge) return false;
+        const band = _normalizeBadgeBand(badge.band);
+        const allowedFil = _normalizeBadgeFilieres(badge.allowedFilieres);
+        const isLyceeOrBts = isFiliereApplicable(niveauId || '6eme');
+
+        if (band === 'college' && isLyceeOrBts) return false;
+        if (band === 'lycee' && !isLyceeOrBts) return false;
+
+        if (isLyceeOrBts) {
+            const curFil = String(filiereId || 'generale').toLowerCase().trim() || 'generale';
+            if (!allowedFil.includes('all') && !allowedFil.includes(curFil)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Libellé court et lisible de la portée filière/cycle d'un succès (ex: "🛡️ CIEL", "🌐 Tous"). */
+    function getBadgeScopeLabel(badge) {
+        if (!badge) return '🌐 Tous';
+        const band = _normalizeBadgeBand(badge.band);
+        const allowedFil = _normalizeBadgeFilieres(badge.allowedFilieres);
+        if (band === 'college') return '🏫 Collège';
+        if (allowedFil.includes('all')) {
+            return band === 'lycee' ? '🏛️ Lycée & BTS' : '🌐 Tous';
+        }
+        const filieres = getFilieres();
+        const labels = allowedFil.map(fid => {
+            const f = filieres.find(x => x.id === fid);
+            return f ? `${f.icon || ''} ${f.shortLabel || f.label}`.trim() : fid.toUpperCase();
+        });
+        if (labels.length <= 2) return labels.join(' · ');
+        return `${labels[0]} +${labels.length - 1}`;
+    }
+
     function saveBadge(badge) {
         if (!badge || !badge.id) return { ok: false, error: 'Identifiant requis.' };
         const data = _data();
         if (!data.badges) data.badges = { overrides: {}, customs: [] };
+
+        const band = _normalizeBadgeBand(badge.band);
+        const allowedFilieres = _normalizeBadgeFilieres(badge.allowedFilieres);
 
         const isDef = DEFAULT_BADGES.some(b => b.id === badge.id);
         if (isDef) {
@@ -944,6 +1356,8 @@ const AdminStore = (() => {
                 desc: badge.desc,
                 icon: badge.icon,
                 category: badge.category || 'progression',
+                band,
+                allowedFilieres,
                 condition: badge.condition || '',
                 _deleted: false,
             };
@@ -955,6 +1369,8 @@ const AdminStore = (() => {
                 desc: badge.desc || '',
                 icon: badge.icon || '🏆',
                 category: badge.category || 'personnalise',
+                band,
+                allowedFilieres,
                 condition: badge.condition || '',
                 _custom: true,
                 _deleted: false,
@@ -990,7 +1406,7 @@ const AdminStore = (() => {
        CONFIGURATION GLOBALE DU SITE & IA
        ----------------------------------------------------------------------- */
 
-    /** Configuration effective du site (paramètres généraux, chrono, multiplicateurs). */
+    /** Configuration effective du site (paramètres généraux, chrono, multiplicateurs, modules). */
     function getSiteConfig() {
         const data = _data();
         return Object.assign(_clone(DEFAULT_SITE_CONFIG), data.siteConfig || {});
@@ -1004,6 +1420,8 @@ const AdminStore = (() => {
             : (typeof values.siteTitle === 'string' && values.siteTitle.trim()) ? values.siteTitle.trim() : cur.title;
         const tagline = (typeof values.tagline === 'string') ? values.tagline.trim() : cur.tagline;
         const announcement = (typeof values.announcement === 'string') ? values.announcement.trim() : (cur.announcement || '');
+        const defaultNiveau = (typeof values.defaultNiveau === 'string' && values.defaultNiveau.trim()) ? values.defaultNiveau.trim() : (cur.defaultNiveau || '6eme');
+        const defaultFiliere = (typeof values.defaultFiliere === 'string' && values.defaultFiliere.trim()) ? values.defaultFiliere.trim().toLowerCase() : (cur.defaultFiliere || 'generale');
         const timerSec = values.quizTimerSeconds != null ? Math.max(0, parseInt(values.quizTimerSeconds, 10) || 0) : cur.quizTimerSeconds;
         const xpMult = values.xpMultiplier != null ? Math.max(0.1, parseFloat(values.xpMultiplier) || 1.0) : cur.xpMultiplier;
         const coinMult = values.coinMultiplier != null ? Math.max(0.1, parseFloat(values.coinMultiplier) || 1.0)
@@ -1014,12 +1432,22 @@ const AdminStore = (() => {
             : values.defaultBgmVolume != null ? (parseInt(values.defaultBgmVolume, 10) || 35) / 100 : cur.musicVolume;
         const soundDef = typeof values.soundEnabledByDefault === 'boolean' ? values.soundEnabledByDefault : cur.soundEnabledByDefault;
         const allowReg = typeof values.allowRegistration === 'boolean' ? values.allowRegistration : cur.allowRegistration;
+        const enableShop = typeof values.enableShop === 'boolean' ? values.enableShop : (cur.enableShop !== false);
+        const enableQuests = typeof values.enableQuests === 'boolean' ? values.enableQuests : (cur.enableQuests !== false);
+        const enableBadges = typeof values.enableBadges === 'boolean' ? values.enableBadges : (cur.enableBadges !== false);
+        const enableChrono = typeof values.enableChrono === 'boolean' ? values.enableChrono : (cur.enableChrono !== false);
+        const enableParticlesByDefault = typeof values.enableParticlesByDefault === 'boolean' ? values.enableParticlesByDefault : (cur.enableParticlesByDefault !== false);
+        const enableConfetti = typeof values.enableConfetti === 'boolean' ? values.enableConfetti : (cur.enableConfetti !== false);
+        const maintenanceMode = typeof values.maintenanceMode === 'boolean' ? values.maintenanceMode : Boolean(cur.maintenanceMode);
+        const maintenanceMessage = (typeof values.maintenanceMessage === 'string') ? values.maintenanceMessage.trim() : (cur.maintenanceMessage || '');
 
         const clean = {
             title,
             siteTitle: title,
             tagline,
             announcement,
+            defaultNiveau,
+            defaultFiliere,
             quizTimerSeconds: timerSec,
             xpMultiplier: xpMult,
             coinMultiplier: coinMult,
@@ -1030,6 +1458,14 @@ const AdminStore = (() => {
             defaultBgmVolume: Math.round(mus * 100),
             soundEnabledByDefault: soundDef,
             allowRegistration: allowReg,
+            enableShop,
+            enableQuests,
+            enableBadges,
+            enableChrono,
+            enableParticlesByDefault,
+            enableConfetti,
+            maintenanceMode,
+            maintenanceMessage,
         };
         const data = _data();
         data.siteConfig = clean;
@@ -1178,6 +1614,25 @@ const AdminStore = (() => {
             }
         }
         _data().subjects = { overrides: _clone(overrides), customs: _clone(customs) };
+        if (parsed.filieres !== undefined) {
+            if (Array.isArray(parsed.filieres)) {
+                const r = saveFilieres(parsed.filieres);
+                if (!r.ok) return r;
+            } else {
+                _data().filieres = null;
+            }
+        }
+        if (parsed.quests !== undefined) {
+            if (Array.isArray(parsed.quests)) {
+                const r = saveQuestPool(parsed.quests);
+                if (!r.ok) return r;
+            } else {
+                _data().quests = null;
+            }
+        }
+        if (parsed.badges && typeof parsed.badges === 'object') {
+            _data().badges = _clone(parsed.badges);
+        }
         if (parsed.credits && typeof parsed.credits === 'object') {
             const r = saveCredits(parsed.credits);
             if (!r.ok) return r;
@@ -1198,7 +1653,7 @@ const AdminStore = (() => {
         return { ok: true };
     }
 
-    /** Supprime toute la configuration administrateur (niveaux + matières + boutique + récompenses). */
+    /** Supprime toute la configuration administrateur (niveaux + filières + matières + boutique + récompenses + succès + quêtes). */
     function resetAll() {
         cache = null;
         try { localStorage.removeItem(LS_KEY); } catch { }
@@ -1217,10 +1672,10 @@ const AdminStore = (() => {
                 const key = localStorage.key(i);
                 if (!key || preserved.has(key)) continue;
                 if (
-                    key === 'eduquest_options' || key === 'eduquest_niveau' || key === 'eduquest_daily_quests' ||
+                    key === 'eduquest_options' || key === 'eduquest_niveau' || key === 'eduquest_filiere' || key === 'eduquest_daily_quests' ||
                     key === 'eduquest_audio_manual_mute' || key === 'eduquest_audio_state' ||
                     key.startsWith('eduquest_opts_') || key.startsWith('eduquest_prog_') ||
-                    key.startsWith('eduquest_niveau_') || key.startsWith('eduquest_quests_') ||
+                    key.startsWith('eduquest_niveau_') || key.startsWith('eduquest_filiere_') || key.startsWith('eduquest_quests_') ||
                     key.startsWith('eduquest_boosters_') || key.startsWith('eduquest_streak_') ||
                     key.startsWith('eduquest_attempts_') || key.startsWith('eduquest_adaptive_') ||
                     /^eduquest_.*_progress$/.test(key)
@@ -1240,7 +1695,9 @@ const AdminStore = (() => {
     return {
         // Constantes utiles à l'interface
         DEFAULT_LEVELS: _clone(DEFAULT_LEVELS),
+        DEFAULT_FILIERES: _clone(DEFAULT_FILIERES),
         DEFAULT_SHOP_ITEMS: _clone(DEFAULT_SHOP_ITEMS),
+        DEFAULT_QUEST_POOL: _clone(DEFAULT_QUEST_POOL),
         DEFAULT_REWARDS: _clone(DEFAULT_REWARDS),
         DEFAULT_SITE_CONFIG: _clone(DEFAULT_SITE_CONFIG),
         DEFAULT_AI_CONFIG: _clone(DEFAULT_AI_CONFIG),
@@ -1255,7 +1712,19 @@ const AdminStore = (() => {
         normalizeLesson,
         defaultBandForSubject,
         defaultAllowedNiveauxForSubject,
+        defaultAllowedFilieresForSubject,
         isSubjectAllowedForNiveau,
+        isSubjectSpecialtyForFiliere,
+
+        // Filières / voies d'études
+        getFilieres,
+        getActiveFilieres,
+        filieresModified,
+        saveFilieres,
+        resetFilieres,
+        getFiliere,
+        filiereLabel,
+        isFiliereApplicable,
 
         // Niveaux scolaires
         getLevels,
@@ -1290,7 +1759,7 @@ const AdminStore = (() => {
         resetSubject,
         getSubjectQuestionsForGrade,
 
-        // Boutique & Récompenses
+        // Boutique & Récompenses & Quêtes quotidiennes
         getShopItems,
         getShopItem,
         saveShopItem,
@@ -1299,6 +1768,9 @@ const AdminStore = (() => {
         getRewardsConfig,
         saveRewardsConfig,
         resetRewardsConfig,
+        getQuestPool,
+        saveQuestPool,
+        resetQuestPool,
 
         // Configuration Globale du Site & IA
         getSiteConfig,
@@ -1308,10 +1780,12 @@ const AdminStore = (() => {
         saveAiConfig,
         resetAiConfig,
 
-        // Succès / Badges
+        // Succès / Badges (avec filtrage par filière)
         DEFAULT_BADGES,
         getBadges,
         getBadge,
+        isBadgeRelevantFor,
+        getBadgeScopeLabel,
         saveBadge,
         deleteBadge,
         resetBadges,
@@ -1321,6 +1795,7 @@ const AdminStore = (() => {
         importJson,
         resetAll,
         clearLocalGameData,
+        invalidateCache: () => { cache = null; },
     };
 })();
 

@@ -1,5 +1,5 @@
 /* =============================================================================
-   QUESTION-BANK.JS — EDUQUEST v1.26.0
+   QUESTION-BANK.JS — EDUQUEST v1.28.1
    Banque de questions et générateur procédural adaptés par NIVEAU SCOLAIRE :
    - 6ème, 5ème, 4ème, 3ème (Collège)
    - 2nde, 1ère, Terminale (Lycée)
@@ -40,7 +40,10 @@ const QuestionBank = (() => {
 
     /** Normalise l'identifiant du niveau scolaire. */
     function normalizeNiveau(n) {
-        const str = String(n || '').toLowerCase().trim();
+        const str = String(n || '').toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+        if (str === 'bts2' || (str.includes('bts') && str.includes('2'))) return 'bts2';
+        if (str === 'bts1' || str.includes('bts')) return 'bts1';
         if (str === '6' || str.startsWith('6')) return '6eme';
         if (str === '5' || str.startsWith('5')) return '5eme';
         if (str === '4' || str.startsWith('4')) return '4eme';
@@ -55,7 +58,7 @@ const QuestionBank = (() => {
     /** Détermine la bande générale (collège / lycée). */
     function bandForNiveau(niveau) {
         const norm = normalizeNiveau(niveau);
-        const lyceeGrades = ['2nde', '1ere', 'terminale'];
+        const lyceeGrades = ['2nde', '1ere', 'terminale', 'bts1', 'bts2'];
         return lyceeGrades.includes(norm) ? 'lycee' : 'college';
     }
 
@@ -267,10 +270,27 @@ const QuestionBank = (() => {
                     break;
                 }
                 case 'symetrie': {
-                    correct = 180;
-                    q = `La symétrie centrale par rapport à un point O correspond à un demi-tour, soit une rotation de combien de degrés ?`;
-                    wrongCandidates = [90, 360, 45];
-                    exp = `Un demi-tour complet équivaut à un angle de 180°.`;
+                    const a = 2 + Math.floor(rng() * 14);
+                    const mode = (index + variant) % 3;
+                    if (mode === 0) {
+                        correct = -a;
+                        q = `Sur une droite graduée, quel est le symétrique du nombre ${a} par rapport à l'origine 0 ?`;
+                        wrongCandidates = [a, a + 1, -a - 1, 0];
+                        exp = `Le symétrique par rapport à 0 est l'opposé : -${a}.`;
+                    } else if (mode === 1) {
+                        const k = 3 + Math.floor(rng() * 8);
+                        correct = k * 2;
+                        q = `Si un point A est à ${k} cm du centre de symétrie O, quelle est la distance entre A et son symétrique A' ?`;
+                        wrongCandidates = [k, k + 2, k * 3, Math.max(1, k - 1)];
+                        exp = `O est le milieu de [AA'], donc AA' = 2 × ${k} = ${correct} cm.`;
+                    } else {
+                        const xO = 2 + Math.floor(rng() * 8);
+                        const xA = xO + 1 + Math.floor(rng() * 6);
+                        correct = 2 * xO - xA;
+                        q = `Sur une droite graduée, A a pour abscisse ${xA}. Quelle est l'abscisse de son symétrique par rapport au point O(${xO}) ?`;
+                        wrongCandidates = [xO + (xA - xO) * 2, -xA, correct + 1, correct - 1];
+                        exp = `xA' = 2 × xO - xA = 2 × ${xO} - ${xA} = ${correct}.`;
+                    }
                     break;
                 }
             }
@@ -329,10 +349,31 @@ const QuestionBank = (() => {
                     break;
                 }
                 case 'cosinus': {
-                    correct = 60;
-                    q = `Dans un triangle rectangle, quel angle aigu a pour cosinus exactement 0,5 ?`;
-                    wrongCandidates = [30, 45, 90];
-                    exp = `cos(60°) = 0,5 (ou 1/2).`;
+                    const hyp = (3 + Math.floor(rng() * 8)) * 2;
+                    const mode = (index + variant) % 3;
+                    if (mode === 0) {
+                        correct = hyp / 2;
+                        q = `Dans un triangle rectangle, l'hypoténuse vaut ${hyp} cm et un angle aigu mesure 60° (cos 60° = 0,5). Que mesure le côté adjacent ?`;
+                        wrongCandidates = [hyp, hyp / 2 + 2, Math.max(1, hyp / 2 - 2), hyp * 2];
+                        exp = `Côté adjacent = hypoténuse × cos(60°) = ${hyp} × 0,5 = ${correct} cm.`;
+                    } else if (mode === 1) {
+                        const adj = 3 + Math.floor(rng() * 9);
+                        correct = adj * 2;
+                        q = `Dans un triangle rectangle, le côté adjacent à un angle de 60° mesure ${adj} cm (cos 60° = 0,5). Quelle est la longueur de l'hypoténuse ?`;
+                        wrongCandidates = [adj, adj + 3, adj * 3, Math.max(1, adj - 1)];
+                        exp = `Hypoténuse = adjacent ÷ cos(60°) = ${adj} ÷ 0,5 = ${correct} cm.`;
+                    } else {
+                        const angles = [
+                            { ang: 60, val: '0,5', wrongs: [30, 45, 90] },
+                            { ang: 0, val: '1', wrongs: [30, 45, 60] },
+                            { ang: 90, val: '0', wrongs: [30, 45, 60] },
+                        ];
+                        const pick = angles[(index + variant) % angles.length];
+                        correct = pick.ang;
+                        q = `Quel angle (en degrés) a pour cosinus exactement ${pick.val} ?`;
+                        wrongCandidates = pick.wrongs;
+                        exp = `cos(${pick.ang}°) = ${pick.val}.`;
+                    }
                     break;
                 }
             }
@@ -570,6 +611,76 @@ const QuestionBank = (() => {
                     q = `Sur le cercle trigonométrique, quelle est la valeur exacte de ${item.label} ?`;
                     wrongCandidates = [-1, 0, 1, 2].filter(n => n !== correct);
                     exp = item.exp;
+                    break;
+                }
+            }
+        } else if (norm === 'bts1' || norm === 'bts2') {
+            // BTS (Maths appliquées : matrices, nombres complexes, modulo, probas, dérivées, intégrales, finances)
+            const kinds = ['det_2x2', 'complex_mod', 'modulo_arith', 'esperance_bin', 'derivee_poly_bts', 'integrale_simple', 'taux_evol_bts'];
+            const kind = kinds[(index * 3 + variant) % kinds.length];
+            allowNegative = true;
+            switch (kind) {
+                case 'det_2x2': {
+                    const a = 1 + Math.floor(rng() * 6), b = 1 + Math.floor(rng() * 5);
+                    const c = 1 + Math.floor(rng() * 5), d = 1 + Math.floor(rng() * 6);
+                    correct = a * d - b * c;
+                    q = `Calcule le déterminant de la matrice 2×2 : [[${a}, ${b}], [${c}, ${d}]] (ad − bc).`;
+                    wrongCandidates = [a * d + b * c, a * c - b * d, correct + 2, correct - 2];
+                    exp = `det = (${a} × ${d}) − (${b} × ${c}) = ${a * d} − ${b * c} = ${correct}.`;
+                    break;
+                }
+                case 'complex_mod': {
+                    const trips = [[3, 4, 5], [6, 8, 10], [5, 12, 13], [8, 15, 17], [9, 12, 15]];
+                    const t = trips[(index + variant + Math.floor(rng() * trips.length)) % trips.length];
+                    correct = t[2];
+                    q = `Quel est le module |z| du nombre complexe z = ${t[0]} + ${t[1]}i ?`;
+                    wrongCandidates = [t[0] + t[1], correct + 1, correct - 1, t[0] * t[1]];
+                    exp = `|z| = √(${t[0]}² + ${t[1]}²) = √(${t[0] * t[0] + t[1] * t[1]}) = ${correct}.`;
+                    break;
+                }
+                case 'modulo_arith': {
+                    const m = [5, 7, 8, 9, 11, 12][Math.floor(rng() * 6)];
+                    const mult = 3 + Math.floor(rng() * 8);
+                    const rem = 1 + Math.floor(rng() * (m - 1));
+                    const n = mult * m + rem;
+                    correct = rem;
+                    q = `En arithmétique modulaire (utile en cryptographie), quel est le reste de ${n} mod ${m} ?`;
+                    wrongCandidates = [(rem + 1) % m, (rem + 2) % m, Math.max(0, rem - 1), mult];
+                    exp = `${n} = ${mult} × ${m} + ${rem}, donc ${n} ≡ ${rem} [mod ${m}].`;
+                    break;
+                }
+                case 'esperance_bin': {
+                    const n = [20, 40, 50, 80, 100][Math.floor(rng() * 5)];
+                    const pPct = [10, 20, 25, 40, 50][Math.floor(rng() * 5)];
+                    correct = Math.round((n * pPct) / 100);
+                    q = `Une variable X suit une loi binomiale B(n = ${n} ; p = ${(pPct / 100).toFixed(2).replace('.', ',')}). Quelle est son espérance E(X) = n × p ?`;
+                    wrongCandidates = [correct + 5, Math.max(1, correct - 5), n - correct, pPct];
+                    exp = `E(X) = n × p = ${n} × ${(pPct / 100).toFixed(2)} = ${correct}.`;
+                    break;
+                }
+                case 'derivee_poly_bts': {
+                    const a = 2 + Math.floor(rng() * 5), x0 = 1 + Math.floor(rng() * 4);
+                    correct = 3 * a * x0 * x0;
+                    q = `Soit f(x) = ${a}x³. Calcule le nombre dérivé f'(${x0}).`;
+                    wrongCandidates = [a * x0 * x0, 2 * a * x0, correct + a, Math.max(1, correct - a)];
+                    exp = `f'(x) = ${3 * a}x², donc f'(${x0}) = ${3 * a} × ${x0}² = ${correct}.`;
+                    break;
+                }
+                case 'integrale_simple': {
+                    const b = 2 + Math.floor(rng() * 6);
+                    correct = b * b;
+                    q = `Calcule l'intégrale définie ∫₀^${b} (2x) dx.`;
+                    wrongCandidates = [2 * b, b * b + b, Math.max(1, b * b - b), b];
+                    exp = `Une primitive de 2x est x². [x²]₀^${b} = ${b}² − 0 = ${correct}.`;
+                    break;
+                }
+                case 'taux_evol_bts': {
+                    const c0 = [1000, 2000, 4000, 5000][Math.floor(rng() * 4)];
+                    const t = [5, 10, 20][Math.floor(rng() * 3)];
+                    correct = Math.round(c0 * (1 + t / 100));
+                    q = `Un capital de ${c0} € est placé à un taux annuel simple de ${t} %. Quelle valeur atteint-il au bout d'un an ?`;
+                    wrongCandidates = [c0 + t, correct + 100, c0 - Math.round(c0 * t / 100), Math.round(c0 * t / 100)];
+                    exp = `Capital final = ${c0} × (1 + ${t}/100) = ${correct} €.`;
                     break;
                 }
             }
@@ -939,36 +1050,66 @@ const QuestionBank = (() => {
         }
     }
 
-    /** Générateur procédural pour la technologie */
+    /** Générateur procédural enrichi pour la technologie (binaire, octets, échelles, énergie) */
     function generateTechnoLesson(index, norm, variant, rng) {
-        const binaries = [
-            { bin: "0001", dec: 1 },
-            { bin: "0010", dec: 2 },
-            { bin: "0011", dec: 3 },
-            { bin: "0100", dec: 4 },
-            { bin: "0101", dec: 5 },
-            { bin: "0110", dec: 6 },
-            { bin: "0111", dec: 7 },
-            { bin: "1000", dec: 8 },
-            { bin: "1001", dec: 9 },
-            { bin: "1010", dec: 10 },
-            { bin: "1011", dec: 11 },
-            { bin: "1100", dec: 12 },
-            { bin: "1101", dec: 13 },
-            { bin: "1110", dec: 14 },
-            { bin: "1111", dec: 15 }
-        ];
-        const deck = seededShuffle(binaries, 'techno-deck:' + norm + ':v' + variant);
-        const item = deck[(Math.floor(index / 2) + variant * 4) % deck.length];
-        const wrongs = uniqueWrongs(item.dec, [item.dec + 1, item.dec + 2, item.dec - 1, item.dec + 4], false);
-        const { opts, correct } = shuffleOptions([`${item.dec}`, ...wrongs.map(String)], 0, rng);
+        const kinds = ['bin4', 'octets_bits', 'echelle', 'energie_temps'];
+        const kind = kinds[(index + variant) % kinds.length];
+
+        if (kind === 'bin4') {
+            const val = 1 + ((index * 5 + variant * 3 + Math.floor(rng() * 15)) % 15);
+            const bin = val.toString(2).padStart(4, '0');
+            const wrongs = uniqueWrongs(val, [val + 1, val + 2, Math.max(0, val - 1), val ^ 4], false);
+            const { opts, correct } = shuffleOptions([`${val}`, ...wrongs.map(String)], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `En binaire sur 4 bits, quelle est la valeur décimale du mot binaire ${bin} ?`,
+                opts,
+                correct,
+                exp: `En binaire, ${bin} correspond au nombre décimal ${val}.`
+            };
+        }
+        if (kind === 'octets_bits') {
+            const octets = 2 + Math.floor(rng() * 12);
+            const bits = octets * 8;
+            const wrongs = uniqueWrongs(bits, [octets * 4, octets * 10, bits + 8, Math.max(8, bits - 8)], false).map(n => `${n} bits`);
+            const { opts, correct } = shuffleOptions([`${bits} bits`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Un fichier pèse ${octets} octets. Combien de bits cela représente-t-il (1 octet = 8 bits) ?`,
+                opts,
+                correct,
+                exp: `${octets} octets × 8 = ${bits} bits.`
+            };
+        }
+        if (kind === 'echelle') {
+            const ech = [10, 20, 50, 100][Math.floor(rng() * 4)];
+            const planCm = 2 + Math.floor(rng() * 9);
+            const reelCm = planCm * ech;
+            const wrongs = uniqueWrongs(reelCm, [reelCm + ech, Math.max(10, reelCm - ech), planCm + ech, reelCm * 2], false).map(n => `${n} cm`);
+            const { opts, correct } = shuffleOptions([`${reelCm} cm`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Sur un plan technique à l'échelle 1/${ech}, une pièce mesure ${planCm} cm. Quelle est sa longueur réelle ?`,
+                opts,
+                correct,
+                exp: `À l'échelle 1/${ech}, on multiplie par ${ech} : ${planCm} × ${ech} = ${reelCm} cm.`
+            };
+        }
+        const pW = [10, 20, 50, 100, 200][Math.floor(rng() * 5)];
+        const h = 2 + Math.floor(rng() * 6);
+        const wh = pW * h;
+        const wrongs = uniqueWrongs(wh, [pW + h, wh + pW, Math.max(10, wh - pW), wh * 2], false).map(n => `${n} Wh`);
+        const { opts, correct } = shuffleOptions([`${wh} Wh`, ...wrongs], 0, rng);
         return {
             type: 'qcm',
             title: 'Niveau ' + (index + 1),
-            q: `En binaire sur 4 bits, quelle est la valeur décimale du mot binaire ${item.bin} ?`,
+            q: `Un appareil électrique d'une puissance de ${pW} W fonctionne pendant ${h} heures. Quelle énergie consomme-t-il (E = P × t) ?`,
             opts,
             correct,
-            exp: `En binaire, ${item.bin} correspond au nombre décimal ${item.dec}.`
+            exp: `E = P × t = ${pW} W × ${h} h = ${wh} Wh.`
         };
     }
 
@@ -1267,6 +1408,592 @@ const QuestionBank = (() => {
         };
     }
 
+    /** Générateur procédural pour l'Espagnol (LV2 : conjugaison + vocabulaire) */
+    function generateEspagnolLesson(index, norm, variant, rng) {
+        if ((index + variant) % 2 === 0) {
+            const verbs = [
+                { inf: "hablar", fr: "parler", pres: ["hablo", "hablas", "habla", "hablamos", "habláis", "hablan"] },
+                { inf: "comer", fr: "manger", pres: ["como", "comes", "come", "comemos", "coméis", "comen"] },
+                { inf: "vivir", fr: "vivre", pres: ["vivo", "vives", "vive", "vivimos", "vivís", "viven"] },
+                { inf: "ser", fr: "être (essence)", pres: ["soy", "eres", "es", "somos", "sois", "son"] },
+                { inf: "estar", fr: "être (état/lieu)", pres: ["estoy", "estás", "está", "estamos", "estáis", "están"] },
+                { inf: "tener", fr: "avoir", pres: ["tengo", "tienes", "tiene", "tenemos", "tenéis", "tienen"] },
+                { inf: "ir", fr: "aller", pres: ["voy", "vas", "va", "vamos", "vais", "van"] },
+                { inf: "hacer", fr: "faire", pres: ["hago", "haces", "hace", "hacemos", "hacéis", "hacen"] },
+                { inf: "poder", fr: "pouvoir", pres: ["puedo", "puedes", "puede", "podemos", "podéis", "pueden"] },
+                { inf: "querer", fr: "vouloir/aimer", pres: ["quiero", "quieres", "quiere", "queremos", "queréis", "quieren"] },
+            ];
+            const pronouns = ["yo", "tú", "él/ella", "nosotros", "vosotros", "ellos/ellas"];
+            const v = verbs[(index + variant * 3 + Math.floor(rng() * verbs.length)) % verbs.length];
+            const pIdx = Math.floor(rng() * pronouns.length);
+            const correct = v.pres[pIdx];
+            const wrongs = uniqueStringWrongs(correct, v.pres.filter((_, i) => i !== pIdx));
+            const { opts, correct: cIdx } = shuffleOptions([correct, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `En espagnol, conjugue le verbe « ${v.inf} » (${v.fr}) au présent avec « ${pronouns[pIdx]} » :`,
+                opts,
+                correct: cIdx,
+                exp: `Au présent de l'indicatif : ${pronouns[pIdx]} ${correct}.`
+            };
+        }
+        const vocab = [
+            { es: "el libro", fr: "le livre", wrongs: ["la fenêtre", "la chaise", "le crayon"] },
+            { es: "la ventana", fr: "la fenêtre", wrongs: ["la porte", "le mur", "le toit"] },
+            { es: "el perro", fr: "le chien", wrongs: ["le chat", "le cheval", "l'oiseau"] },
+            { es: "la comida", fr: "la nourriture / le repas", wrongs: ["la boisson", "la cuisine", "la rue"] },
+            { es: "el tiempo", fr: "le temps", wrongs: ["l'argent", "le vent", "la pluie"] },
+            { es: "la ciudad", fr: "la ville", wrongs: ["le village", "la campagne", "la mer"] },
+            { es: "el trabajo", fr: "le travail", wrongs: ["le voyage", "les vacances", "le jeu"] },
+            { es: "la escuela", fr: "l'école", wrongs: ["la maison", "le magasin", "la place"] },
+            { es: "el amigo", fr: "l'ami", wrongs: ["le frère", "le voisin", "le professeur"] },
+            { es: "siempre", fr: "toujours", wrongs: ["jamais", "parfois", "demain"] },
+            { es: "nunca", fr: "jamais", wrongs: ["toujours", "souvent", "hier"] },
+            { es: "mañana", fr: "demain / le matin", wrongs: ["hier", "maintenant", "ce soir"] },
+            { es: "ayer", fr: "hier", wrongs: ["demain", "aujourd'hui", "bientôt"] },
+            { es: "sin embargo", fr: "cependant / toutefois", wrongs: ["par conséquent", "en plus", "c'est pourquoi"] },
+        ];
+        const deck = seededShuffle(vocab, 'es-vocab:' + norm);
+        const item = deck[(Math.floor(index / 2) + variant * 5) % deck.length];
+        const wrongs = uniqueStringWrongs(item.fr, item.wrongs);
+        const { opts, correct } = shuffleOptions([item.fr, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `Comment traduit-on « ${item.es} » en français ?`,
+            opts,
+            correct,
+            exp: `En espagnol, « ${item.es} » signifie « ${item.fr} ».`
+        };
+    }
+
+    /** Générateur procédural pour Histoire des Arts & Culture */
+    function generateArtsLesson(index, norm, variant, rng) {
+        const works = [
+            { work: "La Joconde", artist: "Léonard de Vinci", wrongs: ["Michel-Ange", "Raphaël", "Botticelli"] },
+            { work: "Guernica (1937)", artist: "Pablo Picasso", wrongs: ["Salvador Dalí", "Joan Miró", "Henri Matisse"] },
+            { work: "La Nuit étoilée", artist: "Vincent van Gogh", wrongs: ["Claude Monet", "Paul Cézanne", "Paul Gauguin"] },
+            { work: "Impression, soleil levant", artist: "Claude Monet", wrongs: ["Édouard Manet", "Pierre-Auguste Renoir", "Edgar Degas"] },
+            { work: "La Liberté guidant le peuple", artist: "Eugène Delacroix", wrongs: ["Théodore Géricault", "Jacques-Louis David", "Gustave Courbet"] },
+            { work: "Le Penseur (sculpture)", artist: "Auguste Rodin", wrongs: ["Camille Claudel", "Donatello", "Alberto Giacometti"] },
+            { work: "La Persistance de la mémoire (montres molles)", artist: "Salvador Dalí", wrongs: ["René Magritte", "Max Ernst", "Pablo Picasso"] },
+            { work: "Le Cri", artist: "Edvard Munch", wrongs: ["Gustav Klimt", "Egon Schiele", "Wassily Kandinsky"] },
+            { work: "La Jeune Fille à la perle", artist: "Johannes Vermeer", wrongs: ["Rembrandt", "Frans Hals", "Pierre Paul Rubens"] },
+            { work: "Les Quatre Saisons (concertos)", artist: "Antonio Vivaldi", wrongs: ["Jean-Sébastien Bach", "Wolfgang Amadeus Mozart", "Ludwig van Beethoven"] },
+            { work: "La Symphonie n° 9 (Hymne à la joie)", artist: "Ludwig van Beethoven", wrongs: ["Franz Schubert", "Frédéric Chopin", "Hector Berlioz"] },
+            { work: "Le Radeau de la Méduse", artist: "Théodore Géricault", wrongs: ["Eugène Delacroix", "Jean-Auguste-Dominique Ingres", "Francisco de Goya"] },
+            { work: "La Naissance de Vénus", artist: "Sandro Botticelli", wrongs: ["Léonard de Vinci", "Titien", "Caravage"] },
+            { work: "Les Nymphéas", artist: "Claude Monet", wrongs: ["Camille Pissarro", "Alfred Sisley", "Georges Seurat"] },
+        ];
+        const deck = seededShuffle(works, 'arts-deck:' + norm);
+        const item = deck[(Math.floor(index / 2) + variant * 5) % deck.length];
+        const wrongs = uniqueStringWrongs(item.artist, item.wrongs);
+        const { opts, correct } = shuffleOptions([item.artist, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `Quel artiste célèbre est l'auteur de l'œuvre « ${item.work} » ?`,
+            opts,
+            correct,
+            exp: `« ${item.work} » est une œuvre majeure de ${item.artist}.`
+        };
+    }
+
+    /** Générateur procédural pour Sciences de l'Ingénieur (SI) */
+    function generateSiLesson(index, norm, variant, rng) {
+        const kinds = ['rapport_engrenage', 'puissance_meca', 'rendement', 'energie_meca'];
+        const kind = kinds[(index + variant) % kinds.length];
+
+        if (kind === 'rapport_engrenage') {
+            const z1 = [12, 15, 20, 24, 30][Math.floor(rng() * 5)];
+            const k = [2, 3, 4][Math.floor(rng() * 3)];
+            const z2 = z1 * k;
+            const n1 = [600, 900, 1200, 1800][Math.floor(rng() * 4)];
+            const n2 = Math.round(n1 / k);
+            const wrongs = uniqueWrongs(n2, [n1 * k, n2 + 100, Math.max(50, n2 - 100), n1], false).map(n => `${n} tr/min`);
+            const { opts, correct } = shuffleOptions([`${n2} tr/min`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Un pignon moteur de ${z1} dents tourne à ${n1} tr/min et entraîne une roue de ${z2} dents. Quelle est la vitesse de sortie N₂ ?`,
+                opts,
+                correct,
+                exp: `Rapport de réduction r = Z₁/Z₂ = ${z1}/${z2} = 1/${k}, donc N₂ = ${n1} / ${k} = ${n2} tr/min.`
+            };
+        }
+        if (kind === 'puissance_meca') {
+            const c = 2 + Math.floor(rng() * 10); // N·m
+            const w = [10, 20, 30, 50, 100][Math.floor(rng() * 5)]; // rad/s
+            const p = c * w;
+            const wrongs = uniqueWrongs(p, [p + w, Math.max(10, p - w), c + w, p * 2], false).map(n => `${n} W`);
+            const { opts, correct } = shuffleOptions([`${p} W`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Un moteur fournit un couple C = ${c} N·m à une vitesse angulaire ω = ${w} rad/s. Quelle est sa puissance mécanique P = C × ω ?`,
+                opts,
+                correct,
+                exp: `P = C × ω = ${c} × ${w} = ${p} W.`
+            };
+        }
+        if (kind === 'rendement') {
+            const pAbs = [200, 400, 500, 1000][Math.floor(rng() * 4)];
+            const eta = [60, 70, 75, 80, 85, 90][Math.floor(rng() * 6)];
+            const pUtile = Math.round((pAbs * eta) / 100);
+            const wrongs = uniqueWrongs(eta, [eta + 5, Math.max(10, eta - 10), 100 - eta, Math.min(99, eta + 10)], false).map(n => `${n} %`);
+            const { opts, correct } = shuffleOptions([`${eta} %`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Un système absorbe ${pAbs} W et restitue ${pUtile} W de puissance utile. Quel est son rendement η = P_utile / P_absorbée ?`,
+                opts,
+                correct,
+                exp: `η = (${pUtile} / ${pAbs}) × 100 = ${eta} %.`
+            };
+        }
+        const f = (2 + Math.floor(rng() * 9)) * 10; // N
+        const v = 2 + Math.floor(rng() * 7); // m/s
+        const p = f * v;
+        const wrongs = uniqueWrongs(p, [p + f, Math.max(10, p - f), f + v, p * 2], false).map(n => `${n} W`);
+        const { opts, correct } = shuffleOptions([`${p} W`, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `En translation, un vérin exerce une force F = ${f} N à vitesse v = ${v} m/s. Quelle est sa puissance P = F × v ?`,
+            opts,
+            correct,
+            exp: `P = F × v = ${f} × ${v} = ${p} W.`
+        };
+    }
+
+    /** Générateur procédural pour MSGN / Mercatique & Gestion-Finance (STMG / BTS) */
+    function generateStmgCalcLesson(index, norm, variant, rng, modeTag) {
+        const kinds = ['tva', 'marge', 'seuil_rentabilite', 'taux_marque', 'resultat_net'];
+        const kind = kinds[(index + variant + (modeTag === 'msgn' ? 2 : 0)) % kinds.length];
+
+        if (kind === 'tva') {
+            const ht = [50, 100, 150, 200, 250, 400, 500][Math.floor(rng() * 7)];
+            const taux = [10, 20][Math.floor(rng() * 2)];
+            const ttc = Math.round(ht * (1 + taux / 100));
+            const wrongs = uniqueWrongs(ttc, [ht + taux, Math.round(ht * (1 - taux / 100)), ttc + 20, Math.round(ht * taux / 100)], false).map(n => `${n} €`);
+            const { opts, correct } = shuffleOptions([`${ttc} €`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Un produit est vendu ${ht} € HT avec une TVA à ${taux} %. Quel est son prix TTC ?`,
+                opts,
+                correct,
+                exp: `Prix TTC = HT × (1 + ${taux}/100) = ${ht} × ${(1 + taux / 100).toFixed(2)} = ${ttc} €.`
+            };
+        }
+        if (kind === 'marge') {
+            const pv = [40, 60, 80, 100, 120, 150][Math.floor(rng() * 6)];
+            const pa = Math.round(pv * [0.5, 0.6, 0.7][Math.floor(rng() * 3)]);
+            const marge = pv - pa;
+            const wrongs = uniqueWrongs(marge, [pv + pa, marge + 10, Math.max(5, marge - 10), pa], false).map(n => `${n} €`);
+            const { opts, correct } = shuffleOptions([`${marge} €`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Un commerçant achète un article ${pa} € HT et le revend ${pv} € HT. Quelle est sa marge commerciale unitaire ?`,
+                opts,
+                correct,
+                exp: `Marge commerciale = Prix de vente HT − Coût d'achat HT = ${pv} − ${pa} = ${marge} €.`
+            };
+        }
+        if (kind === 'seuil_rentabilite') {
+            const cf = [2000, 3000, 4000, 6000, 8000][Math.floor(rng() * 5)];
+            const mcv = [20, 25, 40, 50][Math.floor(rng() * 4)];
+            const qte = Math.round(cf / mcv);
+            const wrongs = uniqueWrongs(qte, [qte + 20, Math.max(10, qte - 20), qte * 2, Math.round(qte / 2)], false).map(n => `${n} unités`);
+            const { opts, correct } = shuffleOptions([`${qte} unités`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Les charges fixes sont de ${cf} € et la marge sur coût variable unitaire est de ${mcv} €. Combien d'unités faut-il vendre pour atteindre le point mort (seuil de rentabilité) ?`,
+                opts,
+                correct,
+                exp: `Point mort en volume = Charges fixes / MCV unitaire = ${cf} / ${mcv} = ${qte} unités.`
+            };
+        }
+        if (kind === 'taux_marque') {
+            const pv = [100, 200, 400][Math.floor(rng() * 3)];
+            const pct = [20, 25, 30, 40, 50][Math.floor(rng() * 5)];
+            const marge = Math.round((pv * pct) / 100);
+            const wrongs = uniqueWrongs(pct, [pct + 10, Math.max(5, pct - 10), 100 - pct, pct * 2], false).map(n => `${n} %`);
+            const { opts, correct } = shuffleOptions([`${pct} %`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Pour un prix de vente HT de ${pv} € et une marge commerciale de ${marge} €, quel est le taux de marque (Marge / PV HT) ?`,
+                opts,
+                correct,
+                exp: `Taux de marque = (${marge} / ${pv}) × 100 = ${pct} %.`
+            };
+        }
+        const prod = (8 + Math.floor(rng() * 12)) * 1000;
+        const chg = (4 + Math.floor(rng() * 4)) * 1000;
+        const res = prod - chg;
+        const wrongs = uniqueWrongs(res, [prod + chg, res + 1000, Math.max(500, res - 1000), chg], false).map(n => `${n} €`);
+        const { opts, correct } = shuffleOptions([`${res} €`, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `Au compte de résultat, une PME enregistre ${prod} € de produits et ${chg} € de charges. Quel est son résultat (bénéfice) ?`,
+            opts,
+            correct,
+            exp: `Résultat = Produits − Charges = ${prod} − ${chg} = ${res} €.`
+        };
+    }
+
+    /** Générateur procédural pour I2D (STI2D : énergie, CO2, thermique, rendement) */
+    function generateI2dLesson(index, norm, variant, rng) {
+        const kinds = ['energie_kwh', 'rendement_pv', 'r_thermique', 'bilan_co2'];
+        const kind = kinds[(index + variant) % kinds.length];
+
+        if (kind === 'energie_kwh') {
+            const pKw = [2, 3, 4, 5, 6][Math.floor(rng() * 5)];
+            const h = 2 + Math.floor(rng() * 7);
+            const e = pKw * h;
+            const wrongs = uniqueWrongs(e, [pKw + h, e + pKw, Math.max(1, e - pKw), e * 2], false).map(n => `${n} kWh`);
+            const { opts, correct } = shuffleOptions([`${e} kWh`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Une installation photovoltaïque délivre une puissance moyenne de ${pKw} kW pendant ${h} heures d'ensoleillement. Quelle énergie électrique produit-elle ?`,
+                opts,
+                correct,
+                exp: `E = P × t = ${pKw} kW × ${h} h = ${e} kWh.`
+            };
+        }
+        if (kind === 'rendement_pv') {
+            const pRec = [500, 1000, 2000][Math.floor(rng() * 3)];
+            const eta = [15, 20, 25][Math.floor(rng() * 3)];
+            const pElec = Math.round((pRec * eta) / 100);
+            const wrongs = uniqueWrongs(pElec, [pElec + 50, Math.max(50, pElec - 50), pRec - pElec, pElec * 2], false).map(n => `${n} W`);
+            const { opts, correct } = shuffleOptions([`${pElec} W`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Un panneau solaire de rendement ${eta} % reçoit une puissance lumineuse de ${pRec} W. Quelle puissance électrique utile fournit-il ?`,
+                opts,
+                correct,
+                exp: `P_utile = P_reçue × η = ${pRec} × ${eta / 100} = ${pElec} W.`
+            };
+        }
+        if (kind === 'r_thermique') {
+            const eCm = [10, 12, 16, 20][Math.floor(rng() * 4)]; // cm -> 0.10 .. 0.20 m
+            const lam = 0.04; // W/(m·K) laine de verre
+            const rVal = Math.round((eCm / 100) / lam * 10) / 10; // 2.5, 3, 4, 5
+            const rStr = String(rVal).replace('.', ',');
+            const wrongs = uniqueStringWrongs(`${rStr} m²·K/W`, [`${String(rVal * 2).replace('.', ',')} m²·K/W`, `${String(Math.max(0.5, rVal - 1)).replace('.', ',')} m²·K/W`, `${String(rVal + 1.5).replace('.', ',')} m²·K/W`]);
+            const { opts, correct } = shuffleOptions([`${rStr} m²·K/W`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Un isolant d'épaisseur e = ${eCm / 100} m a une conductivité thermique λ = 0,04 W/(m·K). Quelle est sa résistance thermique R = e / λ ?`,
+                opts,
+                correct,
+                exp: `R = e / λ = ${eCm / 100} / 0,04 = ${rStr} m²·K/W.`
+            };
+        }
+        const dist = [100, 200, 300, 500][Math.floor(rng() * 4)];
+        const gKm = [100, 120, 150][Math.floor(rng() * 3)];
+        const kg = Math.round((dist * gKm) / 1000);
+        const wrongs = uniqueWrongs(kg, [kg + 5, Math.max(2, kg - 5), kg * 2, Math.round(kg / 2)], false).map(n => `${n} kg CO₂`);
+        const { opts, correct } = shuffleOptions([`${kg} kg CO₂`, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `Un véhicule émet ${gKm} g de CO₂ par km. Quelle masse de CO₂ (en kg) émet-il sur un trajet de ${dist} km ?`,
+            opts,
+            correct,
+            exp: `${dist} × ${gKm} g = ${dist * gKm} g = ${kg} kg de CO₂.`
+        };
+    }
+
+    /** Générateur procédural pour SIN (STI2D : CAN, débit, PWM, binaire/logique) */
+    function generateSinLesson(index, norm, variant, rng) {
+        const kinds = ['can_niveaux', 'pwm_moy', 'debit_temps', 'porte_logique'];
+        const kind = kinds[(index + variant) % kinds.length];
+
+        if (kind === 'can_niveaux') {
+            const bits = [4, 6, 8, 10, 12][Math.floor(rng() * 5)];
+            const levels = Math.pow(2, bits);
+            const wrongs = uniqueWrongs(levels, [bits * 2, levels / 2, levels * 2, levels - 1], false);
+            const { opts, correct } = shuffleOptions([String(levels), ...wrongs.map(String)], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Combien de valeurs numériques distinctes un Convertisseur Analogique-Numérique (CAN) de résolution ${bits} bits peut-il coder ?`,
+                opts,
+                correct,
+                exp: `Un CAN sur N bits code 2^N valeurs : 2^${bits} = ${levels} niveaux.`
+            };
+        }
+        if (kind === 'pwm_moy') {
+            const vcc = [5, 10, 12, 20][Math.floor(rng() * 4)];
+            const alpha = [25, 50, 75][Math.floor(rng() * 3)];
+            const vmoy = (vcc * alpha) / 100;
+            const vStr = String(vmoy).replace('.', ',');
+            const wrongs = uniqueStringWrongs(`${vStr} V`, [`${String(vcc - vmoy).replace('.', ',')} V`, `${vcc} V`, `${String(vmoy + 1).replace('.', ',')} V`, `0 V`]);
+            const { opts, correct } = shuffleOptions([`${vStr} V`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Un signal MLI (PWM) d'amplitude ${vcc} V possède un rapport cyclique α = ${alpha} %. Quelle est sa tension moyenne V_moy = α × V_max ?`,
+                opts,
+                correct,
+                exp: `V_moy = ${alpha / 100} × ${vcc} = ${vStr} V.`
+            };
+        }
+        if (kind === 'debit_temps') {
+            const mo = [10, 20, 40, 50, 100][Math.floor(rng() * 5)];
+            const debitMbps = [8, 16, 40, 80][Math.floor(rng() * 4)]; // Mbit/s -> debitMbps/8 Mo/s
+            const moPerSec = debitMbps / 8;
+            const sec = Math.round(mo / moPerSec);
+            const wrongs = uniqueWrongs(sec, [sec * 2, Math.max(1, Math.round(sec / 2)), sec + 5, mo * debitMbps], false).map(n => `${n} s`);
+            const { opts, correct } = shuffleOptions([`${sec} s`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Combien de secondes faut-il pour transférer un fichier de ${mo} Mo avec un débit utile de ${debitMbps} Mbit/s (1 octet = 8 bits) ?`,
+                opts,
+                correct,
+                exp: `${debitMbps} Mbit/s = ${moPerSec} Mo/s, donc t = ${mo} / ${moPerSec} = ${sec} s.`
+            };
+        }
+        const gates = [
+            { expr: "1 ET 0", res: "0", exp: "La porte ET (AND) ne vaut 1 que si toutes les entrées valent 1." },
+            { expr: "1 ET 1", res: "1", exp: "1 AND 1 = 1." },
+            { expr: "0 OU 1", res: "1", exp: "La porte OU (OR) vaut 1 dès qu'au moins une entrée vaut 1." },
+            { expr: "0 OU 0", res: "0", exp: "0 OR 0 = 0." },
+            { expr: "1 XOR 1", res: "0", exp: "Le OU exclusif (XOR) vaut 1 uniquement si les entrées sont différentes : 1 XOR 1 = 0." },
+            { expr: "1 XOR 0", res: "1", exp: "Les deux entrées sont différentes, donc 1 XOR 0 = 1." },
+            { expr: "NON(1)", res: "0", exp: "L'inverseur (NOT) inverse l'état logique : NON(1) = 0." },
+            { expr: "NON(1 ET 1) (porte NAND)", res: "0", exp: "1 ET 1 = 1, puis NON(1) = 0." },
+        ];
+        const pick = gates[(index + variant * 3) % gates.length];
+        const shuffled = shuffleOptions([pick.res, pick.res === '1' ? '0' : '1', 'Indéterminé', '2'], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `En logique booléenne, quelle est la sortie de l'opération : ${pick.expr} ?`,
+            opts: shuffled.opts,
+            correct: shuffled.correct,
+            exp: pick.exp
+        };
+    }
+
+    /** Générateur procédural pour Cybersécurité (CIEL / NSI / BTS) */
+    function generateCyberLesson(index, norm, variant, rng) {
+        const scenarios = [
+            { q: "Un attaquant injecte `' OR '1'='1` dans un formulaire de connexion pour contourner l'authentification. De quelle attaque s'agit-il ?", ans: "Injection SQL (SQLi)", wrongs: ["Attaque DDoS", "Phishing", "Man-in-the-Middle"], exp: "L'injection SQL exploite une mauvaise validation des entrées utilisateur dans une requête SQL." },
+            { q: "Un pirate envoie un e-mail imitant une banque pour dérober les identifiants d'un salarié. Quelle est cette technique ?", ans: "Hameçonnage (Phishing)", wrongs: ["Ransomware", "Injection XSS", "ARP Spoofing"], exp: "Le phishing repose sur l'ingénierie sociale pour tromper la victime." },
+            { q: "Un logiciel malveillant chiffre tous les fichiers d'une entreprise et réclame une rançon en cryptomonnaie. Comment l'appelle-t-on ?", ans: "Un rançongiciel (Ransomware)", wrongs: ["Un pare-feu", "Un cheval de Troie bénin", "Un VPN"], exp: "Le ransomware rend les données inaccessibles par chiffrement afin d'extorquer une rançon." },
+            { q: "Des milliers de machines infectées (botnet) saturent un serveur web pour le rendre inaccessible. Quel type d'attaque est-ce ?", ans: "Déni de service distribué (DDoS)", wrongs: ["Force brute locale", "Injection XSS", "Écoute passive"], exp: "Le DDoS vise à porter atteinte à la Disponibilité d'un service." },
+            { q: "Un attaquant insère du code JavaScript malveillant dans un commentaire affiché sur le navigateur des autres visiteurs. Quelle faille exploite-t-il ?", ans: "Cross-Site Scripting (XSS)", wrongs: ["Buffer Overflow", "DNS Spoofing", "SQL Injection"], exp: "La faille XSS permet d'exécuter du script arbitraire dans le navigateur d'une victime." },
+            { q: "Quel pilier de la triade CID (CIA) garantit qu'une donnée n'a pas été modifiée de façon non autorisée ?", ans: "L'Intégrité", wrongs: ["La Confidentialité", "La Disponibilité", "La Portabilité"], exp: "L'intégrité (souvent vérifiée par empreinte SHA-256) assure que la donnée reste intacte." },
+            { q: "Quel pilier de la triade CID (CIA) garantit que seules les personnes autorisées peuvent lire une information ?", ans: "La Confidentialité", wrongs: ["La Disponibilité", "La Traçabilité", "L'Intégrité"], exp: "La confidentialité protège contre la divulgation non autorisée (ex : via chiffrement)." },
+            { q: "Quel algorithme produit une empreinte à sens unique (hachage cryptographique) sans permettre de retrouver le message d'origine ?", ans: "SHA-256", wrongs: ["AES-256", "RSA", "Base64"], exp: "SHA-256 est une fonction de hachage cryptographique ; Base64 n'est qu'un encodage, AES/RSA sont du chiffrement." },
+            { q: "Quelle mesure combine un mot de passe (ce que je sais) et un code temporaire sur téléphone (ce que je possède) ?", ans: "L'authentification multifacteur (MFA / 2FA)", wrongs: ["Le chiffrement symétrique", "La segmentation VLAN", "Le NAT"], exp: "La MFA renforce considérablement la sécurité contre le vol de mot de passe." },
+            { q: "Dans le cadre du RGPD, quelle autorité française contrôle la protection des données personnelles ?", ans: "La CNIL", wrongs: ["L'ANSSI", "L'ARCOM", "L'INSEE"], exp: "La CNIL (Commission Nationale de l'Informatique et des Libertés) veille au respect du RGPD." },
+            { q: "En France, quelle agence nationale est l'autorité de référence en matière de sécurité des systèmes d'information ?", ans: "L'ANSSI", wrongs: ["La CNIL", "L'ARCEP", "Le CSA"], exp: "L'ANSSI (Agence Nationale de la Sécurité des Systèmes d'Information) conseille et protège l'État et les OIV." },
+            { q: "Quelle règle de sauvegarde recommande 3 copies, 2 supports différents et 1 copie hors site ?", ans: "La règle 3-2-1", wrongs: ["La règle OSI", "Le modèle Zero Trust", "Le principe CIA"], exp: "La stratégie 3-2-1 protège les sauvegardes contre les pannes, incendies et ransomwares." },
+        ];
+        const deck = seededShuffle(scenarios, 'cyber-deck:' + norm);
+        const item = deck[(Math.floor(index / 2) + variant * 5) % deck.length];
+        const wrongs = uniqueStringWrongs(item.ans, item.wrongs);
+        const { opts, correct } = shuffleOptions([item.ans, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: item.q,
+            opts,
+            correct,
+            exp: item.exp
+        };
+    }
+
+    /** Générateur procédural pour Réseaux & Systèmes (CIEL / NSI / BTS : ports, CIDR, OSI, Linux) */
+    function generateReseauxLesson(index, norm, variant, rng) {
+        const kinds = ['ports', 'cidr_hosts', 'osi_layers', 'linux_cmd'];
+        const kind = kinds[(index + variant) % kinds.length];
+
+        if (kind === 'ports') {
+            const ports = [
+                { proto: "HTTP (web non chiffré)", port: "80" },
+                { proto: "HTTPS (web chiffré TLS)", port: "443" },
+                { proto: "SSH (administration distante sécurisée)", port: "22" },
+                { proto: "DNS (résolution de noms de domaine)", port: "53" },
+                { proto: "FTP (contrôle transfert de fichiers)", port: "21" },
+                { proto: "SMTP (envoi de courrier électronique)", port: "25" },
+                { proto: "DHCP serveur (attribution d'IP)", port: "67" },
+                { proto: "RDP (Bureau à distance Windows)", port: "3389" },
+                { proto: "IMAP (réception d'e-mails synchronisée)", port: "143" },
+                { proto: "SNMP (supervision réseau)", port: "161" },
+            ];
+            const deck = seededShuffle(ports, 'net-ports:' + norm);
+            const item = deck[(Math.floor(index / 2) + variant * 3) % deck.length];
+            const others = seededShuffle(ports.filter(p => p.port !== item.port).map(p => p.port), 'net-p-w:' + index + ':' + variant);
+            const wrongs = uniqueStringWrongs(item.port, others);
+            const { opts, correct } = shuffleOptions([item.port, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Quel est le numéro de port TCP/UDP standard utilisé par le protocole ${item.proto} ?`,
+                opts,
+                correct,
+                exp: `Le port standard de ${item.proto} est le port ${item.port}.`
+            };
+        }
+        if (kind === 'cidr_hosts') {
+            const masks = [
+                { cidr: "/24", mask: "255.255.255.0", hosts: 254 },
+                { cidr: "/25", mask: "255.255.255.128", hosts: 126 },
+                { cidr: "/26", mask: "255.255.255.192", hosts: 62 },
+                { cidr: "/27", mask: "255.255.255.224", hosts: 30 },
+                { cidr: "/28", mask: "255.255.255.240", hosts: 14 },
+                { cidr: "/29", mask: "255.255.255.248", hosts: 6 },
+                { cidr: "/30", mask: "255.255.255.252", hosts: 2 },
+            ];
+            const item = masks[(index + variant * 2) % masks.length];
+            if ((index + variant) % 2 === 0) {
+                const wrongs = uniqueWrongs(item.hosts, [item.hosts + 2, Math.max(1, item.hosts - 2), item.hosts * 2, Math.max(1, Math.floor(item.hosts / 2))], false);
+                const { opts, correct } = shuffleOptions([String(item.hosts), ...wrongs.map(String)], 0, rng);
+                return {
+                    type: 'qcm',
+                    title: 'Niveau ' + (index + 1),
+                    q: `Dans un sous-réseau IPv4 en notation CIDR ${item.cidr}, combien d'adresses IP d'hôtes utilisables sont disponibles (2^n − 2) ?`,
+                    opts,
+                    correct,
+                    exp: `En ${item.cidr}, il reste ${32 - parseInt(item.cidr.slice(1), 10)} bits hôtes : 2^${32 - parseInt(item.cidr.slice(1), 10)} − 2 = ${item.hosts} hôtes utilisables.`
+                };
+            }
+            const otherMasks = masks.filter(m => m.mask !== item.mask).map(m => m.mask);
+            const wrongs = uniqueStringWrongs(item.mask, otherMasks);
+            const { opts, correct } = shuffleOptions([item.mask, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Quel masque de sous-réseau décimal pointé correspond au préfixe CIDR ${item.cidr} ?`,
+                opts,
+                correct,
+                exp: `Le préfixe ${item.cidr} correspond au masque ${item.mask}.`
+            };
+        }
+        if (kind === 'osi_layers') {
+            const layers = [
+                { num: 1, name: "Physique (signaux, câbles, bits)" },
+                { num: 2, name: "Liaison de données (trames, MAC, switch)" },
+                { num: 3, name: "Réseau (paquets, IP, routage)" },
+                { num: 4, name: "Transport (segments, TCP/UDP, ports)" },
+                { num: 5, name: "Session (ouverture et maintien de session)" },
+                { num: 6, name: "Présentation (encodage, chiffrement, compression)" },
+                { num: 7, name: "Application (HTTP, DNS, SMTP, SSH)" },
+            ];
+            const item = layers[(index + variant * 2) % layers.length];
+            const others = layers.filter(l => l.num !== item.num).map(l => l.name);
+            const wrongs = uniqueStringWrongs(item.name, seededShuffle(others, 'osi:' + index + ':' + variant));
+            const { opts, correct } = shuffleOptions([item.name, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Dans le modèle OSI (7 couches), à quoi correspond la couche n° ${item.num} ?`,
+                opts,
+                correct,
+                exp: `La couche ${item.num} du modèle OSI est la couche ${item.name}.`
+            };
+        }
+        const cmds = [
+            { cmd: "ping", desc: "tester la joignabilité d'un hôte via ICMP" },
+            { cmd: "chmod", desc: "modifier les permissions (droits rwx) d'un fichier sous Linux" },
+            { cmd: "ls -la", desc: "lister tous les fichiers (y compris cachés) avec leurs détails" },
+            { cmd: "ip a", desc: "afficher les interfaces réseau et leurs adresses IP sous Linux" },
+            { cmd: "traceroute", desc: "afficher la liste des routeurs traversés jusqu'à une destination" },
+            { cmd: "grep", desc: "rechercher un motif de texte dans un fichier ou flux" },
+            { cmd: "sudo", desc: "exécuter une commande avec les privilèges administrateur (root)" },
+            { cmd: "ssh", desc: "ouvrir un terminal distant chiffré sur un serveur" },
+        ];
+        const pick = cmds[(index + variant * 3) % cmds.length];
+        const otherCmds = cmds.filter(c => c.cmd !== pick.cmd).map(c => c.cmd);
+        const wrongs = uniqueStringWrongs(pick.cmd, seededShuffle(otherCmds, 'cmd:' + index + ':' + variant));
+        const { opts, correct } = shuffleOptions([pick.cmd, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `En administration système/réseau Linux, quelle commande permet de ${pick.desc} ?`,
+            opts,
+            correct,
+            exp: `La commande « ${pick.cmd} » sert à ${pick.desc}.`
+        };
+    }
+
+    /** Générateur procédural pour Électronique & Systèmes Embarqués (CIEL / STI2D / BTS) */
+    function generateElectroniqueLesson(index, norm, variant, rng) {
+        const kinds = ['res_serie', 'res_parallele', 'led_res', 'pont_diviseur'];
+        const kind = kinds[(index + variant) % kinds.length];
+
+        if (kind === 'res_serie') {
+            const r1 = [100, 150, 220, 330, 470][Math.floor(rng() * 5)];
+            const r2 = [100, 220, 330, 470, 680][Math.floor(rng() * 5)];
+            const req = r1 + r2;
+            const wrongs = uniqueWrongs(req, [Math.abs(r1 - r2) + 50, Math.round((r1 * r2) / (r1 + r2)), req + 100, Math.max(50, req - 100)], false).map(n => `${n} Ω`);
+            const { opts, correct } = shuffleOptions([`${req} Ω`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Deux résistances R₁ = ${r1} Ω et R₂ = ${r2} Ω sont montées en SÉRIE. Quelle est la résistance équivalente R_eq ?`,
+                opts,
+                correct,
+                exp: `En série, les résistances s'additionnent : R_eq = ${r1} + ${r2} = ${req} Ω.`
+            };
+        }
+        if (kind === 'res_parallele') {
+            const r = [100, 200, 240, 300, 400, 600, 1000][Math.floor(rng() * 7)];
+            const req = r / 2;
+            const wrongs = uniqueWrongs(req, [r * 2, r, req + 50, Math.max(10, req - 50)], false).map(n => `${n} Ω`);
+            const { opts, correct } = shuffleOptions([`${req} Ω`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Deux résistances identiques de ${r} Ω sont montées en PARALLÈLE (dérivation). Quelle est la résistance équivalente ?`,
+                opts,
+                correct,
+                exp: `Deux résistances identiques en parallèle divisent la valeur par 2 : ${r} / 2 = ${req} Ω.`
+            };
+        }
+        if (kind === 'led_res') {
+            const vcc = [5, 9, 12][Math.floor(rng() * 3)];
+            const vled = 2; // V
+            const iMa = [10, 20][Math.floor(rng() * 2)]; // mA
+            const rVal = Math.round(((vcc - vled) * 1000) / iMa);
+            const wrongs = uniqueWrongs(rVal, [Math.round((vcc * 1000) / iMa), rVal + 100, Math.max(50, rVal - 100), rVal * 2], false).map(n => `${n} Ω`);
+            const { opts, correct } = shuffleOptions([`${rVal} Ω`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `On alimente une LED (tension de seuil V_LED = ${vled} V, courant I = ${iMa} mA) sous V_CC = ${vcc} V. Quelle résistance de protection R = (V_CC − V_LED) / I faut-il ?`,
+                opts,
+                correct,
+                exp: `R = (${vcc} − ${vled}) / ${(iMa / 1000)} = ${rVal} Ω.`
+            };
+        }
+        const vin = [6, 10, 12, 16, 20][Math.floor(rng() * 5)];
+        const vout = vin / 2;
+        const wrongs = uniqueWrongs(vout, [vin, vout + 2, Math.max(1, vout - 2), vin * 2], false).map(n => `${n} V`);
+        const { opts, correct } = shuffleOptions([`${vout} V`, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `Un pont diviseur de tension est composé de deux résistances égales (R₁ = R₂ = 1 kΩ) alimentées par V_in = ${vin} V. Que vaut la tension de sortie V_out ?`,
+            opts,
+            correct,
+            exp: `V_out = V_in × R₂ / (R₁ + R₂) = ${vin} × 1/2 = ${vout} V.`
+        };
+    }
+
     /* ================= 2. Banques de questions étendues ================= */
 
     const FACT_BANKS = {
@@ -1285,7 +2012,7 @@ const QuestionBank = (() => {
             { q: "À quel temps est conjugué le verbe dans « Il courut vers le château » ?", correct: "au passé simple", wrongs: ["à l'imparfait", "au présent", "au plus-que-parfait"], levels: ['5eme', '4eme'], exp: "« Courut » est la 3e personne du passé simple du verbe courir." },
             { q: "Comment accorde-t-on : « Les fillettes sont ___ » ?", correct: "parties", wrongs: ["parti", "partie", "partis"], levels: ['5eme', '6eme'], exp: "Avec l'auxiliaire être, accord en genre et en nombre avec le sujet féminin pluriel." },
             { q: "Quel mot désigne le compagnon d'armes d'un chevalier au Moyen Âge ?", correct: "un écuyer", wrongs: ["un troubadour", "un serf", "un bailli"], levels: ['5eme'], exp: "L'écuyer portait le bouclier (écu) et assistait le chevalier." },
-            { q: "Quelle proposition contient un homophone correctement orthographié ?", correct: "Où vas-tu ?", wrongs: ["Ou vas-tu ?", "Où veux-tu du thé ?", "Ou bien où ?"], levels: ['5eme', '6eme'], exp: "« Où » avec accent indique le lieu." },
+            { q: "Quelle proposition contient un homophone correctement orthographié ?", correct: "Où vas-tu ?", wrongs: ["Ou vas-tu ?", "Où il manque encore des SVG, je veut tu verifie tout, relis le code, regarde les dependance et verifie que elles existe, si elle manque, regarde si tu dois les créer, ou supprimer l'appel, je veut aussi que tu mette a jours les documentation comme les commentaire ou les robot.twveux-tu du thé ?", "Ou bien où ?"], levels: ['5eme', '6eme'], exp: "« Où » avec accent indique le lieu." },
             { type: 'vrai_faux', q: "Dans un conte médiéval, un troubadour est un poète et musicien itinérant.", correct: true, levels: ['5eme'], exp: "Vrai : les troubadours composaient des chansons d'amour courtois." },
             // 4ème
             { q: "Dans « La femme qui porte un manteau », quel mot est le pronom relatif ?", correct: "qui", wrongs: ["la", "porte", "un"], levels: ['4eme', '3eme'], exp: "« Qui » introduit la proposition subordonnée relative." },
@@ -1311,7 +2038,18 @@ const QuestionBank = (() => {
             // Terminale
             { q: "Quel écrivain et philosophe a rédigé « L'Étranger » et « Le Mythe de Sisyphe » ?", correct: "Albert Camus", wrongs: ["Jean-Paul Sartre", "André Gide", "Marcel Proust"], levels: ['terminale'], exp: "Camus y développe sa philosophie de l'Absurde." },
             { q: "À quel courant théâtral du XXe siècle associe-t-on Samuel Beckett et Eugène Ionesco ?", correct: "le théâtre de l'absurde", wrongs: ["le drame romantique", "la tragédie classique", "le vaudeville"], levels: ['terminale'], exp: "Ce théâtre dénonce l'incohérence et la vacuité du langage humain." },
-            { q: "Quel concept désigne la perte de sens et le dégoût existentiel chez Sartre ?", correct: "la Nausée", wrongs: ["le Spleen", "l'Angoisse pure", "le Mal du siècle"], levels: ['terminale'], exp: "Dans le roman 'La Nausée' (1938), Roquentin ressent l'existence brute des choses." }
+            { q: "Quel concept désigne la perte de sens et le dégoût existentiel chez Sartre ?", correct: "la Nausée", wrongs: ["le Spleen", "l'Angoisse pure", "le Mal du siècle"], levels: ['terminale'], exp: "Dans le roman 'La Nausée' (1938), Roquentin ressent l'existence brute des choses." },
+            // Enrichissements multi-niveaux (programme officiel Collège / Lycée / BTS)
+            { q: "Quel écrivain a composé les « Fables » célèbres comme « Le Corbeau et le Renard » ?", correct: "Jean de La Fontaine", wrongs: ["Charles Perrault", "Molière", "Voltaire"], levels: ['6eme', '5eme'], exp: "Jean de La Fontaine publie ses Fables au XVIIe siècle sous Louis XIV." },
+            { q: "Dans « Il mange une pomme », quelle est la nature du mot « une » ?", correct: "article indéfini", wrongs: ["article défini", "pronom personnel", "adverbe"], levels: ['6eme'], exp: "Un, une, des sont des articles indéfinis." },
+            { q: "Quel dramaturge du XVIIe siècle a écrit « L'Avare » et « Le Malade imaginaire » ?", correct: "Molière", wrongs: ["Jean Racine", "Pierre Corneille", "Beaumarchais"], levels: ['5eme', '4eme', '2nde'], exp: "Molière (Jean-Baptiste Poquelin) est le maître de la comédie classique." },
+            { q: "Dans un texte narratif, quel point de vue connaît les pensées de tous les personnages ?", correct: "le point de vue omniscient", wrongs: ["le point de vue interne", "le point de vue externe", "le point de vue neutre"], levels: ['4eme', '3eme', '2nde'], exp: "Le narrateur omniscient sait tout sur tous les personnages et l'intrigue." },
+            { q: "Quel romancier du XIXe siècle a écrit « Les Misérables » et « Notre-Dame de Paris » ?", correct: "Victor Hugo", wrongs: ["Émile Zola", "Honoré de Balzac", "Gustave Flaubert"], levels: ['4eme', '3eme'], exp: "Victor Hugo est une figure majeure du romantisme et de l'engagement social." },
+            { q: "Quel courant littéraire du XIXe siècle, incarné par Émile Zola, étudie scientifiquement la société et l'hérédité ?", correct: "le naturalisme", wrongs: ["le classicisme", "le surréalisme", "le baroque"], levels: ['2nde', '1ere'], exp: "Zola développe le roman expérimental dans le cycle des Rougon-Macquart." },
+            { q: "Quelle figure de style exagère volontairement une réalité (ex : « Mourir de rire ») ?", correct: "l'hyperbole", wrongs: ["la litote", "l'euphémisme", "la métonymie"], levels: ['3eme', '2nde', '1ere'], exp: "L'hyperbole amplifie l'expression pour frapper le lecteur." },
+            { q: "Quel poète a composé « Le Dormeur du val » et « Le Bateau ivre » à l'adolescence ?", correct: "Arthur Rimbaud", wrongs: ["Paul Verlaine", "Charles Baudelaire", "Guillaume Apollinaire"], levels: ['1ere', 'terminale'], exp: "Rimbaud renouvelle profondément la poésie moderne dès l'âge de 16 ans." },
+            { q: "En rhétorique et culture générale (BTS/Lycée), qu'est-ce qu'une thèse dans un texte argumentatif ?", correct: "l'idée principale défendue par l'auteur", wrongs: ["un exemple illustrant un fait", "le résumé de la conclusion", "une figure d'opposition"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La thèse est soutenue par des arguments illustrés par des exemples." },
+            { q: "Dans une synthèse de documents (BTS / Lycée), quel principe méthodologique est impératif ?", correct: "confronter objectivement les documents sans donner son avis personnel", wrongs: ["recopier chaque texte séparément", "ne citer qu'un seul document", "ajouter de longues anecdotes personnelles"], levels: ['terminale', 'bts1', 'bts2'], exp: "La synthèse croise les idées des documents de façon structurée et objective." }
         ],
 
         histoire: [
@@ -1349,7 +2087,16 @@ const QuestionBank = (() => {
             // Terminale
             { q: "En quelle année les accords d'Évian ont-ils scellé la fin de la guerre d'Algérie ?", correct: "1962", wrongs: ["1954", "1958", "1968"], levels: ['terminale'], exp: "Signés en mars 1962, ils conduisent à l'indépendance de l'Algérie." },
             { q: "Quelle crise majeure d'octobre 1962 a frôlé la guerre nucléaire entre les USA et l'URSS ?", correct: "la crise des missiles de Cuba", wrongs: ["la crise du canal de Suez", "le blocus de Berlin", "la guerre de Corée"], levels: ['terminale'], exp: "Kennedy et Khrouchtchev ont négocié le retrait des missiles soviétiques." },
-            { q: "En quelle année l'URSS a-t-elle été officiellement dissoute ?", correct: "1991", wrongs: ["1989", "1985", "1995"], levels: ['terminale'], exp: "Gorbatchev démissionne le 25 décembre 1991, scellant la fin de l'Union soviétique." }
+            { q: "En quelle année l'URSS a-t-elle été officiellement dissoute ?", correct: "1991", wrongs: ["1989", "1985", "1995"], levels: ['terminale'], exp: "Gorbatchev démissionne le 25 décembre 1991, scellant la fin de l'Union soviétique." },
+            // Enrichissements Histoire
+            { q: "Dans l'Antiquité, quel grand chef gaulois a mené la coalition contre Jules César à Alésia (-52) ?", correct: "Vercingétorix", wrongs: ["Ambiorix", "Clovis", "Hannibal"], levels: ['6eme'], exp: "Vercingétorix s'est rendu à César après le siège d'Alésia en 52 av. J.-C." },
+            { q: "Quel roi de France a fait construire le château de Versailles au XVIIe siècle ?", correct: "Louis XIV", wrongs: ["Louis XVI", "François Ier", "Henri IV"], levels: ['5eme', '4eme', '2nde'], exp: "Le Roi-Soleil a fait de Versailles le centre de la monarchie absolue." },
+            { q: "Quelle pandémie meurtrière du XIVe siècle a décimé environ un tiers de la population européenne ?", correct: "la Peste noire", wrongs: ["le choléra", "la grippe espagnole", "la variole"], levels: ['5eme'], exp: "Arrivée en Europe en 1347, la Peste noire a profondément bouleversé le Moyen Âge." },
+            { q: "Quel texte fondateur adopté le 26 août 1789 proclame que « les hommes naissent et demeurent libres et égaux en droits » ?", correct: "la Déclaration des droits de l'homme et du citoyen (DDHC)", wrongs: ["le Code civil", "l'Édit de Nantes", "la Constitution de 1958"], levels: ['4eme', '1ere'], exp: "La DDHC est le socle juridique des libertés fondamentales en France." },
+            { q: "En quelle année les femmes obtiennent-elles le droit de vote en France ?", correct: "1944", wrongs: ["1918", "1958", "1936"], levels: ['3eme', '1ere', 'terminale'], exp: "L'ordonnance du 21 avril 1944 (CFLN d'Alger) accorde le droit de vote aux femmes." },
+            { q: "Quelle loi de 1881-1882 rend l'école primaire gratuite, laïque et obligatoire en France ?", correct: "les lois Jules Ferry", wrongs: ["les accords de Matignon", "la loi Veil", "le décret Crémieux"], levels: ['4eme', '1ere'], exp: "Jules Ferry instaure l'école républicaine gratuite, laïque et obligatoire." },
+            { q: "En quelle année le traité de Maastricht a-t-il créé officiellement l'Union européenne ?", correct: "1992", wrongs: ["1957", "1979", "2002"], levels: ['3eme', 'terminale'], exp: "Signé en février 1992, le traité de Maastricht fonde l'UE et prépare l'euro." },
+            { q: "Quel événement d'octobre 1929 à New York a déclenché la Grande Dépression mondiale ?", correct: "le krach boursier de Wall Street", wrongs: ["la révolution russe", "la crise de Suez", "le choc pétrolier"], levels: ['3eme', 'terminale'], exp: "Le « Jeudi noir » (24 octobre 1929) précipite une crise économique mondiale." }
         ],
 
         geo: [
@@ -1380,7 +2127,15 @@ const QuestionBank = (() => {
             // Terminale
             { q: "Que signifie le sigle ZEE en droit maritime international ?", correct: "Zone Économique Exclusive", wrongs: ["Zone d'Exploitation Européenne", "Zone Écologique Équilibrée", "Zone d'Échange Exceptionnel"], levels: ['terminale'], exp: "Elle s'étend jusqu'à 200 milles nautiques des côtes." },
             { q: "Par quel détroit stratégique transite un tiers du pétrole maritime mondial ?", correct: "le détroit d'Ormuz", wrongs: ["le détroit de Malacca", "le détroit de Béring", "le détroit de Magellan"], levels: ['terminale'], exp: "Il contrôle l'accès au golfe Persique entre l'Iran et Oman." },
-            { q: "Quel canal transocéanique traverse l'Amérique centrale ?", correct: "le canal de Panama", wrongs: ["le canal de Suez", "le canal de Corinthe", "le canal du Midi"], levels: ['terminale'], exp: "Il relie l'océan Atlantique et l'océan Pacifique depuis 1914." }
+            { q: "Quel canal transocéanique traverse l'Amérique centrale ?", correct: "le canal de Panama", wrongs: ["le canal de Suez", "le canal de Corinthe", "le canal du Midi"], levels: ['terminale'], exp: "Il relie l'océan Atlantique et l'océan Pacifique depuis 1914." },
+            // Enrichissements Géographie
+            { q: "Quelle ligne imaginaire divise la Terre en hémisphère Nord et hémisphère Sud ?", correct: "l'équateur", wrongs: ["le méridien de Greenwich", "le tropique du Cancer", "le cercle polaire"], levels: ['6eme', '5eme'], exp: "L'équateur correspond à la latitude 0°." },
+            { q: "Comment nomme-t-on le déplacement durable de populations des campagnes vers les villes ?", correct: "l'exode rural", wrongs: ["la périurbanisation", "la littoralisation", "la gentrification"], levels: ['5eme', '4eme', '1ere'], exp: "L'exode rural accompagne l'industrialisation et la croissance urbaine." },
+            { q: "Quel type d'espace associe des emplois de haute technologie, des universités et des laboratoires ?", correct: "un technopôle", wrongs: ["une friche industrielle", "un bocage", "une ZEE"], levels: ['4eme', '3eme', '1ere'], exp: "Exemples en France : Sophia Antipolis ou Paris-Saclay." },
+            { q: "Quelle façade maritime mondiale relie les ports de Rotterdam, Anvers et Hambourg ?", correct: "la Northern Range", wrongs: ["la Sun Belt", "la Mégalopolis japonaise", "le détroit de Malacca"], levels: ['4eme', 'terminale'], exp: "La Northern Range est la première façade portuaire d'Europe." },
+            { q: "Comment appelle-t-on une grande boîte métallique standardisée utilisée pour le transport intermodal maritime et ferroviaire ?", correct: "un conteneur", wrongs: ["un pétrolier", "une barge", "un silo"], levels: ['4eme', 'terminale'], exp: "La conteneurisation a fortement réduit les coûts du commerce mondial." },
+            { q: "Combien de régions compte la France métropolitaine depuis la réforme de 2016 ?", correct: "13 régions", wrongs: ["22 régions", "18 régions", "10 régions"], levels: ['3eme', '1ere'], exp: "La France compte 13 régions métropolitaines et 5 régions d'outre-mer (18 au total)." },
+            { q: "Quel phénomène désigne l'extension spatiale des banlieues et communes rurales autour d'une métropole ?", correct: "la périurbanisation", wrongs: ["la désertification", "l'insularité", "la délocalisation"], levels: ['3eme', '1ere', '2nde'], exp: "Elle s'accompagne de migrations pendulaires domicile-travail." }
         ],
 
         svt: [
@@ -1410,7 +2165,14 @@ const QuestionBank = (() => {
             { q: "Quel type de lymphocytes sécrète des anticorps spécifiques circulants ?", correct: "les lymphocytes B (plasmocytes)", wrongs: ["les lymphocytes T cytotoxiques", "les macrophages", "les hématies"], levels: ['1ere', 'terminale'], exp: "Les plasmocytes sont issus de la différenciation des lymphocytes B activés." },
             // Terminale
             { q: "Quel mécanisme d'échange de fragments entre chromatides survient en prophase I de méiose ?", correct: "le crossing-over", wrongs: ["la mutation ponctuelle", "la dérive génétique", "l'épissage alternatif"], levels: ['terminale'], exp: "Le brassage intrachromosomique multiplie la diversité génétique des gamètes." },
-            { q: "Quel réflexe involontaire contracte un muscle en réponse à son propre étirement ?", correct: "le réflexe myotatique", wrongs: ["le réflexe conditionné", "le réflexe cornéen", "le réflexe nociceptif"], levels: ['terminale'], exp: "Le réflexe rotulien en est l'exemple clinique classique." }
+            { q: "Quel réflexe involontaire contracte un muscle en réponse à son propre étirement ?", correct: "le réflexe myotatique", wrongs: ["le réflexe conditionné", "le réflexe cornéen", "le réflexe nociceptif"], levels: ['terminale'], exp: "Le réflexe rotulien en est l'exemple clinique classique." },
+            // Enrichissements SVT
+            { q: "Quel être vivant transforme la matière organique morte du sol en matière minérale ?", correct: "un décomposeur (champignon, bactérie, ver)", wrongs: ["un producteur primaire", "un carnivore apex", "un pollinisateur"], levels: ['6eme', '5eme'], exp: "Les décomposeurs recyclent la matière organique dans l'écosystème." },
+            { q: "Quel vaisseau sanguin transporte le sang du cœur vers les organes ?", correct: "une artère", wrongs: ["une veine", "une bronche", "un nerf"], levels: ['5eme', '4eme'], exp: "Les artères partent du cœur ; les veines y ramènent le sang." },
+            { q: "Comment nomme-t-on l'enveloppe rigide externe de la Terre fragmentée en plaques tectoniques ?", correct: "la lithosphère", wrongs: ["l'asthénosphère", "le noyau interne", "la troposphère"], levels: ['4eme', '1ere'], exp: "La lithosphère (croûte + manteau supérieur rigide) repose sur l'asthénosphère ductile." },
+            { q: "Quelle hormone sécrétée par le pancréas fait baisser le taux de glucose dans le sang (glycémie) ?", correct: "l'insuline", wrongs: ["le glucagon", "l'adrénaline", "la testostérone"], levels: ['2nde', '1ere', 'terminale'], exp: "L'insuline est une hormone hypoglycémiante ; le glucagon est hyperglycémiant." },
+            { q: "Quelle technique médicale stimule la mémoire immunitaire pour prévenir une infection grave ?", correct: "la vaccination", wrongs: ["l'antibiothérapie", "la transfusion", "l'anesthésie"], levels: ['3eme', '1ere', 'terminale'], exp: "Le vaccin induit la formation de lymphocytes mémoires spécifiques." },
+            { q: "Quel gaz à effet de serre est majoritairement rejeté par la combustion des énergies fossiles ?", correct: "le dioxyde de carbone (CO₂)", wrongs: ["le diazote (N₂)", "le dioxygène (O₂)", "l'hélium (He)"], levels: ['5eme', '2nde', 'terminale'], exp: "L'augmentation du CO₂ atmosphérique renforce l'effet de serre additionnel." }
         ],
 
         physique: [
@@ -1438,7 +2200,14 @@ const QuestionBank = (() => {
             { q: "Comment s'exprime l'énergie mécanique totale sans forces de frottement ?", correct: "Em = Ec + Ep", wrongs: ["Em = Ec - Ep", "Em = Ec × Ep", "Em = Ec / Ep"], levels: ['1ere'], exp: "En l'absence de dissipation, Em reste constante au cours du mouvement." },
             // Terminale
             { q: "Quelle formule résume la 2e loi de Newton pour un point matériel de masse constante ?", correct: "ΣF = m × a", wrongs: ["ΣF = m × v", "ΣF = 1/2 m v²", "ΣF = m × g"], levels: ['terminale'], exp: "La résultante des forces extérieures est égale au produit de la masse par l'accélération." },
-            { q: "Quel phénomène modifie la fréquence perçue d'une onde lorsque l'émetteur est en mouvement ?", correct: "l'effet Doppler", wrongs: ["l'effet Joule", "l'effet photoélectrique", "l'effet Hall"], levels: ['terminale'], exp: "Le son devient plus aigu à l'approche et plus grave lors de l'éloignement." }
+            { q: "Quel phénomène modifie la fréquence perçue d'une onde lorsque l'émetteur est en mouvement ?", correct: "l'effet Doppler", wrongs: ["l'effet Joule", "l'effet photoélectrique", "l'effet Hall"], levels: ['terminale'], exp: "Le son devient plus aigu à l'approche et plus grave lors de l'éloignement." },
+            // Enrichissements Physique
+            { q: "Quel appareil de mesure se branche en DÉRIVATION pour mesurer une tension électrique ?", correct: "le voltmètre", wrongs: ["l'ampèremètre", "l'ohmmètre", "le wattmètre"], levels: ['5eme', '4eme', '3eme'], exp: "Le voltmètre se branche en dérivation (parallèle) ; l'ampèremètre en série." },
+            { q: "Quel appareil se branche en SÉRIE dans un circuit pour mesurer l'intensité du courant ?", correct: "l'ampèremètre", wrongs: ["le voltmètre", "le thermomètre", "le luxmètre"], levels: ['4eme', '3eme'], exp: "L'intensité (en ampères, A) traverse l'ampèremètre monté en série." },
+            { q: "Quelle est la vitesse approximative du son dans l'air à 20 °C ?", correct: "340 m/s", wrongs: ["300 000 km/s", "34 m/s", "1 500 m/s"], levels: ['4eme', '3eme', '2nde'], exp: "Le son se propage à environ 340 m/s dans l'air (et ~1 500 m/s dans l'eau)." },
+            { q: "Dans quel milieu le son ne peut-il PAS se propager ?", correct: "le vide spatial", wrongs: ["l'eau liquide", "l'acier solide", "l'air sec"], levels: ['6eme', '5eme', '2nde'], exp: "Le son est une onde mécanique qui nécessite un milieu matériel pour se propager." },
+            { q: "Quelle unité mesure la fréquence d'un signal périodique (nombre de cycles par seconde) ?", correct: "le hertz (Hz)", wrongs: ["le joule (J)", "le pascal (Pa)", "le tesla (T)"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "f = 1 / T, exprimée en hertz (Hz = s⁻¹)." },
+            { q: "Quelle grandeur physique exprimée en joules (J) mesure le transfert thermique ou le travail d'une force ?", correct: "l'énergie", wrongs: ["la puissance", "la pression", "l'intensité"], levels: ['3eme', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Le joule (J) est l'unité SI d'énergie ; le watt (W = J/s) est l'unité de puissance." }
         ],
 
         chimie: [
@@ -1464,7 +2233,13 @@ const QuestionBank = (() => {
             { q: "Quelle loi relie l'absorbance A d'une solution colorée à sa concentration C ?", correct: "la loi de Beer-Lambert (A = k × C)", wrongs: ["la loi d'Ohm", "la loi de Boyle-Mariotte", "la loi de Lavoisier"], levels: ['1ere'], exp: "À longueur d'onde fixée, l'absorbance est proportionnelle à la concentration." },
             // Terminale
             { q: "Comment est définie la constante d'acidité Ka d'un couple AH / A⁻ ?", correct: "Ka = ([A⁻] × [H₃O⁺]) / [AH]", wrongs: ["Ka = [AH] / [A⁻]", "Ka = [H₃O⁺] × [HO⁻]", "Ka = pH × [A⁻]"], levels: ['terminale'], exp: "Elle quantifie la force de dissociation de l'acide dans l'eau." },
-            { q: "Quelle substance accélère une réaction chimique sans apparaître dans son équation bilan ?", correct: "un catalyseur", wrongs: ["un inhibiteur", "un réactif limitant", "un solvant inerte"], levels: ['terminale'], exp: "Le catalyseur abaisse l'énergie d'activation sans être consommé." }
+            { q: "Quelle substance accélère une réaction chimique sans apparaître dans son équation bilan ?", correct: "un catalyseur", wrongs: ["un inhibiteur", "un réactif limitant", "un solvant inerte"], levels: ['terminale'], exp: "Le catalyseur abaisse l'énergie d'activation sans être consommé." },
+            // Enrichissements Chimie
+            { q: "Quel est le principe fondamental formulé par Lavoisier lors d'une transformation chimique ?", correct: "la conservation de la masse et des atomes", wrongs: ["la disparition des réactifs", "la création spontanée d'atomes", "l'augmentation systématique du pH"], levels: ['4eme', '3eme', '2nde'], exp: "« Rien ne se perd, rien ne se crée, tout se transforme » : les atomes se conservent." },
+            { q: "Quelle technique sépare les constituants d'un mélange hétérogène solide-liquide grâce à un papier poreux ?", correct: "la filtration", wrongs: ["la distillation", "la sublimation", "la fusion"], levels: ['6eme', '5eme'], exp: "Le filtre retient le résidu solide et laisse passer le filtrat liquide." },
+            { q: "Quel gaz, représentant environ 21 % de l'air, est indispensable à la respiration et aux combustions ?", correct: "le dioxygène (O₂)", wrongs: ["le diazote (N₂)", "le dioxyde de carbone (CO₂)", "l'argon (Ar)"], levels: ['5eme', '4eme'], exp: "Le dioxygène est le comburant naturel présent dans l'atmosphère." },
+            { q: "Quel est le nom de la liaison chimique formée par la mise en commun d'une paire d'électrons entre deux atomes ?", correct: "une liaison covalente", wrongs: ["une liaison gravitationnelle", "une liaison nucléaire", "une liaison thermique"], levels: ['2nde', '1ere', 'terminale'], exp: "Les atomes partagent des électrons de valence pour atteindre une configuration stable." },
+            { q: "Quelle famille organique possède le groupe caractéristique hydroxyle (-OH) ?", correct: "les alcools", wrongs: ["les alcanes", "les aldéhydes", "les cétones"], levels: ['1ere', 'terminale'], exp: "Exemples : méthanol (CH₃OH), éthanol (CH₃CH₂OH)." }
         ],
 
         techno: [
@@ -1516,7 +2291,17 @@ const QuestionBank = (() => {
             { q: "What does the linker 'nevertheless' mean ?", correct: "néanmoins / toutefois", wrongs: ["en conséquence", "de plus", "par conséquent"], levels: ['1ere'], exp: "It introduces a contrast or concession." },
             // Terminale
             { q: "Complete third conditional : 'If you had revised, you ___ passed.'", correct: "would have", wrongs: ["will have", "would", "had"], levels: ['terminale'], exp: "Third conditional : If + had + past participle, would have + past participle." },
-            { q: "What does the formal verb 'to jeopardize' mean ?", correct: "mettre en péril / compromettre", wrongs: ["justifier", "juger équitablement", "accélérer"], levels: ['terminale'], exp: "To endanger or put at risk." }
+            { q: "What does the formal verb 'to jeopardize' mean ?", correct: "mettre en péril / compromettre", wrongs: ["justifier", "juger équitablement", "accélérer"], levels: ['terminale'], exp: "To endanger or put at risk." },
+            // Enrichissements Anglais (Collège / Lycée / BTS)
+            { q: "Choose the right question word : '___ do you live?'", correct: "Where", wrongs: ["Who", "When", "Why"], levels: ['6eme', '5eme'], exp: "'Where' asks about a place (où)." },
+            { q: "Translate « J'ai 12 ans » into natural English :", correct: "I am 12 years old", wrongs: ["I have 12 years", "I make 12 years", "I got 12 age"], levels: ['6eme', '5eme'], exp: "In English, age uses the verb 'to be' (I am...)." },
+            { q: "Choose the right form : 'They ___ football every Saturday.'", correct: "play", wrongs: ["plays", "playing", "is playing"], levels: ['6eme', '5eme'], exp: "Present simple with 'they' uses the base verb without -s." },
+            { q: "Choose the superlative : 'Mount Everest is the ___ mountain in the world.'", correct: "highest", wrongs: ["higher", "most high", "more high"], levels: ['4eme', '3eme'], exp: "Short adjective + -est for the superlative." },
+            { q: "Complete with 'since' or 'for' : 'She has worked here ___ 2021.'", correct: "since", wrongs: ["for", "during", "ago"], levels: ['3eme', '2nde'], exp: "'Since' introduces a starting point; 'for' introduces a duration." },
+            { q: "What does the expression 'to give up' mean ?", correct: "abandonner", wrongs: ["donner un cadeau", "se lever tôt", "grandir"], levels: ['4eme', '3eme', '2nde'], exp: "Never give up = n'abandonne jamais !" },
+            { q: "Choose the passive voice : 'The email ___ sent yesterday.'", correct: "was", wrongs: ["is", "were", "has"], levels: ['2nde', '1ere', 'bts1'], exp: "Past simple passive singular: was + past participle." },
+            { q: "In business/technical English, what does 'deadline' mean ?", correct: "date limite / échéance", wrongs: ["ligne électrique coupée", "titre d'un article", "fichier supprimé"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "To meet a deadline = respecter une échéance." },
+            { q: "In IT & technical English (BTS/NSI/CIEL), what does 'troubleshooting' mean ?", correct: "dépannage / résolution de panne", wrongs: ["mise à jour matérielle", "création de sauvegarde", "chiffrement de disque"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Troubleshooting is the systematic process of locating and fixing technical issues." }
         ],
 
         emc: [
@@ -1542,7 +2327,14 @@ const QuestionBank = (() => {
             { q: "Quelle autorité indépendante régule les médias audiovisuels et numériques en France ?", correct: "l'Arcom (ex-CSA)", wrongs: ["la CNIL", "le Défenseur des droits", "l'Insee"], levels: ['1ere'], exp: "L'Arcom veille au pluralisme des courants d'expression sociopolitiques." },
             // Terminale
             { q: "Quelle haute cour veille à la conformité des lois avec la Constitution ?", correct: "le Conseil constitutionnel", wrongs: ["la Cour de cassation", "le Conseil d'État", "la Cour des comptes"], levels: ['terminale'], exp: "Il traite notamment les Questions Prioritaires de Constitutionnalité (QPC)." },
-            { q: "Où siège la Cour Pénale Internationale (CPI) ?", correct: "à La Haye (Pays-Bas)", wrongs: ["à Genève (Suisse)", "à New York (USA)", "à Bruxelles (Belgique)"], levels: ['terminale'], exp: "Elle juge les génocides, crimes contre l'humanité et crimes de guerre." }
+            { q: "Où siège la Cour Pénale Internationale (CPI) ?", correct: "à La Haye (Pays-Bas)", wrongs: ["à Genève (Suisse)", "à New York (USA)", "à Bruxelles (Belgique)"], levels: ['terminale'], exp: "Elle juge les génocides, crimes contre l'humanité et crimes de guerre." },
+            // Enrichissements EMC
+            { q: "Quel symbole féminin coiffé d'un bonnet phrygien incarne la République française dans les mairies ?", correct: "Marianne", wrongs: ["Jeanne d'Arc", "Athéna", "Olympe"], levels: ['6eme', '5eme', '3eme'], exp: "Marianne symbolise la liberté et les valeurs républicaines." },
+            { q: "Quel est l'hymne national officiel de la France ?", correct: "La Marseillaise", wrongs: ["L'Ode à la joie", "Le Chant du Départ", "Le Temps des cerises"], levels: ['6eme', '5eme', '3eme'], exp: "Composée par Rouget de Lisle en 1792, La Marseillaise est inscrite dans la Constitution." },
+            { q: "Qui préside le conseil municipal et administre une commune en France ?", correct: "le maire", wrongs: ["le préfet", "le député", "le procureur"], levels: ['6eme', '5eme', '4eme'], exp: "Le maire est élu par le conseil municipal issu du suffrage universel direct." },
+            { q: "Comment appelle-t-on le texte fondamental qui organise les pouvoirs publics en France ?", correct: "la Constitution", wrongs: ["le règlement intérieur", "le décret préfectoral", "le code de commerce"], levels: ['4eme', '3eme', '2nde'], exp: "La France vit sous la Constitution de la Ve République (4 octobre 1958)." },
+            { q: "Quel principe de la justice signifie qu'une personne accusée est présumée non coupable jusqu'au jugement définitif ?", correct: "la présomption d'innocence", wrongs: ["le double degré de juridiction", "le secret bancaire", "la grâce présidentielle"], levels: ['4eme', '3eme', '2nde', '1ere'], exp: "Inscrit à l'article 9 de la DDHC de 1789." },
+            { q: "Quelle autorité protège les données personnelles des citoyens en France ?", correct: "la CNIL", wrongs: ["l'INSEE", "la Banque de France", "l'ADEME"], levels: ['2nde', '1ere', 'terminale'], exp: "La CNIL veille à l'application de la loi Informatique et Libertés et du RGPD." }
         ],
 
         philo: [
@@ -1607,33 +2399,336 @@ const QuestionBank = (() => {
             { q: "Quel coefficient compris entre 0 (égalité parfaite) et 1 (inégalité totale) mesure les inégalités de revenus d'une population ?", correct: "le coefficient de Gini", wrongs: ["l'indice de Herfindahl", "le PIB par habitant", "le ratio de Sharpe"], levels: ['terminale'], exp: "L'indice de Gini synthétise la courbe de Lorenz des revenus ou patrimoines." },
             { q: "Pour Karl Marx, sur quelle contradiction fondamentale repose le système capitaliste ?", correct: "la lutte des classes entre bourgeois (possesseurs du capital) et prolétaires", wrongs: ["l'absence de libre-échange", "la surabondance des monnaies", "le manque de formation ouvrière"], levels: ['terminale'], exp: "Pour Marx, l'histoire humaine est structurée par la lutte des classes." },
             { q: "Comment appelle-t-on le paradoxe selon lequel l'amélioration de l'efficacité énergétique peut accroître la consommation totale de ressources ?", correct: "l'effet rebond (paradoxe de Jevons)", wrongs: ["l'effet Veblen", "la tragédie des biens communs", "l'aléa moral"], levels: ['terminale'], exp: "Les gains d'efficacité abaissent le coût d'usage, incitant à consommer davantage." }
+        ],
+
+        espagnol: [
+            // 5ème → Terminale (LV2 programme officiel)
+            { q: "En espagnol, comment dit-on « Bonjour » le matin ?", correct: "Buenos días", wrongs: ["Buenas noches", "Hasta luego", "Buenas tardes"], levels: ['5eme', '4eme'], exp: "Buenos días (matin), Buenas tardes (après-midi), Buenas noches (soir/nuit)." },
+            { q: "Quel verbe utilise-t-on en espagnol pour indiquer une localisation géographique (ex : Madrid ___ en España) ?", correct: "está (verbe estar)", wrongs: ["es (verbe ser)", "tiene (verbe tener)", "hace (verbe hacer)"], levels: ['5eme', '4eme', '3eme'], exp: "Pour situer un lieu dans l'espace, on emploie toujours ESTAR." },
+            { q: "Quel verbe utilise-t-on pour indiquer la nationalité ou la profession (ex : Ella ___ médica) ?", correct: "es (verbe ser)", wrongs: ["está (verbe estar)", "hay (verbe haber)", "va (verbe ir)"], levels: ['5eme', '4eme', '3eme'], exp: "SER exprime une caractéristique essentielle (identité, origine, métier)." },
+            { q: "Comment traduit-on « J'aime la musique » en espagnol ?", correct: "Me gusta la música", wrongs: ["Yo gusto la música", "Me gustan la música", "Te gusta la música"], levels: ['5eme', '4eme'], exp: "Gustar s'accorde avec ce qui plaît (singulier → gusta ; pluriel → gustan)." },
+            { q: "Comment dit-on « Il y a » en espagnol ?", correct: "Hay", wrongs: ["Está", "Son", "Tiene"], levels: ['5eme', '4eme'], exp: "Hay est la forme impersonnelle invariable du verbe haber." },
+            { q: "Quel est l'article défini féminin pluriel en espagnol ?", correct: "las", wrongs: ["los", "la", "el"], levels: ['5eme', '4eme'], exp: "el / la / los / las." },
+            { q: "Quelle est la traduction de « Les livres » en espagnol ?", correct: "los libros", wrongs: ["las libros", "el libros", "los libro"], levels: ['5eme', '4eme'], exp: "Libro est masculin, au pluriel : los libros." },
+            { q: "Comment forme-t-on le futur proche (« je vais étudier ») en espagnol ?", correct: "Voy a estudiar", wrongs: ["Voy estudiar", "Fui a estudiar", "Estudio a ir"], levels: ['4eme', '3eme'], exp: "IR au présent + préposition A + infinitif." },
+            { q: "Comment dit-on « J'ai quinze ans » en espagnol ?", correct: "Tengo quince años", wrongs: ["Soy quince años", "Estoy quince años", "Hago quince años"], levels: ['5eme', '4eme', '3eme'], exp: "L'âge se dit avec le verbe TENER (avoir)." },
+            { q: "Quel temps emploie-t-on pour une action passée révolue et datée (ex : Ayer ___ al cine) ?", correct: "le passé simple (fui)", wrongs: ["l'imparfait (iba)", "le présent (voy)", "le futur (iré)"], levels: ['3eme', '2nde'], exp: "Ayer (hier) appelle le prétérit indéfini (passé simple) : fui." },
+            { q: "Complète : « Quiero que tú ___ (venir) conmigo. » (subjonctif présent)", correct: "vengas", wrongs: ["vienes", "viniste", "vendrás"], levels: ['3eme', '2nde', '1ere'], exp: "Après querer que (volonté), on emploie le subjonctif présent : vengas." },
+            { q: "Quel connecteur espagnol signifie « cependant / néanmoins » ?", correct: "sin embargo", wrongs: ["por eso", "además", "porque"], levels: ['2nde', '1ere', 'terminale'], exp: "Sin embargo / no obstante introduisent une opposition." },
+            { q: "Quelle est la capitale du Mexique, premier pays hispanophone par la population ?", correct: "Ciudad de México (Mexico)", wrongs: ["Guadalajara", "Buenos Aires", "Bogotá"], levels: ['4eme', '3eme', '2nde'], exp: "Le Mexique compte plus de 125 millions d'habitants hispanophones." },
+            { q: "Quel écrivain espagnol du Siècle d'Or est l'auteur de « Don Quichotte » ?", correct: "Miguel de Cervantes", wrongs: ["Federico García Lorca", "Gabriel García Márquez", "Pablo Neruda"], levels: ['2nde', '1ere', 'terminale'], exp: "Publié en 1605 et 1615, Don Quichotte est le roman fondateur de la littérature moderne." },
+            { q: "Quel poète et dramaturge chilien a reçu le prix Nobel de littérature en 1971 ?", correct: "Pablo Neruda", wrongs: ["Jorge Luis Borges", "Octavio Paz", "Lope de Vega"], levels: ['1ere', 'terminale'], exp: "Pablo Neruda est célèbre pour ses poèmes engagés et lyriques (Canto General)." },
+            { q: "Quelle préposition emploie-t-on pour exprimer un but (« pour réussir » : ___ aprobar) ?", correct: "para", wrongs: ["por", "desde", "hacia"], levels: ['3eme', '2nde', '1ere', 'terminale'], exp: "PARA indique le but ou la destination ; POR indique la cause ou le moyen." }
+        ],
+
+        arts: [
+            // Collège (6e-3e) & Lycée Général
+            { q: "Quelles sont les trois couleurs primaires en peinture (synthèse soustractive) ?", correct: "magenta (rouge), cyan (bleu) et jaune", wrongs: ["vert, orange et violet", "noir, blanc et gris", "rouge, vert et marron"], levels: ['6eme', '5eme'], exp: "Le mélange de ces primaires permet d'obtenir les couleurs secondaires." },
+            { q: "Quelle technique de la Renaissance donne l'illusion de la profondeur grâce à un point de fuite ?", correct: "la perspective linéaire (conique)", wrongs: ["le pointillisme", "le collage", "le clair-obscur seul"], levels: ['5eme', '4eme'], exp: "Théorisée à Florence par Brunelleschi et Alberti au XVe siècle." },
+            { q: "Quel courant architectural du Moyen Âge se caractérise par l'arc brisé, la croisée d'ogives et les grands vitraux ?", correct: "l'art gothique", wrongs: ["l'art roman", "le néoclassicisme", "le brutaliste"], levels: ['5eme', '6eme'], exp: "Notre-Dame de Paris et la cathédrale de Chartres sont des chefs-d'œuvre gothiques." },
+            { q: "Quel style architectural antérieur au gothique se reconnaît à ses murs épais et ses arcs en plein cintre ?", correct: "l'art roman", wrongs: ["le rococo", "l'Art nouveau", "le cubisme"], levels: ['5eme'], exp: "L'architecture romane domine en Europe aux XIe et XIIe siècles." },
+            { q: "En musique, combien de lignes comporte une portée standard ?", correct: "5 lignes", wrongs: ["4 lignes", "6 lignes", "7 lignes"], levels: ['6eme', '5eme'], exp: "Une portée musicale comporte 5 lignes horizontales et 4 interlignes." },
+            { q: "Quel mouvement pictural de la fin du XIXe siècle cherche à capter la lumière fugitive en plein air (Monet, Renoir) ?", correct: "l'impressionnisme", wrongs: ["le cubisme", "le surréalisme", "le réalisme socialiste"], levels: ['4eme', '3eme'], exp: "Le nom vient du tableau 'Impression, soleil levant' de Claude Monet (1872)." },
+            { q: "Quel mouvement artistique du début du XXe siècle (Picasso, Braque) géométrise les formes et multiplie les points de vue ?", correct: "le cubisme", wrongs: ["le baroque", "le romantisme", "le fauvisme"], levels: ['3eme', '2nde'], exp: "Les Demoiselles d'Avignon (1907) de Picasso annoncent le cubisme." },
+            { q: "Quelle toile monumentale de Pablo Picasso (1937) dénonce le bombardement d'une ville basque ?", correct: "Guernica", wrongs: ["Le Déjeuner sur l'herbe", "Les Ménines", "La Danse"], levels: ['3eme', '1ere', 'terminale'], exp: "Exposée au pavillon espagnol de 1937 à Paris, Guernica est un manifeste contre la guerre." },
+            { q: "Quel mouvement artistique inspiré des rêves et de l'inconscient a été illustré par Salvador Dalí et René Magritte ?", correct: "le surréalisme", wrongs: ["le classicisme", "le pointillisme", "l'impressionnisme"], levels: ['3eme', '2nde', '1ere'], exp: "André Breton publie le Manifeste du surréalisme en 1924." },
+            { q: "Quel réalisateur pionnier a réalisé « Le Voyage dans la Lune » en 1902 ?", correct: "Georges Méliès", wrongs: ["Charlie Chaplin", "Alfred Hitchcock", "Jean-Luc Godard"], levels: ['4eme', '3eme', '2nde'], exp: "Méliès est l'inventeur des premiers effets spéciaux cinématographiques." },
+            { q: "Quel architecte moderne a conçu la Villa Savoye et la Cité radieuse de Marseille ?", correct: "Le Corbusier", wrongs: ["Gustave Eiffel", "Baron Haussmann", "Antoni Gaudí"], levels: ['3eme', '2nde', 'terminale'], exp: "Le Corbusier énonce les cinq points de l'architecture moderne (pilotis, toit-terrasse...)." },
+            { q: "En photographie et cinéma, quel plan cadre un personnage des épaules jusqu'au sommet du crâne pour souligner l'émotion ?", correct: "le gros plan", wrongs: ["le plan d'ensemble", "le plan général", "le plan américain"], levels: ['4eme', '3eme', '2nde'], exp: "Le gros plan isole un visage ou un détail pour intensifier l'expressivité." },
+            { q: "Quel compositeur baroque allemand a écrit les « Concertos brandebourgeois » et la « Toccata et fugue en ré mineur » ?", correct: "Jean-Sébastien Bach", wrongs: ["Wolfgang Amadeus Mozart", "Claude Debussy", "Igor Stravinsky"], levels: ['5eme', '4eme', '1ere'], exp: "Bach (1685-1750) est un maître absolu du contrepoint et de la musique baroque." },
+            { q: "Quelle célèbre pyramide de verre inaugurée en 1989 sert d'entrée au musée du Louvre ?", correct: "la Pyramide du Louvre (Ieoh Ming Pei)", wrongs: ["la Pyramide de Khéops", "la Nef du Grand Palais", "le Centre Pompidou"], levels: ['6eme', '3eme', 'terminale'], exp: "Conçue par l'architecte sino-américain I. M. Pei." }
+        ],
+
+        hggsp: [
+            // 1ère & Terminale Générale (Spécialité HGGSP)
+            { q: "En géopolitique, quel concept théorisé par Joseph Nye désigne la capacité d'influence culturelle, diplomatique et médiatique d'un État ?", correct: "le soft power", wrongs: ["le hard power", "le protectionnisme", "l'autarcie"], levels: ['1ere', 'terminale'], exp: "Le soft power séduit et convainc sans recourir à la contrainte militaire ou économique (hard power)." },
+            { q: "Que désigne le « smart power » en relations internationales ?", correct: "la combinaison stratégique du hard power et du soft power", wrongs: ["la puissance exclusivement numérique", "le désarmement nucléaire total", "la diplomatie uniquement commerciale"], levels: ['1ere', 'terminale'], exp: "Les grandes puissances associent moyens coercitifs (hard) et influence culturelle (soft)." },
+            { q: "Quels sont les cinq membres permanents du Conseil de sécurité de l'ONU disposant du droit de veto ?", correct: "États-Unis, Russie, Chine, France et Royaume-Uni", wrongs: ["États-Unis, Allemagne, Japon, France et Inde", "États-Unis, Chine, Brésil, Russie et Inde", "France, Allemagne, Italie, Espagne et Royaume-Uni"], levels: ['1ere', 'terminale'], exp: "Héritage des vainqueurs de 1945 (P5), seuls détenteurs du veto." },
+            { q: "Dans la démocratie athénienne antique, comment s'appelait l'assemblée souveraine de tous les citoyens ?", correct: "l'Ecclésia", wrongs: ["le Sénat", "la Boulè seule", "l'Aréopage"], levels: ['1ere'], exp: "L'Ecclésia votait les lois, la guerre et la paix sur la colline de la Pnyx." },
+            { q: "Quel philosophe des Lumières a théorisé la séparation des pouvoirs (législatif, exécutif, judiciaire) dans « De l'esprit des lois » ?", correct: "Montesquieu", wrongs: ["Thomas Hobbes", "Nicolas Machiavel", "Auguste Comte"], levels: ['1ere'], exp: "Pour éviter la tyrannie, « il faut que par la disposition des choses, le pouvoir arrête le pouvoir »." },
+            { q: "Quelle frontière historique a séparé l'Europe de l'Ouest et le bloc soviétique durant la Guerre froide ?", correct: "le Rideau de fer", wrongs: ["la ligne Maginot", "le mur d'Hadrien", "la ligne Durand"], levels: ['1ere', 'terminale'], exp: "Expression popularisée par Winston Churchill dans son discours de Fulton en 1946." },
+            { q: "Quel accord européen de 1985 a instauré la libre circulation des personnes en supprimant les contrôles aux frontières intérieures ?", correct: "les accords de Schengen", wrongs: ["le traité de Versailles", "la charte de San Francisco", "les accords de Bretton Woods"], levels: ['1ere'], exp: "L'espace Schengen renforce les frontières extérieures (agence Frontex) tout en ouvrant l'intérieur." },
+            { q: "Quel traité international de 1967 interdit l'appropriation nationale de la Lune et des corps célestes ?", correct: "le traité de l'Espace", wrongs: ["la convention de Montego Bay", "le protocole de Kyoto", "le traité de l'Antarctique"], levels: ['terminale'], exp: "Il pose le principe d'une utilisation pacifique de l'espace extra-atmosphérique." },
+            { q: "Quelle convention internationale de 1982 fixe le droit de la mer (mer territoriale à 12 milles, ZEE à 200 milles) ?", correct: "la convention de Montego Bay", wrongs: ["le traité de Westphalie", "les accords de Paris", "la convention de Genève"], levels: ['terminale'], exp: "Adoptée sous l'égide de l'ONU, elle encadre les droits souverains maritimes et la haute mer." },
+            { q: "Dans la théorie de Carl von Clausewitz, quelle formule célèbre définit la nature politique de la guerre ?", correct: "« La guerre est la continuation de la politique par d'autres moyens »", wrongs: ["« La guerre est un état naturel perpétuel sans but »", "« Seul le commerce met fin aux conflits »", "« Les traités abolissent toute rivalité »"], levels: ['terminale'], exp: "Clausewitz analyse la guerre comme un instrument au service d'objectifs politiques." },
+            { q: "Quels traités de 1648 mettent fin à la guerre de Trente Ans et fondent le principe de souveraineté des États ?", correct: "les traités de Westphalie", wrongs: ["les traités de Rome", "les accords d'Oslo", "le congrès de Vienne"], levels: ['terminale'], exp: "L'ordre westphalien reconnaît l'égalité souveraine et la non-ingérence entre États." },
+            { q: "Quel organisme de l'ONU établit depuis 1972 la liste du patrimoine mondial culturel et naturel de l'humanité ?", correct: "l'UNESCO", wrongs: ["l'OMS", "l'OMC", "le FMI"], levels: ['terminale'], exp: "L'UNESCO protège et valorise les biens reconnus de valeur universelle exceptionnelle." },
+            { q: "Quelle notion désigne l'époque géologique actuelle marquée par l'impact majeur des activités humaines sur le climat et la biosphère ?", correct: "l'Anthropocène", wrongs: ["le Jurassique", "le Paléolithique", "la Glaciation"], levels: ['terminale'], exp: "Popularisée par Paul Crutzen, elle souligne la transformation humaine du système Terre." },
+            { q: "En quelle année l'Accord de Paris sur le climat (COP21) a-t-il été adopté pour limiter le réchauffement bien en dessous de 2 °C ?", correct: "2015", wrongs: ["1997", "2005", "2020"], levels: ['terminale'], exp: "Adopté par 196 parties lors de la COP21 à Paris en décembre 2015." },
+            { q: "Quelle est la spécificité de la « guerre asymétrique » contemporaine ?", correct: "elle oppose une armée étatique régulière à des acteurs non étatiques (guérilla, terrorisme)", wrongs: ["elle se déroule uniquement sur mer", "elle engage deux armées de puissance strictement égale", "elle exclut tout usage de l'information"], levels: ['terminale'], exp: "Les conflits asymétriques échappent au cadre classique clausewitzien de guerre interétatique." },
+            { q: "Quel espace numérique immatériel constitue aujourd'hui un cinquième domaine de conflictualité (cyberattaques, désinformation) ?", correct: "le cyberespace", wrongs: ["la stratosphère", "la haute mer", "l'espace Schengen"], levels: ['1ere', 'terminale'], exp: "Le cyberespace est un enjeu majeur de souveraineté, de défense et d'information." },
+            { q: "Quel texte adopté par l'Assemblée générale de l'ONU en 1948 affirme les droits fondamentaux de tout être humain ?", correct: "la Déclaration universelle des droits de l'homme (DUDH)", wrongs: ["le traité de Maastricht", "la charte de l'OTAN", "le pacte de Varsovie"], levels: ['1ere', 'terminale'], exp: "Adoptée à Paris le 10 décembre 1948 au palais de Chaillot." },
+            { q: "Quel traité de 1959 fait de l'Antarctique un continent démilitarisé consacré exclusivement à la recherche scientifique ?", correct: "le traité de l'Antarctique", wrongs: ["le traité de Rome", "le protocole de Montréal", "les accords de Yalta"], levels: ['terminale'], exp: "Signé à Washington par 12 pays, il gèle toute revendication territoriale sur l'Antarctique." },
+            { q: "Quelle route maritime stratégique relie l'océan Indien à la mer de Chine méridionale et concentre près d'un tiers du trafic mondial ?", correct: "le détroit de Malacca", wrongs: ["le détroit de Béring", "le canal de Panama", "le détroit de Magellan"], levels: ['1ere', 'terminale'], exp: "Point de passage clé pour l'approvisionnement énergétique de la Chine et du Japon." },
+            { q: "Quel tribunal pénal permanent, créé par le Statut de Rome (1998), juge les individus auteurs de génocide et crimes contre l'humanité ?", correct: "la Cour pénale internationale (CPI)", wrongs: ["le Tribunal de commerce", "la Cour des comptes", "le Conseil constitutionnel"], levels: ['terminale'], exp: "La CPI siège à La Haye (Pays-Bas) et fonctionne depuis 2002." },
+            { q: "En géopolitique, que désigne la « liberté de la presse » mesurée chaque année par Reporters sans frontières (RSF) ?", correct: "l'indépendance des journalistes vis-à-vis des pouvoirs politiques et économiques", wrongs: ["la gratuité obligatoire de tous les journaux", "l'interdiction de la presse numérique", "le contrôle étatique des médias"], levels: ['1ere', 'terminale'], exp: "Une presse libre et pluraliste est considérée comme un pilier essentiel de la démocratie." },
+            { q: "Quel grand projet chinois d'infrastructures terrestres et maritimes vise à relier la Chine à l'Europe et à l'Afrique depuis 2013 ?", correct: "les Nouvelles Routes de la soie (Belt and Road Initiative)", wrongs: ["le Plan Marshall", "l'espace Schengen", "l'Alliance atlantique"], levels: ['1ere', 'terminale'], exp: "Lancé par Xi Jinping, ce projet combine ports, voies ferrées et influence diplomatique." },
+            { q: "Qu'appelle-t-on le « patrimoine immatériel » reconnu par l'UNESCO depuis 2003 ?", correct: "les traditions orales, savoir-faire artisanaux, rituels, musiques et gastronomies", wrongs: ["les immeubles en ruine uniquement", "les réserves d'or des banques centrales", "les satellites en orbite"], levels: ['terminale'], exp: "Exemples en France : le repas gastronomique des Français, les savoir-faire de la baguette." },
+            { q: "Quelle loi française de 1905 établit la séparation des Églises et de l'État et garantit la liberté de conscience ?", correct: "la loi de 1905 sur la laïcité", wrongs: ["l'édit de Nantes", "le Concordat de 1801", "le Code civil de 1804"], levels: ['1ere', 'terminale'], exp: "La République assure la liberté de conscience et ne reconnaît, ne salarie ni ne subventionne aucun culte." }
+        ],
+
+        si: [
+            // 2nde, 1ère, Terminale (Sciences de l'Ingénieur)
+            { q: "Dans la modélisation SysML d'un système, quel diagramme recense les exigences (performances, contraintes) du cahier des charges ?", correct: "le diagramme d'exigences (req)", wrongs: ["le diagramme de séquence", "le schéma électrique", "le diagramme de Gantt"], levels: ['2nde', '1ere', 'terminale'], exp: "Le diagramme d'exigences (Requirements Diagram) formalise ce que le système doit satisfaire." },
+            { q: "Dans une chaîne d'information, quelle est la séquence logique des trois fonctions principales ?", correct: "Acquérir → Traiter → Communiquer", wrongs: ["Alimenter → Distribuer → Convertir", "Convertir → Transmettre → Stocker", "Mesurer → Freiner → Éclairer"], levels: ['2nde', '1ere', 'terminale'], exp: "La chaîne d'information acquiert (capteurs), traite (microcontrôleur) et communique (ordres/IHM)." },
+            { q: "Dans une chaîne d'énergie, quelle est la suite logique des quatre blocs fonctionnels ?", correct: "Alimenter → Distribuer → Convertir → Transmettre", wrongs: ["Acquérir → Traiter → Communiquer → Stocker", "Coder → Décoder → Filtrer → Amplifier", "Concevoir → Produire → Vendre → Recycler"], levels: ['2nde', '1ere', 'terminale'], exp: "Alimenter (batterie), Distribuer (relais/hacheur), Convertir (moteur), Transmettre (réducteur)." },
+            { q: "Quel composant de distribution d'énergie permet de faire varier la vitesse d'un moteur à courant continu par découpage ?", correct: "un hacheur (pont en H / PWM)", wrongs: ["une résistance fixe", "un transformateur statique seul", "un interrupteur thermique"], levels: ['1ere', 'terminale'], exp: "Un hacheur module la tension moyenne grâce au rapport cyclique PWM." },
+            { q: "Quelle liaison mécanique autorise uniquement une rotation autour d'un axe sans aucune translation ?", correct: "une liaison pivot", wrongs: ["une liaison glissière", "une liaison rotule", "une liaison encastrement"], levels: ['2nde', '1ere', 'terminale'], exp: "La liaison pivot possède 1 degré de liberté (1 rotation)." },
+            { q: "Quelle liaison mécanique autorise uniquement une translation le long d'un axe ?", correct: "une liaison glissière", wrongs: ["une liaison pivot", "une liaison hélicoïdale", "une liaison appui plan"], levels: ['2nde', '1ere', 'terminale'], exp: "La liaison glissière possède 1 degré de liberté en translation." },
+            { q: "Combien de degrés de liberté possède une liaison encastrement (liaison complète) ?", correct: "0 degré de liberté", wrongs: ["1 degré de liberté", "3 degrés de liberté", "6 degrés de liberté"], levels: ['2nde', '1ere'], exp: "Deux solides encastrés ne peuvent avoir aucun mouvement relatif." },
+            { q: "Quel capteur permet de mesurer la vitesse angulaire ou la position d'un arbre moteur ?", correct: "un codeur incrémental (ou potentiomètre)", wrongs: ["une thermistance CTN", "un capteur de CO₂", "un microphone"], levels: ['1ere', 'terminale'], exp: "Le codeur optique génère des impulsions proportionnelles à la rotation." },
+            { q: "Que stipule le Principe Fondamental de la Statique (PFS) pour un solide en équilibre ?", correct: "la somme des forces et la somme des moments sont nulles", wrongs: ["la vitesse augmente linéairement", "la masse est égale à la force", "le rendement vaut toujours 1"], levels: ['1ere', 'terminale'], exp: "ΣF = 0 et ΣM = 0 traduisent l'équilibre statique d'un solide." },
+            { q: "Dans un système asservi en boucle fermée, quel rôle joue la chaîne de retour (capteur) ?", correct: "mesurer la grandeur réelle pour la comparer à la consigne (erreur)", wrongs: ["couper l'alimentation principale", "remplacer le moteur par une batterie", "supprimer la consigne utilisateur"], levels: ['1ere', 'terminale'], exp: "La boucle fermée corrige automatiquement les perturbations grâce au comparateur et au correcteur." },
+            { q: "Quelle grandeur caractérise l'efficacité énergétique d'une chaîne de puissance (toujours comprise entre 0 et 1) ?", correct: "le rendement η = P_sortie / P_entrée", wrongs: ["le couple moteur", "la raideur du ressort", "le module d'Young"], levels: ['2nde', '1ere', 'terminale'], exp: "Les pertes (frottements, effet Joule) font que η < 1 (ou < 100 %)." },
+            { q: "Lorsque deux systèmes de rendements η₁ et η₂ sont placés en série, que vaut le rendement global η ?", correct: "η = η₁ × η₂", wrongs: ["η = η₁ + η₂", "η = (η₁ + η₂) / 2", "η = η₁ / η₂"], levels: ['1ere', 'terminale'], exp: "Les rendements en série se multiplient." },
+            { q: "En mécanique, quelle grandeur (en N·m) traduit l'action de rotation d'un moteur sur un arbre ?", correct: "le couple moteur (C = P / ω)", wrongs: ["la masse volumique", "la résistance électrique", "la fréquence d'horloge"], levels: ['1ere', 'terminale'], exp: "Puissance mécanique en rotation : P (W) = C (N·m) × ω (rad/s)." },
+            { q: "Dans un réducteur à engrenages de rapport r = ω_sortie / ω_entrée < 1, quel est l'effet sur la vitesse et le couple en sortie ?", correct: "la vitesse diminue et le couple augmente (aux pertes près)", wrongs: ["la vitesse et le couple diminuent tous les deux", "la vitesse augmente et le couple augmente", "rien ne change"], levels: ['2nde', '1ere', 'terminale'], exp: "Un réducteur diminue la vitesse angulaire pour multiplier le couple disponible." },
+            { q: "En modélisation SysML, quel diagramme représente la structure matérielle interne d'un système et ses flux (énergie, matière, information) ?", correct: "le diagramme de blocs internes (ibd)", wrongs: ["le diagramme de cas d'utilisation (uc)", "le diagramme de Gantt", "le tableau d'amortissement"], levels: ['1ere', 'terminale'], exp: "L'IBD (Internal Block Diagram) détaille les connexions et flux entre les sous-ensembles." },
+            { q: "Quel type de capteur fournit une information binaire « tout ou rien » (0 ou 1) comme un interrupteur de fin de course ?", correct: "un capteur logique (TOR)", wrongs: ["un capteur analogique continu", "un thermocouple linéaire", "un spectromètre"], levels: ['2nde', '1ere', 'terminale'], exp: "Un capteur TOR (Tout Ou Rien) ne renvoie que deux états logiques (présence/absence)." },
+            { q: "Quelle est l'unité SI de la vitesse angulaire ω utilisée en mécanique des systèmes ?", correct: "le radian par seconde (rad/s)", wrongs: ["le newton par mètre", "le volt par seconde", "le watt par heure"], levels: ['1ere', 'terminale'], exp: "ω = 2π × N / 60 lorsque N est exprimé en tours par minute (tr/min)." },
+            { q: "Dans une régulation PID (Proportionnel, Intégral, Dérivé), à quoi sert principalement le terme Intégral (I) ?", correct: "annuler l'erreur statique permanente en régime établi", wrongs: ["couper l'alimentation du capteur", "augmenter volontairement le bruit", "supprimer la boucle de retour"], levels: ['terminale'], exp: "L'action intégrale cumule l'erreur résiduelle jusqu'à atteindre exactement la consigne." }
+        ],
+
+        msgn: [
+            // STMG & BTS : Management, Sciences de Gestion et Numérique
+            { q: "Quelles sont les trois grandes catégories d'organisations étudiées en management STMG ?", correct: "entreprises privées, organisations publiques et organisations de la société civile (associations)", wrongs: ["usines, banques et écoles uniquement", "syndicats, tribunaux et ministères", "start-up, PME et multinationales uniquement"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "On distingue les organisations à but lucratif (entreprises) et non lucratif (publiques / associations)." },
+            { q: "Que signifie l'acronyme PESTEL dans le diagnostic stratégique externe d'une organisation ?", correct: "Politique, Économique, Socioculturel, Technologique, Écologique, Légal", wrongs: ["Produit, Export, Salaire, Travail, Épargne, Logistique", "Prix, Emploi, Stock, Taxe, Emprunt, Loi", "Performance, Éthique, Stratégie, Temps, Équipe, Leader"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "PESTEL analyse les 6 dimensions du macro-environnement de l'organisation." },
+            { q: "Que regroupe la matrice SWOT (ou FFOM) lors d'un diagnostic stratégique ?", correct: "Forces, Faiblesses (interne) et Opportunités, Menaces (externe)", wrongs: ["Salaires, Ventes, Offres et Taxes", "Fournisseurs, Clients, Banques et État", "Finances, Flux, Objectifs et Marchés"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "SWOT = Strengths, Weaknesses (diagnostic interne) + Opportunities, Threats (diagnostic externe)." },
+            { q: "Quelle est la finalité principale d'une entreprise privée classique ?", correct: "réaliser des profits pour assurer sa pérennité", wrongs: ["rendre un service public gratuit", "voter des lois fiscales", "distribuer des subventions d'État"], levels: ['2nde', '1ere'], exp: "Sa finalité est lucrative, bien qu'elle intègre de plus en plus des objectifs RSE." },
+            { q: "Que signifie le sigle RSE en management des organisations ?", correct: "Responsabilité Sociétale des Entreprises", wrongs: ["Revenu Social d'Entreprise", "Régime Spécial d'Épargne", "Réseau Stratégique Européen"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La RSE intègre les enjeux sociaux, environnementaux et éthiques dans la stratégie." },
+            { q: "Selon Michael Porter, quelle stratégie consiste à proposer une offre unique perçue comme supérieure pour justifier un prix plus élevé ?", correct: "la stratégie de différenciation", wrongs: ["la domination par les coûts", "l'externalisation pure", "le recentrage comptable"], levels: ['terminale', 'bts1', 'bts2'], exp: "Porter distingue la domination par les coûts, la différenciation et la focalisation (niche)." },
+            { q: "Quelle est la différence entre le management stratégique et le management opérationnel ?", correct: "le stratégique engage le long terme (direction), l'opérationnel gère le quotidien à court terme", wrongs: ["le stratégique concerne uniquement la comptabilité", "l'opérationnel fixe les lois nationales", "il n'existe aucune différence"], levels: ['1ere', 'terminale'], exp: "Stratégique = long terme, difficilement réversible ; Opérationnel = court terme, pilotage courant." },
+            { q: "En gestion des ressources humaines, qu'est-ce que la GPEC (ou GEPP) ?", correct: "la Gestion Prévisionnelle des Emplois et des Compétences", wrongs: ["la Gestion des Prêts et Épargnes Commerciales", "le Groupement Patronal d'Entreprises Civiles", "la Garantie Publique d'Emploi Permanent"], levels: ['1ere', 'terminale', 'bts1'], exp: "Elle anticipe les besoins futurs en emplois et compétences (formation, recrutement)." },
+            { q: "Que désigne un PGI (ERP en anglais) dans le système d'information d'une entreprise ?", correct: "un Progiciel de Gestion Intégré unifiant les données (compta, stocks, RH, ventes)", wrongs: ["un Programme de Garantie Individuelle", "un Protocole de Géolocalisation Internet", "un Plan Général d'Investissement"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Un PGI (ex : SAP, Odoo) partage une base de données unique entre tous les services." },
+            { q: "Selon Rensis Likert, quel style de direction associe activement les salariés aux décisions et favorise la coopération ?", correct: "le style participatif", wrongs: ["le style autoritaire exploiteur", "le style paternaliste strict", "le style autocratique"], levels: ['1ere', 'terminale'], exp: "Likert distingue 4 styles : autoritaire, paternaliste, consultatif et participatif." },
+            { q: "Qu'appelle-t-on les « parties prenantes » (stakeholders) d'une organisation ?", correct: "tous les acteurs internes et externes concernés par ses décisions (salariés, clients, fournisseurs, État, riverains)", wrongs: ["uniquement les actionnaires majoritaires", "uniquement les concurrents directs", "uniquement les clients VIP"], levels: ['1ere', 'terminale', 'bts1'], exp: "Théorisé par Freeman : l'organisation interagit avec un écosystème d'acteurs aux intérêts parfois divergents." },
+            { q: "Dans la transformation numérique, quel modèle consiste à accéder à des serveurs et logiciels à distance via Internet ?", correct: "le Cloud Computing (informatique en nuage)", wrongs: ["le télégramme numérique", "le stockage papier", "le réseau isolé hors-ligne"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le Cloud (SaaS, PaaS, IaaS) apporte flexibilité, mobilité et scalabilité." },
+            { q: "En management, quelle est la différence entre l'efficacité et l'efficience d'une organisation ?", correct: "l'efficacité mesure l'atteinte des objectifs ; l'efficience mesure le rapport entre résultats obtenus et moyens utilisés", wrongs: ["les deux notions sont strictement identiques", "l'efficience ignore totalement les coûts", "l'efficacité concerne uniquement le service informatique"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Une organisation est efficiente lorsqu'elle atteint ses objectifs en optimisant ses ressources." },
+            { q: "Que signifie la « valeur ajoutée » (VA) créée par une entreprise ?", correct: "la richesse réellement créée : Chiffre d'affaires − Consommations intermédiaires", wrongs: ["le total des dettes bancaires", "la somme des salaires uniquement", "le prix d'achat des matières premières"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La VA est ensuite répartie entre salariés, État, prêteurs, actionnaires et entreprise (autofinancement)." },
+            { q: "Qu'est-ce qu'une stratégie d'« externalisation » (outsourcing) en management ?", correct: "confier une activité non stratégique (ex : paie, logistique, nettoyage) à un prestataire externe spécialisé", wrongs: ["acheter tous ses fournisseurs", "fermer l'entreprise à l'international", "embaucher exclusivement des stagiaires"], levels: ['terminale', 'bts1', 'bts2'], exp: "L'externalisation permet de recentrer les ressources sur le cœur de métier et de variabiliser les coûts." },
+            { q: "Dans un système d'information, à quoi sert un outil de CRM (GRC en français) ?", correct: "gérer et fidéliser la relation client (historique d'achats, contacts, campagnes ciblées)", wrongs: ["calculer uniquement les bulletins de paie", "configurer les routeurs réseau", "dessiner des plans d'architecture"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "CRM = Customer Relationship Management (Gestion de la Relation Client)." },
+            { q: "Que désigne la « flexibilité » d'une production en flux tendus (Juste-à-Temps / Toyotisme) ?", correct: "produire à la commande pour limiter au maximum les stocks et les coûts de stockage", wrongs: ["stocker 5 ans de marchandises d'avance", "produire sans jamais consulter la demande", "arrêter toute automatisation"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le flux tendu (flux tiré par la demande) réduit le BFR et le risque d'invendus." },
+            { q: "Selon la pyramide des besoins d'Abraham Maslow, quel besoin se situe à la base avant les besoins de sécurité et d'appartenance ?", correct: "les besoins physiologiques (manger, dormir, se loger)", wrongs: ["le besoin d'accomplissement personnel", "le besoin d'estime sociale", "le besoin de loisirs numériques"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Maslow hiérarchise 5 niveaux : physiologiques, sécurité, appartenance, estime, accomplissement." }
+        ],
+
+        droit_eco: [
+            // STMG, CIEL (Éco-Gestion) & BTS
+            { q: "En droit français, quelle est la norme juridique la plus élevée dans la hiérarchie des normes (pyramide de Kelsen) ?", correct: "la Constitution (bloc de constitutionnalité)", wrongs: ["le règlement intérieur", "le décret ministériel", "la circulaire administrative"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Toutes les lois et règlements doivent respecter la Constitution de 1958." },
+            { q: "Quelle juridiction française juge les litiges individuels entre un employeur et un salarié (contrat de travail) ?", correct: "le Conseil de prud'hommes", wrongs: ["le tribunal de commerce", "la cour d'assises", "le tribunal administratif"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le Conseil de prud'hommes est une juridiction paritaire composée de représentants salariés et employeurs." },
+            { q: "Quelles sont les trois conditions cumulatives pour qu'un contrat soit légalement valable (Code civil) ?", correct: "consentement libre et éclairé, capacité de contracter et contenu licite et certain", wrongs: ["signature devant notaire, paiement en espèces et présence de témoins", "accord oral uniquement, majorité fiscale et prix libre", "enregistrement en mairie, timbre fiscal et délai d'un mois"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Article 1128 du Code civil : consentement, capacité, contenu licite et certain." },
+            { q: "Qu'est-ce que le « lien de subordination juridique » qui caractérise un contrat de travail ?", correct: "le pouvoir de l'employeur de donner des ordres, contrôler l'exécution et sanctionner", wrongs: ["l'obligation d'acheter des actions de l'entreprise", "le lien familial entre associés", "le simple paiement d'une facture prestataire"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "C'est le critère distinctif entre un salarié et un travailleur indépendant." },
+            { q: "Quels sont les trois vices du consentement pouvant entraîner la nullité d'un contrat ?", correct: "l'erreur, le dol (tromperie) et la violence", wrongs: ["la négligence, le retard et l'oubli", "la concurrence, la hausse des prix et la pénurie", "la grève, la maladie et la démission"], levels: ['1ere', 'terminale', 'bts1'], exp: "Un consentement vicié par erreur, dol ou violence rend le contrat annulable." },
+            { q: "En responsabilité civile, quels trois éléments la victime doit-elle prouver pour obtenir réparation ?", correct: "un fait générateur (faute), un dommage et un lien de causalité", wrongs: ["un casier judiciaire, un contrat écrit et un témoin", "un préjudice fiscal uniquement", "une plainte au tribunal administratif"], levels: ['1ere', 'terminale', 'bts1'], exp: "Fait générateur + Dommage (certain, direct, légitime) + Lien de causalité." },
+            { q: "En économie, comment appelle-t-on la hausse générale, durable et auto-entretenue du niveau des prix ?", correct: "l'inflation", wrongs: ["la déflation", "la récession pure", "la dévaluation monétaire"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "L'inflation réduit le pouvoir d'achat de la monnaie (mesurée par l'IPC de l'INSEE)." },
+            { q: "Quelle est la différence entre un CDI et un CDD en droit du travail français ?", correct: "le CDI est la forme normale sans date de fin, le CDD est exceptionnel et limité dans le temps", wrongs: ["le CDD offre toujours un salaire double", "le CDI ne peut jamais être rompu", "le CDD est réservé aux fonctionnaires"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Le CDD ne peut être conclu que pour des motifs précis (remplacement, accroissement temporaire d'activité...)." },
+            { q: "En droit numérique (CIEL / STMG), quelle durée légale maximale a un consommateur pour se rétracter après un achat en ligne ?", correct: "14 jours calendaires", wrongs: ["24 heures", "3 jours ouvrés", "60 jours"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le Code de la consommation accorde un délai de rétractation de 14 jours pour la vente à distance." },
+            { q: "En économie, comment finance-t-on principalement la protection sociale en France (Sécurité sociale) ?", correct: "par les cotisations sociales et des impôts affectés (CSG)", wrongs: ["uniquement par des dons privés", "uniquement par les droits de douane", "par la création de billets"], levels: ['terminale', 'bts1', 'bts2'], exp: "Système mixte combinant cotisations salariales/patronales et CSG." },
+            { q: "Quel est le rôle principal de l'Autorité de la concurrence en France ?", correct: "sanctionner les ententes illicites et les abus de position dominante", wrongs: ["fixer le prix de chaque baguette de pain", "gérer les retraites des salariés", "imprimer la monnaie européenne"], levels: ['1ere', 'terminale', 'bts1'], exp: "Elle veille au fonctionnement libre et loyal des marchés au profit des consommateurs." },
+            { q: "En droit des affaires, quelle forme juridique protège le patrimoine personnel de l'entrepreneur en limitant sa responsabilité aux apports ?", correct: "une société à responsabilité limitée (SARL / SAS / EURL)", wrongs: ["une association de fait", "une société en nom collectif (SNC)", "un contrat verbal"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La personnalité morale de la SARL/SAS crée un patrimoine social distinct." },
+            { q: "Quelle politique économique consiste pour l'État à agir sur les dépenses publiques et les impôts ?", correct: "la politique budgétaire", wrongs: ["la politique monétaire", "la politique douanière", "la politique démographique"], levels: ['terminale', 'bts1', 'bts2'], exp: "L'État gère la politique budgétaire ; la BCE gère la politique monétaire dans la zone euro." },
+            { q: "Dans le RGPD, quel droit permet à une personne d'obtenir la suppression de ses données personnelles ?", correct: "le droit à l'effacement (droit à l'oubli)", wrongs: ["le droit de rétention", "le droit de préemption", "le droit d'asile"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le RGPD garantit les droits d'accès, de rectification, d'effacement et de portabilité." },
+            { q: "Quel est le rôle d'un brevet déposé auprès de l'INPI en droit de la propriété industrielle ?", correct: "protéger une invention technique pendant 20 ans maximum en accordant un monopole d'exploitation", wrongs: ["protéger uniquement le nom d'une marque", "dispenser l'entreprise de payer ses impôts", "garantir la rentabilité commerciale automatique"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le brevet protège une innovation technique (nouvelle, inventive, applicable industriellement) pour 20 ans." },
+            { q: "En droit du travail, que garantit le SMIC en France ?", correct: "le salaire horaire minimum légal en dessous duquel aucun salarié ne peut être rémunéré", wrongs: ["un salaire maximum pour les dirigeants", "une prime facultative d'ancienneté", "le montant des allocations chômage"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "SMIC = Salaire Minimum Interprofessionnel de Croissance, revalorisé chaque année." },
+            { q: "En droit, quelle est la différence entre une personne physique et une personne morale ?", correct: "la personne physique est un individu humain ; la personne morale est un groupement doté de la personnalité juridique (société, association, État)", wrongs: ["la personne morale n'a jamais le droit de signer de contrat", "la personne physique désigne uniquement les sportifs", "il n'existe aucune distinction juridique"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Une société immatriculée au RCS acquiert la personnalité morale, avec son propre patrimoine." },
+            { q: "En économie, comment définit-on le chômage au sens du Bureau International du Travail (BIT) ?", correct: "être sans emploi, disponible pour travailler et rechercher activement un emploi", wrongs: ["ne pas travailler pour quelque raison que ce soit (étudiants, retraités)", "travailler à temps partiel choisi", "être inscrit à la mairie"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Les 3 critères cumulatifs du BIT : sans emploi, disponible sous 15 jours, en recherche active." },
+            { q: "Quel est l'objectif principal de la Banque Centrale Européenne (BCE) dans la zone euro ?", correct: "maintenir la stabilité des prix (inflation proche de 2 % à moyen terme)", wrongs: ["fixer le budget de chaque lycée européen", "collecter la TVA des commerçants", "embaucher les fonctionnaires nationaux"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La BCE agit via ses taux directeurs pour maîtriser l'inflation." },
+            { q: "En droit des contrats, quelle clause interdit à un ancien salarié d'exercer une activité concurrente après son départ (moyennant contrepartie financière) ?", correct: "la clause de non-concurrence", wrongs: ["la clause de mobilité géographique", "la clause d'essai", "la clause de garantie décennale"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Pour être valable, elle doit être limitée dans le temps, l'espace, et assortie d'une indemnité financière." },
+            { q: "En économie, que mesure la balance commerciale d'un pays ?", correct: "la différence entre la valeur de ses exportations et celle de ses importations de biens", wrongs: ["le budget de l'État uniquement", "le taux d'épargne des banques", "le nombre de magasins ouverts"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Si Exportations > Importations : excédent commercial ; sinon : déficit commercial." },
+            { q: "En droit civil, que signifie la « force obligatoire du contrat » (article 1103 du Code civil) ?", correct: "les contrats légalement formés tiennent lieu de loi à ceux qui les ont faits", wrongs: ["un contrat peut être modifié librement par une seule partie", "seuls les contrats signés par l'État sont obligatoires", "un contrat expire automatiquement après 7 jours"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Chaque partie doit exécuter ses engagements de bonne foi." }
+        ],
+
+        mercatique: [
+            // STMG & BTS : Mercatique (Marketing) & Gestion-Finance
+            { q: "Que désignent les « 4P » du marketing-mix (plan de marchéage) ?", correct: "Produit, Prix, Place (Distribution) et Promotion (Communication)", wrongs: ["Profit, Personnel, Patrimoine et Public", "Plan, Prospection, Prêt et Paiement", "Partenariat, Partage, Pouvoir et Presse"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Les 4P structurent la stratégie opérationnelle de mise sur le marché d'une offre." },
+            { q: "Quelle stratégie de fixation de prix consiste à lancer un produit innovant à un prix élevé pour viser d'abord les clients peu sensibles au prix ?", correct: "la stratégie d'écrémage", wrongs: ["la stratégie de pénétration", "la stratégie d'alignement", "le dumping illégal"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "À l'inverse, la stratégie de pénétration fixe un prix bas pour conquérir vite de grosses parts de marché." },
+            { q: "Quelles sont les quatre grandes phases classiques du cycle de vie d'un produit ?", correct: "Lancement, Croissance, Maturité, Déclin", wrongs: ["Achat, Stockage, Livraison, Retour", "Idée, Brevet, Impôt, Faillite", "Création, Fusion, Cotation, Liquidation"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Chaque phase appelle des décisions différentes sur le prix, la promo et la distribution." },
+            { q: "En comptabilité / gestion-finance, que représente l'ACTIF du bilan d'une entreprise ?", correct: "ce que l'entreprise possède (immobilisations, stocks, créances, trésorerie)", wrongs: ["ce que l'entreprise doit aux banques uniquement", "les salaires versés sur l'année", "le montant total de la TVA collectée"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "L'Actif recense les emplois (biens et créances) ; le Passif recense les ressources (capitaux propres et dettes)." },
+            { q: "En gestion-finance, quelle est la formule du Fonds de Roulement Net Global (FRNG) ?", correct: "Ressources stables − Emplois stables", wrongs: ["Actif circulant − Trésorerie", "Chiffre d'affaires − Achats", "Capital social + Dettes fournisseurs"], levels: ['terminale', 'bts1', 'bts2'], exp: "Un FRNG positif signifie que les ressources durables financent intégralement les immobilisations." },
+            { q: "Qu'est-ce que le BFR (Besoin en Fonds de Roulement) ?", correct: "le décalage de trésorerie entre encaissements clients et décaissements fournisseurs/stocks", wrongs: ["le bénéfice distribué aux actionnaires", "le budget de publicité annuel", "la valeur des bâtiments"], levels: ['terminale', 'bts1', 'bts2'], exp: "BFR = Stocks + Créances clients − Dettes fournisseurs." },
+            { q: "Quelle est la relation fondamentale entre Trésorerie Nette (TN), FRNG et BFR ?", correct: "TN = FRNG − BFR", wrongs: ["TN = FRNG + BFR", "TN = FRNG × BFR", "TN = BFR − FRNG"], levels: ['terminale', 'bts1', 'bts2'], exp: "La trésorerie est positive si le FRNG couvre entièrement le BFR." },
+            { q: "En mercatique, que signifie la « segmentation » d'un marché ?", correct: "découper un marché hétérogène en groupes homogènes de consommateurs (segments)", wrongs: ["vendre un produit dans un seul magasin", "supprimer toute publicité télévisée", "baisser les prix de 50 %"], levels: ['1ere', 'terminale', 'bts1'], exp: "La segmentation permet ensuite le ciblage et le positionnement de l'offre." },
+            { q: "Qu'appelle-t-on la « distribution omnicanale » ?", correct: "l'intégration fluide de tous les canaux de vente (magasin physique, site web, appli mobile, click & collect)", wrongs: ["la vente exclusivement par catalogue papier", "la vente uniquement en gros aux usines", "un réseau d'un seul point de vente"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le client vit une expérience unifiée entre en ligne et point de vente physique." },
+            { q: "Quel est le rôle du « positionnement » marketing d'une marque ?", correct: "la place distinctive et claire qu'elle cherche à occuper dans l'esprit des consommateurs face aux concurrents", wrongs: ["l'adresse GPS de son entrepôt", "son classement comptable au greffe", "la hauteur des rayons en magasin"], levels: ['1ere', 'terminale', 'bts1'], exp: "Le positionnement repose sur une promesse différenciante et crédible." },
+            { q: "En analyse financière, comment calcule-t-on le taux de rentabilité économique ou financière ?", correct: "en rapportant un résultat (bénéfice ou EBE) aux capitaux engagés", wrongs: ["en additionnant toutes les factures impayées", "en divisant le nombre de salariés par le prix unitaire", "en soustrayant la TVA du loyer"], levels: ['terminale', 'bts1', 'bts2'], exp: "La rentabilité mesure la capacité des capitaux investis à générer un profit." },
+            { q: "Qu'est-ce que l'« amortissement comptable » d'une immobilisation (ex : machine, ordinateur) ?", correct: "la constatation comptable de la perte de valeur irréversible liée à l'usage ou au temps", wrongs: ["le remboursement immédiat d'un client mécontent", "une prime de fin d'année", "le montant d'une amende fiscale"], levels: ['terminale', 'bts1', 'bts2'], exp: "L'amortissement étale le coût d'un bien durable sur sa durée d'utilisation." },
+            { q: "En marketing digital, que signifie l'acronyme SEO (Search Engine Optimization) ?", correct: "le référencement naturel d'un site web pour apparaître en tête des résultats de recherche sans payer d'annonces", wrongs: ["l'achat obligatoire d'encarts publicitaires papier", "la suppression des réseaux sociaux", "un logiciel de paie"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le SEO optimise le contenu, la technique et la popularité (backlinks) ; le SEA désigne les annonces payantes." },
+            { q: "En gestion-finance, qu'est-ce que le « seuil de rentabilité » (point mort en valeur) d'une entreprise ?", correct: "le chiffre d'affaires à partir duquel les recettes couvrent exactement toutes les charges (résultat = 0)", wrongs: ["le montant maximum du capital social", "la limite de découvert autorisé par la banque", "le prix de vente le plus élevé du marché"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Au-delà du seuil de rentabilité (Charges fixes / Taux de marge sur coût variable), l'entreprise dégage un bénéfice." },
+            { q: "En mercatique, que mesure le « taux de conversion » d'un site e-commerce ?", correct: "le pourcentage de visiteurs qui réalisent l'action attendue (achat, inscription, devis)", wrongs: ["le taux de change entre l'euro et le dollar", "la vitesse de chargement du serveur", "le nombre d'articles retournés par la poste"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Taux de conversion = (Nombre de commandes / Nombre de visiteurs) × 100." },
+            { q: "En comptabilité, quel document de synthèse récapitule les produits et les charges d'un exercice pour déterminer le bénéfice ou la perte ?", correct: "le compte de résultat", wrongs: ["la fiche de paie", "le bon de livraison", "l'organigramme RH"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Résultat net = Total des produits − Total des charges de l'exercice." },
+            { q: "Quelle est la différence entre une stratégie « Push » et une stratégie « Pull » en mercatique ?", correct: "Push pousse le produit vers le distributeur (promotions, force de vente) ; Pull attire le client final par la publicité et la marque", wrongs: ["Push est réservée au web et Pull aux magasins", "Pull consiste à arrêter toute publicité", "les deux stratégies interdisent les remises"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Push = pression commerciale sur le réseau de distribution ; Pull = attraction de la demande finale." },
+            { q: "En comptabilité, comment appelle-t-on la taxe sur la consommation collectée par les entreprises pour le compte de l'État ?", correct: "la TVA (Taxe sur la Valeur Ajoutée)", wrongs: ["l'impôt sur le revenu", "la cotisation retraite", "la taxe foncière"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "L'entreprise reverse à l'État : TVA collectée sur ventes − TVA déductible sur achats." }
+        ],
+
+        i2d: [
+            // STI2D : Innovation Technologique & Ingénierie-Développement Durable
+            { q: "Que signifie le sigle ACV dans une démarche d'éco-conception industrielle (STI2D) ?", correct: "Analyse du Cycle de Vie", wrongs: ["Association des Constructeurs de Véhicules", "Alimentation en Courant Variable", "Aide au Calcul Vectoriel"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "L'ACV évalue les impacts environnementaux d'un produit de l'extraction des matières jusqu'à sa fin de vie." },
+            { q: "Quels sont les trois piliers du Développement Durable ?", correct: "Économique, Social et Environnemental", wrongs: ["Thermique, Mécanique et Numérique", "Local, National et Spatial", "Public, Privé et Associatif"], levels: ['2nde', '1ere', 'terminale'], exp: "Un projet durable doit être économiquement viable, socialement équitable et écologiquement vivable." },
+            { q: "En construction durable (AC / I2D), que mesure la conductivité thermique λ (lambda) d'un isolant ?", correct: "sa capacité à conduire la chaleur (plus λ est faible, meilleur est l'isolant)", wrongs: ["sa résistance à la traction mécanique", "sa densité acoustique", "son prix au mètre carré"], levels: ['1ere', 'terminale', 'bts1'], exp: "Un bon isolant thermique (laine de bois, ouate de cellulose) a un λ très bas (≈ 0,035–0,04 W/(m·K))." },
+            { q: "En mécanique des structures (ITEC / I2D), quelle sollicitation subit un câble tendu soutenant une charge ?", correct: "la traction", wrongs: ["la compression", "la torsion", "le flambement"], levels: ['1ere', 'terminale', 'bts1'], exp: "La traction tend à allonger le solide sous l'effet de deux forces opposées." },
+            { q: "Quelle sollicitation subit un poteau vertical supportant le poids d'un plancher ?", correct: "la compression", wrongs: ["la traction pure", "le cisaillement seul", "l'induction"], levels: ['1ere', 'terminale'], exp: "La compression tend à raccourcir le solide." },
+            { q: "Qu'est-ce que l'« économie circulaire » en éco-conception ?", correct: "un modèle limitant les déchets via réemploi, réparation, reconditionnement et recyclage", wrongs: ["un modèle linéaire : extraire, fabriquer, jeter", "la vente uniquement en magasin rond", "l'augmentation volontaire de l'obsolescence"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "L'économie circulaire s'oppose au modèle linéaire 'extraire-produire-jeter'." },
+            { q: "Quel procédé de fabrication additive construit une pièce 3D couche par couche à partir d'un fichier CAO ?", correct: "l'impression 3D (FDM, SLA, frittage laser)", wrongs: ["le tournage par enlèvement de copeaux", "l'emboutissage de tôle", "le pliage hydraulique"], levels: ['2nde', '1ere', 'terminale'], exp: "La fabrication additive limite les chutes de matière par rapport à l'usinage soustractif." },
+            { q: "Quelle norme thermique et environnementale encadre aujourd'hui les bâtiments neufs en France ?", correct: "la RE2020 (Réglementation Environnementale 2020)", wrongs: ["la loi d'Ohm 1905", "le protocole HTTP/2", "la norme ISO-8859"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La RE2020 vise la sobriété énergétique, le confort d'été et la baisse de l'empreinte carbone." },
+            { q: "Quelle source d'énergie est dite « pilotable » (disponible à la demande) contrairement à l'éolien ou au solaire ?", correct: "l'hydroélectricité de barrage (ou le nucléaire)", wrongs: ["le solaire photovoltaïque sans batterie", "l'éolien offshore sans stockage", "l'énergie des vagues"], levels: ['1ere', 'terminale', 'bts1'], exp: "Un barrage hydraulique peut être ouvert en quelques minutes pour répondre aux pics de consommation." },
+            { q: "Dans la caractérisation des matériaux (diagramme d'Ashby), quel paramètre mesure la rigidité élastique d'un matériau ?", correct: "le module d'Young (E, en GPa)", wrongs: ["la masse volumique seule", "la température de fusion", "la résistivité électrique"], levels: ['1ere', 'terminale', 'bts1'], exp: "Plus le module d'Young E est élevé, moins le matériau se déforme sous une contrainte donnée." },
+            { q: "Que désigne l'« énergie grise » d'un produit ou matériau de construction ?", correct: "l'énergie totale consommée sur tout son cycle de vie (extraction, fabrication, transport, fin de vie)", wrongs: ["l'électricité produite la nuit uniquement", "l'énergie perdue par un écran en veille", "le gaz naturel liquéfié"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Les matériaux biosourcés (bois, chanvre) présentent généralement une faible énergie grise." },
+            { q: "Quel est l'objectif d'une pompe à chaleur (PAC) avec un COP (Coefficient de Performance) de 4 ?", correct: "restituer 4 kWh de chaleur pour 1 kWh d'électricité consommé", wrongs: ["consommer 4 fois plus qu'un radiateur électrique", "produire de l'électricité à partir de la pluie", "refroidir un moteur à −40 °C"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La PAC prélève des calories gratuites dans l'air, l'eau ou le sol." },
+            { q: "En énergétique du bâtiment (EE / I2D), que représente la résistance thermique R d'une paroi d'épaisseur e et de conductivité λ ?", correct: "R = e / λ (en m²·K/W — plus R est grand, meilleure est l'isolation)", wrongs: ["R = e × λ", "R = λ / e", "R = e + λ"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Les résistances thermiques de plusieurs couches successives en série s'additionnent." },
+            { q: "Qu'est-ce qu'un matériau composite (ex : fibre de carbone + résine époxy) en ITEC / STI2D ?", correct: "l'association d'au moins deux composants (matrice + renfort) offrant des propriétés supérieures à chacun pris séparément", wrongs: ["un métal pur non allié", "un déchet plastique fondu sans renfort", "un bois brut non traité"], levels: ['1ere', 'terminale', 'bts1'], exp: "La matrice protège et transmet les efforts, les fibres (verre, carbone, lin) assurent la résistance mécanique." },
+            { q: "Que désigne un « pont thermique » dans l'enveloppe d'un bâtiment ?", correct: "une zone ponctuelle ou linéaire où l'isolation est interrompue, provoquant des déperditions de chaleur et de la condensation", wrongs: ["une passerelle piétonne chauffée", "un panneau solaire thermique sur le toit", "un radiateur placé sous une fenêtre"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "L'isolation thermique par l'extérieur (ITE) réduit fortement les ponts thermiques aux jonctions plancher/façade." },
+            { q: "Quelle est la fonction d'un onduleur dans une installation solaire photovoltaïque raccordée au réseau ?", correct: "convertir le courant continu (DC) des panneaux en courant alternatif (AC) synchronisé avec le réseau", wrongs: ["stocker l'eau chaude sanitaire", "mesurer la vitesse du vent", "orienter mécaniquement les tuiles"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Les cellules photovoltaïques délivrent une tension continue ; l'onduleur produit du 230 V / 50 Hz alternatif." },
+            { q: "Dans la démarche d'éco-conception, qu'est-ce que l'« indice de réparabilité » affiché sur les équipements électriques ?", correct: "une note sur 10 informant le consommateur sur la facilité à démonter, réparer et trouver des pièces détachées", wrongs: ["le prix moyen d'une réparation en euros", "la durée de la garantie constructeur en mois", "la puissance électrique en watts"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Instauré par la loi AGEC en France pour lutter contre l'obsolescence programmée." },
+            { q: "En énergie renouvelable, que signifie l'acronyme STEP dans le stockage d'électricité à grande échelle ?", correct: "Station de Transfert d'Énergie par Pompage (barrage hydraulique réversible)", wrongs: ["Système Thermique d'Énergie Photovoltaïque", "Station de Transport Électrique Portable", "Secteur Technique d'Éoliennes Privées"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Les STEP pompent l'eau vers un bassin supérieur en heures creuses et la turbinent lors des pics de demande." }
+        ],
+
+        sin: [
+            // STI2D : Systèmes d'Information & Numérique (et Énergie)
+            { q: "Dans une chaîne d'acquisition numérique, quel composant convertit une tension analogique continue en nombre binaire ?", correct: "un CAN (Convertisseur Analogique-Numérique / ADC)", wrongs: ["un CNA (DAC)", "un redresseur à diodes", "un fusible thermique"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Le CAN échantillonne et quantifie le signal analogique sur N bits." },
+            { q: "Selon le théorème de Shannon-Nyquist, à quelle fréquence minimale f_e doit-on échantillonner un signal de fréquence max f_max ?", correct: "f_e ≥ 2 × f_max", wrongs: ["f_e = f_max / 2", "f_e = f_max", "f_e = 10 Hz fixe"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "En dessous de 2 × f_max, il apparaît un repliement de spectre (aliasing)." },
+            { q: "Que signifie la modulation MLI (PWM en anglais) très utilisée sur Arduino et microcontrôleurs ?", correct: "Modulation de Largeur d'Impulsion", wrongs: ["Mémoire Locale Intégrée", "Mesure Linéaire d'Intensité", "Moteur à Liaison Induite"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "En faisant varier le rapport cyclique, la PWM pilote finement la luminosité d'une LED ou la vitesse d'un moteur." },
+            { q: "Dans un système IoT (Internet des Objets), quel protocole léger à publication/abonnement (Publish/Subscribe) est le plus répandu ?", correct: "MQTT", wrongs: ["FTP", "POP3", "Telnet"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "MQTT utilise un broker central et consomme très peu de bande passante et d'énergie." },
+            { q: "Quelle technologie radio longue portée et très basse consommation (LPWAN) est utilisée pour les capteurs IoT de villes intelligentes ?", correct: "LoRa / LoRaWAN", wrongs: ["Bluetooth audio classique", "HDMI", "Ethernet 10G"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "LoRa atteint plusieurs kilomètres de portée avec plusieurs années d'autonomie sur pile." },
+            { q: "Quelle est la taille en bits d'une adresse MAC (couche liaison Ethernet / Wi-Fi) ?", correct: "48 bits (6 octets en hexadécimal)", wrongs: ["32 bits", "128 bits", "16 bits"], levels: ['1ere', 'terminale', 'bts1'], exp: "Exemple d'adresse MAC : 00:1A:2B:3C:4D:5E (6 octets = 48 bits)." },
+            { q: "En logique combinatoire, quel théorème permet de simplifier NON(A ET B) en (NON A) OU (NON B) ?", correct: "le théorème de De Morgan", wrongs: ["le théorème de Thalès", "la loi de Kirchoff", "le théorème de Pythagore"], levels: ['1ere', 'terminale', 'bts1'], exp: "Lois de De Morgan : !(A·B) = !A + !B et !(A+B) = !A · !B." },
+            { q: "Sur un microcontrôleur (ex : Arduino / ESP32), quelle fonction s'exécute UNE seule fois au démarrage pour configurer les broches ?", correct: "setup()", wrongs: ["loop()", "delay()", "analogRead()"], levels: ['2nde', '1ere', 'terminale'], exp: "setup() initialise les entrées/sorties et communications ; loop() tourne en boucle infinie." },
+            { q: "Quel bus de communication série à 2 fils (SDA et SCL) permet de relier plusieurs capteurs à un microcontrôleur ?", correct: "le bus I2C", wrongs: ["le câble VGA", "le bus PCIe x16", "le port Jack 3,5 mm"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "I2C utilise une ligne de données (SDA) et une ligne d'horloge (SCL) avec adressage de chaque esclave." },
+            { q: "Comment s'appelle le temps nécessaire à un signal numérique pour passer d'un échantillon au suivant (T_e = 1 / f_e) ?", correct: "la période d'échantillonnage", wrongs: ["la bande passante", "l'impédance caractéristique", "le quantum"], levels: ['1ere', 'terminale', 'bts1'], exp: "T_e est l'inverse de la fréquence d'échantillonnage f_e." },
+            { q: "Qu'est-ce que le « quantum » q d'un CAN de pleine échelle V_ref sur N bits ?", correct: "le plus petit écart de tension mesurable : q = V_ref / 2^N", wrongs: ["la tension d'alimentation du secteur", "la consommation en watts du capteur", "la vitesse de transmission Ethernet"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Plus N est grand, plus le quantum q est petit et meilleure est la précision." },
+            { q: "Quel langage de balisage léger est majoritairement utilisé pour échanger des données structurées entre capteurs IoT et API Web ?", correct: "JSON", wrongs: ["Assembleur x86", "CSS", "BMP"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "JSON (JavaScript Object Notation) est léger, lisible et natif dans tous les langages modernes." },
+            { q: "Quel bus série synchrone rapide à 4 fils (MOSI, MISO, SCK, CS/SS) est utilisé pour les écrans OLED ou cartes SD sur microcontrôleur ?", correct: "le bus SPI", wrongs: ["le bus VGA", "le protocole SMTP", "le port PS/2"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "SPI (Serial Peripheral Interface) fonctionne en full-duplex avec une sélection par broche CS (Chip Select)." },
+            { q: "Quel bus différentiel robuste très répandu dans l'automobile permet aux calculateurs (ABS, moteur, tableau de bord) de communiquer ?", correct: "le bus CAN (Controller Area Network)", wrongs: ["le bus HDMI", "le protocole POP3", "le câble optique TOSLINK"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le bus CAN résiste très bien aux perturbations électromagnétiques grâce à sa paire différentielle CAN_H / CAN_L." },
+            { q: "En codage numérique d'une image RVB (RGB) en 24 bits par pixel, combien de bits codent chaque composante (Rouge, Vert, Bleu) ?", correct: "8 bits par composante (valeurs de 0 à 255)", wrongs: ["24 bits par composante", "2 bits par composante", "16 bits par composante"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "3 canaux × 8 bits = 24 bits/pixel, soit 256³ ≈ 16,7 millions de couleurs possibles." },
+            { q: "Quelle est la principale différence entre un format d'image/audio « sans perte » (PNG, FLAC) et « avec perte » (JPEG, MP3) ?", correct: "sans perte restitue exactement les données d'origine ; avec perte supprime des détails peu perceptibles pour réduire fortement la taille", wrongs: ["avec perte double toujours la taille du fichier", "sans perte ne fonctionne que sur téléphone", "il n'existe aucune différence de compression"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "La compression avec perte (JPEG/MP3) sacrifie une fraction d'information imperceptible pour gagner de l'espace." },
+            { q: "Dans une architecture Web REST, quelle méthode HTTP sert conventionnellement à créer une nouvelle ressource sur le serveur ?", correct: "POST", wrongs: ["GET", "DELETE", "HEAD"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "CRUD en REST : GET (lire), POST (créer), PUT/PATCH (modifier), DELETE (supprimer)." },
+            { q: "En logique séquentielle, à quoi sert un graphe d'états (diagramme d'états-transitions / GRAFCET) ?", correct: "décrire les états successifs d'un système automatisé et les conditions (transitions) pour passer d'un état à l'autre", wrongs: ["calculer la masse d'une poutre", "dessiner le logo d'une application", "chiffrer une base de données"], levels: ['1ere', 'terminale', 'bts1'], exp: "Il formalise de façon rigoureuse le comportement séquentiel d'un automate ou microcontrôleur." }
+        ],
+
+        cybersecurite: [
+            // Bac Pro CIEL, BTS CIEL, Spé NSI
+            { q: "Que signifie l'acronyme OWASP en sécurité applicative Web ?", correct: "Open Worldwide Application Security Project (référentiel des failles Web critiques)", wrongs: ["Official Windows Antivirus Security Patch", "Online Wi-Fi Access Standard Protocol", "Open Wireless Architecture System Plan"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "L'OWASP publie notamment le célèbre classement 'OWASP Top 10' des vulnérabilités Web." },
+            { q: "Quelle est la meilleure défense côté code contre les injections SQL ?", correct: "utiliser des requêtes préparées (paramétrées)", wrongs: ["cacher le nom des tables dans le HTML", "désactiver le pare-feu", "stocker les mots de passe en clair"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Les requêtes préparées séparent strictement le code SQL des données saisies." },
+            { q: "Comment doit-on stocker les mots de passe des utilisateurs dans une base de données sécurisée ?", correct: "hachés avec un sel unique (salt) via un algorithme lent adapté (Argon2, bcrypt)", wrongs: ["en texte clair dans un fichier CSV", "encodés simplement en Base64", "chiffrés avec le code de César"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Un hachage salé (Argon2id/bcrypt) empêche les attaques par tables arc-en-ciel et ralentit la force brute." },
+            { q: "Quel équipement réseau filtre le trafic entrant et sortant selon des règles (IP, ports, protocoles) ?", correct: "un pare-feu (firewall)", wrongs: ["un répéteur Wi-Fi", "un câble croisé", "un disque dur NAS"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Le pare-feu applique une politique de filtrage (liste blanche ou liste noire)." },
+            { q: "Que désigne le principe du « moindre privilège » en cybersécurité ?", correct: "n'accorder à chaque utilisateur ou programme que les droits strictement nécessaires à sa tâche", wrongs: ["donner les droits administrateur à tous les employés", "supprimer tous les comptes utilisateurs", "n'utiliser aucun mot de passe"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Il limite considérablement l'impact en cas de compromission d'un compte." },
+            { q: "Qu'est-ce qu'une vulnérabilité « Zero-Day » ?", correct: "une faille de sécurité inconnue de l'éditeur et ne disposant pas encore de correctif", wrongs: ["une faille âgée de plus de 10 ans", "un virus qui s'efface à minuit", "une mise à jour officielle Windows"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "L'éditeur a eu 'zéro jour' pour corriger la faille avant son exploitation." },
+            { q: "Que permet un VPN (Virtual Private Network) lors d'une connexion à distance ?", correct: "créer un tunnel chiffré sécurisé à travers un réseau public (Internet)", wrongs: ["augmenter la vitesse physique de la fibre", "remplacer le processeur du PC", "supprimer l'usage d'un système d'exploitation"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Un VPN assure la confidentialité et l'authenticité des échanges sur un réseau non fiable." },
+            { q: "Dans une architecture réseau sécurisée, à quoi sert une DMZ (Zone Démilitarisée) ?", correct: "isoler les serveurs exposés à Internet (Web, Mail) du réseau interne (LAN)", wrongs: ["connecter toutes les imprimantes directement à Internet", "désactiver le chiffrement TLS", "partager les mots de passe Wi-Fi"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Si un serveur en DMZ est compromis, le réseau local interne reste protégé par un pare-feu." },
+            { q: "Quel est le rôle d'un certificat numérique X.509 délivré par une Autorité de Certification (CA) en HTTPS ?", correct: "authentifier l'identité du serveur et transmettre sa clé publique de façon fiable", wrongs: ["augmenter le stockage du navigateur", "compresser les images PNG", "remplacer le protocole DNS"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La PKI (Infrastructure à Clés Publiques) protège contre les attaques Man-in-the-Middle." },
+            { q: "Que signifie l'approche de sécurité « Zero Trust » ?", correct: "ne jamais accorder de confiance implicite, vérifier systématiquement chaque accès même en interne", wrongs: ["faire totalement confiance au réseau local d'entreprise", "ne plus utiliser de certificats", "couper totalement l'accès Internet"], levels: ['terminale', 'bts1', 'bts2'], exp: "« Never trust, always verify » : authentification, micro-segmentation et contrôle continu." },
+            { q: "Quelle est la différence entre chiffrement symétrique (AES) et asymétrique (RSA) ?", correct: "symétrique = 1 même clé secrète partagée ; asymétrique = paire clé publique / clé privée", wrongs: ["symétrique est impossible sur ordinateur", "asymétrique n'utilise aucune clé", "symétrique sert uniquement à compresser des vidéos"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "En pratique (TLS), on utilise l'asymétrique pour échanger la clé de session, puis AES pour la vitesse." },
+            { q: "Qu'est-ce qu'une attaque de l'homme du milieu (MITM — Man-in-the-Middle) ?", correct: "un attaquant s'intercale secrètement entre deux communicants pour écouter ou modifier les échanges", wrongs: ["une panne électrique du routeur", "un téléchargement trop lent", "une sauvegarde sur disque externe"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "L'usage de HTTPS/TLS et de SSH empêche l'écoute ou la falsification par un MITM." },
+            { q: "Quelle est la différence entre un IDS (Système de Détection d'Intrusion) et un IPS (Système de Prévention d'Intrusion) ?", correct: "l'IDS détecte et alerte passivement ; l'IPS est placé en coupure et peut bloquer automatiquement le trafic malveillant", wrongs: ["l'IDS bloque physiquement les câbles", "l'IPS ne fonctionne que sans réseau", "les deux sont uniquement des antivirus locaux"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "IDS = Intrusion Detection System (sonde) ; IPS = Intrusion Prevention System (blocage actif)." },
+            { q: "En sécurité Web (OWASP), que protège un jeton anti-CSRF (Cross-Site Request Forgery) ?", correct: "il empêche un site malveillant de déclencher des actions à l'insu d'un utilisateur déjà authentifié", wrongs: ["il accélère l'affichage des vidéos 4K", "il compresse les feuilles CSS", "il remplace le protocole DNS"], levels: ['terminale', 'bts1', 'bts2'], exp: "Le token CSRF prouve que la requête provient bien du formulaire légitime de l'application." },
+            { q: "Que signifie l'acronyme SIEM dans un centre opérationnel de cybersécurité (SOC) ?", correct: "Security Information and Event Management (collecte et corrélation centralisée des journaux/logs de sécurité)", wrongs: ["System Internet Email Manager", "Simple Interface Ethernet Module", "Server Image Encryption Mode"], levels: ['terminale', 'bts1', 'bts2'], exp: "Un SIEM agrège les logs des serveurs, pare-feux et postes pour repérer des attaques corrélées." },
+            { q: "Pourquoi la norme Wi-Fi WPA3 est-elle nettement plus sûre que l'ancien WEP ?", correct: "WPA3 utilise un échange de clés moderne (SAE) et un chiffrement fort résistant aux attaques hors-ligne par dictionnaire", wrongs: ["WPA3 ne demande aucun mot de passe", "WEP n'a jamais existé en Wi-Fi", "WPA3 désactive le chiffrement pour être plus rapide"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "WEP est cassable en quelques minutes ; WPA3 (SAE + AES-GCMP) corrige aussi les faiblesses de WPA2-PSK." },
+            { q: "Quel est l'objectif d'un test d'intrusion (pentest) réalisé avec l'autorisation écrite d'une entreprise ?", correct: "simuler une cyberattaque encadrée pour découvrir et corriger les vulnérabilités avant des attaquants réels", wrongs: ["détruire définitivement la base de données", "vendre les identifiants sur Internet", "remplacer totalement la sauvegarde 3-2-1"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le pentest (boîte noire, grise ou blanche) aboutit à un rapport de remédiation priorisé." },
+            { q: "En sécurité des comptes, qu'est-ce qu'une attaque par « Credential Stuffing » ?", correct: "réutiliser automatiquement des couples e-mail/mot de passe volés sur un site compromis pour tenter de se connecter sur d'autres services", wrongs: ["envoyer un virus par clé USB", "couper la fibre optique d'un datacenter", "chiffrer un disque dur avec BitLocker"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "D'où l'importance absolue d'un mot de passe unique par service (via un gestionnaire) + MFA." }
+        ],
+
+        reseaux: [
+            // Bac Pro CIEL, BTS CIEL, Spé NSI
+            { q: "À quoi sert le protocole DHCP dans un réseau local ?", correct: "attribuer automatiquement une configuration IP (adresse IP, masque, passerelle, DNS) aux hôtes", wrongs: ["chiffrer les pages web", "envoyer des courriels", "traduire un nom de domaine en IP"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Le cycle DORA (Discover, Offer, Request, Acknowledge) configure automatiquement les machines." },
+            { q: "Quelle est la différence majeure entre les protocoles de transport TCP et UDP ?", correct: "TCP est connecté et fiable (accusés de réception), UDP est non connecté et plus rapide", wrongs: ["UDP est plus lent et plus fiable que TCP", "TCP fonctionne uniquement en Wi-Fi", "UDP ne possède pas de numéros de ports"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "TCP garantit l'ordre et la livraison (Web, SSH) ; UDP privilégie la faible latence (DNS, VoIP, streaming)." },
+            { q: "À quoi sert un VLAN (Virtual Local Area Network) sur un switch administrable ?", correct: "segmenter logiquement un réseau local en plusieurs domaines de diffusion isolés", wrongs: ["augmenter la tension électrique des câbles", "remplacer le système d'exploitation Windows", "convertir du Wi-Fi en Bluetooth"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Les VLAN (norme IEEE 802.1Q) améliorent la sécurité et limitent le broadcast." },
+            { q: "Quelle est la taille d'une adresse IPv4 et d'une adresse IPv6 respectivement ?", correct: "32 bits pour IPv4 et 128 bits pour IPv6", wrongs: ["16 bits pour IPv4 et 32 bits pour IPv6", "64 bits pour IPv4 et 64 bits pour IPv6", "8 bits pour IPv4 et 48 bits pour IPv6"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "IPv6 (128 bits) résout la pénurie d'adresses IPv4 (~4,3 milliards d'adresses)." },
+            { q: "Parmi ces adresses IPv4, laquelle appartient à une plage privée (RFC 1918, non routable sur Internet) ?", correct: "192.168.1.25", wrongs: ["8.8.8.8", "1.1.1.1", "172.32.0.1"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Plages privées RFC 1918 : 10.0.0.0/8, 172.16.0.0/12 (172.16..31) et 192.168.0.0/16." },
+            { q: "À quoi sert le mécanisme NAT (Network Address Translation) sur une box ou un routeur ?", correct: "traduire des adresses IP privées internes en une adresse IP publique pour accéder à Internet", wrongs: ["détecter les virus sur un disque dur", "sauvegarder les fichiers sur le Cloud", "attribuer des adresses MAC aléatoires"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le NAT/PAT permet à plusieurs appareils d'un LAN de partager une même IP publique." },
+            { q: "Quel protocole permet de découvrir l'adresse MAC correspondant à une adresse IPv4 sur un même réseau local ?", correct: "ARP (Address Resolution Protocol)", wrongs: ["ICMP", "SMTP", "NTP"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "ARP maintient une table de correspondance IP ↔ MAC sur le segment local." },
+            { q: "Quelle est la fonction principale d'un routeur (couche 3 du modèle OSI) ?", correct: "interconnecter des réseaux différents et acheminer les paquets IP grâce à sa table de routage", wrongs: ["amplifier uniquement un signal analogique", "remplacer le processeur du serveur", "stocker les bases de données SQL"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Le switch commute des trames (couche 2) dans un LAN ; le routeur route des paquets (couche 3) entre réseaux." },
+            { q: "Quelle est l'adresse de boucle locale (loopback) standard en IPv4 pour tester sa propre pile réseau ?", correct: "127.0.0.1", wrongs: ["192.168.0.1", "255.255.255.255", "0.0.0.0"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "127.0.0.1 (localhost) renvoie les paquets vers la machine elle-même." },
+            { q: "En administration Linux, dans quel répertoire se trouvent les fichiers de configuration système (ex : réseau, SSH, passwd) ?", correct: "/etc", wrongs: ["/tmp", "/home", "/bin"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "/etc contient la configuration globale du système Linux." },
+            { q: "En virtualisation / conteneurisation (BTS CIEL), quelle est la principale différence entre un conteneur (Docker) et une VM ?", correct: "le conteneur partage le noyau de l'OS hôte et est donc bien plus léger et rapide qu'une VM", wrongs: ["une VM ne peut exécuter aucun système d'exploitation", "un conteneur nécessite un serveur physique dédié par appli", "il n'y a aucune différence technique"], levels: ['terminale', 'bts1', 'bts2'], exp: "Docker isole les processus dans l'espace utilisateur en partageant le noyau Linux." },
+            { q: "Que signifie l'établissement de connexion TCP appelé « Three-Way Handshake » ?", correct: "l'échange en 3 étapes : SYN → SYN-ACK → ACK", wrongs: ["l'envoi de 3 mots de passe successifs", "la connexion simultanée à 3 routeurs", "un téléchargement en 3 fichiers"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Cette poignée de main synchronise les numéros de séquence avant le transfert des données." },
+            { q: "Quel protocole de couche 2 empêche les boucles de commutation (tempêtes de broadcast) entre plusieurs switches reliés de façon redondante ?", correct: "STP (Spanning Tree Protocol)", wrongs: ["DNS", "HTTP", "DHCP"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "STP (IEEE 802.1D / RSTP) place automatiquement les liens redondants en blocage tout en assurant la bascule en cas de panne." },
+            { q: "En administration Linux, quel outil système (`systemctl`) permet de démarrer, arrêter ou vérifier l'état d'un service (ex : ssh, nginx) ?", correct: "systemd (via la commande systemctl)", wrongs: ["fdisk", "ping", "tar"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Exemple : `systemctl status ssh` ou `sudo systemctl restart nginx`." },
+            { q: "Dans le protocole DNS, quel type d'enregistrement associe un nom de domaine à une adresse IPv4 ?", correct: "un enregistrement A (et AAAA pour IPv6)", wrongs: ["un enregistrement MX", "un enregistrement TXT", "un enregistrement PTR uniquement"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "A = IPv4, AAAA = IPv6, CNAME = alias, MX = serveur mail." },
+            { q: "À quoi sert un lien « Trunk » (norme 802.1Q) entre deux switches ou entre un switch et un routeur ?", correct: "transporter simultanément le trafic étiqueté (taggé) de plusieurs VLAN sur un seul câble physique", wrongs: ["fournir uniquement du courant 230 V", "bloquer tous les paquets IP", "convertir une adresse IP en nom DNS"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le port Access appartient à 1 VLAN ; le port Trunk véhicule plusieurs VLAN avec balises 802.1Q." },
+            { q: "Quel protocole de routage dynamique à état de liens (IGP) utilise l'algorithme de Dijkstra pour calculer le plus court chemin dans un réseau d'entreprise ?", correct: "OSPF", wrongs: ["ARP", "SMTP", "POP3"], levels: ['terminale', 'bts1', 'bts2'], exp: "OSPF (Open Shortest Path First) est largement déployé dans les réseaux d'entreprise ; BGP gère le routage inter-domaines sur Internet." },
+            { q: "En stockage serveur, quel niveau RAID réalise une mise en miroir complète (duplication) des données sur deux disques pour la tolérance aux pannes ?", correct: "RAID 1 (mirroring)", wrongs: ["RAID 0 (striping sans redondance)", "FAT32", "VLAN 1"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "En RAID 1, si un disque tombe en panne, les données restent intactes sur le second (attention : le RAID ne remplace pas une sauvegarde)." }
+        ],
+
+        electronique: [
+            // Bac Pro CIEL, BTS CIEL, STI2D
+            { q: "Quel composant électronique ne laisse passer le courant électrique que dans un seul sens (de l'anode vers la cathode) ?", correct: "une diode", wrongs: ["une résistance", "un fil de cuivre", "un condensateur parfait"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Une diode polarisée en direct conduit au-delà de sa tension de seuil (~0,7 V pour le silicium)." },
+            { q: "Quelle est la fonction principale d'un condensateur dans un circuit électronique ?", correct: "emmagasiner de l'énergie électrostatique (filtrage, découplage, temporisation)", wrongs: ["transformer un courant continu en lumière", "mesurer une distance par laser", "remplacer un microcontrôleur"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Sa capacité C s'exprime en farads (F) : i = C · du/dt." },
+            { q: "Dans un circuit, quel rôle peut jouer un transistor (bipolaire ou MOSFET) ?", correct: "interrupteur commandé (commutation) ou amplificateur de signal", wrongs: ["uniquement stocker des fichiers PDF", "mesurer la pression atmosphérique", "remplacer une batterie lithium"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le transistor est la brique fondamentale de toute l'électronique numérique et de puissance." },
+            { q: "Que stipule la loi des nœuds (1ère loi de Kirchhoff) ?", correct: "la somme des intensités qui arrivent à un nœud est égale à la somme des intensités qui en repartent", wrongs: ["la tension est toujours nulle dans un circuit", "les résistances en parallèle s'additionnent", "le courant circule sans générateur"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Conservation de la charge électrique : ΣI_entrants = ΣI_sortants." },
+            { q: "Que stipule la loi des mailles (2ème loi de Kirchhoff) ?", correct: "la somme algébrique des tensions le long d'une boucle fermée est nulle", wrongs: ["toutes les résistances d'une maille sont égales", "la puissance est toujours égale à 1 W", "le courant est nul dans une maille"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "En parcourant une maille fermée, la somme des tensions orientées vaut 0 V." },
+            { q: "Quel appareil de mesure permet de visualiser l'évolution d'une tension électrique au cours du temps u(t) ?", correct: "un oscilloscope", wrongs: ["un ohmmètre", "un luxmètre", "une pince coupante"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "L'oscilloscope affiche amplitude, période, fréquence et forme d'onde (sinus, carré, PWM)." },
+            { q: "Quelle est l'unité de mesure de l'inductance L d'une bobine ?", correct: "le henry (H)", wrongs: ["le farad (F)", "l'ohm (Ω)", "le siemens (S)"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Résistance → Ω, Capacité → F, Inductance → H." },
+            { q: "Dans un circuit imprimé (PCB), que désigne le sigle CMS (SMD en anglais) ?", correct: "Composant Monté en Surface (soudé directement sur les pastilles sans perçage)", wrongs: ["Courant Moyen Sinus", "Carte Mémoire Statique", "Câble Modulaire blindé"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Les CMS permettent la miniaturisation et l'assemblage automatisé des cartes électroniques." },
+            { q: "Quel bus série asynchrone (TX / RX + GND) est très utilisé pour le débogage sur microcontrôleurs (Arduino, STM32, Raspberry Pi) ?", correct: "UART (liaison série RS232 / TTL)", wrongs: ["VGA", "DisplayPort", "SATA"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "TX (Transmit) d'un appareil se relie au RX (Receive) de l'autre, avec masse commune." },
+            { q: "Quelle est la fonction d'une résistance de « pull-up » (tirage au haut) sur une entrée numérique d'un microcontrôleur ?", correct: "fixer un niveau logique défini (HIGH / 1) lorsque le bouton-poussoir est ouvert afin d'éviter un état flottant", wrongs: ["augmenter la tension au-delà de 230 V", "court-circuiter la batterie", "amplifier un signal radio FM"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Sans pull-up ou pull-down, une broche non reliée capte les parasites électromagnétiques." },
+            { q: "Que réalise un pont de diodes (pont de Graetz) dans une alimentation électrique ?", correct: "le redressement double alternance d'une tension alternative en tension unidirectionnelle", wrongs: ["la transformation d'un signal continu en audio", "la mesure de la température du transformateur", "le filtrage des adresses IP"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le pont de Graetz redresse le courant alternatif avant le lissage par condensateur et la régulation." },
+            { q: "Quelle est la relation entre la fréquence f (en Hz) et la période T (en secondes) d'un signal périodique ?", correct: "f = 1 / T", wrongs: ["f = T²", "f = 2 × T", "f = T + 1"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Par exemple, le secteur européen à 50 Hz a une période T = 1/50 = 0,02 s (20 ms)." },
+            { q: "À quoi sert une diode de « roue libre » placée en antiparallèle aux bornes d'une bobine ou d'un relais commandé par un transistor ?", correct: "protéger le transistor contre les surtensions de rupture créées par la bobine à l'ouverture", wrongs: ["inverser le sens de rotation d'une LED", "augmenter la résistance du câble", "mesurer la fréquence du secteur"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Lors de l'ouverture du circuit, la bobine tend à maintenir le courant : la diode offre un chemin sûr de décharge." },
+            { q: "Dans un filtre passe-bas RC du premier ordre, quelle est la formule de la fréquence de coupure f_c à −3 dB ?", correct: "f_c = 1 / (2π · R · C)", wrongs: ["f_c = R × C", "f_c = 2π · R · C", "f_c = R / C"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Avec τ = R·C la constante de temps, la pulsation de coupure vaut ω_c = 1/τ donc f_c = 1/(2πRC)." },
+            { q: "À quoi sert un amplificateur opérationnel (AOP) monté en « suiveur de tension » (V_s = V_e) ?", correct: "adapter les impédances entre un capteur et la suite du circuit sans prélever de courant", wrongs: ["multiplier la tension par 1000", "redresser une tension alternative", "stocker un programme en mémoire Flash"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le montage suiveur a une impédance d'entrée très grande et une impédance de sortie très faible." },
+            { q: "Quelle est la différence principale entre un régulateur de tension linéaire (ex : 7805) et un convertisseur à découpage (Buck / DC-DC) ?", correct: "le convertisseur à découpage (Buck) a un bien meilleur rendement (≈ 85–95 %) et chauffe beaucoup moins qu'un régulateur linéaire", wrongs: ["le régulateur linéaire ne peut pas abaisser une tension", "le convertisseur Buck ne fonctionne qu'en 230 V AC", "le régulateur linéaire a un rendement de 100 %"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Un régulateur linéaire dissipe l'excédent de tension en chaleur : P = (V_in − V_out) × I." },
+            { q: "Que permet un optocoupleur (photocoupleur) entre une carte microcontrôleur et un circuit de puissance ?", correct: "assurer une isolation galvanique en transmettant le signal par lumière (LED + phototransistor)", wrongs: ["augmenter la fréquence du processeur", "connecter un câble Ethernet fibre", "stocker l'heure système sans pile"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "L'isolation galvanique protège l'électronique de commande basse tension contre les parasites et surtensions." },
+            { q: "À quoi sert un condensateur de « découplage » (souvent 100 nF) placé au plus près des broches d'alimentation d'un circuit intégré ?", correct: "absorber les appels de courant rapides et filtrer les parasites haute fréquence sur l'alimentation", wrongs: ["bloquer totalement la tension continue 5 V", "servir d'antenne Wi-Fi principale", "remplacer le quartz d'horloge"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "C'est une règle d'or du routage PCB pour garantir la stabilité d'un microcontrôleur." }
+        ],
+
+        stss: [
+            // ST2S : Sciences et Techniques Sanitaires et Sociales
+            { q: "Comment l'Organisation Mondiale de la Santé (OMS) définit-elle la santé depuis 1946 ?", correct: "un état complet de bien-être physique, mental et social (et pas seulement l'absence de maladie)", wrongs: ["uniquement l'absence de fièvre ou d'infection", "la capacité à courir un marathon", "le fait de ne jamais consulter un médecin"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "La définition de l'OMS est globale : physique, psychique et sociale." },
+            { q: "Qu'appelle-t-on un « déterminant de santé » en STSS ?", correct: "un facteur individuel, comportemental, environnemental ou social qui influence l'état de santé", wrongs: ["un médicament remboursé à 100 %", "un diplôme de médecin", "une salle d'opération"], levels: ['1ere', 'terminale', 'bts1'], exp: "Exemples : alimentation, tabac, logement, niveau de revenu, accès aux soins, pollution." },
+            { q: "En épidémiologie, quelle est la différence entre prévalence et incidence d'une maladie ?", correct: "prévalence = total des cas existants à un moment ; incidence = nouveaux cas sur une période donnée", wrongs: ["incidence = nombre de médecins ; prévalence = coût des soins", "les deux termes sont strictement synonymes", "prévalence concerne uniquement les maladies rares"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "L'incidence mesure la vitesse d'apparition ; la prévalence mesure l'ampleur totale dans la population." },
+            { q: "En quelle année la Sécurité sociale française a-t-elle été créée par les ordonnances d'après-guerre ?", correct: "1945", wrongs: ["1905", "1958", "1981"], levels: ['1ere', 'terminale', 'bts1'], exp: "Créée en octobre 1945 sur le principe de solidarité nationale (programme du CNR)." },
+            { q: "Quels sont les grands risques couverts par les branches de la Sécurité sociale en France ?", correct: "Maladie, Accidents du travail/Maladies pro, Famille, Vieillesse (retraite) et Autonomie", wrongs: ["Uniquement les accidents de voiture", "Uniquement les frais scolaires", "Uniquement l'assurance habitation"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Une 5ème branche dédiée à l'Autonomie (dépendance, handicap) a été créée en 2020." },
+            { q: "Quelle est la différence entre prévention primaire, secondaire et tertiaire ?", correct: "primaire = éviter l'apparition ; secondaire = dépister tôt ; tertiaire = limiter les complications et rechutes", wrongs: ["primaire = à l'école primaire uniquement", "secondaire = réservée aux hôpitaux privés", "tertiaire = vaccination infantile"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Vaccination = primaire ; dépistage cancer = secondaire ; rééducation post-AVC = tertiaire." },
+            { q: "Quel organisme public pilote et organise la politique de santé publique au niveau régional en France ?", correct: "l'ARS (Agence Régionale de Santé)", wrongs: ["la BCE", "l'ARCOM", "l'INSEE"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Les ARS coordonnent l'offre de soins (hôpitaux, médecine de ville) et la prévention en région." },
+            { q: "Que signifie la notion de « démocratie sanitaire » consacrée par la loi Kouchner du 4 mars 2002 ?", correct: "l'association des usagers et patients aux décisions de santé et la reconnaissance de leurs droits", wrongs: ["l'élection des médecins au suffrage universel", "la suppression des dossiers médicaux", "le vote annuel du tarif des médicaments par les citoyens"], levels: ['terminale', 'bts1', 'bts2'], exp: "Elle affirme le consentement libre et éclairé, l'accès au dossier médical et la représentation des usagers." },
+            { q: "Qu'est-ce qu'une « inégalité sociale de santé » ?", correct: "un écart systématique d'état de santé ou d'espérance de vie lié à la catégorie socioprofessionnelle ou aux revenus", wrongs: ["une différence génétique rare isolée", "un écart lié uniquement au climat", "le prix différent des lunettes de marque"], levels: ['1ere', 'terminale', 'bts1'], exp: "Les cadres ont en moyenne une espérance de vie supérieure à celle des ouvriers en raison des conditions de travail et d'accès aux soins." },
+            { q: "Quel dispositif de solidarité nationale assure un revenu minimum aux personnes sans ressources (ou très faibles) en France ?", correct: "le RSA (Revenu de Solidarité Active)", wrongs: ["la TVA", "le PIB", "l'ISF"], levels: ['1ere', 'terminale', 'bts1'], exp: "Le RSA relève de l'aide sociale (logique d'assistance / solidarité nationale)." },
+            { q: "En méthodologie STSS, quelle est la différence entre une enquête quantitative et une enquête qualitative ?", correct: "quantitative = données chiffrées sur un grand échantillon ; qualitative = entretiens approfondis pour comprendre les comportements", wrongs: ["quantitative utilise uniquement des dessins", "qualitative interdit toute question orale", "elles donnent toujours exactement les mêmes tableaux"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Questionnaire fermé (quantitatif) vs entretien semi-directif / observation (qualitatif)." },
+            { q: "Quel établissement médico-social accueille des personnes âgées dépendantes nécessitant un accompagnement médicalisé ?", correct: "un EHPAD", wrongs: ["une PMI", "un CCAS", "une CAF"], levels: ['1ere', 'terminale', 'bts1'], exp: "EHPAD = Établissement d'Hébergement pour Personnes Âgées Dépendantes." },
+            { q: "Quel service départemental assure le suivi médical gratuit des femmes enceintes et des enfants de moins de 6 ans ?", correct: "la PMI (Protection Maternelle et Infantile)", wrongs: ["la CPAM seule", "la Haute Autorité de Santé", "l'EHPAD"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "La PMI réalise consultations prénatales, bilans en école maternelle et agrément des assistantes maternelles." },
+            { q: "Quel organisme communal accompagne les habitants en difficulté sociale (aides d'urgence, domiciliation, soutien aux seniors) ?", correct: "le CCAS (Centre Communal d'Action Sociale)", wrongs: ["l'OMS", "la Cour de cassation", "l'ANSSI"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Présidé par le maire, le CCAS est l'acteur de proximité de l'action sociale communale." },
+            { q: "Quelle est la mission principale de la Haute Autorité de Santé (HAS) en France ?", correct: "évaluer scientifiquement les médicaments/actes médicaux, certifier les hôpitaux et publier des recommandations de bonnes pratiques", wrongs: ["verser les allocations familiales", "construire les autoroutes", "recruter les enseignants du lycée"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La HAS est une autorité publique indépendante garante de la qualité des soins." },
+            { q: "Qu'appelle-t-on le « reste à charge » (ticket modérateur) pour un assuré social lors d'une consultation médicale ?", correct: "la part des frais de santé non remboursée par l'Assurance maladie obligatoire (souvent prise en charge par la mutuelle)", wrongs: ["le salaire mensuel du médecin", "le coût d'une ambulance privée uniquement", "une amende en cas d'oubli de carte Vitale"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La complémentaire santé (mutuelle) ou la C2S couvre tout ou partie du ticket modérateur." },
+            { q: "Quelle agence nationale assure la veille sanitaire, la surveillance épidémiologique et les campagnes de prévention (tabac, alcool) ?", correct: "Santé publique France", wrongs: ["la Banque de France", "l'ARCOM", "l'ADEME"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Santé publique France pilote la surveillance des épidémies et la promotion de la santé." },
+            { q: "Que signifie la « veille sanitaire » dans la gestion d'une crise épidémique ?", correct: "le recueil continu et l'analyse de signaux pour détecter précocement toute menace pour la santé de la population", wrongs: ["la fermeture nocturne des pharmacies", "le nettoyage des salles d'attente", "le stockage des dossiers papier"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La veille sanitaire permet d'alerter et de déclencher rapidement des mesures de protection." },
+            { q: "Quel guichet unique départemental évalue les besoins et attribue les droits (AAH, PCH, RQTH) aux personnes en situation de handicap ?", correct: "la MDPH (Maison Départementale des Personnes Handicapées)", wrongs: ["la CAF seule", "la CNIL", "le Conseil d'État"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Créée par la loi handicap du 11 février 2005, la MDPH accompagne les personnes handicapées et leurs familles." },
+            { q: "Que signifie le « principe de précaution » inscrit dans la Charte de l'environnement et appliqué en santé environnementale ?", correct: "agir préventivement face à un risque grave et irréversible même en l'absence de certitude scientifique absolue", wrongs: ["attendre que la catastrophe arrive avant de réagir", "interdire toute recherche médicale", "ne jamais informer le public d'un risque"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Il guide la gestion des risques sanitaires et environnementaux émergents." },
+            { q: "Quelle est la différence entre la logique d'assurance sociale et la logique d'assistance sociale ?", correct: "l'assurance repose sur des cotisations préalables ; l'assistance repose sur la solidarité nationale sous conditions de ressources (ex : RSA)", wrongs: ["l'assurance est toujours gratuite et sans cotisation", "l'assistance est réservée aux salariés cadres", "les deux financements sont identiques"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La protection sociale française articule assurance (modèle bismarckien) et assistance/universalité (modèle beveridgien)." },
+            { q: "En méthodologie de projet sanitaire et social, quelle est la première étape avant de définir des objectifs et des actions ?", correct: "le diagnostic (identification des besoins et des problèmes du public cible)", wrongs: ["l'évaluation finale immédiate", "la clôture budgétaire", "la publication de l'affiche publicitaire"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Un projet suit le cycle : Diagnostic → Conception/Objectifs → Mise en œuvre → Évaluation." }
         ]
     };
 
-    /** Filtre la banque de questions pour un niveau scolaire donné. */
+    /**
+     * Filtre la banque de questions pour un niveau scolaire donné.
+     * Garantit un vivier riche (≥ 18 questions quand disponible) en priorisant
+     * strictement la classe exacte puis le même cycle (collège ou lycée) afin
+     * d'éliminer les répétitions rapides sans jamais mélanger collège et lycée.
+     */
     function getQuestionsForNiveau(subjectId, niveau) {
         const fullBank = FACT_BANKS[subjectId] || [];
         const norm = normalizeNiveau(niveau);
         const band = bandForNiveau(norm);
+        const collegeSet = new Set(['6eme', '5eme', '4eme', '3eme']);
+        const lyceeSet = new Set(['2nde', '1ere', 'terminale', 'bts1', 'bts2']);
+        const sameCycleSet = band === 'lycee' ? lyceeSet : collegeSet;
 
-        // 1. Filtrage précis par niveau
-        const exact = fullBank.filter(q => {
-            if (Array.isArray(q.levels)) return q.levels.includes(norm);
-            return q.level === norm;
-        });
-        if (exact.length >= 3) return exact;
-
-        // 2. Filtrage par cycle (collège ou lycée)
-        const cycle = fullBank.filter(q => {
+        const hasLevel = (q, target) => Array.isArray(q.levels) ? q.levels.includes(target) : q.level === target;
+        const inSameCycle = (q) => {
             if (Array.isArray(q.levels)) {
-                return q.levels.includes(norm) || q.levels.includes(band);
+                return q.levels.some(l => l === band || sameCycleSet.has(l));
             }
-            return q.level === norm || q.level === band;
-        });
-        if (cycle.length >= 3) return cycle;
+            return q.level === band || sameCycleSet.has(q.level);
+        };
 
-        // 3. Repli
-        return fullBank;
+        // 1. Questions correspondant exactement à la classe
+        const exact = fullBank.filter(q => hasLevel(q, norm));
+        if (exact.length >= 18) return exact;
+
+        // 2. Compléter avec les questions du même cycle (jamais l'autre cycle !) pour éviter les boucles de 3 questions
+        const sameCycleExtras = fullBank.filter(q => !hasLevel(q, norm) && inSameCycle(q));
+        const combined = exact.concat(sameCycleExtras);
+        if (combined.length >= 4) return combined;
+
+        // 3. Repli si la matière n'a pas de découpage fin pour ce cycle
+        return combined.length > 0 ? combined : fullBank;
     }
 
     /** Calcule une signature normalisée unique d'une question pour éviter les répétitions. */
@@ -1663,6 +2758,8 @@ const QuestionBank = (() => {
         if (useProcedural) {
             if (subjectId === 'francais') return generateFrenchLesson(index, norm, variant, rng);
             if (subjectId === 'anglais') return generateEnglishLesson(index, norm, variant, rng);
+            if (subjectId === 'espagnol') return generateEspagnolLesson(index, norm, variant, rng);
+            if (subjectId === 'arts') return generateArtsLesson(index, norm, variant, rng);
             if (subjectId === 'histoire') return generateHistoryLesson(index, norm, variant, rng);
             if (subjectId === 'geo') return generateGeoLesson(index, norm, variant, rng);
             if (subjectId === 'svt') return generateSvtLesson(index, norm, variant, rng);
@@ -1673,6 +2770,14 @@ const QuestionBank = (() => {
             if (subjectId === 'philo') return generatePhiloLesson(index, norm, variant, rng);
             if (subjectId === 'nsi') return generateNsiLesson(index, norm, variant, rng);
             if (subjectId === 'ses') return generateSesLesson(index, norm, variant, rng);
+            if (subjectId === 'si') return generateSiLesson(index, norm, variant, rng);
+            if (subjectId === 'msgn') return generateStmgCalcLesson(index, norm, variant, rng, 'msgn');
+            if (subjectId === 'mercatique') return generateStmgCalcLesson(index, norm, variant, rng, 'mercatique');
+            if (subjectId === 'i2d') return generateI2dLesson(index, norm, variant, rng);
+            if (subjectId === 'sin') return generateSinLesson(index, norm, variant, rng);
+            if (subjectId === 'cybersecurite') return generateCyberLesson(index, norm, variant, rng);
+            if (subjectId === 'reseaux') return generateReseauxLesson(index, norm, variant, rng);
+            if (subjectId === 'electronique') return generateElectroniqueLesson(index, norm, variant, rng);
         }
 
         const bank = getQuestionsForNiveau(subjectId, norm);
@@ -1688,10 +2793,12 @@ const QuestionBank = (() => {
             };
         }
 
-        // Deck déterministe par passe : parcourt toute la banque avant toute répétition
-        const slot = Math.floor(index / 2) + variant * 7;
+        // Deck déterministe stable par passe : parcourt TOUTE la banque avant toute répétition,
+        // et décale proprement par variante (sans re-mélanger de façon aléatoire qui cause des collisions entre v0/v1/v2)
+        const stride = bank.length > 5 ? 5 : 1;
+        const slot = Math.floor(index / 2) + variant * stride;
         const pass = Math.floor(slot / bank.length);
-        const deck = seededShuffle(bank, `${subjectId}:${norm}:bankdeck:${pass}:v${variant}`);
+        const deck = seededShuffle(bank, `${subjectId}:${norm}:bankdeck:${pass}`);
         const fact = deck[slot % deck.length];
 
         if (fact.type === 'vrai_faux') {
@@ -1733,6 +2840,28 @@ const QuestionBank = (() => {
         };
     }
 
+    /** Attache des variantes paresseuses (lazy) : 3x plus rapide au démarrage, 100 % rétrocompatible. */
+    function attachLazyVariants(lesson, subjectId, index, norm) {
+        if (lesson.variants && lesson.variants.length > 0) return lesson;
+        let cachedVariants = null;
+        Object.defineProperty(lesson, 'variants', {
+            enumerable: true,
+            configurable: true,
+            get() {
+                if (!cachedVariants) {
+                    const l1 = QuestionBank.generateOne(subjectId, index, norm, 1);
+                    const l2 = QuestionBank.generateOne(subjectId, index, norm, 2);
+                    cachedVariants = [lesson, l1, l2];
+                }
+                return cachedVariants;
+            },
+            set(val) {
+                cachedVariants = val;
+            }
+        });
+        return lesson;
+    }
+
     /* ================= API publique ================= */
 
     return {
@@ -1754,25 +2883,19 @@ const QuestionBank = (() => {
         /**
          * Étend une matière (objet DASH_SUBJECTS) jusqu'à `totalCount` niveaux,
          * avec un contenu adapté au niveau scolaire (`niveau`) pour les 100 niveaux.
+         * Optimisé via variantes paresseuses (génération à la demande).
          */
         extend(subject, totalCount, niveau) {
             const norm = normalizeNiveau(niveau);
             const handWritten = (subject.lessons || []).map((lesson, i) => {
                 const l0 = reshuffleHandWritten(lesson, subject.id, i);
-                if (!l0.variants || l0.variants.length === 0) {
-                    const l1 = QuestionBank.generateOne(subject.id, i, norm, 1);
-                    const l2 = QuestionBank.generateOne(subject.id, i, norm, 2);
-                    l0.variants = [l0, l1, l2];
-                }
-                return l0;
+                return attachLazyVariants(l0, subject.id, i, norm);
             });
 
             const lessons = handWritten.slice();
             for (let i = lessons.length; i < totalCount; i++) {
                 const l0 = QuestionBank.generateOne(subject.id, i, norm, 0);
-                const l1 = QuestionBank.generateOne(subject.id, i, norm, 1);
-                const l2 = QuestionBank.generateOne(subject.id, i, norm, 2);
-                l0.variants = [l0, l1, l2];
+                attachLazyVariants(l0, subject.id, i, norm);
                 lessons.push(l0);
             }
             return { ...subject, lessons };

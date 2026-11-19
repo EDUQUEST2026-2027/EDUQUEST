@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
+  <!-- ILOT DROIT ET ECONOMIE - EDUQUEST -->
+  <defs>
+    <linearGradient id="deRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3b271c"/>
+      <stop offset="0.6" stop-color="#21140d"/>
+      <stop offset="1" stop-color="#100804"/>
+    </linearGradient>
+    <linearGradient id="deRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6e4a35"/>
+      <stop offset="0.6" stop-color="#472d1f"/>
+      <stop offset="1" stop-color="#29180f"/>
+    </linearGradient>
+    <linearGradient id="deGold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff4b8"/>
+      <stop offset="0.5" stop-color="#f5c542"/>
+      <stop offset="1" stop-color="#b47b09"/>
+    </linearGradient>
+    <linearGradient id="deWood" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#b45309"/>
+      <stop offset="1" stop-color="#5c2808"/>
+    </linearGradient>
+    <radialGradient id="deHalo" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#f5c542" stop-opacity="0.34"/>
+      <stop offset="0.55" stop-color="#60a5fa" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="deShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+    <filter id="deGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <circle cx="210" cy="182" r="150" fill="url(#deHalo)"/>
+
+  <g filter="url(#deShadow)">
+    <path d="M 75 250 Q 210 275 345 250 Q 372 294 320 344 Q 210 398 100 344 Q 48 294 75 250 Z" fill="url(#deRockDeep)"/>
+    <path d="M 85 245 Q 210 268 335 245 Q 358 278 320 314 Q 210 368 100 314 Q 62 278 85 245 Z" fill="url(#deRockTop)"/>
+    <ellipse cx="210" cy="245" rx="140" ry="42" fill="#1e293b"/>
+    <ellipse cx="210" cy="242" rx="130" ry="34" fill="none" stroke="url(#deGold)" stroke-width="2.5"/>
+  </g>
+
+  <g filter="url(#deShadow)">
+    <ellipse cx="210" cy="240" rx="46" ry="12" fill="url(#deGold)"/>
+    <rect x="204" y="118" width="12" height="122" rx="4" fill="url(#deGold)"/>
+    <circle cx="210" cy="114" r="11" fill="url(#deGold)" filter="url(#deGlow)"/>
+    <rect x="128" y="130" width="164" height="8" rx="4" fill="url(#deGold)"/>
+    <line x1="142" y1="138" x2="124" y2="188" stroke="#fde68a" stroke-width="2"/>
+    <line x1="142" y1="138" x2="160" y2="188" stroke="#fde68a" stroke-width="2"/>
+    <path d="M 116 188 Q 142 208 168 188 Z" fill="url(#deGold)"/>
+    <line x1="278" y1="138" x2="260" y2="188" stroke="#fde68a" stroke-width="2"/>
+    <line x1="278" y1="138" x2="296" y2="188" stroke="#fde68a" stroke-width="2"/>
+    <path d="M 252 188 Q 278 208 304 188 Z" fill="url(#deGold)"/>
+  </g>
+
+  <g filter="url(#deShadow)">
+    <rect x="108" y="210" width="48" height="36" rx="4" fill="#fef3c7" stroke="#b47b09" stroke-width="2"/>
+    <line x1="118" y1="222" x2="146" y2="222" stroke="#78350f" stroke-width="2.5"/>
+    <line x1="118" y1="230" x2="142" y2="230" stroke="#78350f" stroke-width="2.5"/>
+    <line x1="118" y1="238" x2="138" y2="238" stroke="#78350f" stroke-width="2.5"/>
+  </g>
+
+  <g transform="translate(284, 224) rotate(-30)" filter="url(#deShadow)">
+    <rect x="-26" y="-4" width="52" height="8" rx="4" fill="url(#deWood)"/>
+    <rect x="14" y="-16" width="20" height="32" rx="4" fill="url(#deWood)" stroke="#f5c542" stroke-width="2"/>
+  </g>
+
+  <g filter="url(#deGlow)">
+    <circle cx="210" cy="86" r="16" fill="#0f172a" stroke="#f5c542" stroke-width="2"/>
+    <text x="210" y="92" text-anchor="middle" fill="#fef08a" font-family="Georgia, serif" font-size="18" font-weight="bold">§</text>
+  </g>
+</svg>

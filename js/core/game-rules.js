@@ -1,5 +1,5 @@
 /* =============================================================================
-   GAME-RULES.JS — EDUQUEST v1.26
+   GAME-RULES.JS — EDUQUEST v1.28.1
    Règles de jeu PURES (aucun DOM, aucun stockage) partagées par la carte
    (map.html) et le tableau de bord (dashboard.html).
 

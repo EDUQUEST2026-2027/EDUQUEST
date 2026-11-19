@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
+  <!-- ILOT MERCATIQUE MARKETING - EDUQUEST -->
+  <defs>
+    <linearGradient id="mkRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a154b"/>
+      <stop offset="0.6" stop-color="#2a0a2e"/>
+      <stop offset="1" stop-color="#140417"/>
+    </linearGradient>
+    <linearGradient id="mkRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#832585"/>
+      <stop offset="0.6" stop-color="#561659"/>
+      <stop offset="1" stop-color="#310b33"/>
+    </linearGradient>
+    <linearGradient id="mkPink" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff758f"/>
+      <stop offset="0.55" stop-color="#f72585"/>
+      <stop offset="1" stop-color="#9d174d"/>
+    </linearGradient>
+    <linearGradient id="mkAmber" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fef08a"/>
+      <stop offset="1" stop-color="#f59e0b"/>
+    </linearGradient>
+    <radialGradient id="mkHalo" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#f72585" stop-opacity="0.34"/>
+      <stop offset="0.55" stop-color="#f59e0b" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="mkShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+    <filter id="mkGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <circle cx="210" cy="182" r="150" fill="url(#mkHalo)"/>
+
+  <!-- Base rocheuse flottante -->
+  <g filter="url(#mkShadow)">
+    <path d="M 75 250 Q 210 275 345 250 Q 372 294 320 344 Q 210 398 100 344 Q 48 294 75 250 Z" fill="url(#mkRockDeep)"/>
+    <path d="M 85 245 Q 210 268 335 245 Q 358 278 320 314 Q 210 368 100 314 Q 62 278 85 245 Z" fill="url(#mkRockTop)"/>
+    <ellipse cx="210" cy="245" rx="140" ry="42" fill="#2d1042"/>
+    <ellipse cx="210" cy="242" rx="130" ry="34" fill="none" stroke="#ff758f" stroke-width="2.2" opacity="0.8"/>
+  </g>
+
+  <!-- Cible marketing (Ciblage / Segmentation) à droite -->
+  <g transform="translate(268, 178)" filter="url(#mkShadow)">
+    <circle cx="0" cy="0" r="46" fill="#ffffff"/>
+    <circle cx="0" cy="0" r="34" fill="#f72585"/>
+    <circle cx="0" cy="0" r="22" fill="#ffffff"/>
+    <circle cx="0" cy="0" r="11" fill="#f59e0b"/>
+    <!-- Flèche plantée au centre -->
+    <line x1="32" y1="-34" x2="2" y2="-2" stroke="#38bdf8" stroke-width="5" stroke-linecap="round"/>
+    <polygon points="0,0 14,-4 4,-14" fill="#38bdf8"/>
+  </g>
+
+  <!-- Mégaphone (Communication / Promotion) à gauche -->
+  <g transform="translate(152, 178) rotate(-14)" filter="url(#mkShadow)">
+    <!-- Poignée -->
+    <rect x="-32" y="10" width="12" height="32" rx="4" fill="#334155"/>
+    <!-- Cône -->
+    <polygon points="-38,-12 24,-38 24,36 -38,14" fill="url(#mkPink)" stroke="#fbcfe8" stroke-width="2"/>
+    <ellipse cx="24" cy="-1" rx="9" ry="37" fill="url(#mkAmber)"/>
+    <rect x="-46" y="-12" width="14" height="26" rx="5" fill="#1e293b"/>
+  </g>
+
+  <!-- Ondes d'impact + badge 4P -->
+  <g filter="url(#mkGlow)">
+    <path d="M 192 146 Q 208 164 198 186" fill="none" stroke="#fef08a" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M 204 134 Q 224 162 210 194" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+    <rect x="150" y="92" width="76" height="28" rx="14" fill="#1e1b4b" stroke="#f59e0b" stroke-width="2"/>
+    <text x="188" y="111" text-anchor="middle" fill="#fef08a" font-family="sans-serif" font-size="14" font-weight="bold">4P MIX</text>
+  </g>
+</svg>
+

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eduquest-cache-v1.27.1';
+const CACHE_NAME = 'eduquest-cache-v1.29.0';
 
 const PRECACHE_URLS = [
   './',
@@ -60,7 +60,20 @@ const PRECACHE_URLS = [
   'Image/ile/philo.svg',
   'Image/ile/emc.svg',
   'Image/ile/nsi.svg',
-  'Image/ile/ses.svg'
+  'Image/ile/ses.svg',
+  'Image/ile/espagnol.svg',
+  'Image/ile/arts.svg',
+  'Image/ile/hggsp.svg',
+  'Image/ile/si.svg',
+  'Image/ile/msgn.svg',
+  'Image/ile/droit_eco.svg',
+  'Image/ile/mercatique.svg',
+  'Image/ile/i2d.svg',
+  'Image/ile/sin.svg',
+  'Image/ile/cybersecurite.svg',
+  'Image/ile/reseaux.svg',
+  'Image/ile/electronique.svg',
+  'Image/ile/stss.svg'
 ];
 
 self.addEventListener('install', event => {

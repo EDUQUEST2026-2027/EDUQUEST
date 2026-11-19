@@ -1,5 +1,5 @@
 /* =============================================================================
-   ADMIN.JS — EDUQUEST v1.27.0
+   ADMIN.JS — EDUQUEST v1.28.1
    Interface du panneau d'administration (admin.html).
 
    PRINCIPE :
@@ -49,6 +49,19 @@
         { value: 'Image/ile/emc.svg', label: '⚖️ Île d\'EMC' },
         { value: 'Image/ile/nsi.svg', label: '💻 Île de NSI & Numérique' },
         { value: 'Image/ile/ses.svg', label: '📈 Île de SES (Économie)' },
+        { value: 'Image/ile/espagnol.svg', label: '🇪🇸 Île d\'Espagnol (LV2)' },
+        { value: 'Image/ile/arts.svg', label: '🎨 Île d\'Histoire des Arts' },
+        { value: 'Image/ile/hggsp.svg', label: '🌐 Île de HGGSP (Géopolitique)' },
+        { value: 'Image/ile/si.svg', label: '⚙️ Île des Sciences de l\'Ingénieur' },
+        { value: 'Image/ile/msgn.svg', label: '📊 Île de Management & Gestion (MSGN)' },
+        { value: 'Image/ile/droit_eco.svg', label: '⚖️ Île de Droit & Économie' },
+        { value: 'Image/ile/mercatique.svg', label: '🎯 Île de Mercatique & Gestion-Finance' },
+        { value: 'Image/ile/i2d.svg', label: '🌿 Île d\'Innovation & Dév. Durable (I2D)' },
+        { value: 'Image/ile/sin.svg', label: '📡 Île de Systèmes d\'Info & Énergie (SIN)' },
+        { value: 'Image/ile/cybersecurite.svg', label: '🛡️ Île de Cybersécurité (CIEL)' },
+        { value: 'Image/ile/reseaux.svg', label: '🔌 Île de Réseaux & Systèmes (CIEL)' },
+        { value: 'Image/ile/electronique.svg', label: '🔋 Île d\'Électronique & Embarqué (CIEL)' },
+        { value: 'Image/ile/stss.svg', label: '🩺 Île de Sciences Sanitaires & Sociales (STSS)' },
     ];
 
     function renderSubjectIcon(icon, altText = '', extraClass = '') {
@@ -79,6 +92,10 @@
         editingLesson: -1,             // -1 = nouvelle leçon, sinon index
         lessonDraft: null,             // leçon en cours d'édition
         levelsDraft: null,             // niveaux en cours d'édition
+        filieresDraft: null,           // filières en cours d'édition
+        questsDraft: null,             // pool de quêtes quotidiennes en cours d'édition
+        subjectSearch: '',             // filtre de recherche dans la liste des matières
+        badgeFiliereFilter: 'all',     // filtre de filière dans l'onglet Succès
         members: [],                   // cache des comptes locaux
         err: '',
         modeApi: false,
@@ -216,11 +233,12 @@
     /* ============================== PANNEAU (coquille) ============================== */
 
     const TABS = [
-        { id: 'levels', icon: '🎓', label: 'Niveaux scolaires' },
+        { id: 'levels', icon: '🎓', label: 'Niveaux' },
+        { id: 'filieres', icon: '🧭', label: 'Filières' },
         { id: 'subjects', icon: '📚', label: 'Matières & leçons' },
         { id: 'badges', icon: '🏆', label: 'Succès' },
         { id: 'shop', icon: '🛍️', label: 'Boutique' },
-        { id: 'rewards', icon: '🎁', label: 'Récompenses' },
+        { id: 'rewards', icon: '🎁', label: 'Récompenses & Quêtes' },
         { id: 'members', icon: '👥', label: 'Membres' },
         { id: 'credits', icon: '✨', label: 'Crédits' },
         { id: 'settings', icon: '⚙️', label: 'Réglages' },
@@ -231,8 +249,9 @@
             <div class="adm-stats" id="admStats">
                 <div class="adm-stat"><b>…</b><span>Comptes</span></div>
                 <div class="adm-stat"><b>…</b><span>Admins</span></div>
+                <div class="adm-stat"><b>…</b><span>Filières</span></div>
                 <div class="adm-stat"><b>…</b><span>Matières</span></div>
-                <div class="adm-stat"><b>…</b><span>Articles Boutique</span></div>
+                <div class="adm-stat"><b>…</b><span>Boutique</span></div>
                 <div class="adm-stat"><b>…</b><span>Succès</span></div>
             </div>
             <div class="adm-tabs">
@@ -250,6 +269,7 @@
 
     function renderTab() {
         if (S.tab === 'levels') return renderLevels();
+        if (S.tab === 'filieres') return renderFilieres();
         if (S.tab === 'subjects') return renderSubjects();
         if (S.tab === 'badges') return renderBadges();
         if (S.tab === 'shop') return renderShop();
@@ -268,17 +288,19 @@
             const r = await DB.listLocalMembers();
             if (r.ok) { members = r.data; admins = members.filter(m => m.role === 'admin').length; }
         } catch { /* stats optionnelles */ }
+        const filieres = (typeof AdminStore !== 'undefined' && AdminStore.getFilieres) ? AdminStore.getFilieres() : [];
         const subs = typeof AdminStore !== 'undefined' ? AdminStore.listEditable(AdminStore.getDefaultSubjects()) : [];
         const shopItems = typeof AdminStore !== 'undefined' ? AdminStore.getShopItems() : [];
         const badges = typeof AdminStore !== 'undefined' ? AdminStore.getBadges() : [];
         if (!wrap) return;
         const cells = wrap.querySelectorAll('.adm-stat b');
-        if (cells.length >= 5) {
+        if (cells.length >= 6) {
             cells[0].textContent = String(members.length);
             cells[1].textContent = String(admins);
-            cells[2].textContent = String(subs.length);
-            cells[3].textContent = String(shopItems.length);
-            cells[4].textContent = String(badges.length);
+            cells[2].textContent = `${filieres.filter(f => f.enabled !== false).length}/${filieres.length}`;
+            cells[3].textContent = String(subs.length);
+            cells[4].textContent = String(shopItems.length);
+            cells[5].textContent = String(badges.length);
         }
     }
 
@@ -330,8 +352,82 @@
                     <button class="adm-btn adm-btn-ghost" onclick="ADM.levelsCancel()">Annuler</button>
                     <button class="adm-btn adm-btn-danger adm-right" onclick="ADM.levelsReset()">Rétablir les niveaux par défaut</button>
                 </div>
-                <p class="adm-hint">La « bande de contenu » choisit la difficulté des questions générées (collège ou lycée).
-                Les niveaux par défaut sont : 6ème → Terminale.</p>
+                <p class="adm-hint">La « bande de contenu » choisit la difficulté des questions générées (collège ou lycée / BTS).
+                Les niveaux par défaut sont : 6ème → Terminale, BTS 1ère année et BTS 2ème année.</p>
+            </div>`;
+    }
+
+    /* ============================== ONGLET : FILIÈRES ============================== */
+
+    function renderFilieres() {
+        if (!S.filieresDraft) S.filieresDraft = AdminStore.getFilieres();
+        const draft = S.filieresDraft;
+        const count = draft.length;
+        const allSubs = subjectList();
+        const allBadges = AdminStore.getBadges();
+
+        const rows = draft.map((f, i) => {
+            const subCount = allSubs.filter(s => {
+                const af = AdminStore.defaultAllowedFilieresForSubject(s);
+                return af.includes('all') || af.includes(f.id);
+            }).length;
+            const badgeCount = allBadges.filter(b => AdminStore.isBadgeRelevantFor(b, 'terminale', f.id)).length;
+            return `
+                <tr style="${f.enabled === false ? 'opacity:0.55;' : ''}">
+                    <td class="num">${i + 1}</td>
+                    <td style="width:68px;"><input class="adm-input" value="${esc(f.icon || '🧭')}" oninput="ADM.fil(${i},'icon',this.value)" style="text-align:center;"></td>
+                    <td><input class="adm-input" value="${esc(f.id)}" placeholder="ex: ciel, sio" oninput="ADM.fil(${i},'id',this.value)"></td>
+                    <td><input class="adm-input" value="${esc(f.label)}" placeholder="Nom complet" oninput="ADM.fil(${i},'label',this.value)"></td>
+                    <td><input class="adm-input" value="${esc(f.shortLabel || '')}" placeholder="Badge court" oninput="ADM.fil(${i},'shortLabel',this.value)"></td>
+                    <td><input class="adm-input" value="${esc(f.desc || '')}" placeholder="Description" oninput="ADM.fil(${i},'desc',this.value)"></td>
+                    <td style="text-align:center; white-space:nowrap;">
+                        <span class="adm-badge adm-badge-type" title="Matières accessibles">${subCount} mat.</span>
+                        <span class="adm-badge adm-badge-system" title="Succès visibles en Terminale/BTS">${badgeCount} 🏆</span>
+                    </td>
+                    <td style="text-align:center;">
+                        <input type="checkbox" ${f.enabled !== false ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer;" title="Activer/désactiver cette filière" onchange="ADM.fil(${i},'enabled',this.checked)">
+                    </td>
+                    <td>
+                        <div class="adm-row-actions">
+                            <button class="adm-ico-btn" title="Monter" ${i === 0 ? 'disabled' : ''} onclick="ADM.filMove(${i},-1)">↑</button>
+                            <button class="adm-ico-btn" title="Descendre" ${i === count - 1 ? 'disabled' : ''} onclick="ADM.filMove(${i},1)">↓</button>
+                            <button class="adm-ico-btn danger" title="Supprimer" ${count <= 1 ? 'disabled' : ''} onclick="ADM.filDelete(${i})">🗑</button>
+                        </div>
+                    </td>
+                </tr>`;
+        }).join('');
+
+        return `
+            <div class="adm-card">
+                <h2>🧭 Filières &amp; Voies d'études <small>${draft.filter(f => f.enabled !== false).length} active(s) sur ${count}</small></h2>
+                <div class="adm-note">
+                    Pilotez ici les filières proposées aux élèves du <b>Lycée (2de → Terminale)</b> et de <b>BTS (1ère &amp; 2ème année)</b>.
+                    Vous pouvez activer/désactiver une filière existante ou créer de nouvelles voies d'établissement (ex. BTS SIO, Bac Pro SN, STL…), puis associer matières et succès depuis leurs onglets dédiés.
+                </div>
+                <div class="adm-table-wrap">
+                    <table class="adm-table">
+                        <thead>
+                            <tr>
+                                <th class="num">#</th>
+                                <th>Icône</th>
+                                <th>Identifiant</th>
+                                <th>Libellé complet</th>
+                                <th>Badge court</th>
+                                <th>Description</th>
+                                <th>Contenu</th>
+                                <th>Active</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+                <div class="adm-toolbar" style="margin-top:16px;">
+                    <button class="adm-btn adm-btn-ghost" onclick="ADM.filAdd()">+ Ajouter une filière</button>
+                    <button class="adm-btn adm-btn-ok" onclick="ADM.filieresSave()">💾 Enregistrer les filières</button>
+                    <button class="adm-btn adm-btn-ghost" onclick="ADM.filieresCancel()">Annuler</button>
+                    <button class="adm-btn adm-btn-danger adm-right" onclick="ADM.filieresReset()">Rétablir les filières officielles</button>
+                </div>
             </div>`;
     }
 
@@ -346,42 +442,58 @@
 
     function renderSubjects() {
         const list = subjectList();
+        const search = String(S.subjectSearch || '').trim().toLowerCase();
+        const filteredList = search
+            ? list.filter(x => (x.name || '').toLowerCase().includes(search) || (x.id || '').toLowerCase().includes(search))
+            : list;
         const open = list.find(x => x.id === S.subjectId) || null;
+        const allFilieres = (typeof AdminStore !== 'undefined' && AdminStore.getFilieres) ? AdminStore.getFilieres() : [];
 
         return `
             <div class="adm-split">
                 <div>
                     <div class="adm-card">
-                        <h2>Matières</h2>
+                        <h2>Matières <small>${list.length}</small></h2>
+                        <input class="adm-input adm-search-bar" id="admSubjectSearch" value="${esc(S.subjectSearch || '')}" placeholder="🔍 Filtrer les matières (ex: CIEL, maths, cyber…)" oninput="ADM.setSubjectSearch(this.value)">
                         <div class="adm-subject-list">
-                            ${list.map(x => {
-                                const bandLabel = x.band === 'college' ? 'Collège' : x.band === 'lycee' ? 'Lycée' : 'Tous';
+                            ${filteredList.map(x => {
+                                const bandLabel = x.band === 'college' ? 'Collège' : x.band === 'lycee' ? 'Lycée/BTS' : 'Tous';
+                                const af = Array.isArray(x.allowedFilieres) && x.allowedFilieres.length ? x.allowedFilieres : ['all'];
+                                const filTag = af.includes('all') ? '' : `<span class="adm-badge adm-badge-system" style="padding:1px 6px; font-size:0.7rem;">${esc(af.slice(0, 2).join(', ').toUpperCase())}${af.length > 2 ? '+' : ''}</span>`;
                                 return `
                                 <button class="adm-subject-item${S.subjectId === x.id ? ' active' : ''}" onclick="ADM.openSubject('${x.id}')">
-                                    <span class="icon">${renderSubjectIcon(x.icon, x.name)}</span>
+                                    <span class="icon">${renderSubjectIcon(x.island || x.icon, x.name)}</span>
                                     <span class="name">
                                         <span style="display:block; font-weight:600;">${esc(x.name || x.id)}</span>
-                                        <span style="display:inline-flex; gap:4px; margin-top:2px; font-size:0.75rem;">
+                                        <span style="display:inline-flex; gap:4px; margin-top:2px; font-size:0.75rem; flex-wrap:wrap;">
                                             <span class="adm-badge adm-badge-type" style="padding:1px 6px; font-size:0.72rem;">${bandLabel}</span>
+                                            ${filTag}
                                             ${x.enabled === false ? '<span class="adm-badge danger" style="padding:1px 6px; font-size:0.72rem;">Masquée</span>' : ''}
                                         </span>
                                     </span>
                                     <span class="count" title="${x.lessons.length} leçon(s) écrite(s)">${x.lessons.length}</span>
                                 </button>`;
-                            }).join('')}
+                            }).join('') || '<div class="adm-empty">Aucune matière ne correspond à cette recherche.</div>'}
                         </div>
                         <div style="margin-top:14px; border-top:1px dashed rgba(154,167,216,.2); padding-top:12px;">
                             <div class="adm-form" style="display:flex; flex-direction:column; gap:8px;">
                                 <div class="adm-field">
                                     <label>Nom de la nouvelle matière</label>
-                                    <input class="adm-input" id="admNewName" placeholder="Ex: Musique, SES, NSI...">
+                                    <input class="adm-input" id="admNewName" placeholder="Ex: Musique, BTS SIO, Droit…">
                                 </div>
                                 <div class="adm-field">
                                     <label>Cycle d'enseignement</label>
                                     <select class="adm-select" id="admNewBand">
-                                        <option value="all">🌐 Tous cycles (Collège &amp; Lycée)</option>
+                                        <option value="all">🌐 Tous cycles (Collège, Lycée &amp; BTS)</option>
                                         <option value="college">🏫 Collège uniquement (6e → 3e)</option>
-                                        <option value="lycee">🏛️ Lycée uniquement (2de → Tle)</option>
+                                        <option value="lycee">🏛️ Lycée &amp; BTS uniquement (2de → BTS 2)</option>
+                                    </select>
+                                </div>
+                                <div class="adm-field">
+                                    <label>Filière cible (Lycée &amp; BTS)</label>
+                                    <select class="adm-select" id="admNewFiliere">
+                                        <option value="all">🌐 Toutes les filières</option>
+                                        ${allFilieres.map(f => `<option value="${esc(f.id)}">${esc(f.icon || '🧭')} ${esc(f.label)}</option>`).join('')}
                                     </select>
                                 </div>
                                 <div class="adm-field">
@@ -451,7 +563,7 @@
         const editor = S.editingLesson !== null && S.editingLesson !== undefined && S.editingLesson >= -1
             && S.subjectId === sub.id ? renderLessonEditor(lessons) : '';
 
-        const currentIcon = fresh.icon || '';
+        const currentIcon = fresh.island || fresh.icon || '';
         const matchingIsland = OFFICIAL_ISLANDS.find(isl => isl.value === currentIcon || (currentIcon && currentIcon.endsWith(isl.value.replace('Image/ile/', ''))));
 
         // Questions procédurales adaptées à la classe sélectionnée
@@ -506,7 +618,7 @@
             <div class="adm-card">
                 <div class="adm-toolbar">
                     <h2 style="margin:0; display:flex; align-items:center; gap:10px;">
-                        ${renderSubjectIcon(fresh.icon, fresh.name, 'adm-title-img')} ${esc(fresh.name)}
+                        ${renderSubjectIcon(fresh.island || fresh.icon, fresh.name, 'adm-title-img')} ${esc(fresh.name)}
                     </h2>
                     <div style="display:flex; gap:8px; align-items:center;">
                         <span class="adm-badge ${isCustom ? 'adm-badge-custom' : 'adm-badge-system'}">${isCustom ? 'Matière personnalisée' : 'Matière du jeu'}</span>
@@ -530,9 +642,9 @@
                         <div class="adm-field">
                             <label>Cycle d'enseignement rattaché</label>
                             <select class="adm-select" id="admMetaBand" onchange="ADM.onBandChange(this.value)">
-                                <option value="all"${(fresh.band || 'all') === 'all' ? ' selected' : ''}>🌐 Tous niveaux (Collège &amp; Lycée)</option>
+                                <option value="all"${(fresh.band || 'all') === 'all' ? ' selected' : ''}>🌐 Tous niveaux (Collège, Lycée &amp; BTS)</option>
                                 <option value="college"${fresh.band === 'college' ? ' selected' : ''}>🏫 Collège uniquement (6e → 3e)</option>
-                                <option value="lycee"${fresh.band === 'lycee' ? ' selected' : ''}>🏛️ Lycée uniquement (2de → Tle)</option>
+                                <option value="lycee"${fresh.band === 'lycee' ? ' selected' : ''}>🏛️ Lycée &amp; BTS uniquement (2de → Tle / BTS)</option>
                             </select>
                         </div>
                     </div>
@@ -568,6 +680,44 @@
                         <p class="adm-hint" style="margin-top:4px;">Seuls les élèves connectés dans les classes cochées auront accès à cette matière.</p>
                     </div>
 
+                    <!-- FILIÈRES AUTORISÉES & SPÉCIALITÉS (LYCÉE & BTS) -->
+                    <div class="adm-field" style="margin-bottom:10px;">
+                        <label style="display:flex; justify-content:space-between; align-items:center;">
+                            <span>Filières autorisées (Lycée &amp; BTS) :</span>
+                            <span style="font-size:0.8rem; font-weight:normal; color:var(--muted);">
+                                ${(() => {
+                                    const af = AdminStore.defaultAllowedFilieresForSubject(fresh);
+                                    return af.includes('all') ? 'Toutes les filières' : af.length + ' filière(s) sélectionnée(s)';
+                                })()}
+                            </span>
+                        </label>
+                        <div class="adm-grade-pills">
+                            ${(() => {
+                                const allFil = AdminStore.getFilieres();
+                                const af = AdminStore.defaultAllowedFilieresForSubject(fresh);
+                                const isAll = af.includes('all');
+                                const allBtn = `<button type="button" class="adm-grade-pill ${isAll ? 'checked' : ''}" onclick="ADM.toggleSubjectFiliere('all')">${isAll ? '✓' : '○'} 🌐 Toutes les filières</button>`;
+                                const filBtns = allFil.map(f => {
+                                    const checked = !isAll && af.includes(f.id);
+                                    return `<button type="button" class="adm-grade-pill ${checked ? 'checked' : ''}" onclick="ADM.toggleSubjectFiliere('${esc(f.id)}')">${checked ? '✓' : '○'} ${esc(f.icon || '🧭')} ${esc(f.shortLabel || f.label)}</button>`;
+                                }).join('');
+                                return allBtn + filBtns;
+                            })()}
+                        </div>
+                        <label style="margin-top:8px;">Marquer comme « ⭐ Spécialité phare » pour :</label>
+                        <div class="adm-grade-pills">
+                            ${(() => {
+                                const allFil = AdminStore.getFilieres();
+                                const specs = Array.isArray(fresh.specialtyFilieres) ? fresh.specialtyFilieres : [];
+                                return allFil.map(f => {
+                                    const isSpec = specs.includes(f.id);
+                                    return `<button type="button" class="adm-grade-pill adm-filiere-pill ${isSpec ? 'checked is-specialty' : ''}" onclick="ADM.toggleSubjectSpecialty('${esc(f.id)}')">${isSpec ? '⭐' : '☆'} ${esc(f.shortLabel || f.label)}</button>`;
+                                }).join('');
+                            })()}
+                        </div>
+                        <p class="adm-hint" style="margin-top:4px;">Contrôle dans quelles filières (CIEL, STMG, STI2D, NSI, ST2S, Générale…) cette matière s'affiche et si elle porte le badge Spécialité.</p>
+                    </div>
+
                     <div class="adm-form-row" style="align-items:flex-end; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
                         <div class="adm-field" style="flex:1; min-width:200px;">
                             <label>Illustration / Île officielle</label>
@@ -579,7 +729,7 @@
                         <div class="adm-field" style="flex:1; min-width:180px;">
                             <label>Icône (URL, fichier ou emoji)</label>
                             <div style="display:flex; gap:6px; align-items:center;">
-                                <input class="adm-input" id="admMetaIcon" value="${esc(fresh.icon)}" placeholder="Ex: Image/ile/maths.webp ou 📐" oninput="ADM.updateSubjectIconPreview('admMetaIcon', 'admMetaPreview')">
+                                <input class="adm-input" id="admMetaIcon" value="${esc(fresh.island || fresh.icon)}" placeholder="Ex: Image/ile/maths.webp ou 📐" oninput="ADM.updateSubjectIconPreview('admMetaIcon', 'admMetaPreview')">
                                 <label class="adm-ico-btn" style="cursor:pointer; display:flex; align-items:center; padding:6px 9px;" title="Charger une image locale (PNG, SVG, WebP, JPG)">
                                     📁<input type="file" accept="image/*" style="display:none;" onchange="ADM.handleSubjectImageUpload(this, 'admMetaIcon', 'admMetaPreview')">
                                 </label>
@@ -588,7 +738,7 @@
                         <div class="adm-field" style="width:auto;">
                             <label style="text-align:center;">Aperçu</label>
                             <div id="admMetaPreview" class="adm-subj-preview">
-                                ${renderSubjectIcon(fresh.icon, fresh.name)}
+                                ${renderSubjectIcon(fresh.island || fresh.icon, fresh.name)}
                             </div>
                         </div>
                     </div>
@@ -939,14 +1089,31 @@
 
     function renderBadges() {
         const cat = S.badgeCategory || 'all';
+        const filFilter = S.badgeFiliereFilter || 'all';
         const allBadges = (typeof AdminStore !== 'undefined') ? AdminStore.getBadges() : [];
-        const filtered = cat === 'all' ? allBadges : allBadges.filter(b => (b.category || 'progression') === cat);
+        const allFilieres = (typeof AdminStore !== 'undefined' && AdminStore.getFilieres) ? AdminStore.getFilieres() : [];
+
+        const matchesFiliere = (b) => {
+            if (filFilter === 'all') return true;
+            const af = Array.isArray(b.allowedFilieres) && b.allowedFilieres.length ? b.allowedFilieres : ['all'];
+            const band = b.band || 'all';
+            if (filFilter === 'universal') return band === 'all' && af.includes('all');
+            if (filFilter === 'college') return band === 'college';
+            return band !== 'college' && af.includes(filFilter) && !af.includes('all');
+        };
+
+        const filtered = allBadges.filter(b =>
+            (cat === 'all' || (b.category || 'progression') === cat) && matchesFiliere(b)
+        );
         const unlockedList = (typeof DB !== 'undefined') ? DB.getBadges() : [];
 
         const editor = S.editingBadge ? renderBadgeEditor(S.editingBadge) : '';
 
         const badgeCards = filtered.map(b => {
             const isUnlocked = unlockedList.includes(b.id);
+            const scopeLbl = (typeof AdminStore !== 'undefined' && AdminStore.getBadgeScopeLabel)
+                ? AdminStore.getBadgeScopeLabel(b)
+                : '🌐 Tous';
             return `
                 <div class="adm-shop-card ${b.disabled ? 'disabled' : ''}">
                     <div class="adm-shop-card-head">
@@ -959,6 +1126,7 @@
                                 <span class="adm-badge adm-badge-type">${esc(BADGE_CATEGORY_LABELS[b.category] || b.category)}</span>
                             </div>
                             <div class="adm-shop-cost" style="font-size:0.85rem; color:#8fa1d0;">ID: <code>${esc(b.id)}</code></div>
+                            <span class="adm-badge-filiere-tag">${esc(scopeLbl)}</span>
                         </div>
                     </div>
                     <p class="adm-shop-desc">${esc(b.desc || 'Aucune description')}</p>
@@ -977,17 +1145,29 @@
         return `
             <div class="adm-card">
                 <div class="adm-toolbar">
-                    <h2 style="margin:0;">🏆 Gestion des Succès &amp; Badges <small>${allBadges.length} succès</small></h2>
+                    <h2 style="margin:0;">🏆 Gestion des Succès &amp; Badges <small>${filtered.length}/${allBadges.length} affiché(s)</small></h2>
                     <div class="adm-right" style="display:flex; gap:8px;">
                         <button class="adm-btn adm-btn-ok" onclick="ADM.newBadge()">+ Ajouter un succès</button>
                     </div>
                 </div>
-                <p class="adm-hint">Consultez, modifiez ou ajoutez des succès pour récompenser les élèves. Vous pouvez également tester leur déblocage en direct pour votre compte.</p>
+                <p class="adm-hint">Pilotez chaque succès et sa <b>filière cible</b> (CIEL, STMG, STI2D, NSI, ST2S, Générale, Collège ou Universel). Les élèves ne voient par défaut que les succès de leur filière, avec un bouton « Tout voir » sur leur tableau de bord.</p>
 
+                <!-- Filtres par Filière -->
+                <div class="adm-shop-filter-tabs" style="margin-bottom:8px;">
+                    <button class="adm-shop-filter-btn ${filFilter === 'all' ? 'active' : ''}" onclick="ADM.setBadgeFiliereFilter('all')">👁️ Toutes filières (${allBadges.length})</button>
+                    <button class="adm-shop-filter-btn ${filFilter === 'universal' ? 'active' : ''}" onclick="ADM.setBadgeFiliereFilter('universal')">🌐 Universels</button>
+                    <button class="adm-shop-filter-btn ${filFilter === 'college' ? 'active' : ''}" onclick="ADM.setBadgeFiliereFilter('college')">🏫 Collège</button>
+                    ${allFilieres.map(f => {
+                        const cnt = allBadges.filter(b => b.band !== 'college' && Array.isArray(b.allowedFilieres) && b.allowedFilieres.includes(f.id) && !b.allowedFilieres.includes('all')).length;
+                        return `<button class="adm-shop-filter-btn ${filFilter === f.id ? 'active' : ''}" onclick="ADM.setBadgeFiliereFilter('${esc(f.id)}')">${esc(f.icon || '🧭')} ${esc(f.shortLabel || f.label)} (${cnt})</button>`;
+                    }).join('')}
+                </div>
+
+                <!-- Filtres par Catégorie -->
                 <div class="adm-shop-filter-tabs">
                     ${Object.keys(BADGE_CATEGORY_LABELS).map(k => `
                         <button class="adm-shop-filter-btn ${cat === k ? 'active' : ''}" onclick="ADM.setBadgeCategory('${k}')">
-                            ${BADGE_CATEGORY_LABELS[k]} (${k === 'all' ? allBadges.length : allBadges.filter(i => (i.category || 'progression') === k).length})
+                            ${BADGE_CATEGORY_LABELS[k]} (${k === 'all' ? allBadges.filter(matchesFiliere).length : allBadges.filter(i => (i.category || 'progression') === k && matchesFiliere(i)).length})
                         </button>
                     `).join('')}
                 </div>
@@ -995,7 +1175,7 @@
                 ${editor}
 
                 <div class="adm-shop-grid">
-                    ${badgeCards || '<div class="adm-empty" style="grid-column: 1/-1;">Aucun succès dans cette catégorie.</div>'}
+                    ${badgeCards || '<div class="adm-empty" style="grid-column: 1/-1;">Aucun succès ne correspond à ces filtres.</div>'}
                 </div>
 
                 <div class="adm-toolbar" style="margin-top:20px; border-top: 1px dashed rgba(154,167,216,0.2); padding-top: 14px; display:flex; gap:10px; flex-wrap:wrap;">
@@ -1008,6 +1188,11 @@
 
     function renderBadgeEditor(badge) {
         const isNew = Boolean(badge._isNew);
+        const allFilieres = (typeof AdminStore !== 'undefined' && AdminStore.getFilieres) ? AdminStore.getFilieres() : [];
+        const curFil = Array.isArray(badge.allowedFilieres) && badge.allowedFilieres.length ? badge.allowedFilieres : ['all'];
+        const isAllFil = curFil.includes('all');
+        const curBand = badge.band || 'all';
+
         return `
             <div class="adm-editor" style="margin: 16px 0;">
                 <h3>${isNew ? '➕ Nouveau succès' : '✏️ Modifier le succès « ' + esc(badge.name) + ' »'}</h3>
@@ -1023,7 +1208,7 @@
                         </div>
                     </div>
 
-                    <div class="adm-grid-2">
+                    <div class="adm-grid-3">
                         <div class="adm-field">
                             <label>Icône / Émoji</label>
                             <input class="adm-input" id="admBadgeIcon" value="${esc(badge.icon || '🏆')}" placeholder="ex: 🏆 ou 🎯" style="max-width:120px;">
@@ -1036,6 +1221,26 @@
                                 `).join('')}
                             </select>
                         </div>
+                        <div class="adm-field">
+                            <label>Cycle scolaire cible</label>
+                            <select class="adm-select" id="admBadgeBand">
+                                <option value="all"${curBand === 'all' ? ' selected' : ''}>🌐 Tous cycles (Collège, Lycée &amp; BTS)</option>
+                                <option value="college"${curBand === 'college' ? ' selected' : ''}>🏫 Collège uniquement (6e → 3e)</option>
+                                <option value="lycee"${curBand === 'lycee' ? ' selected' : ''}>🏛️ Lycée &amp; BTS uniquement</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="adm-field">
+                        <label>Filières visibles (Lycée &amp; BTS)</label>
+                        <div class="adm-grade-pills" id="admBadgeFilieresWrap">
+                            <button type="button" class="adm-grade-pill ${isAllFil ? 'checked' : ''}" onclick="ADM.toggleEditBadgeFiliere('all')">${isAllFil ? '✓' : '○'} 🌐 Toutes les filières</button>
+                            ${allFilieres.map(f => {
+                                const checked = !isAllFil && curFil.includes(f.id);
+                                return `<button type="button" class="adm-grade-pill ${checked ? 'checked' : ''}" onclick="ADM.toggleEditBadgeFiliere('${esc(f.id)}')">${checked ? '✓' : '○'} ${esc(f.icon || '🧭')} ${esc(f.shortLabel || f.label)}</button>`;
+                            }).join('')}
+                        </div>
+                        <span class="adm-hint">Ex : cochez uniquement « CIEL » pour que les élèves STSS ou STMG ne voient pas ce succès par défaut.</span>
                     </div>
 
                     <div class="adm-field">
@@ -1044,8 +1249,9 @@
                     </div>
 
                     <div class="adm-field">
-                        <label>Condition technique (optionnelle)</label>
-                        <input class="adm-input" id="admBadgeCond" value="${esc(badge.condition || '')}" placeholder="ex: totalCompleted >= 10">
+                        <label>Condition technique (évaluée automatiquement)</label>
+                        <input class="adm-input" id="admBadgeCond" value="${esc(badge.condition || '')}" placeholder="ex: cyberLevel >= 5, stmgLevel >= 5, totalCompleted >= 10, streakCount >= 5">
+                        <span class="adm-hint">Variables disponibles : <code>totalCompleted</code>, <code>playerLevel</code>, <code>coins</code>, <code>streakCount</code>, <code>comboCount</code>, <code>mathsLevel</code>, <code>cyberLevel</code>, <code>reseauxLevel</code>, <code>electroniqueLevel</code>, <code>stmgLevel</code>, <code>sti2dLevel</code>, <code>stssLevel</code>, <code>nsiLevel</code>, <code>hggspLevel</code>, <code>&lt;idMatiere&gt;Level</code>…</span>
                     </div>
 
                     <div class="adm-form-actions" style="margin-top:14px; display:flex; gap:10px;">
@@ -1275,6 +1481,62 @@
                     <button class="adm-btn adm-btn-ghost" onclick="ADM.rewardsReset()">Rétablir les valeurs par défaut</button>
                 </div>
 
+                <!-- Éditeur complet du Pool de Quêtes Quotidiennes -->
+                <div class="adm-card" style="border-color: rgba(95,212,230,0.35); margin-top: 16px;">
+                    <div class="adm-toolbar">
+                        <h3 style="font-family:'Cinzel',serif; font-size:15px; color:var(--cyan); margin:0;">📋 Pool des Quêtes Quotidiennes (${(S.questsDraft || AdminStore.getQuestPool()).length})</h3>
+                        <button class="adm-btn adm-btn-ghost" onclick="ADM.refreshTodayQuests()">🔄 Régénérer les quêtes du jour</button>
+                    </div>
+                    <p class="adm-hint" style="margin:6px 0 10px;">Personnalisez les missions tirées chaque matin à minuit (3 types distincts tirés + la quête de connexion).</p>
+                    ${(() => {
+                        if (!S.questsDraft) S.questsDraft = AdminStore.getQuestPool();
+                        const qList = S.questsDraft;
+                        return `
+                        <div class="adm-table-wrap">
+                            <table class="adm-table">
+                                <thead>
+                                    <tr>
+                                        <th>Icône</th>
+                                        <th>Titre</th>
+                                        <th>Type</th>
+                                        <th>Objectif</th>
+                                        <th>XP</th>
+                                        <th>Pièces</th>
+                                        <th>Active</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${qList.map((q, qi) => `
+                                        <tr style="${q.enabled === false ? 'opacity:0.55;' : ''}">
+                                            <td style="width:62px;"><input class="adm-input" value="${esc(q.icon || '🎯')}" style="text-align:center;" oninput="ADM.qField(${qi},'icon',this.value)"></td>
+                                            <td><input class="adm-input" value="${esc(q.title)}" oninput="ADM.qField(${qi},'title',this.value)"></td>
+                                            <td>
+                                                <select class="adm-select" onchange="ADM.qField(${qi},'type',this.value)">
+                                                    <option value="xp"${q.type === 'xp' ? ' selected' : ''}>⚡ XP gagnée</option>
+                                                    <option value="levels"${q.type === 'levels' ? ' selected' : ''}>🏝️ Niveaux réussis</option>
+                                                    <option value="perfect"${q.type === 'perfect' ? ' selected' : ''}>⭐ Score 3 étoiles</option>
+                                                    <option value="firstTry"${q.type === 'firstTry' ? ' selected' : ''}>🎯 1er coup juste</option>
+                                                </select>
+                                            </td>
+                                            <td style="width:82px;"><input class="adm-input" type="number" min="1" max="500" value="${q.target}" oninput="ADM.qField(${qi},'target',this.value)"></td>
+                                            <td style="width:76px;"><input class="adm-input" type="number" min="0" max="500" value="${q.xp}" oninput="ADM.qField(${qi},'xp',this.value)"></td>
+                                            <td style="width:76px;"><input class="adm-input" type="number" min="0" max="500" value="${q.coins}" oninput="ADM.qField(${qi},'coins',this.value)"></td>
+                                            <td style="text-align:center;"><input type="checkbox" ${q.enabled !== false ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer;" onchange="ADM.qField(${qi},'enabled',this.checked)"></td>
+                                            <td><button class="adm-ico-btn danger" ${qList.length <= 1 ? 'disabled' : ''} onclick="ADM.qDelete(${qi})" title="Supprimer">🗑</button></td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="adm-toolbar" style="margin-top:12px;">
+                            <button class="adm-btn adm-btn-ghost" onclick="ADM.qAdd()">+ Ajouter une quête</button>
+                            <button class="adm-btn adm-btn-ok" onclick="ADM.questsSave()">💾 Enregistrer le pool de quêtes</button>
+                            <button class="adm-btn adm-btn-danger adm-right" onclick="ADM.questsReset()">Rétablir les quêtes par défaut</button>
+                        </div>`;
+                    })()}
+                </div>
+
                 <!-- Outil de crédit rapide pour tests de la boutique -->
                 <div class="adm-card" style="border-color: rgba(102,187,106,0.35); margin-top: 16px;">
                     <h3 style="font-family:'Cinzel',serif; font-size:15px; color:var(--green); margin-bottom:8px;">💰 Outil de test de l'Économie (Portefeuille Local)</h3>
@@ -1292,14 +1554,14 @@
                     <h3 style="font-family:'Cinzel',serif; font-size:15px; color:var(--gold-soft); margin-bottom:8px;">🏆 Succès &amp; Badges Disponibles (${(typeof AdminStore !== 'undefined' && AdminStore.getBadges) ? AdminStore.getBadges().length : 0})</h3>
                     <div class="adm-table-wrap">
                         <table class="adm-table">
-                            <thead><tr><th>Icône</th><th>Nom du Succès</th><th>Description / Condition</th><th>Statut</th></tr></thead>
+                            <thead><tr><th>Icône</th><th>Nom du Succès</th><th>Portée / Filière</th><th>Description / Condition</th></tr></thead>
                             <tbody>
                                 ${((typeof AdminStore !== 'undefined' && AdminStore.getBadges) ? AdminStore.getBadges() : []).map(b => `
                                     <tr>
                                         <td>${esc(b.icon || '🏆')}</td>
                                         <td><b>${esc(b.name)}</b></td>
+                                        <td><span class="adm-badge adm-badge-type">${esc(AdminStore.getBadgeScopeLabel ? AdminStore.getBadgeScopeLabel(b) : '🌐 Tous')}</span></td>
                                         <td>${esc(b.desc || b.condition || '')}</td>
-                                        <td><span class="adm-badge adm-badge-eleve">Actif</span></td>
                                     </tr>
                                 `).join('')}
                             </tbody>
@@ -1313,15 +1575,37 @@
 
     function renderMembers() {
         const me = DB.getCurrentUser();
+        const levels = AdminStore.getLevels();
+        const filieres = AdminStore.getFilieres();
+
         const rows = S.members.map(m => {
             const isMe = me && m.email === me.email;
+            const curNiv = m.niveau || '6eme';
+            const curFil = m.filiere || 'generale';
+            const filApplicable = AdminStore.isFiliereApplicable(curNiv);
             return `
                 <tr>
-                    <td>${esc(m.username)} ${isMe ? '<span class="adm-badge adm-badge-you">vous</span>' : ''}</td>
-                    <td>${esc(m.email)}</td>
-                    <td>${fmtDate(m.created)}</td>
                     <td>
-                        <select class="adm-select" ${isMe ? 'disabled title="Vous ne pouvez pas changer votre propre rôle"' : ''}
+                        <b>${esc(m.username)}</b> ${isMe ? '<span class="adm-badge adm-badge-you">vous</span>' : ''}
+                        <div style="font-size:0.78rem; color:var(--muted);">${esc(m.email)}</div>
+                    </td>
+                    <td>
+                        <select class="adm-select adm-member-inline-select" onchange="ADM.setMemberGrade('${esc(m.email)}', this.value)" title="Classe de cet élève">
+                            ${levels.map(l => `<option value="${esc(l.id)}"${curNiv === l.id ? ' selected' : ''}>${esc(l.label)}</option>`).join('')}
+                        </select>
+                    </td>
+                    <td>
+                        ${filApplicable ? `
+                        <select class="adm-select adm-member-inline-select" onchange="ADM.setMemberFiliere('${esc(m.email)}', this.value)" title="Filière de cet élève">
+                            ${filieres.map(f => `<option value="${esc(f.id)}"${curFil === f.id ? ' selected' : ''}>${esc(f.icon || '')} ${esc(f.shortLabel || f.label)}</option>`).join('')}
+                        </select>` : '<span class="adm-hint">Collège</span>'}
+                    </td>
+                    <td style="white-space:nowrap; font-size:0.86rem;">
+                        <div>⚡ <b>${m.xp || 0}</b> XP · 🪙 <b>${m.coins ?? 30}</b></div>
+                        <div style="color:var(--muted); font-size:0.78rem;">🏆 ${m.badgesCount || 0} succès · ${fmtDate(m.created)}</div>
+                    </td>
+                    <td>
+                        <select class="adm-select adm-member-inline-select" ${isMe ? 'disabled title="Vous ne pouvez pas changer votre propre rôle"' : ''}
                             onchange="ADM.setRole('${esc(m.email)}', this.value)">
                             <option value="eleve"${m.role !== 'admin' ? ' selected' : ''}>Élève</option>
                             <option value="admin"${m.role === 'admin' ? ' selected' : ''}>Administrateur</option>
@@ -1329,24 +1613,21 @@
                     </td>
                     <td>
                         <div class="adm-row-actions">
+                            <button class="adm-ico-btn" title="Offrir +100 pièces & +50 XP" onclick="ADM.bonusMember('${esc(m.email)}')">🎁</button>
                             <button class="adm-ico-btn" title="Changer le pseudo" onclick="ADM.renameMember('${esc(m.email)}','${esc(m.username)}')">✏️</button>
                             <button class="adm-ico-btn" title="Réinitialiser le mot de passe" onclick="ADM.resetPass('${esc(m.email)}')">🔑</button>
+                            <button class="adm-ico-btn" title="Réinitialiser la progression" onclick="ADM.resetMemberProgress('${esc(m.email)}','${esc(m.username)}')">🔄</button>
                             <button class="adm-ico-btn danger" title="Supprimer le compte" ${isMe ? 'disabled' : ''} onclick="ADM.deleteMember('${esc(m.email)}','${esc(m.username)}')">🗑</button>
                         </div>
                     </td>
                 </tr>`;
         }).join('');
 
-        const roleBadge = m => m.role === 'admin'
-            ? '<span class="adm-badge adm-badge-admin">Admin</span>'
-            : '<span class="adm-badge adm-badge-eleve">Élève</span>';
-
         return `
             <div class="adm-card">
-                <h2>👥 Membres <small>comptes du jeu (mode local)</small></h2>
+                <h2>👥 Membres <small>${S.members.length} compte(s) — pilotage classe, filière &amp; progression</small></h2>
                 <div class="adm-note">
-                    Les comptes permettent aux élèves de se connecter sur cet appareil (modale Se Connecter). En mode local,
-                    la progression, les options, la classe et les succès sont <b>strictement isolés par compte</b> dans le navigateur — utilisez « Réglages → Réinitialiser les données de jeu » pour repartir de zéro.
+                    Les comptes permettent aux élèves de se connecter sur cet appareil (modale Se Connecter). Pilotez ici directement la <b>classe</b>, la <b>filière</b>, le <b>rôle</b>, les <b>récompenses</b> et la <b>progression</b> de chaque élève.
                 </div>
                 <div class="adm-card" style="border-color:rgba(200,168,75,.35);">
                     <h3 style="font-family:'Cinzel',serif; font-size:14px; color:var(--gold-soft); margin-bottom:10px;">➕ Créer un compte</h3>
@@ -1366,8 +1647,8 @@
                 </div>
                 <div class="adm-table-wrap" style="margin-top:14px;">
                     <table class="adm-table">
-                        <thead><tr><th>Pseudo</th><th>E-mail</th><th>Créé le</th><th>Rôle</th><th></th></tr></thead>
-                        <tbody>${rows || '<tr><td colspan="5" class="adm-empty">Aucun compte pour l\'instant.</td></tr>'}</tbody>
+                        <thead><tr><th>Élève / E-mail</th><th>Classe</th><th>Filière</th><th>Progression</th><th>Rôle</th><th>Actions</th></tr></thead>
+                        <tbody>${rows || '<tr><td colspan="6" class="adm-empty">Aucun compte pour l\'instant.</td></tr>'}</tbody>
                     </table>
                 </div>
             </div>`;
@@ -1378,14 +1659,16 @@
     function renderSettings() {
         const siteCfg = (typeof AdminStore !== 'undefined') ? AdminStore.getSiteConfig() : {};
         const aiCfg = (typeof AdminStore !== 'undefined') ? AdminStore.getAiConfig() : {};
+        const levels = (typeof AdminStore !== 'undefined' && AdminStore.getLevels) ? AdminStore.getLevels() : [];
+        const filieres = (typeof AdminStore !== 'undefined' && AdminStore.getFilieres) ? AdminStore.getFilieres() : [];
 
         return `
             <div class="adm-card">
                 <div class="adm-toolbar">
-                    <h2 style="margin:0;">⚙️ Configuration Générale &amp; Gameplay du Site</h2>
-                    <span class="adm-badge adm-badge-system">v1.27.0</span>
+                    <h2 style="margin:0;">⚙️ Configuration Générale &amp; Pilotage Global du Site</h2>
+                    <span class="adm-badge adm-badge-system">v1.29.0</span>
                 </div>
-                <p class="adm-hint">Personnalisez ici tous les paramètres globaux de la plateforme EDUQUEST : titre, slogans, durée du chronomètre, multiplicateurs d'XP et de pièces, audio et inscriptions.</p>
+                <p class="adm-hint">Pilotez ici l'ensemble des paramètres globaux d'EDUQUEST : identité, parcours par défaut, modules actifs (Boutique, Missions, Succès, Confettis, Chrono), mode maintenance/examen, audio et inscriptions.</p>
 
                 <div class="adm-form" style="margin-top:14px;">
                     <div class="adm-grid-2">
@@ -1395,13 +1678,28 @@
                         </div>
                         <div class="adm-field">
                             <label>Slogan (Tagline)</label>
-                            <input class="adm-input" id="admSiteTagline" value="${esc(siteCfg.tagline || 'L\'aventure éducative gamifiée')}" placeholder="L'aventure éducative gamifiée">
+                            <input class="adm-input" id="admSiteTagline" value="${esc(siteCfg.tagline || 'Le jeu de révision Collège, Lycée & BTS')}" placeholder="Le jeu de révision Collège, Lycée & BTS">
                         </div>
                     </div>
 
                     <div class="adm-field">
-                        <label>Annonce d'accueil / Message d'alerte (affiché sur l'accueil, optionnel)</label>
-                        <input class="adm-input" id="admSiteAnnouncement" value="${esc(siteCfg.announcement || '')}" placeholder="Ex: Bienvenue pour la rentrée ! Nouveaux quiz et défis disponibles.">
+                        <label>Annonce d'accueil / Message d'information (affiché sur l'accueil &amp; le dashboard)</label>
+                        <input class="adm-input" id="admSiteAnnouncement" value="${esc(siteCfg.announcement || '')}" placeholder="Ex: Bienvenue pour la rentrée ! Nouveaux quiz CIEL & STMG disponibles.">
+                    </div>
+
+                    <div class="adm-grid-2">
+                        <div class="adm-field">
+                            <label>Classe par défaut des nouveaux élèves</label>
+                            <select class="adm-select" id="admSiteDefaultNiveau">
+                                ${levels.map(l => `<option value="${esc(l.id)}"${(siteCfg.defaultNiveau || '6eme') === l.id ? ' selected' : ''}>🎓 ${esc(l.label)}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="adm-field">
+                            <label>Filière par défaut (Lycée &amp; BTS)</label>
+                            <select class="adm-select" id="admSiteDefaultFiliere">
+                                ${filieres.map(f => `<option value="${esc(f.id)}"${(siteCfg.defaultFiliere || 'generale') === f.id ? ' selected' : ''}>${esc(f.icon || '🧭')} ${esc(f.label)}</option>`).join('')}
+                            </select>
+                        </div>
                     </div>
 
                     <div class="adm-grid-3">
@@ -1432,14 +1730,28 @@
                         </div>
                     </div>
 
-                    <div class="adm-grid-2">
-                        <div class="adm-field" style="display:flex; align-items:center; gap:8px;">
-                            <input type="checkbox" id="admSiteAllowReg" ${siteCfg.allowRegistration !== false ? 'checked' : ''} style="width:18px; height:18px; cursor:pointer;">
-                            <label for="admSiteAllowReg" style="margin:0; cursor:pointer;">Autoriser la création de nouveaux comptes élèves</label>
+                    <div class="adm-field">
+                        <label>Activation des modules &amp; comportement global</label>
+                        <div class="adm-feature-grid">
+                            <label class="adm-feature-toggle"><input type="checkbox" id="admSiteAllowReg" ${siteCfg.allowRegistration !== false ? 'checked' : ''}> 👥 Autoriser l'auto-inscription</label>
+                            <label class="adm-feature-toggle"><input type="checkbox" id="admSiteSoundDef" ${siteCfg.soundEnabledByDefault ? 'checked' : ''}> 🔊 Son actif à la 1ère visite</label>
+                            <label class="adm-feature-toggle"><input type="checkbox" id="admSiteEnableShop" ${siteCfg.enableShop !== false ? 'checked' : ''}> 🛍️ Activer la Boutique</label>
+                            <label class="adm-feature-toggle"><input type="checkbox" id="admSiteEnableQuests" ${siteCfg.enableQuests !== false ? 'checked' : ''}> 📋 Activer les Missions du jour</label>
+                            <label class="adm-feature-toggle"><input type="checkbox" id="admSiteEnableBadges" ${siteCfg.enableBadges !== false ? 'checked' : ''}> 🏆 Activer les Succès</label>
+                            <label class="adm-feature-toggle"><input type="checkbox" id="admSiteEnableChrono" ${siteCfg.enableChrono !== false ? 'checked' : ''}> ⏱️ Autoriser le Mode Chrono</label>
+                            <label class="adm-feature-toggle"><input type="checkbox" id="admSiteEnableParticles" ${siteCfg.enableParticlesByDefault !== false ? 'checked' : ''}> ✨ Particules actives par défaut</label>
+                            <label class="adm-feature-toggle"><input type="checkbox" id="admSiteEnableConfetti" ${siteCfg.enableConfetti !== false ? 'checked' : ''}> 🎉 Confettis de célébration</label>
                         </div>
-                        <div class="adm-field" style="display:flex; align-items:center; gap:8px;">
-                            <input type="checkbox" id="admSiteSoundDef" ${siteCfg.soundEnabledByDefault ? 'checked' : ''} style="width:18px; height:18px; cursor:pointer;">
-                            <label for="admSiteSoundDef" style="margin:0; cursor:pointer;">Son activé par défaut à la première visite</label>
+                    </div>
+
+                    <div class="adm-grid-2" style="background:rgba(200,168,75,0.06); border:1px solid rgba(200,168,75,0.24); border-radius:10px; padding:12px;">
+                        <label class="adm-feature-toggle" style="border:none; background:transparent; padding:0;">
+                            <input type="checkbox" id="admSiteMaintMode" ${siteCfg.maintenanceMode ? 'checked' : ''}>
+                            ⚠️ Activer le bandeau Maintenance / Mode Examen
+                        </label>
+                        <div class="adm-field">
+                            <label>Message du bandeau Maintenance / Examen</label>
+                            <input class="adm-input" id="admSiteMaintMsg" value="${esc(siteCfg.maintenanceMessage || '')}" placeholder="Ex: Session d'évaluation en cours — mode révision encadré.">
                         </div>
                     </div>
 
@@ -1589,9 +1901,11 @@
                 <p class="adm-hint">Réinitialisez des modules individuels ou effacez les caches locaux de cet appareil.</p>
                 <div class="adm-toolbar" style="flex-wrap:wrap; gap:8px;">
                     <button class="adm-btn adm-btn-danger" onclick="ADM.resetAdminConfig()">Réinitialiser TOUT le panneau</button>
-                    <button class="adm-btn adm-btn-ghost" onclick="ADM.levelsReset()">Niveaux scolaires par défaut</button>
+                    <button class="adm-btn adm-btn-ghost" onclick="ADM.levelsReset()">Niveaux par défaut</button>
+                    <button class="adm-btn adm-btn-ghost" onclick="ADM.filieresReset()">Filières par défaut</button>
                     <button class="adm-btn adm-btn-ghost" onclick="ADM.resetShopItems()">Boutique par défaut</button>
                     <button class="adm-btn adm-btn-ghost" onclick="ADM.resetBadgesCatalog()">Succès par défaut</button>
+                    <button class="adm-btn adm-btn-ghost" onclick="ADM.questsReset()">Quêtes par défaut</button>
                     <button class="adm-btn adm-btn-ghost" onclick="ADM.rewardsReset()">Récompenses par défaut</button>
                     <button class="adm-btn adm-btn-danger adm-right" onclick="ADM.resetProgress()">Effacer la progression joueur (appareil)</button>
                 </div>
@@ -1800,11 +2114,75 @@
             };
             reader.readAsDataURL(file);
         },
+        /* ----- Filières & Voies d'études ----- */
+        fil(i, field, val) {
+            if (!S.filieresDraft || !S.filieresDraft[i]) return;
+            S.filieresDraft[i][field] = val;
+        },
+        filAdd() {
+            if (!S.filieresDraft) S.filieresDraft = AdminStore.getFilieres();
+            S.filieresDraft.push({
+                id: 'filiere_' + (S.filieresDraft.length + 1),
+                label: 'Nouvelle filière',
+                shortLabel: 'Nouvelle',
+                icon: '🧭',
+                enabled: true,
+                desc: '',
+            });
+            renderTabContent();
+        },
+        filMove(i, dir) {
+            if (!S.filieresDraft) return;
+            const j = i + dir;
+            if (j < 0 || j >= S.filieresDraft.length) return;
+            const tmp = S.filieresDraft[i]; S.filieresDraft[i] = S.filieresDraft[j]; S.filieresDraft[j] = tmp;
+            renderTabContent();
+        },
+        filDelete(i) {
+            if (!S.filieresDraft || S.filieresDraft.length <= 1) return;
+            S.filieresDraft.splice(i, 1);
+            renderTabContent();
+        },
+        filieresSave() {
+            if (!S.filieresDraft) return;
+            const r = AdminStore.saveFilieres(S.filieresDraft);
+            if (!r.ok) { toast(r.error || 'Enregistrement impossible.', 'err'); return; }
+            S.filieresDraft = null;
+            renderTabContent();
+            toast('Filières enregistrées ✔', 'ok');
+        },
+        filieresCancel() {
+            S.filieresDraft = null;
+            renderTabContent();
+        },
+        filieresReset() {
+            if (!confirm('Rétablir les 6 filières officielles par défaut ?')) return;
+            AdminStore.resetFilieres();
+            S.filieresDraft = null;
+            renderTabContent();
+            toast('Filières officielles rétablies.', 'ok');
+        },
+
+        setSubjectSearch(val) {
+            S.subjectSearch = String(val || '');
+            const focusPos = (document.getElementById('admSubjectSearch') || {}).selectionStart;
+            renderTabContent();
+            const inp = document.getElementById('admSubjectSearch');
+            if (inp) {
+                inp.focus();
+                if (typeof focusPos === 'number') {
+                    try { inp.setSelectionRange(focusPos, focusPos); } catch { }
+                }
+            }
+        },
         createSubject() {
             const name = (document.getElementById('admNewName') || {}).value || '';
             const icon = (document.getElementById('admNewIcon') || {}).value || '';
             const band = (document.getElementById('admNewBand') || {}).value || 'all';
-            const r = AdminStore.createCustomSubject(name, icon, null, { band });
+            const fil = (document.getElementById('admNewFiliere') || {}).value || 'all';
+            const allowedFilieres = fil === 'all' ? ['all'] : [fil];
+            const specialtyFilieres = fil === 'all' ? [] : [fil];
+            const r = AdminStore.createCustomSubject(name, icon, null, { band, allowedFilieres, specialtyFilieres });
             if (!r.ok) { toast(r.error || 'Création impossible.', 'err'); return; }
             S.subjectList = [];
             S.subjectId = r.id;
@@ -1821,12 +2199,51 @@
 
             const sub = subjectList().find(x => x.id === S.subjectId);
             const allowedNiveaux = sub ? (sub.allowedNiveaux || []) : [];
+            const allowedFilieres = sub ? (sub.allowedFilieres || ['all']) : ['all'];
+            const specialtyFilieres = sub ? (sub.specialtyFilieres || []) : [];
 
-            const r = AdminStore.saveSubjectMeta(S.subjectId, { name, icon, band, enabled, description, allowedNiveaux });
+            const r = AdminStore.saveSubjectMeta(S.subjectId, { name, icon, band, enabled, description, allowedNiveaux, allowedFilieres, specialtyFilieres });
             if (!r.ok) { toast(r.error || 'Enregistrement impossible.', 'err'); return; }
             S.subjectList = [];
             renderTabContent();
-            toast('Matière et réglages de niveaux enregistrés ✔', 'ok');
+            toast('Matière, classes et filières enregistrées ✔', 'ok');
+        },
+        toggleSubjectFiliere(filId) {
+            if (!S.subjectId) return;
+            const sub = subjectList().find(x => x.id === S.subjectId);
+            if (!sub) return;
+            let current = AdminStore.defaultAllowedFilieresForSubject(sub);
+            if (filId === 'all') {
+                current = ['all'];
+            } else {
+                if (current.includes('all')) {
+                    current = [filId];
+                } else if (current.includes(filId)) {
+                    current = current.filter(id => id !== filId);
+                    if (current.length === 0) current = ['all'];
+                } else {
+                    current.push(filId);
+                }
+            }
+            sub.allowedFilieres = current;
+            AdminStore.saveSubjectMeta(S.subjectId, { allowedFilieres: current });
+            S.subjectList = [];
+            renderTabContent();
+        },
+        toggleSubjectSpecialty(filId) {
+            if (!S.subjectId || !filId || filId === 'all') return;
+            const sub = subjectList().find(x => x.id === S.subjectId);
+            if (!sub) return;
+            let specs = Array.isArray(sub.specialtyFilieres) ? sub.specialtyFilieres.slice() : [];
+            if (specs.includes(filId)) {
+                specs = specs.filter(id => id !== filId);
+            } else {
+                specs.push(filId);
+            }
+            sub.specialtyFilieres = specs;
+            AdminStore.saveSubjectMeta(S.subjectId, { specialtyFilieres: specs });
+            S.subjectList = [];
+            renderTabContent();
         },
         onBandChange(band) {
             if (!S.subjectId) return;
@@ -2216,6 +2633,58 @@
             }
         },
 
+        /* ----- Pool des Quêtes Quotidiennes ----- */
+        qField(idx, field, val) {
+            if (!S.questsDraft || !S.questsDraft[idx]) return;
+            if (field === 'target' || field === 'xp' || field === 'coins') {
+                S.questsDraft[idx][field] = Math.max(0, parseInt(val, 10) || 0);
+            } else {
+                S.questsDraft[idx][field] = val;
+            }
+        },
+        qAdd() {
+            if (!S.questsDraft) S.questsDraft = AdminStore.getQuestPool();
+            S.questsDraft.push({
+                type: 'levels',
+                icon: '🎯',
+                title: 'Nouvelle mission quotidienne',
+                target: 3,
+                xp: 25,
+                coins: 15,
+                color: '#4cc9f0',
+                enabled: true,
+            });
+            renderTabContent();
+        },
+        qDelete(idx) {
+            if (!S.questsDraft || S.questsDraft.length <= 1) return;
+            S.questsDraft.splice(idx, 1);
+            renderTabContent();
+        },
+        questsSave() {
+            if (!S.questsDraft) return;
+            const r = AdminStore.saveQuestPool(S.questsDraft);
+            if (!r.ok) { toast(r.error || 'Enregistrement impossible.', 'err'); return; }
+            S.questsDraft = null;
+            renderTabContent();
+            toast('Pool de quêtes quotidiennes enregistré ✔', 'ok');
+        },
+        questsReset() {
+            if (!confirm('Rétablir le pool de quêtes quotidiennes par défaut ?')) return;
+            AdminStore.resetQuestPool();
+            S.questsDraft = null;
+            renderTabContent();
+            toast('Pool de quêtes rétabli par défaut.', 'ok');
+        },
+        refreshTodayQuests() {
+            if (typeof DailyQuests !== 'undefined' && typeof DailyQuests.resetToday === 'function') {
+                DailyQuests.resetToday();
+                toast('Quêtes du jour régénérées immédiatement ✔', 'ok');
+            } else {
+                toast('Module DailyQuests indisponible.', 'err');
+            }
+        },
+
         /* ----- Membres ----- */
         async addMember() {
             const email = (document.getElementById('admNewEmail') || {}).value || '';
@@ -2232,6 +2701,36 @@
             const r = await DB.updateLocalMember(email, { role });
             if (!r.ok) { toast(r.error || 'Changement impossible.', 'err'); }
             else { toast('Rôle mis à jour ✔', 'ok'); }
+            await refreshMembers();
+            renderTabContent();
+        },
+        async setMemberGrade(email, niveau) {
+            const r = DB.updateLocalMemberData(email, { niveau });
+            if (!r.ok) { toast(r.error || 'Modification impossible.', 'err'); }
+            else { toast('Classe mise à jour : ' + AdminStore.levelLabel(niveau) + ' ✔', 'ok'); }
+            await refreshMembers();
+            renderTabContent();
+        },
+        async setMemberFiliere(email, filiere) {
+            const r = DB.updateLocalMemberData(email, { filiere });
+            if (!r.ok) { toast(r.error || 'Modification impossible.', 'err'); }
+            else { toast('Filière mise à jour : ' + AdminStore.filiereLabel(filiere) + ' ✔', 'ok'); }
+            await refreshMembers();
+            renderTabContent();
+        },
+        async bonusMember(email) {
+            const st = DB.getLocalMemberStats(email);
+            const r = DB.updateLocalMemberData(email, { xp: (st.xp || 0) + 50, coins: (st.coins ?? 30) + 100 });
+            if (!r.ok) { toast(r.error || 'Attribution impossible.', 'err'); }
+            else { toast('+50 XP et +100 pièces offerts ✔', 'ok'); }
+            await refreshMembers();
+            renderTabContent();
+        },
+        async resetMemberProgress(email, username) {
+            if (!confirm(`Réinitialiser toute la progression (XP, pièces, niveaux, succès) du compte « ${username} » ?`)) return;
+            const r = DB.updateLocalMemberData(email, { resetProgress: true });
+            if (!r.ok) { toast(r.error || 'Réinitialisation impossible.', 'err'); }
+            else { toast(`Progression de « ${username} » réinitialisée.`, 'ok'); }
             await refreshMembers();
             renderTabContent();
         },
@@ -2271,6 +2770,8 @@
             const title = (document.getElementById('admSiteTitle') || {}).value;
             const tagline = (document.getElementById('admSiteTagline') || {}).value;
             const announcement = (document.getElementById('admSiteAnnouncement') || {}).value;
+            const defaultNiveau = (document.getElementById('admSiteDefaultNiveau') || {}).value || '6eme';
+            const defaultFiliere = (document.getElementById('admSiteDefaultFiliere') || {}).value || 'generale';
             const quizTimerSeconds = parseInt((document.getElementById('admSiteTimer') || {}).value, 10);
             const xpMultiplier = parseFloat((document.getElementById('admSiteXpMult') || {}).value);
             const coinMultiplier = parseFloat((document.getElementById('admSiteCoinMult') || {}).value);
@@ -2278,12 +2779,24 @@
             const musVol = parseInt((document.getElementById('admSiteMusVol') || {}).value, 10);
             const allowRegistration = Boolean((document.getElementById('admSiteAllowReg') || {}).checked);
             const soundEnabledByDefault = Boolean((document.getElementById('admSiteSoundDef') || {}).checked);
+            const enableShop = Boolean((document.getElementById('admSiteEnableShop') || {}).checked);
+            const enableQuests = Boolean((document.getElementById('admSiteEnableQuests') || {}).checked);
+            const enableBadges = Boolean((document.getElementById('admSiteEnableBadges') || {}).checked);
+            const enableChrono = Boolean((document.getElementById('admSiteEnableChrono') || {}).checked);
+            const enableParticlesByDefault = Boolean((document.getElementById('admSiteEnableParticles') || {}).checked);
+            const enableConfetti = Boolean((document.getElementById('admSiteEnableConfetti') || {}).checked);
+            const maintenanceMode = Boolean((document.getElementById('admSiteMaintMode') || {}).checked);
+            const maintenanceMessage = (document.getElementById('admSiteMaintMsg') || {}).value || '';
 
             const r = AdminStore.saveSiteConfig({
-                title, tagline, announcement, quizTimerSeconds, xpMultiplier, coinMultiplier,
+                title, tagline, announcement, defaultNiveau, defaultFiliere,
+                quizTimerSeconds, xpMultiplier, coinMultiplier,
                 sfxVolume: isNaN(sfxVol) ? 0.7 : sfxVol / 100,
                 musicVolume: isNaN(musVol) ? 0.4 : musVol / 100,
-                allowRegistration, soundEnabledByDefault
+                allowRegistration, soundEnabledByDefault,
+                enableShop, enableQuests, enableBadges, enableChrono,
+                enableParticlesByDefault, enableConfetti,
+                maintenanceMode, maintenanceMessage
             });
             if (!r.ok) { toast(r.error || 'Erreur lors de la sauvegarde.', 'err'); return; }
             renderTabContent();
@@ -2427,15 +2940,15 @@
             const r = AdminStore.importJson(area.value);
             if (!r.ok) { toast(r.error || 'Import impossible.', 'err'); return; }
             area.value = '';
-            S.subjectList = []; S.subjectId = null; S.levelsDraft = null;
+            S.subjectList = []; S.subjectId = null; S.levelsDraft = null; S.filieresDraft = null; S.questsDraft = null;
             renderPanel();
             toast('Configuration importée ✔', 'ok');
         },
         resetAdminConfig() {
-            if (!confirm('Retirer TOUTES les personnalisations (niveaux, matières, leçons) ?')) return;
+            if (!confirm('Retirer TOUTES les personnalisations (niveaux, filières, matières, leçons, boutique, quêtes, succès) ?')) return;
             if (!confirm('Confirmez : cette action est irréversible.')) return;
             AdminStore.resetAll();
-            S.subjectList = []; S.subjectId = null; S.levelsDraft = null;
+            S.subjectList = []; S.subjectId = null; S.levelsDraft = null; S.filieresDraft = null; S.questsDraft = null;
             renderPanel();
             toast('Configuration administrateur réinitialisée.', 'ok');
         },
@@ -2485,14 +2998,65 @@
             S.badgeCategory = cat;
             renderTabContent();
         },
+        setBadgeFiliereFilter(fil) {
+            S.badgeFiliereFilter = fil || 'all';
+            renderTabContent();
+        },
         newBadge() {
-            S.editingBadge = { id: 'succes_' + Date.now(), name: '', desc: '', icon: '🏆', category: 'progression', condition: '', _isNew: true };
+            const defaultFil = (S.badgeFiliereFilter && !['all', 'universal', 'college'].includes(S.badgeFiliereFilter))
+                ? [S.badgeFiliereFilter]
+                : ['all'];
+            const defaultBand = S.badgeFiliereFilter === 'college' ? 'college'
+                : (defaultFil[0] !== 'all' ? 'lycee' : 'all');
+            S.editingBadge = {
+                id: 'succes_' + Date.now(),
+                name: '',
+                desc: '',
+                icon: '🏆',
+                category: 'progression',
+                band: defaultBand,
+                allowedFilieres: defaultFil,
+                condition: '',
+                _isNew: true,
+            };
             renderTabContent();
         },
         editBadge(id) {
             const b = AdminStore.getBadge(id);
             if (!b) return;
-            S.editingBadge = { ...b, _isNew: false };
+            S.editingBadge = {
+                ...b,
+                band: b.band || 'all',
+                allowedFilieres: Array.isArray(b.allowedFilieres) && b.allowedFilieres.length ? b.allowedFilieres.slice() : ['all'],
+                _isNew: false,
+            };
+            renderTabContent();
+        },
+        toggleEditBadgeFiliere(filId) {
+            if (!S.editingBadge) return;
+            // Préserve les champs déjà saisis dans le formulaire avant re-rendu
+            S.editingBadge.id = (document.getElementById('admBadgeId')?.value || S.editingBadge.id || '').trim();
+            S.editingBadge.name = (document.getElementById('admBadgeName')?.value ?? S.editingBadge.name);
+            S.editingBadge.icon = (document.getElementById('admBadgeIcon')?.value ?? S.editingBadge.icon);
+            S.editingBadge.category = (document.getElementById('admBadgeCat')?.value || S.editingBadge.category || 'progression');
+            S.editingBadge.band = (document.getElementById('admBadgeBand')?.value || S.editingBadge.band || 'all');
+            S.editingBadge.desc = (document.getElementById('admBadgeDesc')?.value ?? S.editingBadge.desc);
+            S.editingBadge.condition = (document.getElementById('admBadgeCond')?.value ?? S.editingBadge.condition);
+
+            let cur = Array.isArray(S.editingBadge.allowedFilieres) ? S.editingBadge.allowedFilieres.slice() : ['all'];
+            if (filId === 'all') {
+                cur = ['all'];
+            } else {
+                if (cur.includes('all')) {
+                    cur = [filId];
+                } else if (cur.includes(filId)) {
+                    cur = cur.filter(x => x !== filId);
+                    if (cur.length === 0) cur = ['all'];
+                } else {
+                    cur.push(filId);
+                }
+            }
+            S.editingBadge.allowedFilieres = cur;
             renderTabContent();
         },
         cancelBadgeEdit() {
@@ -2504,16 +3068,20 @@
             const name = (document.getElementById('admBadgeName')?.value || '').trim();
             const icon = (document.getElementById('admBadgeIcon')?.value || '').trim() || '🏆';
             const cat = document.getElementById('admBadgeCat')?.value || 'progression';
+            const band = document.getElementById('admBadgeBand')?.value || 'all';
             const desc = (document.getElementById('admBadgeDesc')?.value || '').trim();
             const condition = (document.getElementById('admBadgeCond')?.value || '').trim();
+            const allowedFilieres = (S.editingBadge && Array.isArray(S.editingBadge.allowedFilieres) && S.editingBadge.allowedFilieres.length)
+                ? S.editingBadge.allowedFilieres.slice()
+                : ['all'];
             if (!id || !name) {
                 toast('Identifiant et nom requis.', 'err');
                 return;
             }
-            AdminStore.saveBadge({ id, name, icon, category: cat, desc, condition });
+            AdminStore.saveBadge({ id, name, icon, category: cat, band, allowedFilieres, desc, condition });
             S.editingBadge = null;
             renderTabContent();
-            toast('Succès enregistré avec succès !', 'ok');
+            toast('Succès et filière cible enregistrés ✔', 'ok');
         },
         deleteBadge(id) {
             if (!confirm(`Supprimer le succès « ${id} » ?`)) return;

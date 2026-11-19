@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
+  <!-- ILOT ARTS ET MUSIQUE - EDUQUEST -->
+  <defs>
+    <linearGradient id="artRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3b1d5e"/>
+      <stop offset="0.6" stop-color="#200d38"/>
+      <stop offset="1" stop-color="#0f051d"/>
+    </linearGradient>
+    <linearGradient id="artRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6936a3"/>
+      <stop offset="0.6" stop-color="#441f70"/>
+      <stop offset="1" stop-color="#261042"/>
+    </linearGradient>
+    <linearGradient id="artStage" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ff4d6d"/>
+      <stop offset="0.33" stop-color="#ffd166"/>
+      <stop offset="0.66" stop-color="#06d6a0"/>
+      <stop offset="1" stop-color="#4cc9f0"/>
+    </linearGradient>
+    <linearGradient id="artWood" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f3c68f"/>
+      <stop offset="1" stop-color="#b97a45"/>
+    </linearGradient>
+    <radialGradient id="artHalo" cx="0.5" cy="0.42" r="0.6">
+      <stop offset="0" stop-color="#f72585" stop-opacity="0.34"/>
+      <stop offset="0.5" stop-color="#4cc9f0" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="artShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+    <filter id="artGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <circle cx="210" cy="182" r="150" fill="url(#artHalo)"/>
+
+  <!-- Base rocheuse flottante -->
+  <g filter="url(#artShadow)">
+    <path d="M 75 250 Q 210 275 345 250 Q 372 294 320 344 Q 210 398 100 344 Q 48 294 75 250 Z" fill="url(#artRockDeep)"/>
+    <path d="M 85 245 Q 210 268 335 245 Q 358 278 320 314 Q 210 368 100 314 Q 62 278 85 245 Z" fill="url(#artRockTop)"/>
+    <ellipse cx="210" cy="245" rx="140" ry="42" fill="#2c1654"/>
+    <ellipse cx="210" cy="242" rx="134" ry="36" fill="none" stroke="url(#artStage)" stroke-width="5" filter="url(#artGlow)"/>
+  </g>
+
+  <!-- Palette de peintre centrale -->
+  <g filter="url(#artShadow)">
+    <path d="M 135 215 C 122 175 152 130 208 130 C 266 130 296 168 286 206 C 280 226 254 224 242 214 C 232 206 226 228 205 234 C 170 242 144 236 135 215 Z" fill="url(#artWood)" stroke="#6f4320" stroke-width="3"/>
+    <!-- Trou pour le pouce -->
+    <ellipse cx="256" cy="196" rx="11" ry="9" fill="#200d38"/>
+    <!-- Touches de couleurs -->
+    <circle cx="164" cy="172" r="12" fill="#ef476f"/>
+    <circle cx="196" cy="154" r="12" fill="#ffd166"/>
+    <circle cx="234" cy="156" r="12" fill="#06d6a0"/>
+    <circle cx="264" cy="172" r="10" fill="#118ab2"/>
+    <circle cx="166" cy="204" r="11" fill="#9b5de5"/>
+  </g>
+
+  <!-- Pinceau traversant en diagonale -->
+  <g transform="translate(214, 165) rotate(-38)" filter="url(#artShadow)">
+    <rect x="-78" y="-5" width="118" height="10" rx="5" fill="#4cc9f0" stroke="#0f172a" stroke-width="1.5"/>
+    <rect x="38" y="-6" width="16" height="12" rx="2" fill="#e2e8f0"/>
+    <path d="M 54 -6 Q 74 -8 84 0 Q 74 8 54 6 Z" fill="#ff4d6d"/>
+  </g>
+
+  <!-- Notes de musique lumineuses -->
+  <g filter="url(#artGlow)" fill="#ffd166">
+    <!-- Double croche gauche -->
+    <path d="M 106 164 L 106 112 L 136 104 L 136 154" fill="none" stroke="#ffd166" stroke-width="4.5" stroke-linecap="round"/>
+    <line x1="106" y1="122" x2="136" y2="114" stroke="#ffd166" stroke-width="4"/>
+    <ellipse cx="99" cy="166" rx="9" ry="6.5" transform="rotate(-18 99 166)"/>
+    <ellipse cx="129" cy="156" rx="9" ry="6.5" transform="rotate(-18 129 156)"/>
+
+    <!-- Croche droite -->
+    <path d="M 304 156 L 304 106 Q 324 110 322 128" fill="none" stroke="#4cc9f0" stroke-width="4.5" stroke-linecap="round"/>
+    <ellipse cx="297" cy="158" rx="9.5" ry="6.5" fill="#4cc9f0" transform="rotate(-18 297 158)"/>
+  </g>
+
+  <!-- Étoiles créatives -->
+  <circle cx="206" cy="96" r="4" fill="#fff" filter="url(#artGlow)"/>
+  <circle cx="255" cy="108" r="3" fill="#ff4d6d" filter="url(#artGlow)"/>
+  <circle cx="154" cy="104" r="3" fill="#06d6a0" filter="url(#artGlow)"/>
+</svg>
