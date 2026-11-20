@@ -810,6 +810,132 @@ button::after,
                 linear-gradient(180deg, #020804 0%, #051409 55%, #010502 100%) !important;
 }
 
+[data-theme="theme-ocean"] {
+    --c-night: #03111c;
+    --c-deep: #062134;
+    --c-ocean: #0c3b56;
+    --c-blue: #06b6d4;
+    --c-gold: #38bdf8;
+    --dash-skin: #06b6d4;
+}
+[data-theme="theme-ocean"] .background {
+    background: radial-gradient(circle at 35% 22%, rgba(6, 182, 212, 0.24), transparent 58%),
+                radial-gradient(circle at 80% 78%, rgba(56, 189, 248, 0.16), transparent 55%),
+                linear-gradient(160deg, #03111c 0%, #062134 52%, #020b14 100%) !important;
+}
+
+[data-theme="theme-aurore"] {
+    --c-night: #051322;
+    --c-deep: #0a243b;
+    --c-ocean: #123e5e;
+    --c-blue: #38bdf8;
+    --c-gold: #67e8f9;
+    --dash-skin: #38bdf8;
+}
+[data-theme="theme-aurore"] .background {
+    background: radial-gradient(ellipse at 30% 15%, rgba(56, 189, 248, 0.26), transparent 58%),
+                radial-gradient(ellipse at 75% 30%, rgba(52, 211, 153, 0.18), transparent 55%),
+                linear-gradient(170deg, #051322 0%, #0a243b 50%, #04101d 100%) !important;
+}
+
+[data-theme="theme-foret"] {
+    --c-night: #06140c;
+    --c-deep: #0c2617;
+    --c-ocean: #164028;
+    --c-blue: #22c55e;
+    --c-gold: #86efac;
+    --dash-skin: #22c55e;
+}
+[data-theme="theme-foret"] .background {
+    background: radial-gradient(circle at 40% 20%, rgba(34, 197, 94, 0.22), transparent 60%),
+                radial-gradient(circle at 82% 76%, rgba(250, 204, 21, 0.12), transparent 52%),
+                linear-gradient(155deg, #06140c 0%, #0c2617 55%, #040d08 100%) !important;
+}
+
+[data-theme="theme-volcan"] {
+    --c-night: #180806;
+    --c-deep: #2a0f0a;
+    --c-ocean: #4a1a10;
+    --c-blue: #f97316;
+    --c-gold: #fb923c;
+    --dash-skin: #f97316;
+}
+[data-theme="theme-volcan"] .background {
+    background: radial-gradient(circle at 50% 82%, rgba(249, 115, 22, 0.28), transparent 60%),
+                radial-gradient(circle at 25% 20%, rgba(239, 68, 68, 0.18), transparent 52%),
+                linear-gradient(175deg, #180806 0%, #2a0f0a 52%, #120403 100%) !important;
+}
+
+[data-theme="theme-sakura"] {
+    --c-night: #190a18;
+    --c-deep: #2b1229;
+    --c-ocean: #471d43;
+    --c-blue: #f472b6;
+    --c-gold: #fbcfe8;
+    --dash-skin: #f472b6;
+}
+[data-theme="theme-sakura"] .background {
+    background: radial-gradient(circle at 65% 22%, rgba(244, 114, 182, 0.25), transparent 60%),
+                radial-gradient(circle at 22% 78%, rgba(192, 132, 252, 0.18), transparent 56%),
+                linear-gradient(150deg, #190a18 0%, #2b1229 52%, #110612 100%) !important;
+}
+
+[data-theme="theme-amethyste"] {
+    --c-night: #120824;
+    --c-deep: #200e3d;
+    --c-ocean: #361863;
+    --c-blue: #a855f7;
+    --c-gold: #d8b4fe;
+    --dash-skin: #a855f7;
+}
+[data-theme="theme-amethyste"] .background {
+    background: radial-gradient(circle at 48% 22%, rgba(168, 85, 247, 0.28), transparent 60%),
+                radial-gradient(circle at 80% 80%, rgba(99, 102, 241, 0.18), transparent 55%),
+                linear-gradient(160deg, #120824 0%, #200e3d 52%, #0a0417 100%) !important;
+}
+
+[data-theme="theme-parchemin"] {
+    --c-night: #1a1209;
+    --c-deep: #2c1e0e;
+    --c-ocean: #473117;
+    --c-blue: #d97706;
+    --c-gold: #fbbf24;
+    --dash-skin: #d97706;
+}
+[data-theme="theme-parchemin"] .background {
+    background: radial-gradient(circle at 45% 22%, rgba(217, 119, 6, 0.24), transparent 60%),
+                radial-gradient(circle at 75% 75%, rgba(251, 191, 36, 0.14), transparent 54%),
+                linear-gradient(165deg, #1a1209 0%, #2c1e0e 52%, #120c05 100%) !important;
+}
+
+[data-theme="theme-retro"] {
+    --c-night: #120521;
+    --c-deep: #210a3b;
+    --c-ocean: #3b105e;
+    --c-blue: #ec4899;
+    --c-gold: #22d3ee;
+    --dash-skin: #ec4899;
+}
+[data-theme="theme-retro"] .background {
+    background: radial-gradient(circle at 50% 75%, rgba(236, 72, 153, 0.28), transparent 58%),
+                radial-gradient(circle at 50% 18%, rgba(34, 211, 238, 0.2), transparent 54%),
+                linear-gradient(180deg, #120521 0%, #210a3b 52%, #0a0214 100%) !important;
+}
+
+[data-theme="theme-celeste"] {
+    --c-night: #08122b;
+    --c-deep: #11224d;
+    --c-ocean: #1d3978;
+    --c-blue: #3b82f6;
+    --c-gold: #facc15;
+    --dash-skin: #facc15;
+}
+[data-theme="theme-celeste"] .background {
+    background: radial-gradient(circle at 50% 18%, rgba(250, 204, 21, 0.24), transparent 56%),
+                radial-gradient(circle at 25% 78%, rgba(59, 130, 246, 0.22), transparent 58%),
+                linear-gradient(165deg, #08122b 0%, #11224d 52%, #060d20 100%) !important;
+}
+
 /* --------------------------------------------------------------------------
    PERSONNALISATION D'APPARENCE (Options → Apparence, prioritaire sur data-theme)
    Placé en fin de feuille pour que les couleurs choisies dans Options

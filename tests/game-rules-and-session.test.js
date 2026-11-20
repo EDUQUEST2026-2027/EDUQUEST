@@ -64,6 +64,14 @@ test('GameRules - Calcul des Étoiles et Règle du Bouclier', async (t) => {
         assert.equal(gains.xp, 84);
         assert.equal(gains.coins, 10);
         assert.equal(gains.score, Math.round(300 * 1.2)); // 360
+
+        const fortuneGains = GameRules.computeLevelRewards({
+            stars: 3,
+            multiplier: 1.0,
+            doubleCoins: true,
+            rewards: { xpBase: 15, coinsBase: 10, chronoBonusMaxXp: 15, firstTryBonusXp: 10 }
+        });
+        assert.equal(fortuneGains.coins, 20, 'Élixir de Fortune double bien les pièces');
     });
 });
 
@@ -144,6 +152,44 @@ test('QuizSession - Pipeline unifié de soumission et consommation de boosters',
         assert.equal(res2.isCorrect, false);
         assert.equal(res2.shieldAbsorbed, false);
         assert.equal(wrongRecordedWithShield, false, 'Le 2e échec ne doit pas être protégé');
+    });
+
+    await t.test('Flamme Éternelle (boost-combo) préserve le combo en l\'absence de bouclier', async () => {
+        const attempt = QuizSession.createAttempt({
+            lesson: { q: 'Question test combo' },
+            questionId: 'q_combo_1'
+        });
+
+        let comboGuardStock = 1;
+        let wrongSavedFlag = null;
+
+        const mockDeps = {
+            AiProvider: {
+                submitAnswer: async () => ({ isCorrect: false, explanation: 'Faux' })
+            },
+            DB: {
+                hasBooster: (id) => id === 'boost-combo' && comboGuardStock > 0,
+                useBooster: (id) => {
+                    if (id === 'boost-combo' && comboGuardStock > 0) {
+                        comboGuardStock--;
+                        return true;
+                    }
+                    return false;
+                },
+                recordWrongAnswer: (protectedFlag) => {
+                    wrongSavedFlag = protectedFlag;
+                }
+            },
+            GameRules,
+            notify: () => {}
+        };
+
+        const res = await QuizSession.submit(attempt, 'Faux', {}, mockDeps);
+        assert.equal(res.isCorrect, false);
+        assert.equal(res.shieldAbsorbed, false);
+        assert.equal(attempt.usedComboGuard, true);
+        assert.equal(comboGuardStock, 0);
+        assert.equal(wrongSavedFlag, true, 'La Flamme Éternelle doit préserver le combo et la série');
     });
 
     await t.test('Protection anti double-soumission concurrente', async () => {

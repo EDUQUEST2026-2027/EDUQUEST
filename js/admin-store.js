@@ -27,14 +27,27 @@ const AdminStore = (() => {
     // Clé localStorage unique pour toute la configuration administrateur
     const LS_KEY = 'eduquest_admin_data';
 
-    // Filières / voies officielles (Lycée & Post-Bac BTS)
+    // Filières / voies officielles (Lycée Général, Technologique, Professionnel & Post-Bac BTS — 18 filières)
     const DEFAULT_FILIERES = [
-        { id: 'generale', label: 'Voie Générale', shortLabel: 'Générale', icon: '📚', enabled: true, desc: 'Tronc commun et spécialités du lycée général (SES, NSI, HGGSP, SI, Sciences)' },
-        { id: 'nsi_spe',  label: 'Spécialité NSI & Numérique', shortLabel: 'Spé NSI', icon: '💻', enabled: true, desc: 'Parcours informatique, algorithmique, réseaux, cybersécurité et sciences' },
-        { id: 'stmg',     label: 'STMG (Management & Gestion)', shortLabel: 'STMG', icon: '📊', enabled: true, desc: 'Management (MSGN), Droit & Économie, Mercatique & Gestion-Finance' },
-        { id: 'sti2d',    label: 'STI2D (Industrie & Dév. Durable)', shortLabel: 'STI2D', icon: '⚙️', enabled: true, desc: 'Innovation Technologique (I2D), Systèmes d\'Info & Énergie (SIN), Électronique' },
-        { id: 'ciel',     label: 'CIEL (Cyber, Réseaux & Électronique)', shortLabel: 'CIEL', icon: '🛡️', enabled: true, desc: 'Bac Pro & BTS CIEL : Cybersécurité, Réseaux & Systèmes, Électronique, Code' },
-        { id: 'st2s',     label: 'ST2S (Santé & Social)', shortLabel: 'ST2S', icon: '🩺', enabled: true, desc: 'Sciences Sanitaires & Sociales (STSS), Biologie humaine & Sciences' },
+        { id: 'generale',      label: 'Voie Générale', shortLabel: 'Générale', icon: '📚', enabled: true, desc: 'Tronc commun et spécialités du lycée général (SES, NSI, HGGSP, SI, HLP, Sciences)' },
+        { id: 'nsi_spe',       label: 'Spécialité NSI & Numérique', shortLabel: 'Spé NSI', icon: '💻', enabled: true, desc: 'Parcours informatique, algorithmique, réseaux, cybersécurité et sciences' },
+        { id: 'stmg',          label: 'STMG (Management & Gestion)', shortLabel: 'STMG', icon: '📊', enabled: true, desc: 'Management (MSGN), Droit & Économie, Mercatique & Gestion-Finance' },
+        { id: 'sti2d',         label: 'STI2D (Industrie & Dév. Durable)', shortLabel: 'STI2D', icon: '⚙️', enabled: true, desc: 'Innovation Technologique (I2D), Systèmes d\'Info & Énergie (SIN), Électronique' },
+        { id: 'ciel',          label: 'CIEL (Cyber, Réseaux & Électronique)', shortLabel: 'CIEL', icon: '🛡️', enabled: true, desc: 'Bac Pro & BTS CIEL : Cybersécurité, Réseaux & Systèmes, Électronique, Code' },
+        { id: 'st2s',          label: 'ST2S (Santé & Social)', shortLabel: 'ST2S', icon: '🩺', enabled: true, desc: 'Sciences Sanitaires & Sociales (STSS), Biologie humaine & Sciences' },
+        // --- 12 NOUVELLES FILIÈRES OFFICIELLES (TECHNO, GÉNÉRAL, PRO & BTS) ---
+        { id: 'stl',           label: 'STL (Sciences & Tech. de Laboratoire)', shortLabel: 'STL', icon: '🧫', enabled: true, desc: 'Biotechnologies, biochimie, physique-chimie de laboratoire et démarches expérimentales' },
+        { id: 'std2a',         label: 'STD2A (Design & Arts Appliqués)', shortLabel: 'STD2A', icon: '🎨', enabled: true, desc: 'Design produit, graphisme, espace, mode, arts appliqués et culture artistique' },
+        { id: 'sthr',          label: 'STHR (Hôtellerie & Restauration)', shortLabel: 'STHR', icon: '🍽️', enabled: true, desc: 'Sciences culinaires, service hôtelier, hygiène HACCP, gestion et tourisme' },
+        { id: 'stav',          label: 'STAV (Agronomie & Vivant)', shortLabel: 'STAV', icon: '🌱', enabled: true, desc: 'Agronomie, agroécologie, gestion durable des territoires, vivant et environnement' },
+        { id: 's2tmd',         label: 'S2TMD (Théâtre, Musique & Danse)', shortLabel: 'S2TMD', icon: '🎭', enabled: true, desc: 'Arts de la scène, dramaturgie, musicologie, chorégraphie et culture du spectacle' },
+        { id: 'hlp_llce',      label: 'Humanités, Lettres & Langues (HLP)', shortLabel: 'HLP/LLCE', icon: '📖', enabled: true, desc: 'Humanités, Littérature & Philosophie (HLP), géopolitique et langues vivantes' },
+        { id: 'sciences_spe',  label: 'Spécialités Maths & Sciences (PC/SVT)', shortLabel: 'Spé Sciences', icon: '🔬', enabled: true, desc: 'Parcours scientifique approfondi : Mathématiques, Physique, Chimie, SVT et SI' },
+        { id: 'bts_sio',       label: 'BTS SIO (Services Informatiques)', shortLabel: 'BTS SIO', icon: '🖥️', enabled: true, desc: 'Options SLAM & SISR : Développement, SQL/BDD, Réseaux, Cybersécurité et droit IT' },
+        { id: 'bts_mco',       label: 'BTS MCO (Management Commercial)', shortLabel: 'BTS MCO', icon: '🛒', enabled: true, desc: 'Relation client, animation commerciale, merchandising, mercatique et gestion d\'UC' },
+        { id: 'bts_cg',        label: 'BTS CG (Comptabilité & Gestion)', shortLabel: 'BTS CG', icon: '🧮', enabled: true, desc: 'Comptabilité générale, fiscalité TVA, contrôle de gestion, finance et droit social' },
+        { id: 'bac_pro_melec', label: 'Bac Pro MELEC (Électricité & Connecté)', shortLabel: 'MELEC', icon: '⚡', enabled: true, desc: 'Électrotechnique, norme NF C 15-100, habilitation électrique, triphasé et domotique' },
+        { id: 'bac_pro_assp',  label: 'Bac Pro ASSP (Soins & Accompagnement)', shortLabel: 'ASSP', icon: '🏥', enabled: true, desc: 'Accompagnement, soins d\'hygiène, biologie/microbiologie, nutrition et secteur social' },
     ];
 
     const ALL_NIVEAUX = ['6eme', '5eme', '4eme', '3eme', '2nde', '1ere', 'terminale', 'bts1', 'bts2'];
@@ -42,40 +55,52 @@ const AdminStore = (() => {
     const LYCEE_ONLY = ['2nde', '1ere', 'terminale'];
     const LYCEE_BTS = ['2nde', '1ere', 'terminale', 'bts1', 'bts2'];
 
-    // Règles pédagogiques conformes au programme officiel (Collège, Lycée & BTS, par filière)
+    // Règles pédagogiques conformes au programme officiel (Collège, Lycée & BTS, par filière — 36 matières)
     // - Technologie : Collège uniquement (6e → 3e)
     // - Espagnol LV2 : dès la 5ème (5e → Terminale)
     // - NSI & SES : Lycée uniquement — jamais au collège
     // - Philosophie : Terminale uniquement — jamais au collège
     // - Matières de spécialité & filières (HGGSP, SI, MSGN, Droit-Éco, Mercatique, I2D, SIN,
-    //   Cybersécurité, Réseaux, Électronique, STSS) : Lycée / BTS selon la filière choisie.
+    //   Cybersécurité, Réseaux, Électronique, STSS, Biotech, Design, Hôtellerie, Agronomie,
+    //   Spectacle, HLP, Dév & BDD, Commerce, Comptabilité, Électrotechnique) : Lycée / BTS selon la filière.
     const SUBJECT_DEFAULT_RULES = {
-        maths:         { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['all'], specialtyFilieres: [] },
+        maths:         { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['all'], specialtyFilieres: ['sciences_spe'] },
         francais:      { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['all'], specialtyFilieres: [] },
         histoire:      { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['all'], specialtyFilieres: [] },
         geo:           { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['all'], specialtyFilieres: [] },
         emc:           { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['all'], specialtyFilieres: [] },
         anglais:       { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['all'], specialtyFilieres: [] },
-        espagnol:      { band: 'all',     allowedNiveaux: ['5eme', '4eme', '3eme', '2nde', '1ere', 'terminale'], allowedFilieres: ['generale', 'stmg', 'st2s'], specialtyFilieres: [] },
-        svt:           { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['generale', 'st2s'], specialtyFilieres: ['st2s'] },
-        physique:      { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel', 'st2s'], specialtyFilieres: [] },
-        chimie:        { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'st2s'], specialtyFilieres: [] },
+        espagnol:      { band: 'all',     allowedNiveaux: ['5eme', '4eme', '3eme', '2nde', '1ere', 'terminale'], allowedFilieres: ['generale', 'stmg', 'st2s', 'stl', 'std2a', 'sthr', 'stav', 's2tmd', 'hlp_llce', 'sciences_spe', 'bts_mco', 'bac_pro_assp'], specialtyFilieres: [] },
+        svt:           { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['generale', 'st2s', 'stl', 'stav', 'sciences_spe', 'bac_pro_assp'], specialtyFilieres: ['st2s', 'stav', 'sciences_spe', 'bac_pro_assp'] },
+        physique:      { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel', 'st2s', 'stl', 'std2a', 'stav', 'sciences_spe', 'bac_pro_melec'], specialtyFilieres: ['stl', 'sciences_spe'] },
+        chimie:        { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'st2s', 'stl', 'std2a', 'stav', 'sciences_spe', 'bac_pro_assp'], specialtyFilieres: ['stl', 'sciences_spe'] },
         techno:        { band: 'college', allowedNiveaux: ['6eme', '5eme', '4eme', '3eme'], allowedFilieres: ['all'], specialtyFilieres: [] },
-        arts:          { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['generale'], specialtyFilieres: [] },
-        philo:         { band: 'lycee',   allowedNiveaux: ['terminale'], allowedFilieres: ['generale', 'nsi_spe', 'stmg', 'sti2d', 'st2s'], specialtyFilieres: [] },
-        nsi:           { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel'], specialtyFilieres: ['nsi_spe', 'ciel'] },
+        arts:          { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['generale', 'std2a', 's2tmd', 'hlp_llce'], specialtyFilieres: ['std2a', 's2tmd'] },
+        philo:         { band: 'lycee',   allowedNiveaux: ['terminale'], allowedFilieres: ['generale', 'nsi_spe', 'stmg', 'sti2d', 'st2s', 'stl', 'std2a', 'sthr', 'stav', 's2tmd', 'hlp_llce', 'sciences_spe'], specialtyFilieres: ['hlp_llce'] },
+        nsi:           { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel', 'bts_sio'], specialtyFilieres: ['nsi_spe', 'ciel'] },
         ses:           { band: 'lycee',   allowedNiveaux: LYCEE_ONLY, allowedFilieres: ['generale'], specialtyFilieres: ['generale'] },
-        hggsp:         { band: 'lycee',   allowedNiveaux: ['1ere', 'terminale'], allowedFilieres: ['generale'], specialtyFilieres: ['generale'] },
-        si:            { band: 'lycee',   allowedNiveaux: LYCEE_ONLY, allowedFilieres: ['generale', 'nsi_spe', 'sti2d'], specialtyFilieres: ['nsi_spe', 'sti2d', 'generale'] },
-        msgn:          { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stmg'], specialtyFilieres: ['stmg'] },
-        droit_eco:     { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stmg', 'ciel'], specialtyFilieres: ['stmg', 'ciel'] },
-        mercatique:    { band: 'lycee',   allowedNiveaux: ['1ere', 'terminale', 'bts1', 'bts2'], allowedFilieres: ['stmg'], specialtyFilieres: ['stmg'] },
+        hggsp:         { band: 'lycee',   allowedNiveaux: ['1ere', 'terminale'], allowedFilieres: ['generale', 'hlp_llce'], specialtyFilieres: ['generale', 'hlp_llce'] },
+        si:            { band: 'lycee',   allowedNiveaux: LYCEE_ONLY, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'sciences_spe'], specialtyFilieres: ['nsi_spe', 'sti2d', 'generale'] },
+        msgn:          { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stmg', 'sthr', 'bts_sio', 'bts_mco', 'bts_cg'], specialtyFilieres: ['stmg', 'sthr', 'bts_mco', 'bts_cg'] },
+        droit_eco:     { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stmg', 'ciel', 'sthr', 'bts_sio', 'bts_mco', 'bts_cg'], specialtyFilieres: ['stmg', 'ciel', 'bts_cg'] },
+        mercatique:    { band: 'lycee',   allowedNiveaux: ['1ere', 'terminale', 'bts1', 'bts2'], allowedFilieres: ['stmg', 'sthr', 'bts_mco'], specialtyFilieres: ['stmg', 'bts_mco'] },
         i2d:           { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['sti2d'], specialtyFilieres: ['sti2d'] },
-        sin:           { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['sti2d'], specialtyFilieres: ['sti2d'] },
-        cybersecurite: { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['ciel', 'nsi_spe'], specialtyFilieres: ['ciel', 'nsi_spe'] },
-        reseaux:       { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['ciel', 'nsi_spe'], specialtyFilieres: ['ciel', 'nsi_spe'] },
-        electronique:  { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['ciel', 'sti2d'], specialtyFilieres: ['ciel', 'sti2d'] },
-        stss:          { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['st2s'], specialtyFilieres: ['st2s'] },
+        sin:           { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['sti2d', 'bac_pro_melec'], specialtyFilieres: ['sti2d'] },
+        cybersecurite: { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['ciel', 'nsi_spe', 'bts_sio'], specialtyFilieres: ['ciel', 'nsi_spe', 'bts_sio'] },
+        reseaux:       { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['ciel', 'nsi_spe', 'bts_sio'], specialtyFilieres: ['ciel', 'nsi_spe', 'bts_sio'] },
+        electronique:  { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['ciel', 'sti2d', 'bac_pro_melec'], specialtyFilieres: ['ciel', 'sti2d', 'bac_pro_melec'] },
+        stss:          { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['st2s', 'bac_pro_assp'], specialtyFilieres: ['st2s', 'bac_pro_assp'] },
+        // --- 10 NOUVELLES MATIÈRES DÉDIÉES AUX NOUVELLES FILIÈRES ---
+        biotech:       { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stl', 'bac_pro_assp'], specialtyFilieres: ['stl', 'bac_pro_assp'] },
+        design:        { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['std2a'], specialtyFilieres: ['std2a'] },
+        hotellerie:    { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['sthr'], specialtyFilieres: ['sthr'] },
+        agronomie:     { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stav'], specialtyFilieres: ['stav'] },
+        spectacle:     { band: 'lycee',   allowedNiveaux: LYCEE_ONLY, allowedFilieres: ['s2tmd'], specialtyFilieres: ['s2tmd'] },
+        hlp:           { band: 'lycee',   allowedNiveaux: ['1ere', 'terminale'], allowedFilieres: ['hlp_llce', 'generale'], specialtyFilieres: ['hlp_llce'] },
+        dev_bdd:       { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['bts_sio', 'nsi_spe'], specialtyFilieres: ['bts_sio'] },
+        commerce:      { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['bts_mco'], specialtyFilieres: ['bts_mco'] },
+        comptabilite:  { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['bts_cg'], specialtyFilieres: ['bts_cg'] },
+        electrotech:   { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['bac_pro_melec'], specialtyFilieres: ['bac_pro_melec'] },
     };
 
     // Niveaux scolaires par défaut (6ème → Terminale + BTS 1/2)
@@ -94,9 +119,9 @@ const AdminStore = (() => {
     // Types de leçons pris en charge par quiz-engine.js
     const LESSON_TYPES = ['qcm', 'vrai_faux', 'reponse_courte', 'texte_a_trous', 'texte_a_choix', 'drag_and_drop'];
 
-    // Catalogue des articles par défaut de la boutique (Halos, Personnages, Titres, Thèmes, Boosters)
+    // Catalogue des articles par défaut de la boutique (97 articles : 24 Halos, 27 Personnages, 26 Titres, 15 Thèmes, 5 Boosters)
     const DEFAULT_SHOP_ITEMS = [
-        // --- HALOS & AURAS ---
+        // --- HALOS & AURAS (24) ---
         { id: 'aurore', name: 'Aurore Boréale', category: 'aura', color: '#4fd8c4', cost: 0, desc: 'Lueur polaire chatoyante offerte à tous les élèves.' },
         { id: 'or', name: 'Comète Dorée', category: 'aura', color: '#c8a84b', cost: 60, desc: 'Rayonnement étincelant d\'or pur.' },
         { id: 'ametiste', name: 'Nova Améthyste', category: 'aura', color: '#b685f5', cost: 90, desc: 'Éclats mystiques de cristaux violets.' },
@@ -109,8 +134,20 @@ const AdminStore = (() => {
         { id: 'dragon-aura', name: 'Flamme du Dragon', category: 'aura', color: '#00e5ff', cost: 600, desc: 'Aura mythique d\'azur et de flammes spectrales.' },
         { id: 'halo-cyber-grid', name: 'Bouclier Quantique', category: 'aura', color: '#00f5d4', cost: 280, desc: 'Halo cybernétique inspiré des filières CIEL & NSI.' },
         { id: 'halo-sante', name: 'Lueur Vitale', category: 'aura', color: '#34d399', cost: 220, desc: 'Rayonnement émeraude apaisant et énergisant.' },
+        { id: 'aura-solaire', name: 'Éclipse Solaire', category: 'aura', color: '#ff9e00', cost: 140, desc: 'Couronne ambrée inspirée d\'une éclipse totale.' },
+        { id: 'aura-glacier', name: 'Cristal Boréal', category: 'aura', color: '#7dd3fc', cost: 160, desc: 'Éclat givré d\'azur pur venu du cercle polaire.' },
+        { id: 'aura-emeraude', name: 'Éclat d\'Émeraude', category: 'aura', color: '#10b981', cost: 190, desc: 'Halo verdoyant d\'une gemme forestière rare.' },
+        { id: 'aura-rubis', name: 'Flamme Rubis', category: 'aura', color: '#f43f5e', cost: 210, desc: 'Lueur carmin intense vibrant d\'énergie.' },
+        { id: 'aura-saphir', name: 'Abysses Saphir', category: 'aura', color: '#3b82f6', cost: 230, desc: 'Profondeur océanique au bleu électrique.' },
+        { id: 'aura-sakura', name: 'Pétales Sakura', category: 'aura', color: '#fda4af', cost: 240, desc: 'Brise printanière rose cerisier tout en douceur.' },
+        { id: 'aura-plasma', name: 'Arc Plasma', category: 'aura', color: '#e879f9', cost: 270, desc: 'Décharge magnétique violette haute fréquence.' },
+        { id: 'aura-obsidian', name: 'Écho d\'Obsidienne', category: 'aura', color: '#6366f1', cost: 320, desc: 'Halo indigo sombre aux reflets métalliques.' },
+        { id: 'aura-prisme', name: 'Prisme Spectral', category: 'aura', color: '#2dd4bf', cost: 380, desc: 'Réfraction cristalline aux nuances turquoise.' },
+        { id: 'aura-phoenix', name: 'Plume de Phénix', category: 'aura', color: '#fb923c', cost: 420, desc: 'Aura solaire renaissant toujours plus brillante.' },
+        { id: 'aura-galaxie', name: 'Anneau de Saturne', category: 'aura', color: '#c084fc', cost: 500, desc: 'Orbite cosmique de poussières d\'étoiles violettes.' },
+        { id: 'aura-celeste', name: 'Couronne Astrale', category: 'aura', color: '#fde047', cost: 750, desc: 'Halo légendaire des plus grands champions d\'EDUQUEST.' },
 
-        // --- PERSONNAGES & AVATARS ---
+        // --- PERSONNAGES & AVATARS (27) ---
         { id: 'robot', name: 'Robot Assistant', category: 'avatar', color: '#8fb8c9', img: 'Image/personnages/robot.webp', cost: 0, desc: 'Le fidèle compagnon d\'aventure mécanique.' },
         { id: 'david-martinez', name: 'David Martinez', category: 'avatar', color: '#ffea00', img: 'Image/personnages/david-martinez.svg', cost: 0, desc: 'Légende de Night City équipée de la veste d\'Edgerunner et du Sandevistan.' },
         { id: 'fall-guys', name: 'Champion Fall Guys', category: 'avatar', color: '#ff3e9d', img: 'Image/personnages/fall-guys.svg', cost: 150, desc: 'Haricot rose bondissant coiffé de la couronne de la victoire.' },
@@ -128,8 +165,18 @@ const AdminStore = (() => {
         { id: 'hugo', name: 'Victor Hugo', category: 'avatar', color: '#457b9d', img: 'Image/personnages/hugo.webp', cost: 350, desc: 'Géant de la littérature française et de la poésie.' },
         { id: 'astronaute', name: 'Astronaute Céleste', category: 'avatar', color: '#f1faee', img: 'Image/personnages/astronaute.webp', cost: 400, desc: 'Pionnier du cosmos bravant le vide interstellaire.' },
         { id: 'mage', name: 'Archimage du Savoir', category: 'avatar', color: '#9d4edd', img: 'Image/personnages/mage.webp', cost: 500, desc: 'Gardien des grimoires anciens et des secrets du monde.' },
+        { id: 'nikola-tesla', name: 'Nikola Tesla', category: 'avatar', color: '#38bdf8', img: 'Image/personnages/nikola-tesla.svg', cost: 220, desc: 'Inventeur visionnaire du courant alternatif et des éclairs électriques.' },
+        { id: 'pasteur', name: 'Louis Pasteur', category: 'avatar', color: '#4ade80', img: 'Image/personnages/pasteur.svg', cost: 220, desc: 'Fondateur de la microbiologie moderne et pionnier de la vaccination.' },
+        { id: 'rosalind-franklin', name: 'Rosalind Franklin', category: 'avatar', color: '#34d399', img: 'Image/personnages/rosalind-franklin.svg', cost: 240, desc: 'Biophysicienne clé de la découverte de la double hélice d\'ADN.' },
+        { id: 'galilee', name: 'Galilée', category: 'avatar', color: '#60a5fa', img: 'Image/personnages/galilee.svg', cost: 240, desc: 'Astronome et physicien pionnier de la méthode scientifique.' },
+        { id: 'alan-turing', name: 'Alan Turing', category: 'avatar', color: '#22d3ee', img: 'Image/personnages/alan-turing.svg', cost: 260, desc: 'Père fondateur de l\'informatique, de la cryptanalyse et de l\'IA.' },
+        { id: 'hypatie', name: 'Hypatie d\'Alexandrie', category: 'avatar', color: '#c084fc', img: 'Image/personnages/hypatie.svg', cost: 260, desc: 'Grande mathématicienne, astronome et philosophe de l\'Antiquité.' },
+        { id: 'cleopatre', name: 'Cléopâtre VII', category: 'avatar', color: '#fbbf24', img: 'Image/personnages/cleopatre.svg', cost: 280, desc: 'Reine érudite d\'Alexandrie, diplomate et polyglotte légendaire.' },
+        { id: 'samourai-cyber', name: 'Ronin Cyber', category: 'avatar', color: '#f43f5e', img: 'Image/personnages/samourai-cyber.svg', cost: 360, desc: 'Épéiste néon maître de la concentration et des réflexes.' },
+        { id: 'alchimiste-etoile', name: 'Alchimiste Stellaire', category: 'avatar', color: '#a855f7', img: 'Image/personnages/alchimiste-etoile.svg', cost: 420, desc: 'Maître des potions cosmiques et des formules secrètes.' },
+        { id: 'chevalier-astral', name: 'Chevalier Astral', category: 'avatar', color: '#facc15', img: 'Image/personnages/chevalier-astral.svg', cost: 550, desc: 'Gardien en armure dorée des archipels du savoir.' },
 
-        // --- TITRES HONORIFIQUES ---
+        // --- TITRES HONORIFIQUES (26) ---
         { id: 'titre-apprenti', name: '📜 Apprenti Curieux', category: 'title', color: '#64dfdf', cost: 50, desc: 'Titre honorifique affiché fièrement sur ton profil.' },
         { id: 'titre-chrono', name: '⚡ Maître du Temps', category: 'title', color: '#ffbe0b', cost: 120, desc: 'Titre réservé aux as de la rapidité en mode chrono.' },
         { id: 'titre-explorateur', name: '🌌 Explorateur Cosmique', category: 'title', color: '#7209b7', cost: 200, desc: 'Titre des grands arpenteurs des îles du savoir.' },
@@ -140,18 +187,46 @@ const AdminStore = (() => {
         { id: 'titre-ingenieur', name: '⚙️ Ingénieur Éco-Tech', category: 'title', color: '#34d399', cost: 160, desc: 'Distinction des innovateurs en STI2D & Sciences de l\'Ingénieur.' },
         { id: 'titre-soignant', name: '🩺 Acteur Santé & Social', category: 'title', color: '#f472b6', cost: 160, desc: 'Titre dédié aux spécialistes des Sciences Sanitaires et Sociales.' },
         { id: 'titre-geopolitique', name: '🌐 Diplomate & Analyste', category: 'title', color: '#a78bfa', cost: 160, desc: 'Titre des passionnés d\'Histoire, Géopolitique et SES.' },
+        { id: 'titre-labo', name: '🧫 Maître du Labo (STL)', category: 'title', color: '#34d399', cost: 160, desc: 'Titre des spécialistes en Biotechnologies et Sciences de Labo.' },
+        { id: 'titre-designer', name: '🎨 Créateur Design (STD2A)', category: 'title', color: '#f472b6', cost: 160, desc: 'Titre des visionnaires du Design et des Arts Appliqués.' },
+        { id: 'titre-chef', name: '🍽️ Chef Étoilé (STHR)', category: 'title', color: '#fb923c', cost: 160, desc: 'Distinction des talents de l\'Hôtellerie et de la Gastronomie.' },
+        { id: 'titre-agronome', name: '🌱 Gardien du Vivant (STAV)', category: 'title', color: '#4ade80', cost: 160, desc: 'Titre des experts en Agronomie et Écologie durable.' },
+        { id: 'titre-scene', name: '🎭 Virtuose de Scène (S2TMD)', category: 'title', color: '#c084fc', cost: 160, desc: 'Titre des artistes du Théâtre, de la Musique et de la Danse.' },
+        { id: 'titre-humaniste', name: '📖 Humaniste Éclairé (HLP)', category: 'title', color: '#fde047', cost: 160, desc: 'Distinction des esprits brillants en Humanités et Lettres.' },
+        { id: 'titre-scientifique', name: '🔬 Esprit Scientifique', category: 'title', color: '#38bdf8', cost: 160, desc: 'Titre des passionnés de Maths, Physique, Chimie et SVT.' },
+        { id: 'titre-dev-sio', name: '🖥️ Développeur SIO', category: 'title', color: '#22d3ee', cost: 180, desc: 'Distinction des bâtisseurs d\'applications et bases de données (BTS SIO).' },
+        { id: 'titre-manager-mco', name: '🛒 As du Commerce (MCO)', category: 'title', color: '#f59e0b', cost: 180, desc: 'Titre des champions de la relation client et du merchandising.' },
+        { id: 'titre-expert-cg', name: '🧮 Expert Finance (CG)', category: 'title', color: '#60a5fa', cost: 180, desc: 'Titre des maîtres du bilan, de la TVA et du contrôle de gestion.' },
+        { id: 'titre-elec-melec', name: '⚡ Maître Énergie (MELEC)', category: 'title', color: '#facc15', cost: 180, desc: 'Distinction des techniciens en électrotechnique et réseaux connectés.' },
+        { id: 'titre-accompagnant', name: '🏥 Héros du Soin (ASSP)', category: 'title', color: '#fb7185', cost: 180, desc: 'Titre honorant l\'accompagnement et les soins à la personne.' },
+        { id: 'titre-sans-faute', name: '💎 Perfectionniste', category: 'title', color: '#67e8f9', cost: 250, desc: 'Pour ceux qui visent systématiquement les 3 étoiles.' },
+        { id: 'titre-stratege-combo', name: '🔥 Roi du Combo', category: 'title', color: '#ff6b6b', cost: 300, desc: 'Titre des virtuoses des longues séries de bonnes réponses.' },
+        { id: 'titre-polyvalent', name: '🧭 Polymathe Universel', category: 'title', color: '#a78bfa', cost: 450, desc: 'Récompense la maîtrise pluridisciplinaire sur toutes les îles.' },
+        { id: 'titre-legende', name: '🌠 Légende d\'Eduquest', category: 'title', color: '#ffd700', cost: 650, desc: 'Titre mythique réservé aux vétérans de la galaxie du savoir.' },
 
-        // --- THÈMES & EFFETS ---
+        // --- THÈMES & EFFETS (15) ---
         { id: 'default', name: '🌌 Thème Astral (Origine)', category: 'theme', color: '#c8a84b', cost: 0, desc: 'Le décor cosmique classique d\'EDUQUEST, offert par défaut.' },
         { id: 'theme-cyber', name: '🌐 Thème Cyber Néon', category: 'theme', color: '#00f5d4', cost: 180, desc: 'Ambiance futuriste aux teintes cyan et magenta.' },
         { id: 'theme-galaxie', name: '🌌 Thème Abysses Stellaires', category: 'theme', color: '#7b2cbf', cost: 220, desc: 'Fond spatial étoilé et nébuleuses profondes.' },
         { id: 'theme-or', name: '✨ Thème Palais Doré', category: 'theme', color: '#e0a96d', cost: 300, desc: 'Cadre impérial et dorures antiques.' },
         { id: 'theme-emeraude', name: '🌿 Thème Émeraude Tech', category: 'theme', color: '#10b981', cost: 200, desc: 'Palette éco-technologique vert émeraude et ardoise sombre.' },
         { id: 'theme-matrix', name: '🖥️ Thème Terminal Matrix', category: 'theme', color: '#22c55e', cost: 240, desc: 'Esthétique console développeur noir profond et vert phosphore.' },
+        { id: 'theme-ocean', name: '🌊 Thème Abysse Océanique', category: 'theme', color: '#06b6d4', cost: 200, desc: 'Profondeurs marines bioluminescentes bleu-turquoise.' },
+        { id: 'theme-aurore', name: '❄️ Thème Aurore Boréale', category: 'theme', color: '#38bdf8', cost: 210, desc: 'Ciel polaire bleu glacier et reflets boréaux.' },
+        { id: 'theme-foret', name: '🌲 Thème Forêt Enchantée', category: 'theme', color: '#22c55e', cost: 210, desc: 'Clairière nocturne émeraude aux lucioles dorées.' },
+        { id: 'theme-volcan', name: '🌋 Thème Forge Volcanique', category: 'theme', color: '#f97316', cost: 230, desc: 'Lave incandescente, basalte sombre et braises ardentes.' },
+        { id: 'theme-sakura', name: '🌸 Thème Nuit Sakura', category: 'theme', color: '#f472b6', cost: 240, desc: 'Nuit japonaise veloutée aux fleurs de cerisier rose.' },
+        { id: 'theme-amethyste', name: '🔮 Thème Cristal Améthyste', category: 'theme', color: '#a855f7', cost: 250, desc: 'Sanctuaire de quartz violet aux éclats mystiques.' },
+        { id: 'theme-parchemin', name: '📜 Thème Bibliothèque Antique', category: 'theme', color: '#d97706', cost: 260, desc: 'Ambiance grimoires anciens, boiseries et ambre chaud.' },
+        { id: 'theme-retro', name: '🕹️ Thème Synthwave 80s', category: 'theme', color: '#ec4899', cost: 280, desc: 'Horizon rétro-futuriste néon rose, violet et cyan.' },
+        { id: 'theme-celeste', name: '✨ Thème Sanctuaire Solaire', category: 'theme', color: '#facc15', cost: 360, desc: 'Voûte étoilée azur royal et éclats solaires.' },
 
-        // --- BOOSTERS ---
+        // --- BOOSTERS CONSOMMABLES (5) ---
         { id: 'boost-xp', name: '🧪 Potion Double XP', category: 'booster', color: '#38b000', cost: 75, desc: 'Double l\'XP gagnée au prochain niveau réussi !' },
         { id: 'boost-shield', name: '🛡️ Bouclier d\'Étoile', category: 'booster', color: '#0077b6', cost: 100, desc: 'Préserve tes 3 étoiles même en cas de première erreur.' },
+        { id: 'boost-coins', name: '🪙 Élixir de Fortune (Pièces ×2)', category: 'booster', color: '#f59e0b', cost: 80, desc: 'Double les pièces d\'or gagnées au prochain niveau réussi !' },
+        { id: 'boost-time', name: '⏳ Sablier Temporel (+15s)', category: 'booster', color: '#38bdf8', cost: 65, desc: 'Ajoute automatiquement +15 secondes au chrono en Mode Défi Chronométré.' },
+        { id: 'boost-combo', name: '🔥 Flamme Éternelle (Garde-Série)', category: 'booster', color: '#f97316', cost: 95, desc: 'Sauvegarde ta série 🔥 et ton combo ⚡ même en cas d\'erreur (hors bouclier).' },
     ];
 
     // Pool par défaut des Quêtes Quotidiennes (pilotable depuis le panneau admin)
@@ -218,7 +293,7 @@ const AdminStore = (() => {
         fallbackToLocal: true,
     };
 
-    // Catalogue des 46 succès / badges par défaut d'EDUQUEST (filtrables par filière & cycle)
+    // Catalogue des 78 succès / badges par défaut d'EDUQUEST (46 existants + 32 nouveaux, filtrables par filière & cycle)
     const DEFAULT_BADGES = [
         // --- SUCCÈS UNIVERSELS (TOUTES FILIÈRES & TOUS CYCLES) ---
         { id: 'premier_quiz', icon: '🎯', name: 'Premier pas', desc: 'Réussis ta toute première question.', category: 'progression', band: 'all', allowedFilieres: ['all'], condition: 'totalCompleted >= 1' },
@@ -247,40 +322,74 @@ const AdminStore = (() => {
         { id: 'queteur', icon: '📋', name: 'Assidu', desc: 'Réclame une récompense de quête journalière.', category: 'quetes', band: 'all', allowedFilieres: ['all'], condition: 'questClaimed' },
         { id: 'coffre_ouvert', icon: '🎁', name: 'Chasseur de Trésor', desc: 'Ouvre le coffre quotidien bonus.', category: 'quetes', band: 'all', allowedFilieres: ['all'], condition: 'dailyChestOpened' },
 
+        // --- NOUVEAUX SUCCÈS UNIVERSELS (PROGRESSION, ÉTOILES, SÉRIES, ÉCONOMIE, COLLECTION & POTIONS) ---
+        { id: 'cinq_niveaux', icon: '🗺️', name: 'Explorateur Confirmé', desc: 'Termine 5 niveaux au total.', category: 'progression', band: 'all', allowedFilieres: ['all'], condition: 'totalCompleted >= 5' },
+        { id: 'dix_niveaux', icon: '🧭', name: 'Aventurier Aguerri', desc: 'Termine 10 niveaux au total.', category: 'progression', band: 'all', allowedFilieres: ['all'], condition: 'totalCompleted >= 10' },
+        { id: 'vingt_cinq_niveaux', icon: '🏔️', name: 'Conquérant des Îles', desc: 'Termine 25 niveaux au total.', category: 'progression', band: 'all', allowedFilieres: ['all'], condition: 'totalCompleted >= 25' },
+        { id: 'cinquante_niveaux', icon: '🚀', name: 'Commandant Galactique', desc: 'Termine 50 niveaux au total.', category: 'progression', band: 'all', allowedFilieres: ['all'], condition: 'totalCompleted >= 50' },
+        { id: 'cent_niveaux', icon: '🌟', name: 'Centurion du Savoir', desc: 'Termine 100 niveaux au total.', category: 'progression', band: 'all', allowedFilieres: ['all'], condition: 'totalCompleted >= 100' },
+        { id: 'trois_etoiles', icon: '⭐', name: 'Première Constellation', desc: 'Obtiens 3 étoiles sur un niveau.', category: 'precision', band: 'all', allowedFilieres: ['all'], condition: 'threeStarCount >= 1' },
+        { id: 'grand_maitre', icon: '🌠', name: 'Pluie d\'Étoiles', desc: 'Décroche 3 étoiles sur 10 niveaux différents.', category: 'precision', band: 'all', allowedFilieres: ['all'], condition: 'threeStarCount >= 10' },
+        { id: 'perfectionniste_25', icon: '💎', name: 'Perfectionniste d\'Élite', desc: 'Décroche 3 étoiles sur 25 niveaux différents.', category: 'precision', band: 'all', allowedFilieres: ['all'], condition: 'threeStarCount >= 25' },
+        { id: 'streak_10', icon: '🔥', name: 'Flamme Inextinguible', desc: 'Enchaîne 10 victoires d\'affilée.', category: 'progression', band: 'all', allowedFilieres: ['all'], condition: 'streakCount >= 10' },
+        { id: 'streak_20', icon: '☄️', name: 'Météore Imparable', desc: 'Enchaîne 20 victoires d\'affilée.', category: 'progression', band: 'all', allowedFilieres: ['all'], condition: 'streakCount >= 20' },
+        { id: 'combo_10', icon: '⚡', name: 'Supercharge Légendaire', desc: 'Enchaîne 10 bonnes réponses consécutives.', category: 'precision', band: 'all', allowedFilieres: ['all'], condition: 'maxCombo >= 10' },
+        { id: 'niveau_15', icon: '🛸', name: 'Navigateur Stellaire', desc: 'Atteins le niveau 15 (1 400+ XP).', category: 'niveau', band: 'all', allowedFilieres: ['all'], condition: 'playerLevel >= 15' },
+        { id: 'niveau_20', icon: '🌌', name: 'Légende Cosmique', desc: 'Atteins le niveau 20 (1 900+ XP).', category: 'niveau', band: 'all', allowedFilieres: ['all'], condition: 'playerLevel >= 20' },
+        { id: 'tresorier_500', icon: '💎', name: 'Trésorier Royal', desc: 'Accumule au moins 500 pièces d\'or.', category: 'economie', band: 'all', allowedFilieres: ['all'], condition: 'coins >= 500' },
+        { id: 'milliardaire_1000', icon: '👑', name: 'Empereur d\'Or', desc: 'Accumule au moins 1 000 pièces d\'or.', category: 'economie', band: 'all', allowedFilieres: ['all'], condition: 'coins >= 1000' },
+        { id: 'garde_robe_10', icon: '🛍️', name: 'Grand Collectionneur', desc: 'Possède au moins 10 articles différents de la boutique.', category: 'boutique', band: 'all', allowedFilieres: ['all'], condition: 'ownedSkins >= 10' },
+        { id: 'musee_20', icon: '🏛️', name: 'Conservateur du Musée', desc: 'Possède au moins 20 articles différents de la boutique.', category: 'boutique', band: 'all', allowedFilieres: ['all'], condition: 'ownedSkins >= 20' },
+        { id: 'titre_equipe', icon: '🏷️', name: 'Porteur de Titre', desc: 'Équipe un titre honorifique sur ton profil.', category: 'personnalisation', band: 'all', allowedFilieres: ['all'], condition: 'titleEquipped' },
+        { id: 'potion_fortune', icon: '🪙', name: 'Alchimiste Fortuné', desc: 'Utilise un Élixir de Fortune (Pièces ×2).', category: 'potions', band: 'all', allowedFilieres: ['all'], condition: 'usedDoubleCoins' },
+
         // --- SUCCÈS COLLÈGE / TRANSVERSE SCIENTIFIQUE & LANGUES ---
         { id: 'technophile', icon: '💻', name: 'Technophile', desc: 'Atteins le niveau 5 en Technologie (Collège).', category: 'matieres', band: 'college', allowedFilieres: ['all'], condition: 'technoLevel >= 5' },
-        { id: 'sciences_fan', icon: '🔬', name: 'Scientifique', desc: 'Atteins le niveau 5 en SVT, Physique ou Chimie.', category: 'matieres', band: 'all', allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel', 'st2s'], condition: 'scienceLevel >= 5' },
-        { id: 'hispanophone', icon: '🇪🇸', name: 'Hispanophone', desc: 'Atteins le niveau 5 en Espagnol (LV2).', category: 'matieres', band: 'all', allowedFilieres: ['generale', 'stmg', 'st2s'], condition: 'espagnolLevel >= 5' },
-        { id: 'artiste_melomane', icon: '🎨', name: 'Esprit Créatif', desc: 'Atteins le niveau 5 en Arts & Musique.', category: 'matieres', band: 'all', allowedFilieres: ['generale'], condition: 'artsLevel >= 5' },
+        { id: 'sciences_fan', icon: '🔬', name: 'Scientifique', desc: 'Atteins le niveau 5 en SVT, Physique ou Chimie.', category: 'matieres', band: 'all', allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel', 'st2s', 'stl', 'stav', 'sciences_spe', 'bac_pro_melec', 'bac_pro_assp'], condition: 'scienceLevel >= 5' },
+        { id: 'hispanophone', icon: '🇪🇸', name: 'Hispanophone', desc: 'Atteins le niveau 5 en Espagnol (LV2).', category: 'matieres', band: 'all', allowedFilieres: ['generale', 'stmg', 'st2s', 'stl', 'std2a', 'sthr', 'stav', 's2tmd', 'hlp_llce', 'sciences_spe', 'bts_mco', 'bac_pro_assp'], condition: 'espagnolLevel >= 5' },
+        { id: 'artiste_melomane', icon: '🎨', name: 'Esprit Créatif', desc: 'Atteins le niveau 5 en Arts & Musique.', category: 'matieres', band: 'all', allowedFilieres: ['generale', 'std2a', 's2tmd', 'hlp_llce'], condition: 'artsLevel >= 5' },
 
-        // --- SUCCÈS LYCÉE GÉNÉRAL & PHILOSOPHIE ---
-        { id: 'philo_fan', icon: '🏛️', name: 'Penseur Antique', desc: 'Atteins le niveau 5 en Philosophie.', category: 'matieres', band: 'lycee', allowedFilieres: ['generale', 'nsi_spe', 'stmg', 'sti2d', 'st2s'], condition: 'philoLevel >= 5' },
-        { id: 'geopoliticien', icon: '🗺️', name: 'Géopoliticien', desc: 'Atteins le niveau 5 en HGGSP (Géopolitique).', category: 'matieres', band: 'lycee', allowedFilieres: ['generale'], condition: 'hggspLevel >= 5' },
+        // --- SUCCÈS LYCÉE GÉNÉRAL, HUMANITÉS & SCIENCES ---
+        { id: 'philo_fan', icon: '🏛️', name: 'Penseur Antique', desc: 'Atteins le niveau 5 en Philosophie.', category: 'matieres', band: 'lycee', allowedFilieres: ['generale', 'nsi_spe', 'stmg', 'sti2d', 'st2s', 'stl', 'std2a', 'sthr', 'stav', 's2tmd', 'hlp_llce', 'sciences_spe'], condition: 'philoLevel >= 5' },
+        { id: 'geopoliticien', icon: '🗺️', name: 'Géopoliticien', desc: 'Atteins le niveau 5 en HGGSP (Géopolitique).', category: 'matieres', band: 'lycee', allowedFilieres: ['generale', 'hlp_llce'], condition: 'hggspLevel >= 5' },
         { id: 'economiste_ses', icon: '💹', name: 'Économiste SES', desc: 'Atteins le niveau 5 en SES (Économie & Sociologie).', category: 'matieres', band: 'lycee', allowedFilieres: ['generale'], condition: 'sesLevel >= 5' },
+        { id: 'hlp_orateur', icon: '📖', name: 'Orateur HLP', desc: 'Atteins le niveau 5 en Humanités & Littérature (HLP).', category: 'matieres', band: 'lycee', allowedFilieres: ['hlp_llce', 'generale'], condition: 'hlpLevel >= 5' },
+        { id: 'sciences_spe_crack', icon: '🔬', name: 'Prodige des Sciences', desc: 'Atteins le niveau 10 en Maths, Physique, Chimie ou SVT.', category: 'matieres', band: 'lycee', allowedFilieres: ['sciences_spe', 'generale'], condition: 'sciencesSpeLevel >= 10' },
 
         // --- SUCCÈS SPÉCIALITÉ NSI & NUMÉRIQUE ---
-        { id: 'nsi_fan', icon: '💻', name: 'Codeur NSI', desc: 'Atteins le niveau 5 en NSI & Numérique.', category: 'matieres', band: 'lycee', allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel'], condition: 'nsiLevel >= 5' },
+        { id: 'nsi_fan', icon: '💻', name: 'Codeur NSI', desc: 'Atteins le niveau 5 en NSI & Numérique.', category: 'matieres', band: 'lycee', allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel', 'bts_sio'], condition: 'nsiLevel >= 5' },
 
-        // --- SUCCÈS FILIÈRE CIEL (CYBER, RÉSEAUX & ÉLECTRONIQUE) ---
-        { id: 'ciel_fan', icon: '🛡️', name: 'Expert CIEL', desc: 'Atteins le niveau 5 en Cybersécurité, Réseaux ou Électronique.', category: 'matieres', band: 'lycee', allowedFilieres: ['ciel', 'nsi_spe'], condition: 'cielLevel >= 5' },
-        { id: 'cyber_gardien', icon: '🔐', name: 'Gardien Cyber', desc: 'Atteins le niveau 5 en Cybersécurité.', category: 'matieres', band: 'lycee', allowedFilieres: ['ciel', 'nsi_spe'], condition: 'cyberLevel >= 5' },
-        { id: 'architecte_reseau', icon: '🌐', name: 'Architecte Réseau', desc: 'Atteins le niveau 5 en Réseaux & Systèmes.', category: 'matieres', band: 'lycee', allowedFilieres: ['ciel', 'nsi_spe'], condition: 'reseauxLevel >= 5' },
-        { id: 'maitre_electronique', icon: '🔌', name: 'Maître des Circuits', desc: 'Atteins le niveau 5 en Électronique & Systèmes.', category: 'matieres', band: 'lycee', allowedFilieres: ['ciel', 'sti2d'], condition: 'electroniqueLevel >= 5' },
+        // --- SUCCÈS FILIÈRE CIEL & BTS SIO (CYBER, RÉSEAUX, DEV & ÉLECTRONIQUE) ---
+        { id: 'ciel_fan', icon: '🛡️', name: 'Expert CIEL', desc: 'Atteins le niveau 5 en Cybersécurité, Réseaux ou Électronique.', category: 'matieres', band: 'lycee', allowedFilieres: ['ciel', 'nsi_spe', 'bts_sio'], condition: 'cielLevel >= 5' },
+        { id: 'cyber_gardien', icon: '🔐', name: 'Gardien Cyber', desc: 'Atteins le niveau 5 en Cybersécurité.', category: 'matieres', band: 'lycee', allowedFilieres: ['ciel', 'nsi_spe', 'bts_sio'], condition: 'cyberLevel >= 5' },
+        { id: 'architecte_reseau', icon: '🌐', name: 'Architecte Réseau', desc: 'Atteins le niveau 5 en Réseaux & Systèmes.', category: 'matieres', band: 'lycee', allowedFilieres: ['ciel', 'nsi_spe', 'bts_sio'], condition: 'reseauxLevel >= 5' },
+        { id: 'maitre_electronique', icon: '🔌', name: 'Maître des Circuits', desc: 'Atteins le niveau 5 en Électronique & Systèmes.', category: 'matieres', band: 'lycee', allowedFilieres: ['ciel', 'sti2d', 'bac_pro_melec'], condition: 'electroniqueLevel >= 5' },
+        { id: 'sio_architecte', icon: '🖥️', name: 'Développeur BTS SIO', desc: 'Atteins le niveau 5 en Développement & Bases de Données.', category: 'matieres', band: 'lycee', allowedFilieres: ['bts_sio', 'nsi_spe'], condition: 'devBddLevel >= 5' },
 
-        // --- SUCCÈS FILIÈRE STMG (MANAGEMENT, DROIT & MERCATIQUE) ---
+        // --- SUCCÈS FILIÈRES STMG, BTS MCO & BTS CG ---
         { id: 'stmg_fan', icon: '📊', name: 'Manager STMG', desc: 'Atteins le niveau 5 en MSGN, Droit-Éco ou Mercatique.', category: 'matieres', band: 'lycee', allowedFilieres: ['stmg'], condition: 'stmgLevel >= 5' },
-        { id: 'juriste_junior', icon: '⚖️', name: 'Juriste Junior', desc: 'Atteins le niveau 5 en Droit & Économie.', category: 'matieres', band: 'lycee', allowedFilieres: ['stmg', 'ciel'], condition: 'droitEcoLevel >= 5' },
-        { id: 'as_mercatique', icon: '📈', name: 'As du Marketing', desc: 'Atteins le niveau 5 en Mercatique.', category: 'matieres', band: 'lycee', allowedFilieres: ['stmg'], condition: 'mercatiqueLevel >= 5' },
+        { id: 'juriste_junior', icon: '⚖️', name: 'Juriste Junior', desc: 'Atteins le niveau 5 en Droit & Économie.', category: 'matieres', band: 'lycee', allowedFilieres: ['stmg', 'ciel', 'sthr', 'bts_sio', 'bts_mco', 'bts_cg'], condition: 'droitEcoLevel >= 5' },
+        { id: 'as_mercatique', icon: '📈', name: 'As du Marketing', desc: 'Atteins le niveau 5 en Mercatique.', category: 'matieres', band: 'lycee', allowedFilieres: ['stmg', 'bts_mco', 'sthr'], condition: 'mercatiqueLevel >= 5' },
+        { id: 'mco_negociateur', icon: '🛒', name: 'Manager BTS MCO', desc: 'Atteins le niveau 5 en Relation Client & Commerce.', category: 'matieres', band: 'lycee', allowedFilieres: ['bts_mco'], condition: 'commerceLevel >= 5' },
+        { id: 'cg_auditeur', icon: '🧮', name: 'Auditeur BTS CG', desc: 'Atteins le niveau 5 en Comptabilité & Finance.', category: 'matieres', band: 'lycee', allowedFilieres: ['bts_cg'], condition: 'comptabiliteLevel >= 5' },
 
-        // --- SUCCÈS FILIÈRE STI2D & SCIENCES DE L'INGÉNIEUR ---
+        // --- SUCCÈS FILIÈRES STI2D, SI & BAC PRO MELEC ---
         { id: 'sti2d_fan', icon: '⚙️', name: 'Ingénieur STI2D', desc: 'Atteins le niveau 5 en I2D, SIN ou Sciences de l\'Ingénieur.', category: 'matieres', band: 'lycee', allowedFilieres: ['sti2d'], condition: 'sti2dLevel >= 5' },
         { id: 'eco_concepteur', icon: '🌿', name: 'Éco-Concepteur', desc: 'Atteins le niveau 5 en I2D (Innovation & Éco).', category: 'matieres', band: 'lycee', allowedFilieres: ['sti2d'], condition: 'i2dLevel >= 5' },
-        { id: 'dompteur_signaux', icon: '📡', name: 'Dompteur de Signaux', desc: 'Atteins le niveau 5 en SIN (Info & Numérique).', category: 'matieres', band: 'lycee', allowedFilieres: ['sti2d'], condition: 'sinLevel >= 5' },
-        { id: 'ingenieur_systeme', icon: '📐', name: 'Ingénieur Système', desc: 'Atteins le niveau 5 en Sciences de l\'Ingénieur.', category: 'matieres', band: 'lycee', allowedFilieres: ['generale', 'nsi_spe', 'sti2d'], condition: 'siLevel >= 5' },
+        { id: 'dompteur_signaux', icon: '📡', name: 'Dompteur de Signaux', desc: 'Atteins le niveau 5 en SIN (Info & Numérique).', category: 'matieres', band: 'lycee', allowedFilieres: ['sti2d', 'bac_pro_melec'], condition: 'sinLevel >= 5' },
+        { id: 'ingenieur_systeme', icon: '📐', name: 'Ingénieur Système', desc: 'Atteins le niveau 5 en Sciences de l\'Ingénieur.', category: 'matieres', band: 'lycee', allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'sciences_spe'], condition: 'siLevel >= 5' },
+        { id: 'melec_technicien', icon: '⚡', name: 'Expert MELEC', desc: 'Atteins le niveau 5 en Électrotechnique & Énergie.', category: 'matieres', band: 'lycee', allowedFilieres: ['bac_pro_melec'], condition: 'electrotechLevel >= 5' },
 
-        // --- SUCCÈS FILIÈRE ST2S (SANTÉ & SOCIAL) ---
+        // --- SUCCÈS FILIÈRES ST2S, STL, ASSP, STD2A, STHR, STAV & S2TMD ---
         { id: 'st2s_fan', icon: '🩺', name: 'Spécialiste ST2S', desc: 'Atteins le niveau 5 en STSS.', category: 'matieres', band: 'lycee', allowedFilieres: ['st2s'], condition: 'stssLevel >= 5' },
         { id: 'acteur_sante', icon: '🏥', name: 'Acteur de Santé', desc: 'Atteins le niveau 10 en STSS (Santé & Social).', category: 'matieres', band: 'lycee', allowedFilieres: ['st2s'], condition: 'stssLevel >= 10' },
+        { id: 'stl_biotech', icon: '🧫', name: 'Bio-Laborantin', desc: 'Atteins le niveau 5 en Biotechnologies & Labo.', category: 'matieres', band: 'lycee', allowedFilieres: ['stl', 'bac_pro_assp'], condition: 'biotechLevel >= 5' },
+        { id: 'stl_expert', icon: '🧪', name: 'Chimiste de Labo (STL)', desc: 'Atteins le niveau 10 en Biotechnologies ou Chimie.', category: 'matieres', band: 'lycee', allowedFilieres: ['stl'], condition: 'stlLevel >= 10' },
+        { id: 'assp_bienveillant', icon: '🏥', name: 'Professionnel ASSP', desc: 'Atteins le niveau 5 en STSS ou Biotechnologies (ASSP).', category: 'matieres', band: 'lycee', allowedFilieres: ['bac_pro_assp'], condition: 'asspLevel >= 5' },
+        { id: 'std2a_design', icon: '🎨', name: 'Designer STD2A', desc: 'Atteins le niveau 5 en Design & Arts Appliqués.', category: 'matieres', band: 'lycee', allowedFilieres: ['std2a'], condition: 'designLevel >= 5' },
+        { id: 'sthr_chef', icon: '🍽️', name: 'Maître Hôtelier (STHR)', desc: 'Atteins le niveau 5 en Hôtellerie & Gastronomie.', category: 'matieres', band: 'lycee', allowedFilieres: ['sthr'], condition: 'hotellerieLevel >= 5' },
+        { id: 'stav_agronome', icon: '🌱', name: 'Éco-Agronome (STAV)', desc: 'Atteins le niveau 5 en Agronomie & Écologie.', category: 'matieres', band: 'lycee', allowedFilieres: ['stav'], condition: 'agronomieLevel >= 5' },
+        { id: 's2tmd_virtuose', icon: '🎭', name: 'Virtuose S2TMD', desc: 'Atteins le niveau 5 en Arts de la Scène & Culture.', category: 'matieres', band: 'lycee', allowedFilieres: ['s2tmd'], condition: 'spectacleLevel >= 5' },
     ];
 
     /* -----------------------------------------------------------------------
@@ -810,6 +919,14 @@ const AdminStore = (() => {
     /** true si une surcharge (nom/icône/leçons/niveaux) existe pour cette matière. */
     function hasOverride(id) {
         return Object.prototype.hasOwnProperty.call(_data().subjects.overrides, id);
+    }
+
+    /** true si au moins une matière personnalisée ou surcharge de matière existe. */
+    function hasSubjectCustomizations() {
+        const s = _data().subjects;
+        if (!s) return false;
+        return (Array.isArray(s.customs) && s.customs.length > 0)
+            || (Boolean(s.overrides) && Object.keys(s.overrides).length > 0);
     }
 
     /* -----------------------------------------------------------------------
@@ -1751,6 +1868,7 @@ const AdminStore = (() => {
         applyOverrides,
         isCustom,
         hasOverride,
+        hasSubjectCustomizations,
         listEditable,
         saveSubjectMeta,
         saveLessons,

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <radialGradient id="clBg" cx="50%" cy="30%" r="72%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#1e1233"/>
+    </radialGradient>
+  </defs>
+  <rect width="120" height="120" fill="url(#clBg)"/>
+  <!-- Collier ousekh égyptien doré et turquoise -->
+  <path d="M22 120 L30 82 Q60 76 90 82 L98 120 Z" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+  <path d="M33 84 Q60 112 87 84 L82 98 Q60 120 38 98 Z" fill="#f59e0b" stroke="#0284c7" stroke-width="2.5"/>
+  <!-- Coiffure noire égyptienne avec tresses -->
+  <path d="M30 84 L32 40 Q36 22 60 22 Q84 22 88 40 L90 84 L78 84 L78 48 L42 48 L42 84 Z" fill="#111827"/>
+  <!-- Diadème cobra doré -->
+  <rect x="34" y="33" width="52" height="7" rx="3" fill="#facc15" stroke="#b45309" stroke-width="1.5"/>
+  <circle cx="60" cy="34" r="5" fill="#06b6d4" stroke="#fef08a" stroke-width="2"/>
+  <!-- Visage -->
+  <rect x="42" y="40" width="36" height="40" rx="16" fill="#dca277" stroke="#8a5530" stroke-width="2"/>
+  <!-- Yeux au khôl -->
+  <path d="M46 55 Q52 51 57 55 L44 55 Z" fill="#111827"/>
+  <path d="M63 55 Q68 51 74 55 L76 55 Z" fill="#111827"/>
+  <circle cx="52" cy="55" r="2.6" fill="#1e293b"/>
+  <circle cx="68" cy="55" r="2.6" fill="#1e293b"/>
+  <path d="M54 68 Q60 72 66 68" fill="none" stroke="#991b1b" stroke-width="2.2" stroke-linecap="round"/>
+</svg>

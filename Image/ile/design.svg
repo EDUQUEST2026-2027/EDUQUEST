@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
+  <!-- ILOT DESIGN & ARTS APPLIQUES (STD2A) - EDUQUEST -->
+  <defs>
+    <linearGradient id="dsRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3b1647"/>
+      <stop offset="0.6" stop-color="#220c2b"/>
+      <stop offset="1" stop-color="#110516"/>
+    </linearGradient>
+    <linearGradient id="dsRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6d287d"/>
+      <stop offset="0.6" stop-color="#481857"/>
+      <stop offset="1" stop-color="#290d33"/>
+    </linearGradient>
+    <linearGradient id="dsAccent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f472b6"/>
+      <stop offset="0.5" stop-color="#a855f7"/>
+      <stop offset="1" stop-color="#38bdf8"/>
+    </linearGradient>
+    <radialGradient id="dsHalo" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#f472b6" stop-opacity="0.36"/>
+      <stop offset="0.6" stop-color="#8b5cf6" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="dsShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+  <circle cx="210" cy="182" r="148" fill="url(#dsHalo)"/>
+  <g filter="url(#dsShadow)">
+    <path d="M 74 250 Q 210 276 346 250 Q 372 294 318 345 Q 210 398 102 345 Q 48 294 74 250 Z" fill="url(#dsRockDeep)"/>
+    <path d="M 86 244 Q 210 268 334 244 Q 356 278 318 314 Q 210 366 102 314 Q 64 278 86 244 Z" fill="url(#dsRockTop)"/>
+    <ellipse cx="210" cy="244" rx="138" ry="40" fill="#250b30"/>
+    <ellipse cx="210" cy="240" rx="126" ry="32" fill="none" stroke="#f472b6" stroke-width="2.2"/>
+  </g>
+  <!-- Équerre architecturale + Planche couleurs + Stylet -->
+  <g filter="url(#dsShadow)">
+    <polygon points="122,232 238,232 122,108" fill="#1e1b4b" stroke="#38bdf8" stroke-width="3"/>
+    <polygon points="142,214 198,214 142,154" fill="#250b30" stroke="#7dd3fc" stroke-width="2"/>
+    <!-- Nuancier Pantone / Design -->
+    <rect x="218" y="126" width="54" height="106" rx="10" fill="#f43f5e" transform="rotate(-12 245 180)" stroke="#fff" stroke-width="2"/>
+    <rect x="242" y="130" width="54" height="106" rx="10" fill="#facc15" transform="rotate(4 268 182)" stroke="#fff" stroke-width="2"/>
+    <rect x="264" y="138" width="54" height="102" rx="10" fill="url(#dsAccent)" transform="rotate(18 290 188)" stroke="#fff" stroke-width="2"/>
+    <circle cx="244" cy="214" r="6" fill="#1e1b4b"/>
+    <!-- Cercle chromatique & plume vectorielle -->
+    <circle cx="196" cy="144" r="24" fill="url(#dsAccent)" stroke="#fef08a" stroke-width="3"/>
+    <polygon points="196,126 208,150 196,162 184,150" fill="#ffffff"/>
+    <circle cx="196" cy="146" r="3.5" fill="#1e1b4b"/>
+  </g>
+</svg>

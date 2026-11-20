@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <radialGradient id="atBg" cx="40%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#091326"/>
+    </radialGradient>
+  </defs>
+  <rect width="120" height="120" fill="url(#atBg)"/>
+  <!-- Ruban binaire Machine de Turing -->
+  <rect x="8" y="12" width="104" height="16" rx="4" fill="#0f172a" opacity="0.72" stroke="#22d3ee" stroke-width="1.2"/>
+  <text x="60" y="24" text-anchor="middle" fill="#67e8f9" font-family="monospace" font-size="11" font-weight="bold">0 1 1 0 1 0 0 1</text>
+  <!-- Veste tweed + cravate -->
+  <path d="M22 120 L30 82 Q60 75 90 82 L98 120 Z" fill="#334155" stroke="#1e293b" stroke-width="2"/>
+  <polygon points="49,82 60,108 71,82" fill="#e2e8f0"/>
+  <polygon points="57,84 63,84 65,112 60,118 55,112" fill="#0e7490"/>
+  <!-- Visage -->
+  <rect x="41" y="36" width="38" height="44" rx="17" fill="#f3cbb0" stroke="#9e6d4b" stroke-width="2"/>
+  <!-- Cheveux ondulés -->
+  <path d="M39 50 Q38 26 58 25 Q78 24 81 48 Q73 36 60 36 Q47 36 39 50 Z" fill="#4b3621"/>
+  <!-- Yeux & sourire réfléchi -->
+  <circle cx="51" cy="54" r="3" fill="#1e293b"/>
+  <circle cx="69" cy="54" r="3" fill="#1e293b"/>
+  <line x1="46" y1="49" x2="56" y2="49" stroke="#3b2918" stroke-width="2"/>
+  <line x1="64" y1="49" x2="74" y2="49" stroke="#3b2918" stroke-width="2"/>
+  <path d="M53 68 Q60 73 67 68" fill="none" stroke="#8d5531" stroke-width="2" stroke-linecap="round"/>
+</svg>

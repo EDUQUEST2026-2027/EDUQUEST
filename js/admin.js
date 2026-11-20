@@ -62,6 +62,16 @@
         { value: 'Image/ile/reseaux.svg', label: '🔌 Île de Réseaux & Systèmes (CIEL)' },
         { value: 'Image/ile/electronique.svg', label: '🔋 Île d\'Électronique & Embarqué (CIEL)' },
         { value: 'Image/ile/stss.svg', label: '🩺 Île de Sciences Sanitaires & Sociales (STSS)' },
+        { value: 'Image/ile/biotech.svg', label: '🧫 Île de Biotechnologies & Labo (STL / ASSP)' },
+        { value: 'Image/ile/design.svg', label: '✏️ Île de Design & Arts Appliqués (STD2A)' },
+        { value: 'Image/ile/hotellerie.svg', label: '🍽️ Île d\'Hôtellerie & Restauration (STHR)' },
+        { value: 'Image/ile/agronomie.svg', label: '🌱 Île d\'Agronomie & Vivant (STAV)' },
+        { value: 'Image/ile/spectacle.svg', label: '🎭 Île des Arts de la Scène & Culture (S2TMD)' },
+        { value: 'Image/ile/hlp.svg', label: '📖 Île d\'Humanités & Littérature (HLP)' },
+        { value: 'Image/ile/dev_bdd.svg', label: '🖥️ Île de Développement & BDD (BTS SIO)' },
+        { value: 'Image/ile/commerce.svg', label: '🛒 Île de Relation Client & Commerce (BTS MCO)' },
+        { value: 'Image/ile/comptabilite.svg', label: '🧮 Île de Comptabilité & Finance (BTS CG)' },
+        { value: 'Image/ile/electrotech.svg', label: '⚡ Île d\'Électrotechnique & Énergie (MELEC)' },
     ];
 
     function renderSubjectIcon(icon, altText = '', extraClass = '') {
@@ -591,8 +601,8 @@
                     </div>`;
             } else if (type === 'reponse_courte') {
                 previewChoices = `<div class="adm-hint" style="margin-bottom:6px;">Réponse(s) acceptée(s) : <b>${esc((q.accepted || []).join(', '))}</b></div>`;
-            } else if (type === 'texte_a_trous') {
-                previewChoices = `<div class="adm-hint" style="margin-bottom:6px;">Trou(s) : <b>${esc((q.blanks || []).map(b => (b || []).join('/')).join(', '))}</b></div>`;
+            } else if (type === 'texte_a_trous' || type === 'texte_a_choix') {
+                previewChoices = `<div class="adm-hint" style="margin-bottom:6px;">Trou(s) : <b>${esc((q.blanks || []).map(b => (Array.isArray(b) ? b : [b]).join('/')).join(', '))}</b></div>`;
             }
 
             return `
@@ -1285,7 +1295,7 @@
                 <div class="adm-shop-card ${item.disabled ? 'disabled' : ''}">
                     <div class="adm-shop-card-head">
                         <div class="adm-shop-orb" style="--sc:${esc(item.color || '#c8a84b')}">
-                            ${item.img ? `<img src="${esc(item.img)}" alt="">` : (item.icon || '✨')}
+                            ${item.img ? `<img src="${esc(item.img)}" alt="">` : esc(item.icon || '✨')}
                         </div>
                         <div class="adm-shop-meta">
                             <div class="adm-shop-title">
@@ -2156,7 +2166,8 @@
             renderTabContent();
         },
         filieresReset() {
-            if (!confirm('Rétablir les 6 filières officielles par défaut ?')) return;
+            const count = (typeof AdminStore !== 'undefined' && Array.isArray(AdminStore.DEFAULT_FILIERES)) ? AdminStore.DEFAULT_FILIERES.length : 18;
+            if (!confirm(`Rétablir les ${count} filières officielles par défaut ?`)) return;
             AdminStore.resetFilieres();
             S.filieresDraft = null;
             renderTabContent();
@@ -2326,6 +2337,7 @@
                 accepted: q.accepted,
                 textWithBlanks: q.textWithBlanks,
                 blanks: q.blanks,
+                choices: q.choices,
                 items: q.items,
                 targets: q.targets,
                 pairs: q.pairs,
@@ -2400,8 +2412,8 @@
                 correctStr = q.correct === true ? 'Vrai' : 'Faux';
             } else if (type === 'reponse_courte') {
                 correctStr = (q.accepted || []).join(' ou ');
-            } else if (type === 'texte_a_trous') {
-                correctStr = (q.blanks || []).map(b => (b || []).join('/')).join(', ');
+            } else if (type === 'texte_a_trous' || type === 'texte_a_choix') {
+                correctStr = (q.blanks || []).map(b => (Array.isArray(b) ? b : [b]).join('/')).join(', ');
             } else {
                 correctStr = 'Association conforme';
             }
@@ -2460,6 +2472,7 @@
             else if (type === 'vrai_faux') Object.assign(S.lessonDraft, { q: d.q, correct: true }, common);
             else if (type === 'reponse_courte') Object.assign(S.lessonDraft, { q: d.q, accepted: [''] }, common);
             else if (type === 'texte_a_trous') Object.assign(S.lessonDraft, { textWithBlanks: d.textWithBlanks || '', blanks: [['']] }, common);
+            else if (type === 'texte_a_choix') Object.assign(S.lessonDraft, { q: d.q || '', textWithBlanks: d.textWithBlanks || '', blanks: [['']], choices: [['', '']] }, common);
             else Object.assign(S.lessonDraft, { q: d.q, items: ['', ''], targets: ['', ''] }, common);
             renderTabContent();
         },

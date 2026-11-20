@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <radialGradient id="hyBg" cx="45%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#c084fc"/>
+      <stop offset="100%" stop-color="#170b30"/>
+    </radialGradient>
+  </defs>
+  <rect width="120" height="120" fill="url(#hyBg)"/>
+  <!-- Astrolabe / anneaux célestes en fond -->
+  <circle cx="60" cy="56" r="44" fill="none" stroke="#fde047" stroke-width="1.4" opacity="0.45"/>
+  <ellipse cx="60" cy="56" rx="44" ry="18" fill="none" stroke="#e9d5ff" stroke-width="1.2" opacity="0.45"/>
+  <!-- Toge antique violette et dorée -->
+  <path d="M22 120 L30 82 Q60 76 90 82 L98 120 Z" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="2"/>
+  <path d="M30 82 L68 120 L92 120 L78 82 Z" fill="#7e22ce" stroke="#fde047" stroke-width="2"/>
+  <!-- Cheveux relevés à la grecque + bandeau doré -->
+  <circle cx="60" cy="24" r="14" fill="#3b2314"/>
+  <path d="M36 56 Q36 26 60 26 Q84 26 84 56 Z" fill="#3b2314"/>
+  <path d="M40 36 Q60 30 80 36" fill="none" stroke="#facc15" stroke-width="4" stroke-linecap="round"/>
+  <!-- Visage -->
+  <rect x="42" y="38" width="36" height="42" rx="17" fill="#e8b895" stroke="#966341" stroke-width="2"/>
+  <circle cx="52" cy="55" r="3" fill="#2e180c"/>
+  <circle cx="68" cy="55" r="3" fill="#2e180c"/>
+  <path d="M54 68 Q60 73 66 68" fill="none" stroke="#9f3f3f" stroke-width="2" stroke-linecap="round"/>
+</svg>

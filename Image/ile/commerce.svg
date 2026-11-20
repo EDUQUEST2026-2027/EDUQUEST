@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
+  <!-- ILOT RELATION CLIENT & COMMERCE (BTS MCO) - EDUQUEST -->
+  <defs>
+    <linearGradient id="cmRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3b260b"/>
+      <stop offset="0.6" stop-color="#221506"/>
+      <stop offset="1" stop-color="#120b03"/>
+    </linearGradient>
+    <linearGradient id="cmRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#78470f"/>
+      <stop offset="0.6" stop-color="#4d2c09"/>
+      <stop offset="1" stop-color="#2b1704"/>
+    </linearGradient>
+    <linearGradient id="cmBag" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fbbf24"/>
+      <stop offset="1" stop-color="#ea580c"/>
+    </linearGradient>
+    <radialGradient id="cmHalo" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#f59e0b" stop-opacity="0.38"/>
+      <stop offset="0.6" stop-color="#fb7185" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="cmShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+  <circle cx="210" cy="182" r="148" fill="url(#cmHalo)"/>
+  <g filter="url(#cmShadow)">
+    <path d="M 74 250 Q 210 276 346 250 Q 372 294 318 345 Q 210 398 102 345 Q 48 294 74 250 Z" fill="url(#cmRockDeep)"/>
+    <path d="M 86 244 Q 210 268 334 244 Q 356 278 318 314 Q 210 366 102 314 Q 64 278 86 244 Z" fill="url(#cmRockTop)"/>
+    <ellipse cx="210" cy="244" rx="138" ry="40" fill="#2f1a06"/>
+    <ellipse cx="210" cy="240" rx="126" ry="32" fill="none" stroke="#fbbf24" stroke-width="2.2"/>
+  </g>
+  <!-- Sac boutique + Courbe croissance + Étoile satisfaction client -->
+  <g filter="url(#cmShadow)">
+    <path d="M 166 144 A 24 24 0 0 1 214 144" fill="none" stroke="#fef08a" stroke-width="6" stroke-linecap="round"/>
+    <rect x="136" y="144" width="108" height="92" rx="14" fill="url(#cmBag)" stroke="#fef3c7" stroke-width="3"/>
+    <text x="190" y="200" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-size="34" font-weight="bold">€</text>
+    <!-- Panneau KPI satisfaction -->
+    <rect x="234" y="118" width="76" height="84" rx="12" fill="#0f172a" stroke="#4ade80" stroke-width="3"/>
+    <polyline points="246,184 262,166 276,172 298,140" fill="none" stroke="#4ade80" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="298" cy="140" r="5" fill="#fde047"/>
+  </g>
+</svg>

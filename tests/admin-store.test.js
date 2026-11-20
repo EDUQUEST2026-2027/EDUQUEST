@@ -224,7 +224,7 @@ test('AdminStore - Matières personnalisées et surcharges', async (t) => {
 
         AdminStore.resetShopItems();
         const avatars = AdminStore.getShopItems().filter(it => it.category === 'avatar');
-        assert.equal(avatars.length, 17, 'Les 17 avatars attendus (10 classiques + 7 SVG) doivent être présents');
+        assert.equal(avatars.length, 27, 'Les 27 avatars attendus (10 classiques + 17 SVG) doivent être présents');
 
         const seenIds = new Set();
         for (const av of avatars) {

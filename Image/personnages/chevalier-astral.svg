@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <radialGradient id="caBg" cx="50%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#facc15"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </radialGradient>
+    <linearGradient id="caGold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="0.5" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" fill="url(#caBg)"/>
+  <!-- Plastron & épaulettes dorées -->
+  <path d="M18 120 L26 82 Q60 72 94 82 L102 120 Z" fill="url(#caGold)" stroke="#78350f" stroke-width="2.2"/>
+  <polygon points="60,86 68,98 60,110 52,98" fill="#38bdf8" stroke="#fef9c3" stroke-width="1.8"/>
+  <!-- Cimier / panache céleste -->
+  <path d="M60 12 C74 12 80 24 72 34 L48 34 C40 24 46 12 60 12 Z" fill="#38bdf8" stroke="#e0f2fe" stroke-width="2"/>
+  <!-- Heaume de chevalier astral -->
+  <path d="M36 44 Q36 26 60 26 Q84 26 84 44 L80 76 Q60 86 40 76 Z" fill="url(#caGold)" stroke="#78350f" stroke-width="2.5"/>
+  <!-- Visière en T lumineuse -->
+  <path d="M44 50 L76 50 L74 58 L64 58 L64 74 L56 74 L56 58 L46 58 Z" fill="#0f172a"/>
+  <rect x="48" y="52" width="10" height="4" rx="2" fill="#38bdf8"/>
+  <rect x="62" y="52" width="10" height="4" rx="2" fill="#38bdf8"/>
+</svg>

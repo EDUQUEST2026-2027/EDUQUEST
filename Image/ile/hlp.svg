@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
+  <!-- ILOT HUMANITES & LITTERATURE (HLP) - EDUQUEST -->
+  <defs>
+    <linearGradient id="hlRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1e293b"/>
+      <stop offset="0.6" stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#070b14"/>
+    </linearGradient>
+    <linearGradient id="hlRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#475569"/>
+      <stop offset="0.6" stop-color="#334155"/>
+      <stop offset="1" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="hlPaper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fef9c3"/>
+      <stop offset="1" stop-color="#fde68a"/>
+    </linearGradient>
+    <radialGradient id="hlHalo" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#fbbf24" stop-opacity="0.38"/>
+      <stop offset="0.6" stop-color="#818cf8" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="hlShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+  <circle cx="210" cy="182" r="148" fill="url(#hlHalo)"/>
+  <g filter="url(#hlShadow)">
+    <path d="M 74 250 Q 210 276 346 250 Q 372 294 318 345 Q 210 398 102 345 Q 48 294 74 250 Z" fill="url(#hlRockDeep)"/>
+    <path d="M 86 244 Q 210 268 334 244 Q 356 278 318 314 Q 210 366 102 314 Q 64 278 86 244 Z" fill="url(#hlRockTop)"/>
+    <ellipse cx="210" cy="244" rx="138" ry="40" fill="#1e293b"/>
+    <ellipse cx="210" cy="240" rx="126" ry="32" fill="none" stroke="#fbbf24" stroke-width="2.2"/>
+  </g>
+  <!-- Grand livre ouvert lumineux + Plume d'écrivain dorée -->
+  <g filter="url(#hlShadow)">
+    <path d="M 114 152 Q 162 138 210 156 L 210 236 Q 162 218 114 232 Z" fill="url(#hlPaper)" stroke="#b45309" stroke-width="3"/>
+    <path d="M 306 152 Q 258 138 210 156 L 210 236 Q 258 218 306 232 Z" fill="url(#hlPaper)" stroke="#b45309" stroke-width="3"/>
+    <line x1="130" y1="176" x2="192" y2="180" stroke="#92400e" stroke-width="3" stroke-linecap="round"/>
+    <line x1="130" y1="194" x2="188" y2="198" stroke="#92400e" stroke-width="3" stroke-linecap="round"/>
+    <line x1="130" y1="212" x2="184" y2="215" stroke="#92400e" stroke-width="3" stroke-linecap="round"/>
+    <line x1="228" y1="180" x2="290" y2="176" stroke="#92400e" stroke-width="3" stroke-linecap="round"/>
+    <line x1="228" y1="198" x2="286" y2="194" stroke="#92400e" stroke-width="3" stroke-linecap="round"/>
+    <!-- Plume élancée -->
+    <path d="M 222 184 C 244 134 282 102 316 92 C 304 128 274 162 228 188 Z" fill="#818cf8" stroke="#e0e7ff" stroke-width="2.5"/>
+    <line x1="214" y1="196" x2="306" y2="100" stroke="#fef08a" stroke-width="3" stroke-linecap="round"/>
+  </g>
+</svg>

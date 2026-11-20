@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
+  <!-- ILOT BIOTECHNOLOGIES & LABO (STL) - EDUQUEST -->
+  <defs>
+    <linearGradient id="btRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d3b2e"/>
+      <stop offset="0.6" stop-color="#07211a"/>
+      <stop offset="1" stop-color="#03100c"/>
+    </linearGradient>
+    <linearGradient id="btRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1d6b56"/>
+      <stop offset="0.6" stop-color="#0f4739"/>
+      <stop offset="1" stop-color="#07261e"/>
+    </linearGradient>
+    <linearGradient id="btLiquid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#34d399"/>
+      <stop offset="1" stop-color="#059669"/>
+    </linearGradient>
+    <radialGradient id="btHalo" cx="0.5" cy="0.4" r="0.58">
+      <stop offset="0" stop-color="#34d399" stop-opacity="0.38"/>
+      <stop offset="0.6" stop-color="#22d3ee" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="btShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+  <circle cx="210" cy="182" r="148" fill="url(#btHalo)"/>
+  <g filter="url(#btShadow)">
+    <path d="M 76 250 Q 210 276 344 250 Q 370 296 318 345 Q 210 398 102 345 Q 50 296 76 250 Z" fill="url(#btRockDeep)"/>
+    <path d="M 86 244 Q 210 268 334 244 Q 356 278 318 314 Q 210 366 102 314 Q 64 278 86 244 Z" fill="url(#btRockTop)"/>
+    <ellipse cx="210" cy="244" rx="138" ry="40" fill="#082e24"/>
+    <ellipse cx="210" cy="240" rx="128" ry="32" fill="none" stroke="#34d399" stroke-width="2.2"/>
+  </g>
+  <!-- Double hélice ADN stylisée à gauche -->
+  <g stroke-linecap="round" fill="none">
+    <path d="M 122 115 C 154 132 104 162 138 182 C 168 200 112 222 142 238" stroke="#38bdf8" stroke-width="4.5"/>
+    <path d="M 152 115 C 120 132 170 162 136 182 C 106 200 162 222 132 238" stroke="#34d399" stroke-width="4.5"/>
+    <line x1="126" y1="128" x2="148" y2="128" stroke="#a7f3d0" stroke-width="2.5"/>
+    <line x1="125" y1="152" x2="152" y2="152" stroke="#bae6fd" stroke-width="2.5"/>
+    <line x1="126" y1="176" x2="149" y2="176" stroke="#a7f3d0" stroke-width="2.5"/>
+    <line x1="124" y1="202" x2="150" y2="202" stroke="#bae6fd" stroke-width="2.5"/>
+    <line x1="127" y1="226" x2="147" y2="226" stroke="#a7f3d0" stroke-width="2.5"/>
+  </g>
+  <!-- Erlenmeyer & boîte de Pétri au centre/droite -->
+  <g filter="url(#btShadow)">
+    <path d="M 218 112 L 246 112 L 246 154 L 284 224 Q 288 236 274 238 L 190 238 Q 176 236 180 224 L 218 154 Z" fill="#0f2933" stroke="#bae6fd" stroke-width="3"/>
+    <path d="M 200 192 L 264 192 L 278 222 Q 280 232 270 234 L 194 234 Q 184 232 186 222 Z" fill="url(#btLiquid)"/>
+    <rect x="212" y="104" width="40" height="10" rx="4" fill="#67e8f9"/>
+    <circle cx="218" cy="212" r="5" fill="#d1fae5"/>
+    <circle cx="242" cy="204" r="7" fill="#a7f3d0"/>
+    <circle cx="232" cy="176" r="4" fill="#6ee7b7"/>
+    <ellipse cx="300" cy="222" rx="34" ry="12" fill="#0c4a6e" stroke="#38bdf8" stroke-width="2"/>
+    <circle cx="290" cy="220" r="4" fill="#34d399"/>
+    <circle cx="304" cy="224" r="5" fill="#fbbf24"/>
+    <circle cx="314" cy="218" r="3" fill="#f472b6"/>
+  </g>
+</svg>

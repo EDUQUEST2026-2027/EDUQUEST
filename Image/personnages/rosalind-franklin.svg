@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <radialGradient id="rfBg" cx="45%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#06201a"/>
+    </radialGradient>
+  </defs>
+  <rect width="120" height="120" fill="url(#rfBg)"/>
+  <!-- Motif diffraction X Photo 51 -->
+  <line x1="16" y1="16" x2="104" y2="104" stroke="#a7f3d0" stroke-width="1.5" opacity="0.35" stroke-dasharray="4 4"/>
+  <line x1="104" y1="16" x2="16" y2="104" stroke="#a7f3d0" stroke-width="1.5" opacity="0.35" stroke-dasharray="4 4"/>
+  <!-- Blouse blanche de laboratoire -->
+  <path d="M22 120 L30 82 Q60 76 90 82 L98 120 Z" fill="#f8fafc" stroke="#94a3b8" stroke-width="2"/>
+  <path d="M50 82 L60 106 L70 82 Z" fill="#059669"/>
+  <!-- Cheveux bruns ondulés années 50 -->
+  <path d="M32 68 Q28 30 60 24 Q92 30 88 68 Q82 80 76 74 L44 74 Q38 80 32 68 Z" fill="#3e2723"/>
+  <!-- Visage -->
+  <rect x="42" y="38" width="36" height="42" rx="17" fill="#f5cfb5" stroke="#a06c4d" stroke-width="2"/>
+  <path d="M40 48 Q52 34 78 44 Q72 28 56 30 Q42 32 40 48 Z" fill="#3e2723"/>
+  <!-- Yeux & expression déterminée -->
+  <circle cx="52" cy="55" r="3" fill="#1f1410"/>
+  <circle cx="68" cy="55" r="3" fill="#1f1410"/>
+  <path d="M47 50 Q52 48 56 50" fill="none" stroke="#3e2723" stroke-width="2"/>
+  <path d="M64 50 Q68 48 73 50" fill="none" stroke="#3e2723" stroke-width="2"/>
+  <path d="M54 68 Q60 72 66 68" fill="none" stroke="#be123c" stroke-width="2.2" stroke-linecap="round"/>
+</svg>

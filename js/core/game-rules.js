@@ -40,6 +40,10 @@
 
     const SHIELD_ID = 'boost-shield';
     const DOUBLE_XP_ID = 'boost-xp';
+    const DOUBLE_COINS_ID = 'boost-coins';
+    const EXTRA_TIME_ID = 'boost-time';
+    const COMBO_GUARD_ID = 'boost-combo';
+    const EXTRA_TIME_BONUS_S = 15;
 
     /** Multiplicateur combo → x1.0 … x2.5 (même table que DB.getMultiplier). */
     function getMultiplier(combo) {
@@ -123,10 +127,12 @@
         const perfectBonus = stars === 3 ? rewards.firstTryBonusXp : 0;
         let baseXp = rewards.xpBase + chrono + perfectBonus;
         if (params.doubleXp) baseXp *= 2;
+        let baseCoins = rewards.coinsBase;
+        if (params.doubleCoins) baseCoins *= 2;
         return {
             stars,
             xp: Math.round(baseXp * mult * siteXpMult),
-            coins: Math.round(rewards.coinsBase * siteCoinMult),
+            coins: Math.round(baseCoins * siteCoinMult),
             score: Math.round(100 * stars * mult),
             chronoBonus: chrono,
             perfectBonus,
@@ -153,6 +159,10 @@
         DEFAULT_REWARDS,
         SHIELD_ID,
         DOUBLE_XP_ID,
+        DOUBLE_COINS_ID,
+        EXTRA_TIME_ID,
+        COMBO_GUARD_ID,
+        EXTRA_TIME_BONUS_S,
         getMultiplier,
         shouldShieldAbsorb,
         effectiveAttempts,

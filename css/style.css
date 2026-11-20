@@ -1895,6 +1895,100 @@
     border-color: #457b9d;
 }
 
+.character.skin-nikola-tesla .character-hat {
+    background: #1e293b;
+    border-color: #38bdf8;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.55);
+}
+.character.skin-nikola-tesla .character-cape {
+    background: linear-gradient(to bottom, #0f172a, #0284c7);
+    border-color: #7dd3fc;
+}
+
+.character.skin-pasteur .character-hat {
+    background: #1f2937;
+    border-color: #4ade80;
+}
+.character.skin-pasteur .character-cape {
+    background: linear-gradient(to bottom, #14532d, #052e16);
+    border-color: #4ade80;
+}
+
+.character.skin-rosalind-franklin .character-hat {
+    background: #3e2723;
+    border-color: #34d399;
+}
+.character.skin-rosalind-franklin .character-cape {
+    background: linear-gradient(to bottom, #f8fafc, #cbd5e1);
+    border-color: #10b981;
+}
+
+.character.skin-galilee .character-hat {
+    background: #1e3a8a;
+    border-color: #60a5fa;
+}
+.character.skin-galilee .character-cape {
+    background: linear-gradient(to bottom, #1d4ed8, #1e3a8a);
+    border-color: #fde047;
+}
+
+.character.skin-alan-turing .character-hat {
+    background: #334155;
+    border-color: #22d3ee;
+}
+.character.skin-alan-turing .character-cape {
+    background: linear-gradient(to bottom, #0e7490, #164e63);
+    border-color: #67e8f9;
+}
+
+.character.skin-hypatie .character-hat {
+    background: #7e22ce;
+    border-color: #facc15;
+}
+.character.skin-hypatie .character-cape {
+    background: linear-gradient(to bottom, #9333ea, #581c87);
+    border-color: #fde047;
+}
+
+.character.skin-cleopatre .character-hat {
+    background: #facc15;
+    border-color: #06b6d4;
+}
+.character.skin-cleopatre .character-cape {
+    background: linear-gradient(to bottom, #f8fafc, #fbbf24);
+    border-color: #f59e0b;
+}
+
+.character.skin-samourai-cyber .character-hat {
+    background: #1e1b4b;
+    border-color: #f43f5e;
+    box-shadow: 0 0 10px rgba(244, 63, 94, 0.55);
+}
+.character.skin-samourai-cyber .character-cape {
+    background: linear-gradient(to bottom, #18181b, #881337);
+    border-color: #22d3ee;
+}
+
+.character.skin-alchimiste-etoile .character-hat {
+    background: #3b0764;
+    border-color: #a855f7;
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.55);
+}
+.character.skin-alchimiste-etoile .character-cape {
+    background: linear-gradient(to bottom, #581c87, #2e1065);
+    border-color: #34d399;
+}
+
+.character.skin-chevalier-astral .character-hat {
+    background: linear-gradient(135deg, #fef08a, #f59e0b);
+    border-color: #38bdf8;
+    box-shadow: 0 0 10px rgba(250, 204, 21, 0.65);
+}
+.character.skin-chevalier-astral .character-cape {
+    background: linear-gradient(to bottom, #f59e0b, #b45309);
+    border-color: #fef08a;
+}
+
 /* --- Boutons de Niveaux (Level Dots) --- */
 
 /* État de base : Débloqué mais pas commencé (Doré/Sable) */

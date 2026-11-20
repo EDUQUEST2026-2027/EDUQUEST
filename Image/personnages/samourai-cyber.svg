@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <radialGradient id="scBg" cx="50%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#f43f5e"/>
+      <stop offset="100%" stop-color="#0f071c"/>
+    </radialGradient>
+  </defs>
+  <rect width="120" height="120" fill="url(#scBg)"/>
+  <!-- Katana néon en diagonale -->
+  <line x1="16" y1="98" x2="104" y2="20" stroke="#22d3ee" stroke-width="5" stroke-linecap="round"/>
+  <line x1="16" y1="98" x2="104" y2="20" stroke="#e0f2fe" stroke-width="2" stroke-linecap="round"/>
+  <!-- Armure Cyber Ronin -->
+  <path d="M22 120 L30 82 Q60 74 90 82 L98 120 Z" fill="#18181b" stroke="#f43f5e" stroke-width="2.2"/>
+  <path d="M40 84 L60 108 L80 84" fill="none" stroke="#22d3ee" stroke-width="3"/>
+  <!-- Chapeau kasa futuriste -->
+  <polygon points="14,48 60,18 106,48 92,52 28,52" fill="#1e1b4b" stroke="#f43f5e" stroke-width="2.5"/>
+  <!-- Casque & visière lumineuse -->
+  <rect x="40" y="46" width="40" height="34" rx="14" fill="#0f172a" stroke="#64748b" stroke-width="2"/>
+  <rect x="44" y="55" width="32" height="9" rx="4" fill="#f43f5e"/>
+  <line x1="48" y1="59.5" x2="72" y2="59.5" stroke="#fff1f2" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M46 72 L74 72" stroke="#22d3ee" stroke-width="2" stroke-dasharray="4 3"/>
+</svg>

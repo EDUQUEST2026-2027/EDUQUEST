@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
+  <!-- ILOT ELECTROTECHNIQUE & ENERGIE (BAC PRO MELEC) - EDUQUEST -->
+  <defs>
+    <linearGradient id="elRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1e1b4b"/>
+      <stop offset="0.6" stop-color="#111030"/>
+      <stop offset="1" stop-color="#070618"/>
+    </linearGradient>
+    <linearGradient id="elRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3730a3"/>
+      <stop offset="0.6" stop-color="#252072"/>
+      <stop offset="1" stop-color="#141142"/>
+    </linearGradient>
+    <linearGradient id="elBolt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fef08a"/>
+      <stop offset="0.5" stop-color="#facc15"/>
+      <stop offset="1" stop-color="#f97316"/>
+    </linearGradient>
+    <radialGradient id="elHalo" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#facc15" stop-opacity="0.4"/>
+      <stop offset="0.6" stop-color="#38bdf8" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="elShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+  <circle cx="210" cy="182" r="148" fill="url(#elHalo)"/>
+  <g filter="url(#elShadow)">
+    <path d="M 74 250 Q 210 276 346 250 Q 372 294 318 345 Q 210 398 102 345 Q 48 294 74 250 Z" fill="url(#elRockDeep)"/>
+    <path d="M 86 244 Q 210 268 334 244 Q 356 278 318 314 Q 210 366 102 314 Q 64 278 86 244 Z" fill="url(#elRockTop)"/>
+    <ellipse cx="210" cy="244" rx="138" ry="40" fill="#18154a"/>
+    <ellipse cx="210" cy="240" rx="126" ry="32" fill="none" stroke="#facc15" stroke-width="2.2"/>
+  </g>
+  <!-- Éclair haute tension + Disjoncteur / Compteur triphasé -->
+  <g filter="url(#elShadow)">
+    <circle cx="210" cy="168" r="62" fill="#0f172a" stroke="#38bdf8" stroke-width="3.5" stroke-dasharray="10 6"/>
+    <polygon points="222,102 172,174 206,174 192,236 250,158 216,158" fill="url(#elBolt)" stroke="#fffbeb" stroke-width="2.5" stroke-linejoin="round"/>
+    <text x="114" y="154" fill="#38bdf8" font-family="monospace" font-size="14" font-weight="bold">400V</text>
+    <text x="278" y="154" fill="#fde047" font-family="monospace" font-size="14" font-weight="bold">50Hz</text>
+    <text x="278" y="206" fill="#4ade80" font-family="monospace" font-size="13" font-weight="bold">3~</text>
+  </g>
+</svg>

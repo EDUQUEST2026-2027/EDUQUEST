@@ -1994,6 +1994,629 @@ const QuestionBank = (() => {
         };
     }
 
+    /** Générateur procédural pour Biotechnologies & Labo (STL / ASSP) */
+    function generateBiotechLesson(index, norm, variant, rng) {
+        const kinds = ['dilution', 'microscope', 'pcr_cycles', 'concentration'];
+        const kind = kinds[(index + variant) % kinds.length];
+
+        if (kind === 'dilution') {
+            const c1 = [20, 40, 50, 80, 100][Math.floor(rng() * 5)];
+            const f = [2, 4, 5, 10][Math.floor(rng() * 4)];
+            const c2 = c1 / f;
+            const wrongs = uniqueWrongs(c2, [c1 * f, c2 + 5, Math.max(1, c2 - 2), c1 - f], false).map(n => `${n} g/L`);
+            const { opts, correct } = shuffleOptions([`${c2} g/L`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `On dilue d'un facteur ${f} une solution mère de concentration ${c1} g/L. Quelle est la concentration de la solution fille ?`,
+                opts,
+                correct,
+                exp: `La dilution divise la concentration par le facteur de dilution : ${c1} / ${f} = ${c2} g/L.`
+            };
+        }
+        if (kind === 'microscope') {
+            const oc = [10, 15][Math.floor(rng() * 2)];
+            const obj = [4, 10, 40, 100][Math.floor(rng() * 4)];
+            const gross = oc * obj;
+            const wrongs = uniqueWrongs(gross, [oc + obj, gross * 2, Math.max(10, Math.round(gross / 2)), gross + 100], false).map(n => `×${n}`);
+            const { opts, correct } = shuffleOptions([`×${gross}`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Au microscope optique, on utilise un oculaire ×${oc} avec un objectif ×${obj}. Quel est le grossissement total ?`,
+                opts,
+                correct,
+                exp: `Grossissement total = Oculaire × Objectif = ${oc} × ${obj} = ×${gross}.`
+            };
+        }
+        if (kind === 'pcr_cycles') {
+            const cycles = [3, 4, 5, 6, 7][Math.floor(rng() * 5)];
+            const copies = Math.pow(2, cycles);
+            const wrongs = uniqueWrongs(copies, [cycles * 2, copies / 2, copies * 2, copies + 4], false).map(n => `${n} copies`);
+            const { opts, correct } = shuffleOptions([`${copies} copies`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `À partir d'une seule molécule d'ADN double brin, combien obtient-on théoriquement de copies après ${cycles} cycles de PCR (amplification 2ⁿ) ?`,
+                opts,
+                correct,
+                exp: `Chaque cycle de PCR double le nombre de copies : 2^${cycles} = ${copies} copies.`
+            };
+        }
+        const m = [5, 10, 15, 20, 30][Math.floor(rng() * 5)];
+        const vMl = [250, 500, 1000][Math.floor(rng() * 3)];
+        const cm = (m * 1000) / vMl;
+        const wrongs = uniqueWrongs(cm, [cm * 2, Math.max(1, Math.round(cm / 2)), m + vMl, cm + 10], false).map(n => `${n} g/L`);
+        const { opts, correct } = shuffleOptions([`${cm} g/L`, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `On dissout ${m} g de soluté dans ${vMl} mL d'eau distillée. Quelle est la concentration massique C_m = m / V (en g/L) ?`,
+            opts,
+            correct,
+            exp: `${vMl} mL = ${vMl / 1000} L, donc C_m = ${m} / ${vMl / 1000} = ${cm} g/L.`
+        };
+    }
+
+    /** Générateur procédural pour Design & Arts Appliqués (STD2A) */
+    function generateDesignLesson(index, norm, variant, rng) {
+        const kinds = ['echelle', 'complementaire', 'format_a', 'ergonomie'];
+        const kind = kinds[(index + variant) % kinds.length];
+
+        if (kind === 'echelle') {
+            const realCm = [100, 200, 250, 400, 500][Math.floor(rng() * 5)];
+            const denom = [10, 20, 50][Math.floor(rng() * 3)];
+            const planCm = realCm / denom;
+            const pStr = String(planCm).replace('.', ',');
+            const wrongs = uniqueStringWrongs(`${pStr} cm`, [`${realCm} cm`, `${String(planCm * 2).replace('.', ',')} cm`, `${String(planCm + 5).replace('.', ',')} cm`, `${denom} cm`]);
+            const { opts, correct } = shuffleOptions([`${pStr} cm`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Sur un plan d'architecture à l'échelle 1:${denom}, quelle longueur représente un mur réel de ${realCm} cm (${realCm / 100} m) ?`,
+                opts,
+                correct,
+                exp: `À l'échelle 1:${denom}, on divise par ${denom} : ${realCm} / ${denom} = ${pStr} cm.`
+            };
+        }
+        if (kind === 'complementaire') {
+            const pairs = [
+                { a: 'Rouge', b: 'Vert' },
+                { a: 'Bleu', b: 'Orange' },
+                { a: 'Jaune', b: 'Violet' },
+                { a: 'Cyan', b: 'Rouge orangé' },
+                { a: 'Magenta', b: 'Vert pomme' },
+            ];
+            const item = pairs[(index + variant) % pairs.length];
+            const others = pairs.filter(p => p.a !== item.a).map(p => p.b);
+            const wrongs = uniqueStringWrongs(item.b, others);
+            const { opts, correct } = shuffleOptions([item.b, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Sur le cercle chromatique classique (Itten), quelle est la couleur complémentaire opposée au ${item.a} ?`,
+                opts,
+                correct,
+                exp: `Sur le cercle chromatique, le ${item.a} et le ${item.b} se font face et créent un contraste maximal.`
+            };
+        }
+        if (kind === 'format_a') {
+            const formats = [
+                { name: 'A4', dim: '210 × 297 mm' },
+                { name: 'A3', dim: '297 × 420 mm' },
+                { name: 'A5', dim: '148 × 210 mm' },
+                { name: 'A2', dim: '420 × 594 mm' },
+                { name: 'A1', dim: '594 × 841 mm' },
+            ];
+            const item = formats[(index + variant) % formats.length];
+            const others = formats.filter(f => f.name !== item.name).map(f => f.dim);
+            const wrongs = uniqueStringWrongs(item.dim, others);
+            const { opts, correct } = shuffleOptions([item.dim, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `En design graphique (norme ISO 216), quelles sont les dimensions exactes du format papier ${item.name} ?`,
+                opts,
+                correct,
+                exp: `Le format normalisé ${item.name} mesure ${item.dim} (ratio √2).`
+            };
+        }
+        const dpi = [72, 150, 300][Math.floor(rng() * 3)];
+        const inches = [2, 4, 5, 10][Math.floor(rng() * 4)];
+        const px = dpi * inches;
+        const wrongs = uniqueWrongs(px, [px / 2, px * 2, dpi + inches, px + 100], false).map(n => `${n} px`);
+        const { opts, correct } = shuffleOptions([`${px} px`, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `Une image destinée à l'édition mesure ${inches} pouces de large à une résolution de ${dpi} DPI (pixels par pouce). Quelle est sa largeur en pixels ?`,
+            opts,
+            correct,
+            exp: `Largeur = ${inches} × ${dpi} = ${px} pixels.`
+        };
+    }
+
+    /** Générateur procédural pour Hôtellerie & Gastronomie (STHR) */
+    function generateHotellerieLesson(index, norm, variant, rng) {
+        const kinds = ['taux_occ', 'cout_matiere', 'revpar', 'tva_restau'];
+        const kind = kinds[(index + variant) % kinds.length];
+
+        if (kind === 'taux_occ') {
+            const cap = [40, 50, 80, 100, 120][Math.floor(rng() * 5)];
+            const pct = [50, 60, 75, 80, 90][Math.floor(rng() * 5)];
+            const occ = Math.round((cap * pct) / 100);
+            const wrongs = uniqueWrongs(pct, [pct + 10, Math.max(10, pct - 10), 100 - pct, Math.min(95, pct + 15)], false).map(n => `${n} %`);
+            const { opts, correct } = shuffleOptions([`${pct} %`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Un hôtel dispose de ${cap} chambres et en vend ${occ} ce soir. Quel est son taux d'occupation (TO) ?`,
+                opts,
+                correct,
+                exp: `TO = (Chambres louées / Chambres disponibles) × 100 = (${occ} / ${cap}) × 100 = ${pct} %.`
+            };
+        }
+        if (kind === 'cout_matiere') {
+            const cout = [4, 5, 6, 8, 10][Math.floor(rng() * 5)];
+            const coeff = [3, 4][Math.floor(rng() * 2)];
+            const pv = cout * coeff;
+            const wrongs = uniqueWrongs(pv, [cout + coeff, pv + 4, Math.max(4, pv - 4), pv * 2], false).map(n => `${n} €`);
+            const { opts, correct } = shuffleOptions([`${pv} €`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `En restauration, un plat a un coût matière de ${cout} €. Si on applique un coefficient multiplicateur de ${coeff}, quel est son prix de vente ?`,
+                opts,
+                correct,
+                exp: `Prix de vente = Coût matière × Coefficient = ${cout} × ${coeff} = ${pv} €.`
+            };
+        }
+        if (kind === 'revpar') {
+            const ca = [4000, 5000, 6000, 8000, 9000][Math.floor(rng() * 5)];
+            const ch = [50, 80, 100][Math.floor(rng() * 3)];
+            const revpar = ca / ch;
+            const rStr = String(revpar).replace('.', ',');
+            const wrongs = uniqueStringWrongs(`${rStr} €`, [`${String(revpar + 20).replace('.', ',')} €`, `${String(Math.max(10, revpar - 15)).replace('.', ',')} €`, `${String(revpar * 2).replace('.', ',')} €`, `${ch} €`]);
+            const { opts, correct } = shuffleOptions([`${rStr} €`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Un hôtel de ${ch} chambres réalise un CA hébergement de ${ca} € sur la nuit. Que vaut le RevPAR (CA / chambres disponibles) ?`,
+                opts,
+                correct,
+                exp: `RevPAR = ${ca} / ${ch} = ${rStr} € par chambre disponible.`
+            };
+        }
+        const ht = [20, 30, 40, 50, 80, 100][Math.floor(rng() * 6)];
+        const ttc = ht * 1.1; // TVA 10% restauration sur place
+        const wrongs = uniqueWrongs(ttc, [ht * 1.2, ht + 5, ht * 1.05, ttc + 4], false).map(n => `${n} €`);
+        const { opts, correct } = shuffleOptions([`${ttc} €`, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `En France, un repas consommé sur place (hors alcool) est soumis à une TVA intermédiaire de 10 %. Pour un montant HT de ${ht} €, quel est le prix TTC ?`,
+            opts,
+            correct,
+            exp: `Prix TTC = ${ht} × 1,10 = ${ttc} €.`
+        };
+    }
+
+    /** Générateur procédural pour Agronomie & Écologie (STAV) */
+    function generateAgronomieLesson(index, norm, variant, rng) {
+        const kinds = ['rendement', 'surface_ha', 'eau_irrigation', 'ph_sol'];
+        const kind = kinds[(index + variant) % kinds.length];
+
+        if (kind === 'rendement') {
+            const surf = [4, 5, 8, 10, 12][Math.floor(rng() * 5)];
+            const rdt = [60, 70, 75, 80, 90][Math.floor(rng() * 5)]; // q/ha
+            const totalQ = surf * rdt;
+            const totalT = totalQ / 10; // 1 tonne = 10 quintaux
+            const wrongs = uniqueWrongs(totalT, [totalQ, totalT + 10, Math.max(5, totalT - 10), surf + rdt], false).map(n => `${n} tonnes`);
+            const { opts, correct } = shuffleOptions([`${totalT} tonnes`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Une parcelle de blé de ${surf} hectares obtient un rendement de ${rdt} quintaux/ha (1 tonne = 10 quintaux). Quelle masse totale (en tonnes) est récoltée ?`,
+                opts,
+                correct,
+                exp: `${surf} × ${rdt} = ${totalQ} quintaux = ${totalT} tonnes.`
+            };
+        }
+        if (kind === 'surface_ha') {
+            const ha = [2, 3, 5, 8, 12][Math.floor(rng() * 5)];
+            const m2 = ha * 10000;
+            const wrongs = uniqueWrongs(m2, [ha * 1000, ha * 100, ha * 100000, m2 + 5000], false).map(n => `${n.toLocaleString('fr-FR')} m²`);
+            const { opts, correct } = shuffleOptions([`${m2.toLocaleString('fr-FR')} m²`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `En agronomie, quelle surface en mètres carrés (m²) correspond à une parcelle de ${ha} hectares (1 ha = 10 000 m²) ?`,
+                opts,
+                correct,
+                exp: `1 hectare = 10 000 m², donc ${ha} ha = ${m2.toLocaleString('fr-FR')} m².`
+            };
+        }
+        if (kind === 'eau_irrigation') {
+            const mm = [10, 15, 20, 25, 30][Math.floor(rng() * 5)];
+            const m3Ha = mm * 10; // 1 mm = 1 L/m² = 10 m³/ha
+            const wrongs = uniqueWrongs(m3Ha, [mm, mm * 100, m3Ha + 50, Math.max(10, m3Ha - 50)], false).map(n => `${n} m³/ha`);
+            const { opts, correct } = shuffleOptions([`${m3Ha} m³/ha`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `En agroclimatologie, une pluie de 1 mm apporte 10 m³ d'eau par hectare. Quel volume d'eau apporte une pluie de ${mm} mm sur 1 hectare ?`,
+                opts,
+                correct,
+                exp: `${mm} mm × 10 m³/ha = ${m3Ha} m³/ha.`
+            };
+        }
+        const cases = [
+            { ph: '5,2', type: 'acide', exp: 'Un sol de pH < 6,5 est acide (un chaulage peut corriger l\'acidité).' },
+            { ph: '6,8', type: 'neutre', exp: 'Entre 6,5 et 7,2, le sol est proche de la neutralité, favorable à la majorité des cultures.' },
+            { ph: '8,1', type: 'basique (calcaire)', exp: 'Un sol de pH > 7,5 est basique / alcalin, souvent riche en calcaire.' },
+            { ph: '4,8', type: 'très acide', exp: 'À pH 4,8, le sol est très acide, ce qui bloque l\'assimilation de certains nutriments.' },
+        ];
+        const pick = cases[(index + variant) % cases.length];
+        const wrongs = uniqueStringWrongs(pick.type, ['acide', 'neutre', 'basique (calcaire)', 'salin saturé', 'très acide']);
+        const { opts, correct } = shuffleOptions([pick.type, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `L'analyse pédologique d'une parcelle agricole indique un pH de ${pick.ph}. Comment qualifie-t-on ce sol ?`,
+            opts,
+            correct,
+            exp: pick.exp
+        };
+    }
+
+    /** Générateur procédural pour Arts de la Scène & Culture (S2TMD) */
+    function generateSpectacleLesson(index, norm, variant, rng) {
+        const items = [
+            { q: "En musique, combien de doubles-croches équivalent à une noire ?", ans: "4", wrongs: ["2", "8", "3"], exp: "1 noire = 2 croches = 4 doubles-croches." },
+            { q: "En théorie musicale, une blanche pointée vaut combien de temps en mesure 4/4 ?", ans: "3 temps", wrongs: ["2 temps", "4 temps", "1,5 temps"], exp: "Le point ajoute la moitié de la valeur : 2 + 1 = 3 temps." },
+            { q: "Au théâtre français, quel côté de la scène vu depuis la salle correspond au « côté cour » ?", ans: "la droite (vu du public)", wrongs: ["la gauche (vu du public)", "le fond de scène", "l'avant-scène uniquement"], exp: "Moyen mnémotechnique : Jardin = Gauche (J-G), Cour = Droite (C-D), vus depuis la salle." },
+            { q: "En danse classique, que signifie le terme « plié » ?", ans: "une flexion contrôlée des genoux", wrongs: ["un saut périlleux", "un tour sur une jambe", "une sortie de scène"], exp: "Le plié est le mouvement fondamental d'amorti et d'élan en danse classique." },
+            { q: "Quel intervalle musical sépare Do et Sol (en montant) ?", ans: "une quinte juste", wrongs: ["une tierce majeure", "une quarte juste", "une octave"], exp: "Do-Ré-Mi-Fa-Sol compte 5 degrés : c'est une quinte juste (3,5 tons)." },
+            { q: "Quelle règle du théâtre classique impose une action unique, en un seul lieu et en une seule journée ?", ans: "la règle des trois unités", wrongs: ["la règle de l'aparté", "la catharsis comique", "le quatrième mur brisé"], exp: "Action, lieu, temps : formulée par Boileau dans L'Art poétique (1674)." },
+            { q: "En musique, quelle nuance indique de jouer « très doux » ?", ans: "pianissimo (pp)", wrongs: ["fortissimo (ff)", "mezzo-forte (mf)", "crescendo"], exp: "pp = pianissimo (très doux), p = piano (doux), f = forte (fort), ff = fortissimo (très fort)." },
+            { q: "En danse contemporaine, qui est considérée comme une pionnière américaine de la danse moderne avec sa technique contraction/release ?", ans: "Martha Graham", wrongs: ["Marius Petipa", "Jean-Baptiste Lully", "Molière"], exp: "Martha Graham a révolutionné la danse du XXe siècle avec le travail du centre du corps." },
+            { q: "Quel terme désigne une tirade qu'un personnage de théâtre prononce seul en scène pour livrer ses pensées ?", ans: "un monologue", wrongs: ["une didascalie", "un prologue", "un quiproquo"], exp: "Le monologue exprime l'intériorité ou le dilemme d'un personnage." },
+            { q: "En musique, combien de demi-tons compte une octave juste (ex : de Do3 à Do4) ?", ans: "12 demi-tons", wrongs: ["7 demi-tons", "8 demi-tons", "10 demi-tons"], exp: "La gamme chromatique tempérée divise l'octave en 12 demi-tons égaux." },
+        ];
+        const deck = seededShuffle(items, 'spectacle-proc:' + norm + ':v' + variant);
+        const pick = deck[(Math.floor(index / 2) + variant * 3) % deck.length];
+        const wrongs = uniqueStringWrongs(pick.ans, pick.wrongs);
+        const { opts, correct } = shuffleOptions([pick.ans, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: pick.q,
+            opts,
+            correct,
+            exp: pick.exp
+        };
+    }
+
+    /** Générateur procédural pour Humanités & Littérature (HLP) */
+    function generateHlpLesson(index, norm, variant, rng) {
+        const items = [
+            { q: "Dans la rhétorique d'Aristote, quel pilier de la persuasion s'appuie sur la raison et la logique des arguments ?", ans: "le logos", wrongs: ["le pathos", "l'éthos", "l'hybris"], exp: "Aristote distingue l'éthos (crédibilité de l'orateur), le pathos (émotions) et le logos (raisonnement logique)." },
+            { q: "Quel pilier rhétorique d'Aristote consiste à susciter des émotions chez l'auditoire ?", ans: "le pathos", wrongs: ["le logos", "l'éthos", "la maïeutique"], exp: "Le pathos mobilise la pitié, l'indignation ou l'enthousiasme du public." },
+            { q: "Quel humaniste de la Renaissance a écrit les « Essais » (1580) avec la devise « Que sais-je ? » ?", ans: "Michel de Montaigne", wrongs: ["Jean-Paul Sartre", "Émile Zola", "Gustave Flaubert"], exp: "Montaigne inaugure l'introspection moderne et l'esprit critique humaniste dans les Essais." },
+            { q: "Quelle figure de style consiste à répéter le même mot ou groupe de mots en début de plusieurs phrases ou vers successifs ?", ans: "l'anaphore", wrongs: ["l'oxymore", "la litote", "la périphrase"], exp: "Ex : « Moi président... » ou « Rome, l'unique objet de mon ressentiment... »." },
+            { q: "Quel genre littéraire consiste à raconter sa propre vie à la première personne avec un pacte de sincérité (Philippe Lejeune) ?", ans: "l'autobiographie", wrongs: ["l'épopée antique", "le roman policier", "la fable animale"], exp: "Rousseau fonde l'autobiographie moderne avec Les Confessions (1782)." },
+            { q: "Dans l'Antiquité grecque, comment appelle-t-on les maîtres de l'éloquence payants critiqués par Platon pour leur relativisme ?", ans: "les sophistes", wrongs: ["les stoïciens", "les épicuriens", "les romantiques"], exp: "Gorgias et Protagoras sont les sophistes les plus célèbres face à Socrate." },
+            { q: "Quel courant littéraire et philosophique du XVIIIe siècle défend la raison, la tolérance et la diffusion du savoir (Encyclopédie) ?", ans: "les Lumières", wrongs: ["le surréalisme", "le naturalisme", "la Pléiade"], exp: "Voltaire, Diderot, Montesquieu et Rousseau incarnent le siècle des Lumières." },
+            { q: "Comment appelle-t-on la méthode de Socrate consistant à « accoucher les esprits » par le dialogue et les questions ?", ans: "la maïeutique", wrongs: ["la catharsis", "l'allégorie", "la syllogistique"], exp: "Par des questions successives, Socrate amène son interlocuteur à découvrir la vérité par lui-même." },
+            { q: "Quelle figure de style rapproche deux termes de sens opposés dans une même expression (ex : « cette obscure clarté ») ?", ans: "l'oxymore", wrongs: ["la métonymie", "l'euphémisme", "l'hyperbole"], exp: "L'oxymore crée une alliance de mots paradoxale et saisissante (Corneille, Le Cid)." },
+            { q: "Dans le thème HLP « L'homme et l'animal », quelle expression Descartes utilise-t-il pour décrire les animaux dépourvus de raison ?", ans: "les animaux-machines", wrongs: ["les citoyens naturels", "les âmes rationnelles", "les sujets moraux"], exp: "Descartes oppose la pensée humaine aux automatismes corporels de l'« animal-machine », thèse vivement débattue ensuite." },
+        ];
+        const deck = seededShuffle(items, 'hlp-proc:' + norm + ':v' + variant);
+        const pick = deck[(Math.floor(index / 2) + variant * 3) % deck.length];
+        const wrongs = uniqueStringWrongs(pick.ans, pick.wrongs);
+        const { opts, correct } = shuffleOptions([pick.ans, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: pick.q,
+            opts,
+            correct,
+            exp: pick.exp
+        };
+    }
+
+    /** Générateur procédural pour Développement & BDD (BTS SIO) */
+    function generateDevBddLesson(index, norm, variant, rng) {
+        const kinds = ['sql_clause', 'http_code', 'git_cmd', 'oop_concept'];
+        const kind = kinds[(index + variant) % kinds.length];
+
+        if (kind === 'sql_clause') {
+            const clauses = [
+                { clause: 'WHERE', desc: 'filtrer les lignes selon une condition avant agrégation' },
+                { clause: 'GROUP BY', desc: 'regrouper les lignes ayant la même valeur pour calculer des agrégats (COUNT, SUM)' },
+                { clause: 'ORDER BY', desc: 'trier les résultats par ordre croissant (ASC) ou décroissant (DESC)' },
+                { clause: 'INNER JOIN', desc: 'relier deux tables en ne conservant que les correspondances exactes' },
+                { clause: 'DISTINCT', desc: 'éliminer les doublons dans les résultats d\'une requête SELECT' },
+                { clause: 'HAVING', desc: 'filtrer des groupes après un GROUP BY (ex : HAVING COUNT(*) > 5)' },
+            ];
+            const pick = clauses[(index + variant * 2) % clauses.length];
+            const others = clauses.filter(c => c.clause !== pick.clause).map(c => c.clause);
+            const wrongs = uniqueStringWrongs(pick.clause, seededShuffle(others, 'sql:' + index + ':' + variant));
+            const { opts, correct } = shuffleOptions([pick.clause, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `En SQL (BTS SIO), quelle clause permet de ${pick.desc} ?`,
+                opts,
+                correct,
+                exp: `La clause SQL « ${pick.clause} » sert à ${pick.desc}.`
+            };
+        }
+        if (kind === 'http_code') {
+            const codes = [
+                { code: '200 OK', desc: 'la requête a réussi et le serveur renvoie la ressource demandée' },
+                { code: '201 Created', desc: 'une nouvelle ressource a bien été créée (après un POST)' },
+                { code: '401 Unauthorized', desc: 'l\'utilisateur doit s\'authentifier pour accéder à la ressource' },
+                { code: '403 Forbidden', desc: 'le serveur comprend la requête mais refuse l\'accès (droits insuffisants)' },
+                { code: '404 Not Found', desc: 'la ressource demandée est introuvable sur le serveur' },
+                { code: '500 Internal Server Error', desc: 'une erreur interne inattendue est survenue côté serveur' },
+            ];
+            const pick = codes[(index + variant * 2) % codes.length];
+            const others = codes.filter(c => c.code !== pick.code).map(c => c.code);
+            const wrongs = uniqueStringWrongs(pick.code, seededShuffle(others, 'http:' + index + ':' + variant));
+            const { opts, correct } = shuffleOptions([pick.code, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Dans une API Web REST, quel code de statut HTTP indique que ${pick.desc} ?`,
+                opts,
+                correct,
+                exp: `Le code HTTP ${pick.code} signifie que ${pick.desc}.`
+            };
+        }
+        if (kind === 'git_cmd') {
+            const cmds = [
+                { cmd: 'git commit -m "..."', desc: 'enregistrer un instantané validé dans l\'historique local' },
+                { cmd: 'git push', desc: 'envoyer les commits locaux vers le dépôt distant' },
+                { cmd: 'git pull', desc: 'récupérer et fusionner les modifications du dépôt distant' },
+                { cmd: 'git checkout -b', desc: 'créer une nouvelle branche et basculer immédiatement dessus' },
+                { cmd: 'git merge', desc: 'fusionner l\'historique d\'une branche dans la branche courante' },
+                { cmd: 'git status', desc: 'afficher l\'état des fichiers modifiés, indexés ou non suivis' },
+            ];
+            const pick = cmds[(index + variant * 2) % cmds.length];
+            const others = cmds.filter(c => c.cmd !== pick.cmd).map(c => c.cmd);
+            const wrongs = uniqueStringWrongs(pick.cmd, seededShuffle(others, 'git:' + index + ':' + variant));
+            const { opts, correct } = shuffleOptions([pick.cmd, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Avec Git, quelle commande permet de ${pick.desc} ?`,
+                opts,
+                correct,
+                exp: `« ${pick.cmd} » sert à ${pick.desc}.`
+            };
+        }
+        const concepts = [
+            { name: "l'encapsulation", desc: "protéger les attributs internes d'un objet (private) et n'exposer que des méthodes contrôlées" },
+            { name: "l'héritage", desc: "créer une sous-classe qui réutilise et spécialise les attributs et méthodes d'une classe parente" },
+            { name: "le polymorphisme", desc: "permettre à une même méthode d'avoir des comportements différents selon la classe de l'objet" },
+            { name: "le motif MVC", desc: "séparer l'application en Modèle (données), Vue (affichage) et Contrôleur (logique)" },
+        ];
+        const pick = concepts[(index + variant) % concepts.length];
+        const others = concepts.filter(c => c.name !== pick.name).map(c => c.name);
+        const wrongs = uniqueStringWrongs(pick.name, others);
+        const { opts, correct } = shuffleOptions([pick.name, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `En programmation orientée objet / architecture logicielle, quel principe consiste à ${pick.desc} ?`,
+            opts,
+            correct,
+            exp: `C'est le principe de ${pick.name}.`
+        };
+    }
+
+    /** Générateur procédural pour Relation Client & Commerce (BTS MCO) */
+    function generateCommerceLesson(index, norm, variant, rng) {
+        const kinds = ['panier_moyen', 'taux_transfo', 'marge_comm', 'indice_vente'];
+        const kind = kinds[(index + variant) % kinds.length];
+
+        if (kind === 'panier_moyen') {
+            const clients = [20, 40, 50, 100][Math.floor(rng() * 4)];
+            const pm = [15, 25, 30, 45, 60][Math.floor(rng() * 5)];
+            const ca = clients * pm;
+            const wrongs = uniqueWrongs(pm, [pm + 10, Math.max(5, pm - 10), pm * 2, clients], false).map(n => `${n} €`);
+            const { opts, correct } = shuffleOptions([`${pm} €`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Un magasin réalise un CA journalier de ${ca} € pour ${clients} passages en caisse. Quel est le panier moyen ?`,
+                opts,
+                correct,
+                exp: `Panier moyen = CA / Nombre de clients = ${ca} / ${clients} = ${pm} €.`
+            };
+        }
+        if (kind === 'taux_transfo') {
+            const visiteurs = [100, 200, 400, 500][Math.floor(rng() * 4)];
+            const taux = [15, 20, 25, 30, 40][Math.floor(rng() * 5)];
+            const acheteurs = (visiteurs * taux) / 100;
+            const wrongs = uniqueWrongs(taux, [taux + 5, Math.max(5, taux - 5), 100 - taux, taux * 2], false).map(n => `${n} %`);
+            const { opts, correct } = shuffleOptions([`${taux} %`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Sur ${visiteurs} visiteurs entrés dans une boutique, ${acheteurs} effectuent un achat. Quel est le taux de transformation ?`,
+                opts,
+                correct,
+                exp: `Taux de transformation = (${acheteurs} / ${visiteurs}) × 100 = ${taux} %.`
+            };
+        }
+        if (kind === 'marge_comm') {
+            const pa = [20, 30, 40, 50, 60][Math.floor(rng() * 5)];
+            const pv = pa + [10, 15, 20, 30, 40][Math.floor(rng() * 5)];
+            const marge = pv - pa;
+            const wrongs = uniqueWrongs(marge, [pv + pa, marge + 5, Math.max(5, marge - 5), pa], false).map(n => `${n} €`);
+            const { opts, correct } = shuffleOptions([`${marge} €`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Un article acheté ${pa} € HT au fournisseur est revendu ${pv} € HT en rayon. Quelle est la marge commerciale unitaire ?`,
+                opts,
+                correct,
+                exp: `Marge commerciale = Prix de vente HT − Prix d'achat HT = ${pv} − ${pa} = ${marge} €.`
+            };
+        }
+        const tickets = [50, 100, 200][Math.floor(rng() * 3)];
+        const iv = [2, 3, 4][Math.floor(rng() * 3)];
+        const articles = tickets * iv;
+        const wrongs = uniqueWrongs(iv, [iv + 1, Math.max(1, iv - 1), iv + 2, tickets], false).map(n => `${n} articles/client`);
+        const { opts, correct } = shuffleOptions([`${iv} articles/client`, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `Une unité commerciale vend ${articles} articles pour ${tickets} tickets de caisse. Quel est son indice de vente ?`,
+            opts,
+            correct,
+            exp: `Indice de vente = Articles vendus / Nombre de tickets = ${articles} / ${tickets} = ${iv} articles par client.`
+        };
+    }
+
+    /** Générateur procédural pour Comptabilité & Finance (BTS CG) */
+    function generateComptabiliteLesson(index, norm, variant, rng) {
+        const kinds = ['tva_20', 'tva_due', 'amortissement', 'resultat_net'];
+        const kind = kinds[(index + variant) % kinds.length];
+
+        if (kind === 'tva_20') {
+            const ht = [50, 100, 150, 200, 300, 500][Math.floor(rng() * 6)];
+            const ttc = Math.round(ht * 1.2);
+            const wrongs = uniqueWrongs(ttc, [ht + 10, Math.round(ht * 1.1), ttc + 20, ht - 20], false).map(n => `${n} €`);
+            const { opts, correct } = shuffleOptions([`${ttc} €`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Une facture de vente s'élève à ${ht} € HT avec un taux normal de TVA à 20 %. Quel est le montant TTC ?`,
+                opts,
+                correct,
+                exp: `TTC = HT × 1,20 = ${ht} × 1,20 = ${ttc} € (TVA = ${ttc - ht} €).`
+            };
+        }
+        if (kind === 'tva_due') {
+            const collectee = [3000, 4500, 6000, 8000][Math.floor(rng() * 4)];
+            const deductible = [1000, 1500, 2000, 2500][Math.floor(rng() * 4)];
+            const due = collectee - deductible;
+            const wrongs = uniqueWrongs(due, [collectee + deductible, due + 500, Math.max(200, due - 500), deductible], false).map(n => `${n} €`);
+            const { opts, correct } = shuffleOptions([`${due} €`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Sur le mois, une entreprise a enregistré ${collectee} € de TVA collectée et ${deductible} € de TVA déductible. Quelle est la TVA à décaisser (à payer à l'État) ?`,
+                opts,
+                correct,
+                exp: `TVA à décaisser = TVA collectée − TVA déductible = ${collectee} − ${deductible} = ${due} €.`
+            };
+        }
+        if (kind === 'amortissement') {
+            const val = [4000, 6000, 8000, 10000, 12000][Math.floor(rng() * 5)];
+            const duree = [4, 5][Math.floor(rng() * 2)];
+            const annuite = val / duree;
+            const wrongs = uniqueWrongs(annuite, [annuite * 2, Math.round(annuite / 2), annuite + 500, val - duree], false).map(n => `${n} €/an`);
+            const { opts, correct } = shuffleOptions([`${annuite} €/an`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Un matériel informatique acquis ${val} € HT est amorti en mode linéaire sur ${duree} ans. Quel est le montant de l'annuité d'amortissement ?`,
+                opts,
+                correct,
+                exp: `Annuité linéaire = Base amortissable / Durée = ${val} / ${duree} = ${annuite} € par an.`
+            };
+        }
+        const produits = [50000, 80000, 120000, 150000][Math.floor(rng() * 4)];
+        const charges = [35000, 60000, 95000, 110000][Math.floor(rng() * 4)];
+        const res = produits - charges;
+        const label = res >= 0 ? `Bénéfice de ${res} €` : `Perte de ${Math.abs(res)} €`;
+        const altLabel = res >= 0 ? `Perte de ${res} €` : `Bénéfice de ${Math.abs(res)} €`;
+        const wrongs = uniqueStringWrongs(label, [altLabel, `Bénéfice de ${produits + charges} €`, `Bénéfice de ${Math.abs(res) + 10000} €`, `Résultat nul (0 €)`]);
+        const { opts, correct } = shuffleOptions([label, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `Au compte de résultat, le total des produits (classe 7) est de ${produits} € et le total des charges (classe 6) de ${charges} €. Quel est le résultat net ?`,
+            opts,
+            correct,
+            exp: `Résultat net = Produits − Charges = ${produits} − ${charges} = ${res} € (${label}).`
+        };
+    }
+
+    /** Générateur procédural pour Électrotechnique & Énergie (Bac Pro MELEC) */
+    function generateElectrotechLesson(index, norm, variant, rng) {
+        const kinds = ['puissance_mono', 'courant_disj', 'energie_kwh', 'triphase_u'];
+        const kind = kinds[(index + variant) % kinds.length];
+
+        if (kind === 'puissance_mono') {
+            const i = [4, 5, 8, 10, 16][Math.floor(rng() * 5)];
+            const u = 230;
+            const p = u * i;
+            const wrongs = uniqueWrongs(p, [p + 230, Math.max(100, p - 230), u + i, p * 2], false).map(n => `${n} W`);
+            const { opts, correct } = shuffleOptions([`${p} W`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Un appareil purement résistif (cos φ = 1) alimenté en monophasé 230 V absorbe un courant de ${i} A. Quelle puissance active P = U × I consomme-t-il ?`,
+                opts,
+                correct,
+                exp: `P = U × I = 230 × ${i} = ${p} W.`
+            };
+        }
+        if (kind === 'courant_disj') {
+            const p = [1150, 2300, 3450, 4600][Math.floor(rng() * 4)];
+            const i = Math.round(p / 230);
+            const wrongs = uniqueWrongs(i, [i * 2, Math.max(1, i - 3), i + 5, i + 10], false).map(n => `${n} A`);
+            const { opts, correct } = shuffleOptions([`${i} A`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Un radiateur électrique de ${p} W est alimenté sous 230 V monophasé (cos φ = 1). Quelle intensité I = P / U circule dans le circuit ?`,
+                opts,
+                correct,
+                exp: `I = P / U = ${p} / 230 = ${i} A.`
+            };
+        }
+        if (kind === 'energie_kwh') {
+            const pKw = [1.5, 2, 3, 4][Math.floor(rng() * 4)];
+            const h = [2, 4, 6, 8][Math.floor(rng() * 4)];
+            const kwh = pKw * h;
+            const wrongs = uniqueWrongs(kwh, [kwh + 2, Math.max(1, kwh - 2), pKw + h, kwh * 2], false).map(n => `${n} kWh`);
+            const { opts, correct } = shuffleOptions([`${kwh} kWh`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Un moteur électrique consomme une puissance constante de ${String(pKw).replace('.', ',')} kW pendant ${h} heures. Quelle énergie électrique a-t-il consommée ?`,
+                opts,
+                correct,
+                exp: `E = P × t = ${String(pKw).replace('.', ',')} × ${h} = ${kwh} kWh.`
+            };
+        }
+        const habilitations = [
+            { code: 'B0', desc: 'personnel non électricien travaillant dans un voisinage électrique basse tension' },
+            { code: 'B1V', desc: 'exécutant électricien habilité aux travaux au voisinage en basse tension' },
+            { code: 'BR', desc: 'chargé d\'interventions générales d\'entretien et dépannage en basse tension' },
+            { code: 'BC', desc: 'chargé de consignation en basse tension (mise hors tension et VAT)' },
+            { code: 'BS', desc: 'chargé d\'interventions élémentaires (remplacement de prise, lampe, fusible)' },
+        ];
+        const pick = habilitations[(index + variant * 2) % habilitations.length];
+        const others = habilitations.filter(h => h.code !== pick.code).map(h => h.code);
+        const wrongs = uniqueStringWrongs(pick.code, seededShuffle(others, 'hab:' + index + ':' + variant));
+        const { opts, correct } = shuffleOptions([pick.code, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `Selon la norme NF C 18-510 d'habilitation électrique (MELEC), quel symbole désigne un ${pick.desc} ?`,
+            opts,
+            correct,
+            exp: `L'habilitation ${pick.code} correspond au ${pick.desc}.`
+        };
+    }
+
     /* ================= 2. Banques de questions étendues ================= */
 
     const FACT_BANKS = {
@@ -2012,7 +2635,7 @@ const QuestionBank = (() => {
             { q: "À quel temps est conjugué le verbe dans « Il courut vers le château » ?", correct: "au passé simple", wrongs: ["à l'imparfait", "au présent", "au plus-que-parfait"], levels: ['5eme', '4eme'], exp: "« Courut » est la 3e personne du passé simple du verbe courir." },
             { q: "Comment accorde-t-on : « Les fillettes sont ___ » ?", correct: "parties", wrongs: ["parti", "partie", "partis"], levels: ['5eme', '6eme'], exp: "Avec l'auxiliaire être, accord en genre et en nombre avec le sujet féminin pluriel." },
             { q: "Quel mot désigne le compagnon d'armes d'un chevalier au Moyen Âge ?", correct: "un écuyer", wrongs: ["un troubadour", "un serf", "un bailli"], levels: ['5eme'], exp: "L'écuyer portait le bouclier (écu) et assistait le chevalier." },
-            { q: "Quelle proposition contient un homophone correctement orthographié ?", correct: "Où vas-tu ?", wrongs: ["Ou vas-tu ?", "Où il manque encore des SVG, je veut tu verifie tout, relis le code, regarde les dependance et verifie que elles existe, si elle manque, regarde si tu dois les créer, ou supprimer l'appel, je veut aussi que tu mette a jours les documentation comme les commentaire ou les robot.twveux-tu du thé ?", "Ou bien où ?"], levels: ['5eme', '6eme'], exp: "« Où » avec accent indique le lieu." },
+            { q: "Quelle proposition contient un homophone correctement orthographié ?", correct: "Où vas-tu ?", wrongs: ["Ou vas-tu ?", "Tu prends du café où du thé ?", "Ou bien où ?"], levels: ['5eme', '6eme'], exp: "« Où » avec accent indique le lieu ; « ou » sans accent exprime le choix." },
             { type: 'vrai_faux', q: "Dans un conte médiéval, un troubadour est un poète et musicien itinérant.", correct: true, levels: ['5eme'], exp: "Vrai : les troubadours composaient des chansons d'amour courtois." },
             // 4ème
             { q: "Dans « La femme qui porte un manteau », quel mot est le pronom relatif ?", correct: "qui", wrongs: ["la", "porte", "un"], levels: ['4eme', '3eme'], exp: "« Qui » introduit la proposition subordonnée relative." },
@@ -2693,6 +3316,226 @@ const QuestionBank = (() => {
             { q: "Que signifie le « principe de précaution » inscrit dans la Charte de l'environnement et appliqué en santé environnementale ?", correct: "agir préventivement face à un risque grave et irréversible même en l'absence de certitude scientifique absolue", wrongs: ["attendre que la catastrophe arrive avant de réagir", "interdire toute recherche médicale", "ne jamais informer le public d'un risque"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Il guide la gestion des risques sanitaires et environnementaux émergents." },
             { q: "Quelle est la différence entre la logique d'assurance sociale et la logique d'assistance sociale ?", correct: "l'assurance repose sur des cotisations préalables ; l'assistance repose sur la solidarité nationale sous conditions de ressources (ex : RSA)", wrongs: ["l'assurance est toujours gratuite et sans cotisation", "l'assistance est réservée aux salariés cadres", "les deux financements sont identiques"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La protection sociale française articule assurance (modèle bismarckien) et assistance/universalité (modèle beveridgien)." },
             { q: "En méthodologie de projet sanitaire et social, quelle est la première étape avant de définir des objectifs et des actions ?", correct: "le diagnostic (identification des besoins et des problèmes du public cible)", wrongs: ["l'évaluation finale immédiate", "la clôture budgétaire", "la publication de l'affiche publicitaire"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Un projet suit le cycle : Diagnostic → Conception/Objectifs → Mise en œuvre → Évaluation." }
+        ],
+
+        biotech: [
+            // STL (Biotechnologies & SPCL) & Bac Pro ASSP
+            { q: "En microbiologie, à quoi sert la coloration de Gram sur une lame de bactéries ?", correct: "distinguer les bactéries Gram+ (violettes) des Gram− (roses) selon la structure de leur paroi", wrongs: ["mesurer la température de l'étuve", "stériliser une boîte de Pétri", "doser le glucose sanguin"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Les Gram+ retiennent le violet de gentiane grâce à leur épaisse couche de peptidoglycane." },
+            { q: "Quelle technique de biologie moléculaire permet d'amplifier rapidement un fragment précis d'ADN en millions de copies ?", correct: "la PCR (Polymerase Chain Reaction)", wrongs: ["la décantation simple", "la distillation fractionnée", "la centrifugation lente"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La PCR alterne dénaturation, hybridation d'amorces et élongation grâce à la Taq polymérase." },
+            { q: "En biochimie, quelle loi relie l'absorbance A d'une solution colorée à sa concentration C (A = ε · l · C) ?", correct: "la loi de Beer-Lambert", wrongs: ["la loi d'Ohm", "la loi de gravitation", "la loi de Boyle-Mariotte"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La spectrophotométrie utilise la loi de Beer-Lambert pour réaliser des dosages par étalonnage." },
+            { q: "Quel appareil de laboratoire stérilise le matériel et les milieux de culture par vapeur d'eau sous pression (121 °C, 15-20 min) ?", correct: "un autoclave", wrongs: ["un spectrophotomètre", "un pH-mètre", "un vortex"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "L'autoclave détruit tous les micro-organismes, y compris les spores bactériennes." },
+            { q: "Quelle technique sépare des fragments d'ADN ou des protéines selon leur taille sous l'effet d'un champ électrique ?", correct: "l'électrophorèse sur gel", wrongs: ["la filtration sur papier", "la sublimation", "la titration pH-métrique"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Les fragments les plus petits migrent plus vite à travers les mailles du gel d'agarose." },
+            { q: "À quoi sert un poste de sécurité microbiologique (PSM) ou un bec Bunsen en laboratoire STL ?", correct: "travailler en zone stérile (asepsie) pour éviter la contamination des cultures et protéger le manipulateur", wrongs: ["chauffer le déjeuner du laboratoire", "mesurer la masse molaire", "refroidir les échantillons à −80 °C"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "L'asepsie garantit la pureté des souches microbiennes et la sécurité biologique." },
+            { q: "Quelle est la fonction d'une enzyme biologique dans une réaction biochimique ?", correct: "catalyser (accélérer) spécifiquement une réaction sans être consommée", wrongs: ["détruire définitivement l'ADN cellulaire", "bloquer toute réaction métabolique", "servir uniquement de colorant"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Une enzyme abaisse l'énergie d'activation en se liant à son substrat via son site actif." },
+            { q: "Quel réactif met classiquement en évidence la présence d'amidon (glucide complexe) par une coloration bleu-noir ?", correct: "le lugol (eau iodée)", wrongs: ["la soude diluée", "le bleu de méthylène seul", "l'éthanol pur"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "L'iode s'insère dans l'hélice d'amylose de l'amidon, produisant une teinte bleu-violacé caractéristique." },
+            { q: "Que signifie un milieu de culture « sélectif » en microbiologie ?", correct: "il contient des inhibiteurs empêchant la croissance de certains germes pour favoriser les bactéries recherchées", wrongs: ["il ne contient aucun nutriment", "il tue toutes les bactéries sans exception", "il s'utilise uniquement à −20 °C"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Exemples : gélose Chapman (haute salinité pour Staphylococcus) ou MacConkey (Gram−)." },
+            { q: "En immunologie / diagnostic, quel test utilise des anticorps couplés à une enzyme pour doser un antigène ?", correct: "le test ELISA", wrongs: ["le test de flamme", "le test de Mohr", "le test d'inertie"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "ELISA = Enzyme-Linked Immunosorbent Assay, très utilisé en biologie médicale." },
+            { q: "Quel instrument de précision permet de prélever de très petits volumes liquides (de 1 µL à 1000 µL) ?", correct: "une micropipette à piston", wrongs: ["un bécher gradué de 500 mL", "un mortier en porcelaine", "une pissette d'eau"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "La micropipette équipée de cônes stériles jetables est l'outil de base en biotechnologies." },
+            { q: "En hygiène et ASSP, quelle est la différence entre un antiseptique et un désinfectant ?", correct: "l'antiseptique s'applique sur les tissus vivants (peau) ; le désinfectant sur les surfaces inertes", wrongs: ["le désinfectant se boit en sirop", "l'antiseptique ne s'utilise que sur les sols", "les deux termes sont totalement interdits en hôpital"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "On désinfecte un plan de travail (surface inerte) et on réalise une antisepsie sur la peau." },
+            { q: "Qu'est-ce qu'une « colonie bactérienne » visible à l'œil nu sur une gélose en boîte de Pétri ?", correct: "un amas de millions de bactéries identiques issues par division d'une seule cellule initiale (clone)", wrongs: ["une seule bactérie géante", "une bulle d'air dans l'agar", "un cristal de sel pur"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "L'isolement par stries permet d'obtenir des colonies pures isolées (UFC)." },
+            { q: "Quel est l'objectif de la centrifugation différentielle en laboratoire de biologie ?", correct: "séparer les constituants d'un mélange (cellules, organites, surnageant) selon leur densité et taille", wrongs: ["stériliser une solution par UV", "mesurer la conductivité électrique", "synthétiser des lipides"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Les éléments les plus denses sédimentent au fond du tube pour former le culot." },
+            { q: "En génie génétique, qu'est-ce qu'un plasmide bactérien ?", correct: "une petite molécule d'ADN circulaire extrachromosomique utilisée comme vecteur de clonage", wrongs: ["un ribosome géant", "une paroi de cellulose", "un lipide membranaire"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Les plasmides peuvent recevoir un gène d'intérêt (ex : insuline) puis être insérés dans E. coli." },
+            { q: "Quelle est la température optimale habituelle d'incubation d'une bactérie mésophile humaine comme E. coli ?", correct: "37 °C", wrongs: ["4 °C", "95 °C", "−18 °C"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Les bactéries commensales ou pathogènes humaines se développent de façon optimale à la température corporelle (37 °C)." },
+            { q: "En sécurité de laboratoire (STL / ASSP), que signifie le pictogramme SGH représentant un crâne et deux tibias croisés ?", correct: "Toxicité aiguë (produit mortel ou très toxique par ingestion, inhalation ou contact cutané)", wrongs: ["Produit simplement odorant", "Produit biodégradable", "Matière magnétique"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "La maîtrise des pictogrammes SGH/CLP et des EPI (blouse, gants, lunettes) est obligatoire au laboratoire." },
+            { q: "Que mesure l'unité UFC/mL en contrôle microbiologique des aliments ou de l'eau ?", correct: "le nombre d'Unités Formant Colonie par millilitre d'échantillon", wrongs: ["la concentration en sucre", "le degré d'acidité", "la viscosité du liquide"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le dénombrement en UFC/mL évalue la charge microbienne viable d'un produit." }
+        ],
+
+        design: [
+            // STD2A : Design & Arts Appliqués
+            { q: "Quelle célèbre école allemande fondée en 1919 par Walter Gropius a uni art, artisanat et industrie pour fonder le design moderne ?", correct: "le Bauhaus", wrongs: ["l'Académie de Florence", "l'École de Barbizon", "le Salon des Refusés"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Le Bauhaus prônait la simplicité géométrique et le principe « la forme suit la fonction »." },
+            { q: "En design produit, que désigne l'« ergonomie » d'un objet (ex : fauteuil, manette, outil) ?", correct: "l'adaptation de l'objet au corps humain, au confort, à la sécurité et à la facilité d'usage", wrongs: ["uniquement son prix de vente en magasin", "sa brillance sous éclairage LED", "le nombre de couleurs de son emballage"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "L'ergonomie s'appuie sur l'anthropométrie et l'analyse de l'usage réel." },
+            { q: "En typographie (design graphique), quelle est la différence entre une police « Serif » et « Sans-Serif » ?", correct: "Serif possède des empattements aux extrémités des lettres (ex : Garamond) ; Sans-Serif n'en a pas (ex : Helvetica)", wrongs: ["Serif s'écrit toujours en rouge", "Sans-Serif ne comporte jamais de majuscules", "il n'existe aucune différence visuelle"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Les polices sans empattement (linéales) sont très prisées sur écran pour leur lisibilité." },
+            { q: "Quels sont les quatre grands pôles historiques du design étudiés en STD2A ?", correct: "Design de produit, Design d'espace, Design graphique et Design de mode/textile", wrongs: ["Design agricole, militaire, minier et ferroviaire", "Peinture à l'huile, gravure, chant et danse", "Chimie, comptabilité, droit et sport"], levels: ['2nde', '1ere', 'terminale'], exp: "La filière STD2A explore ces quatre domaines complémentaires et leurs démarches de projet." },
+            { q: "En imprimerie professionnelle, quel mode colorimétrique à 4 encres utilise-t-on à la place du RVB des écrans ?", correct: "CMJN (Cyan, Magenta, Jaune, Noir)", wrongs: ["HSL", "Hexadécimal seul", "Infrarouge"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "RVB = synthèse additive (lumière/écran) ; CMJN = synthèse soustractive (encres d'impression)." },
+            { q: "Quelle est la principale différence entre une image vectorielle (SVG, AI) et une image matricielle/bitmap (JPEG, PNG) ?", correct: "le vectoriel repose sur des courbes mathématiques redimensionnables à l'infini sans perte de netteté", wrongs: ["le vectoriel pixellise dès qu'on zoome", "le bitmap ne gère aucune couleur", "le vectoriel est réservé uniquement aux photographies"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Les logos et icônes sont conçus en vectoriel (courbes de Bézier) pour rester nets à toute échelle." },
+            { q: "En design d'espace / architecture, quel type de représentation montre un objet en 3D avec des arêtes parallèles sans point de fuite ?", correct: "l'axonométrie (ou perspective isométrique/cavalière)", wrongs: ["la perspective atmosphérique", "la coupe géologique seule", "le croquis d'ambiance flou"], levels: ['1ere', 'terminale', 'bts1'], exp: "L'axonométrie conserve le parallélisme et permet des mesures directes sur les axes." },
+            { q: "Que signifie la démarche d'« éco-design » (design soutenable) ?", correct: "concevoir des objets durables, réparables, sobres en matériaux et pensés pour le recyclage", wrongs: ["peindre tous les objets en vert", "utiliser uniquement des matériaux jetables", "doubler le volume des emballages plastiques"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "L'éco-design intègre l'environnement dès l'esquisse (matériaux biosourcés, démontabilité)." },
+            { q: "Quel designer français célèbre a signé le presse-agrumes « Juicy Salif » (1990) et de nombreux objets iconiques ?", correct: "Philippe Starck", wrongs: ["Gustave Eiffel", "Auguste Rodin", "Claude Monet"], levels: ['1ere', 'terminale', 'bts1'], exp: "Philippe Starck est l'une des figures majeures du design industriel contemporain." },
+            { q: "En design d'interface (UI/UX), que signifie l'acronyme UX ?", correct: "User Experience (l'expérience globale vécue par l'utilisateur lors de son parcours)", wrongs: ["Ultra X-Ray", "Uniform XML", "Universal Export"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "L'UX design veille à l'utilité, la fluidité et la satisfaction ; l'UI design soigne l'esthétique visuelle." },
+            { q: "Quel mouvement artistique des années 1900 (Hector Guimard, entrées de métro parisien) s'inspire des courbes végétales et organiques ?", correct: "l'Art Nouveau", wrongs: ["le Brutalisme", "le Pop Art", "le Cubisme"], levels: ['1ere', 'terminale', 'bts1'], exp: "L'Art Nouveau privilégie les lignes sinueuses, le fer forgé et les motifs floraux." },
+            { q: "Dans la méthode de projet STD2A, à quoi sert une « planche tendances » (moodboard) ?", correct: "rassembler images, couleurs, textures et références pour définir l'univers esthétique du projet", wrongs: ["calculer la TVA de l'atelier", "remplacer totalement le prototype final", "mesurer la résistance d'un mur porteur"], levels: ['2nde', '1ere', 'terminale'], exp: "Le moodboard synthétise la direction artistique et sert d'appui pour dialoguer avec le commanditaire." },
+            { q: "Quel architecte franco-suisse a formulé les « cinq points de l'architecture moderne » (pilotis, toit-terrasse, plan libre…) et le Modulor ?", correct: "Le Corbusier", wrongs: ["Baron Haussmann", "Antoine Watteau", "Eugène Delacroix"], levels: ['1ere', 'terminale', 'bts1'], exp: "La Villa Savoye (1931) de Le Corbusier incarne les cinq points de l'architecture moderne." },
+            { q: "En design graphique, que désigne la « charte graphique » d'une marque ou institution ?", correct: "le document de référence fixant règles d'usage du logo, palettes de couleurs, typographies et mises en page", wrongs: ["le contrat de bail du bureau", "la liste des clients de la boutique", "le planning des congés"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "La charte graphique assure la cohérence de l'identité visuelle sur tous les supports." },
+            { q: "En design produit, quelle étape consiste à réaliser une version physique à l'échelle (carton, mousse, impression 3D) pour tester volumes et prise en main ?", correct: "le maquettage / prototypage", wrongs: ["la facturation finale", "la mise en rayon", "la destruction du cahier des charges"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "La maquette permet d'itérer rapidement sur les proportions et l'ergonomie avant industrialisation." },
+            { q: "Quel célèbre couple de designers américains a créé la Lounge Chair (1956) en contreplaqué moulé et cuir ?", correct: "Charles et Ray Eames", wrongs: ["Vincent et Théo van Gogh", "Pierre et Marie Curie", "Frères Lumière"], levels: ['1ere', 'terminale', 'bts1'], exp: "Les Eames ont révolutionné le mobilier moderne par le travail du bois cintré et de la fibre de verre." },
+            { q: "En design textile / mode, quelle fibre naturelle d'origine végétale est réputée en France pour son faible impact écologique et sa thermorégulation ?", correct: "le lin", wrongs: ["le polyester issu du pétrole", "le nylon synthétique", "l'acrylique"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "La France est le premier producteur mondial de lin textile, cultivé sans irrigation artificielle." },
+            { q: "Que signifie la notion de « biomimétisme » en design contemporain ?", correct: "s'inspirer des formes, structures ou stratégies du vivant (nature) pour concevoir des solutions innovantes", wrongs: ["copier les créations d'un concurrent", "n'utiliser que du verre transparent", "imprimer des photos d'animaux sur des affiches"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Exemple célèbre : le Velcro inspiré des crochets du fruit de la bardane, ou les façades inspirées des termitières." }
+        ],
+
+        hotellerie: [
+            // STHR : Hôtellerie & Restauration
+            { q: "En hygiène alimentaire (STHR), que signifie la méthode préventive internationale HACCP ?", correct: "Hazard Analysis Critical Control Point (Analyse des dangers et points critiques pour leur maîtrise)", wrongs: ["Hôtel Accueil Cuisine Conseil Professionnel", "Haute Alimentation Certifiée par le Chef Principal", "Hygiène Automatique des Chambres et Couverts"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "La démarche HACCP identifie et maîtrise les dangers biologiques, chimiques et physiques en cuisine." },
+            { q: "Selon la réglementation française, à quelle température maximale doit-on conserver les plats cuisinés froids et viandes hachées réfrigérées ?", correct: "+3 °C (voire +2 °C pour la viande hachée fraîche)", wrongs: ["+12 °C", "+18 °C", "+25 °C"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Le strict respect de la chaîne du froid bloque la prolifération des bactéries pathogènes." },
+            { q: "En liaison chaude en restauration collective, à quelle température minimale un plat chaud doit-il être maintenu jusqu'au service ?", correct: "+63 °C minimum", wrongs: ["+35 °C", "+42 °C", "+20 °C"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Entre +10 °C et +63 °C se situe la zone de danger où les bactéries se multiplient très vite." },
+            { q: "Que signifie le principe fondamental de la « marche en avant » dans l'agencement d'une cuisine professionnelle ?", correct: "les produits propres ne croisent jamais les circuits sales (déchets, plonge) de la réception jusqu'au service", wrongs: ["les cuisiniers n'ont jamais le droit de reculer", "les clients entrent par la réserve froide", "on sert toujours le dessert avant l'entrée"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "La marche en avant dans l'espace (ou dans le temps) évite toute contamination croisée." },
+            { q: "En sciences culinaires, quelle réaction chimique brunit la croûte du pain et la surface d'une viande saisie à haute température en créant des arômes ?", correct: "la réaction de Maillard", wrongs: ["la photosynthèse", "l'électrolyse", "la sublimation"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La réaction de Maillard intervient entre sucres réducteurs et acides aminés dès ~140 °C." },
+            { q: "En service de salle, de quel côté sert-on traditionnellement une assiette dressée (service à l'assiette) ?", correct: "par la droite du client", wrongs: ["par la gauche systématiquement", "au-dessus de la tête du client", "toujours par le bout de la table"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Service à l'assiette et boissons : par la droite ; service au plat (à l'anglaise/française) et pain : par la gauche." },
+            { q: "En hébergement hôtelier, que signifie l'indicateur « RevPAR » ?", correct: "Revenue Per Available Room (chiffre d'affaires hébergement par chambre disponible)", wrongs: ["Revenu Par Assiette de Restaurant", "Réservation Validée Par Agent Régional", "Retour Énergétique des Villas et Palaces"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "RevPAR = CA Hébergement / Nombre de chambres disponibles (ou Prix Moyen × Taux d'occupation)." },
+            { q: "Quel grand chef français du début du XXe siècle a codifié la brigade de cuisine moderne et écrit « Le Guide Culinaire » ?", correct: "Auguste Escoffier", wrongs: ["Antoine Lavoisier", "Victor Hugo", "Gustave Eiffel"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Escoffier (1846-1935) a structuré l'organisation par parties (saucier, garde-manger, pâtissier…)." },
+            { q: "En cuisine, comment s'appelle l'émulsion stable obtenue en dispersant de l'huile dans du jaune d'œuf et de la moutarde ?", correct: "une mayonnaise (émulsion huile dans eau)", wrongs: ["une caramélisation", "une fermentation alcoolique", "une décantation"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "La lécithine du jaune d'œuf joue le rôle de molécule tensioactive (émulsifiant)." },
+            { q: "En hôtellerie, quelle pratique consiste à ajuster dynamiquement le prix des chambres selon la demande, la saison et l'anticipation ?", correct: "le Yield Management (Revenue Management)", wrongs: ["le dumping comptable", "la tarification fixe annuelle", "le troc hôtelier"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le Yield Management maximise le RevPAR en vendant la bonne chambre au bon client au bon moment." },
+            { q: "En France, combien d'étoiles compte le classement hôtelier officiel d'Atout France (hors distinction Palace) ?", correct: "de 1 à 5 étoiles", wrongs: ["de 1 à 3 étoiles", "de 1 à 7 étoiles", "de 1 à 10 étoiles"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Les hôtels sont classés de 1 à 5 étoiles ; les établissements d'exception 5* peuvent obtenir la distinction « Palace »." },
+            { q: "En cuisine, quelle opération rapide consiste à abaisser la température d'un plat cuisiné de +63 °C à moins de +10 °C en moins de 2 heures ?", correct: "le refroidissement rapide (en cellule de refroidissement)", wrongs: ["le flambage", "le braisage", "la décongélation ambiante"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Un refroidissement rapide limite le temps passé dans la zone critique de prolifération microbienne." },
+            { q: "Quel terme hôtelier désigne une clientèle qui réserve une chambre sans se présenter ni annuler (no-show) ?", correct: "un no-show (dédit)", wrongs: ["un walk-in", "un check-out tardif", "un surclassement"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "À l'inverse, un « walk-in » est un client arrivant directement à la réception sans réservation." },
+            { q: "En gastronomie et œnologie, que garantit le label européen AOP (Appellation d'Origine Protégée) ?", correct: "toutes les étapes de production, transformation et élaboration ont lieu dans une aire géographique délimitée selon un savoir-faire reconnu", wrongs: ["uniquement un prix inférieur à 5 €", "une fabrication industrielle hors Europe", "un emballage en plastique vert"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Exemples célèbres : Comté AOP, Champagne AOC/AOP, Roquefort AOP." },
+            { q: "Quel est le rôle du « garde-manger » au sein d'une brigade de cuisine ?", correct: "préparer les entrées froides, salades, terrines et découpes préliminaires de viandes et poissons", wrongs: ["encaisser l'addition en salle", "nettoyer les chambres de l'hôtel", "assurer uniquement le service des vins"], levels: ['2nde', '1ere', 'terminale'], exp: "Chaque chef de partie (saucier, rôtisseur, entremetier, garde-manger, pâtissier) a une spécialité précise." },
+            { q: "Combien d'allergènes alimentaires majeurs à déclaration obligatoire la réglementation européenne INCO impose-t-elle d'indiquer aux clients ?", correct: "14 allergènes majeurs", wrongs: ["3 allergènes", "6 allergènes", "40 allergènes"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Gluten, crustacés, œufs, poissons, arachides, soja, lait, fruits à coque, céleri, moutarde, sésame, sulfites, lupin, mollusques." },
+            { q: "En technologie culinaire, quelle cuisson « par concentration » consiste à plonger un aliment dans un liquide déjà bouillant ou à le saisir vivement ?", correct: "une cuisson visant à retenir les sucs à l'intérieur (ex : poêler, griller, rôtir)", wrongs: ["une cuisson démarrant à l'eau froide pour faire un bouillon", "une congélation lente", "une marinade à froid"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "On distingue cuisson par concentration (saisir/rôtir), par expansion (bouillon/pot-au-feu) et mixte (braiser)." },
+            { q: "En hôtellerie, que désigne la formule « demi-pension » (Half Board) ?", correct: "l'hébergement incluant le petit-déjeuner et un repas principal (déjeuner ou dîner)", wrongs: ["l'hébergement sans aucun repas", "un séjour de seulement 12 heures", "la nuitée plus les 3 repas complets"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "BB = nuit + petit-déjeuner ; Demi-pension = +1 repas ; Pension complète = +2 repas." }
+        ],
+
+        agronomie: [
+            // STAV : Agronomie, Territoires & Vivant
+            { q: "En agronomie, quelle pratique consiste à alterner différentes espèces cultivées sur une même parcelle d'une année sur l'autre ?", correct: "la rotation des cultures", wrongs: ["la monoculture intensive perpétuelle", "le bétonnage agricole", "la déforestation totale"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "La rotation limite l'épuisement du sol, casse les cycles des ravageurs et améliore la fertilité." },
+            { q: "Quelle famille de plantes (trèfle, luzerne, pois, soja) enrichit naturellement le sol en azote grâce à une symbiose racinaire (Rhizobium) ?", correct: "les légumineuses (Fabacées)", wrongs: ["les conifères", "les cactus désertiques", "les mousses aquatiques"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Les nodosités des légumineuses fixent l'azote atmosphérique N₂, réduisant le besoin d'engrais azotés." },
+            { q: "Que désigne le « complexe argilo-humique » (CAH) en science du sol (pédologie) ?", correct: "l'association d'argile et d'humus capable de retenir l'eau et les éléments minéraux (cations) pour les plantes", wrongs: ["un bâtiment de stockage de tracteurs", "une maladie fongique du blé", "une couche de plastique imperméable"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Chargé négativement, le CAH fixe les cations (Ca²⁺, K⁺, Mg²⁺, NH₄⁺) et évite leur lessivage." },
+            { q: "Que signifie la « lutte biologique » en agroécologie ?", correct: "utiliser des organismes auxiliaires vivants (ex : coccinelles contre pucerons) pour réguler les ravageurs", wrongs: ["multiplier par dix les pesticides chimiques", "brûler systématiquement les haies", "irriguer à l'eau salée"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "La lutte biologique préserve la biodiversité et réduit l'usage de produits phytosanitaires." },
+            { q: "Quels sont les trois éléments minéraux majeurs (NPK) essentiels à la nutrition des cultures ?", correct: "Azote (N), Phosphore (P) et Potassium (K)", wrongs: ["Nickel, Plomb et Krypton", "Néon, Platine et Calcium seul", "Mercure, Or et Argent"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "N favorise la croissance foliaire, P l'enracinement/floraison, K la résistance et qualité des fruits." },
+            { q: "Quel est l'un des rôles écologiques majeurs des haies bocagères autour des parcelles agricoles ?", correct: "abriter des auxiliaires de culture, freiner le vent (brise-vent) et limiter l'érosion des sols", wrongs: ["assécher complètement les nappes phréatiques", "empêcher totalement la pollinisation", "augmenter le ruissellement de boue"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Les haies constituent des corridors écologiques essentiels (trame verte)." },
+            { q: "Que désigne l'« eutrophisation » d'un cours d'eau ou d'un littoral (ex : algues vertes) ?", correct: "l'enrichissement excessif en nutriments (nitrates, phosphates) provoquant une prolifération d'algues et un manque d'oxygène", wrongs: ["le gel naturel en hiver", "la filtration par les roseaux", "la disparition totale du sel marin"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le lessivage excessif d'azote et de phosphore perturbe gravement les écosystèmes aquatiques." },
+            { q: "Quel cahier des charges interdit les pesticides et engrais chimiques de synthèse ainsi que les OGM en agriculture ?", correct: "l'Agriculture Biologique (label AB / Eurofeuille)", wrongs: ["l'agriculture hors-sol chimique", "le label industriel standard", "la culture hydrocarbure"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "L'agriculture biologique mise sur les équilibres naturels, le compostage et les rotations longues." },
+            { q: "En agronomie, qu'est-ce que l'« agroforesterie » ?", correct: "associer des arbres (haies ou alignements) et des cultures ou de l'élevage sur une même parcelle", wrongs: ["couper toutes les forêts pour planter du maïs", "cultiver uniquement sous serre chauffée", "remplacer la terre par du béton"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Les arbres apportent ombre, stockage de carbone, matière organique et revenus bois complémentaires." },
+            { q: "Quel rôle jouent les vers de terre (lombrics) dans la fertilité d'un sol agricole ?", correct: "ils aèrent le sol par leurs galeries, mélangent matière organique et minérale et favorisent l'infiltration de l'eau", wrongs: ["ils dévorent les racines vivantes des arbres", "ils rendent la terre imperméable", "ils détruisent totalement l'humus"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Les vers de terre anéciques sont de véritables « ingénieurs du sol »." },
+            { q: "En gestion de l'eau, quelle technique d'irrigation localisée permet d'économiser le plus d'eau en la délivrant au pied des plantes ?", correct: "le goutte-à-goutte", wrongs: ["l'inondation par submersion totale en plein midi", "le canon enrouleur par grand vent", "l'arrosage sur routes"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Le goutte-à-goutte limite drastiquement l'évaporation et le ruissellement." },
+            { q: "Qu'est-ce qu'un « couvert végétal d'interculture » (CIPAN) semé entre deux cultures principales ?", correct: "une plante couvrant le sol nu en hiver pour piéger les nitrates, protéger contre l'érosion et apporter de la matière organique", wrongs: ["une bâche en PVC jetable", "un hangar agricole métallique", "un herbicide total"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "CIPAN = Culture Intermédiaire Piège à Nitrates (ex : moutarde, phacélie, vesce)." },
+            { q: "En écologie des territoires, que désigne la « Trame Verte et Bleue » (TVB) ?", correct: "un réseau de corridors terrestres (vert) et aquatiques (bleu) permettant aux espèces de se déplacer et se reproduire", wrongs: ["une peinture écologique pour tracteurs", "un itinéraire autoroutier", "une taxe sur les engrais"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La TVB lutte contre la fragmentation des habitats naturels." },
+            { q: "En élevage, qu'appelle-t-on le « pâturage tournant dynamique » ?", correct: "déplacer régulièrement le troupeau sur de petites parcelles pour laisser l'herbe repousser au stade optimal", wrongs: ["laisser les animaux enfermés toute l'année", "tondre les prairies à ras chaque matin", "ne jamais changer de pré"], levels: ['1ere', 'terminale', 'bts1'], exp: "Il améliore la valeur nutritive de l'herbe, le bien-être animal et le stockage de carbone dans le sol." },
+            { q: "Que signifie la « PAC » dans le contexte de l'agriculture européenne ?", correct: "la Politique Agricole Commune de l'Union européenne", wrongs: ["le Plan d'Arrosage Communal", "la Production Alimentaire Chimique", "le Programme d'Achat de Céréales"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Instaurée en 1962, la PAC soutient les agriculteurs et intègre des écorégimes environnementaux." },
+            { q: "Quel est l'intérêt agronomique du « semis direct sous couvert » (agriculture de conservation) ?", correct: "ne plus labourer pour préserver la structure vivante du sol, limiter l'érosion et réduire le carburant consommé", wrongs: ["retourner la terre sur 1 mètre de profondeur", "supprimer toute vie microbienne", "augmenter le tassement des sols"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Les 3 piliers : perturbation minimale du sol, couverture permanente, diversité des rotations." },
+            { q: "Quel gaz à effet de serre puissant est principalement émis par la fermentation entérique des ruminants et les rizières ?", correct: "le méthane (CH₄)", wrongs: ["le dioxygène (O₂)", "l'hélium (He)", "l'argon (Ar)"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Réduire les émissions de CH₄ et de N₂O est un enjeu majeur de la transition agroécologique." },
+            { q: "Que désigne la « biodiversité fonctionnelle » dans un agrosystème ?", correct: "l'ensemble des espèces (pollinisateurs, décomposeurs, prédateurs de ravageurs) rendant des services utiles à la culture", wrongs: ["le nombre de marques de machines agricoles", "une seule variété clonée sur 1000 ha", "le catalogue des engrais de synthèse"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Abeilles, syrphes, carabes, champignons mycorhiziens assurent pollinisation, fertilité et régulation naturelle." }
+        ],
+
+        spectacle: [
+            // S2TMD : Théâtre, Musique & Danse
+            { q: "Au théâtre antique grec, quelle fonction morale Aristote attribue-t-il à la tragédie (purgation des passions par la terreur et la pitié) ?", correct: "la catharsis", wrongs: ["la parodie", "la pantomime", "l'allégorie burlesque"], levels: ['2nde', '1ere', 'terminale'], exp: "Dans la Poétique, Aristote définit la catharsis comme l'épuration émotionnelle vécue par le spectateur." },
+            { q: "Dans un texte théâtral, comment appelle-t-on les indications scéniques écrites par l'auteur (gestes, tons, décors, entrées) ?", correct: "les didascalies", wrongs: ["les tirades", "les stichomythies", "les alexandrins"], levels: ['2nde', '1ere', 'terminale'], exp: "Les didascalies (souvent en italique) ne sont pas prononcées mais guident la mise en scène." },
+            { q: "Quel grand dramaturge français du XVIIe siècle a écrit « Le Tartuffe », « L'Avare » et « Le Malade imaginaire » ?", correct: "Molière", wrongs: ["Jean Racine", "Pierre Corneille", "Alfred de Musset"], levels: ['2nde', '1ere', 'terminale'], exp: "Molière (1622-1673) a renouvelé la comédie française en mêlant satire sociale et farce." },
+            { q: "En musique classique, comment appelle-t-on la forme musicale en trois grandes sections : Exposition, Développement, Réexposition ?", correct: "la forme sonate", wrongs: ["la fugue stricte", "le canon simple", "le choral grégorien"], levels: ['1ere', 'terminale'], exp: "La forme sonate structure classiquement le premier mouvement des symphonies et sonates de Haydn, Mozart et Beethoven." },
+            { q: "Quelle grande chorégraphe allemande du XXe siècle est célèbre pour le « Tanztheater » (théâtre dansé), comme « Café Müller » ?", correct: "Pina Bausch", wrongs: ["Marie Taglioni", "Clara Schumann", "George Sand"], levels: ['1ere', 'terminale'], exp: "Pina Bausch mêle danse contemporaine, parole, scénographie expressive et émotions humaines brutes." },
+            { q: "En théorie musicale, quel signe placé devant une note l'élève d'un demi-ton ?", correct: "le dièse (♯)", wrongs: ["le bémol (♭)", "le point d'orgue", "le soupir"], levels: ['2nde', '1ere', 'terminale'], exp: "Le dièse (♯) hausse d'un demi-ton, le bémol (♭) abaisse d'un demi-ton, le bécarre (♮) annule." },
+            { q: "En théâtre, que désigne la notion de « quatrième mur » théorisée au XVIIIe siècle (Diderot) puis au XIXe siècle ?", correct: "la paroi imaginaire séparant la scène du public, que les acteurs feignent d'ignorer", wrongs: ["le mur du fond où sont accrochés les projecteurs", "un décor en brique obligatoire", "la loge du souffleur"], levels: ['2nde', '1ere', 'terminale'], exp: "« Briser le quatrième mur » consiste pour un acteur à s'adresser directement au public (ex : Brecht, aparté)." },
+            { q: "Quel compositeur russe a créé la musique scandaleuse et révolutionnaire du ballet « Le Sacre du printemps » (1913, chorégraphie Nijinski) ?", correct: "Igor Stravinsky", wrongs: ["Antonio Vivaldi", "Jean-Sébastien Bach", "Frédéric Chopin"], levels: ['1ere', 'terminale'], exp: "Créé au Théâtre des Champs-Élysées par les Ballets russes, il marque un tournant du XXe siècle." },
+            { q: "En mise en scène théâtrale du XXe siècle, quel dramaturge allemand a théorisé l'« effet de distanciation » (théâtre épique) ?", correct: "Bertolt Brecht", wrongs: ["Sophocle", "William Shakespeare", "Marivaux"], levels: ['1ere', 'terminale'], exp: "Brecht cherche à maintenir l'esprit critique du spectateur plutôt que l'illusion émotionnelle totale." },
+            { q: "En danse, qui a fondé l'Académie royale de danse en France en 1661, posant les bases du vocabulaire du ballet classique ?", correct: "Louis XIV", wrongs: ["Napoléon III", "Charlemagne", "François Ier"], levels: ['2nde', '1ere', 'terminale'], exp: "D'où le fait que les termes de danse classique (plié, arabesque, entrechat, pas de deux) soient en français partout dans le monde." },
+            { q: "En musique, que signifie le terme italien « polyphonie » ?", correct: "la superposition simultanée de plusieurs voix ou lignes mélodiques indépendantes", wrongs: ["un solo joué par un seul instrument sans accompagnement", "un silence prolongé de 4 mesures", "l'accordage d'un piano"], levels: ['2nde', '1ere', 'terminale'], exp: "Par opposition à la monodie (une seule ligne mélodique), la polyphonie atteint un sommet à la Renaissance et chez Bach." },
+            { q: "En analyse dramaturgique, que désigne la « stichomythie » ?", correct: "un échange rapide de répliques très courtes (un vers chacun) traduisant une tension dramatique", wrongs: ["un long monologue lyrique de 80 vers", "la musique d'ouverture", "le salut final des comédiens"], levels: ['1ere', 'terminale'], exp: "Très présente chez Corneille et Racine lors des affrontements verbaux intenses." },
+            { q: "En acoustique / musique, quelle caractéristique physique d'une onde sonore détermine la HAUTEUR d'une note (grave ou aiguë) ?", correct: "sa fréquence (en Hertz)", wrongs: ["son amplitude seule", "la couleur de l'instrument", "la vitesse de la lumière"], levels: ['2nde', '1ere', 'terminale'], exp: "Plus la fréquence est élevée, plus la note est aiguë (le La3 de référence = 440 Hz)." },
+            { q: "Quel dramaturge du théâtre de l'absurde a écrit « En attendant Godot » (1952) ?", correct: "Samuel Beckett", wrongs: ["Edmond Rostand", "Pierre de Beaumarchais", "Jean Anouilh"], levels: ['1ere', 'terminale'], exp: "Beckett et Ionesco remettent en cause l'intrigue logique et le langage dans le théâtre de l'absurde." },
+            { q: "En danse, qu'appelle-t-on la « cinétographie Laban » (Labanotation) ?", correct: "un système graphique de notation permettant d'écrire et conserver les mouvements d'une chorégraphie", wrongs: ["un type de chaussons de pointes", "un projecteur de poursuite", "une danse folklorique médiévale"], levels: ['1ere', 'terminale'], exp: "Créée par Rudolf Laban, elle joue pour la danse un rôle comparable à la partition en musique." },
+            { q: "À quel courant musical associe-t-on Claude Debussy et Maurice Ravel au tournant du XXe siècle ?", correct: "l'impressionnisme / symbolisme musical français", wrongs: ["le baroque italien du XVIIe siècle", "le grunge rock", "le dodécaphonisme strict"], levels: ['1ere', 'terminale'], exp: "Debussy explore les timbres, les gammes par tons et les harmonies colorées (Prélude à l'après-midi d'un faune)." },
+            { q: "En scénographie, que désigne le « cintre » dans une cage de scène à l'italienne ?", correct: "la partie haute au-dessus de la scène permettant de monter et descendre décors et rideaux grâce aux perches", wrongs: ["le premier rang du balcon", "la billetterie d'entrée", "la fosse d'orchestre"], levels: ['2nde', '1ere', 'terminale'], exp: "Les décors suspendus sont « envoyés aux cintres » pour effectuer des changements rapides." },
+            { q: "Quel genre théâtral populaire italien né au XVIe siècle repose sur des personnages masqués types (Arlequin, Pantalon, Colombine) et l'improvisation ?", correct: "la commedia dell'arte", wrongs: ["la tragédie lyrique", "le drame bourgeois", "le vaudeville"], levels: ['2nde', '1ere', 'terminale'], exp: "La commedia dell'arte a profondément influencé Molière et Marivaux." }
+        ],
+
+        hlp: [
+            // HLP : Humanités, Littérature & Philosophie (1ère & Terminale)
+            { q: "Dans le programme de 1ère HLP (« Les pouvoirs de la parole »), quel art antique codifie les techniques pour bien parler et persuader ?", correct: "la rhétorique", wrongs: ["la balistique", "la thermodynamique", "la botanique"], levels: ['1ere', 'terminale'], exp: "Née en Sicile et à Athènes au Ve siècle av. J.-C., la rhétorique est au cœur de la vie démocratique antique." },
+            { q: "Dans le dialogue « Gorgias » de Platon, quelle critique principale Socrate adresse-t-il à la rhétorique des sophistes ?", correct: "elle vise la flatterie et la persuasion sans souci de la vérité ni de la justice", wrongs: ["elle est trop silencieuse", "elle utilise trop de mathématiques", "elle interdit les métaphores"], levels: ['1ere', 'terminale'], exp: "Platon oppose la philosophie (recherche du vrai et du bien) à la rhétorique sophistique (simple apparence)." },
+            { q: "Dans « Les Essais » (chapitre « Des Cannibales »), quelle critique majeure Michel de Montaigne formule-t-il face à la découverte du Nouveau Monde ?", correct: "il dénonce l'ethnocentrisme européen : « chacun appelle barbarie ce qui n'est pas de son usage »", wrongs: ["il réclame l'esclavage immédiat", "il nie l'existence de l'Amérique", "il affirme la supériorité absolue des guerres de religion"], levels: ['1ere', 'terminale'], exp: "Montaigne adopte un regard critique et relativiste qui fonde l'humanisme moderne." },
+            { q: "Quel ouvrage majeur de Jean-Jacques Rousseau (1782) inaugure l'autobiographie moderne avec le projet de « montrer un homme dans toute la vérité de la nature » ?", correct: "Les Confessions", wrongs: ["Candide", "Les Fleurs du mal", "Gargantua"], levels: ['1ere', 'terminale'], exp: "Rousseau y explore la mémoire, la sensibilité et la construction du moi (thème Terminale : La recherche de soi)." },
+            { q: "En HLP Terminale (« L'Humanité en question »), quelle notion Hannah Arendt développe-t-elle lors du procès d'Adolf Eichmann (1961) ?", correct: "la banalité du mal (l'absence de pensée critique face aux ordres bureaucratiques)", wrongs: ["la souveraineté divine", "le progrès illimité", "le contrat commercial"], levels: ['terminale'], exp: "Arendt montre comment un fonctionnaire ordinaire peut participer à des crimes de masse en renonçant à penser." },
+            { q: "Quel écrivain italien rescapé d'Auschwitz a écrit « Si c'est un homme » (1947) pour témoigner de la déshumanisation concentrationnaire ?", correct: "Primo Levi", wrongs: ["Dante Alighieri", "Nicolas Machiavel", "Italo Calvino"], levels: ['terminale'], exp: "Œuvre centrale du thème HLP « Création, continuités et ruptures » et « Histoire et violence »." },
+            { q: "Dans « Les Lettres persanes » (1721), quel procédé Montesquieu utilise-t-il pour critiquer la société française du XVIIIe siècle ?", correct: "le regard étranger naïf (deux voyageurs persans, Usbek et Rica, s'étonnent des coutumes parisiennes)", wrongs: ["le traité de géométrie", "la tragédie en alexandrins", "le dictionnaire médical"], levels: ['1ere', 'terminale'], exp: "Ce décentrement ironique contourne la censure et dévoile l'absurdité de certains préjugés." },
+            { q: "En philosophie esthétique (HLP Terminale), selon Emmanuel Kant dans la « Critique de la faculté de juger », le jugement de goût (« ceci est beau ») est :", correct: "désintéressé et prétend à une universalité subjective sans concept", wrongs: ["uniquement lié au prix de l'œuvre", "identique au calcul mathématique", "strictement utile pour manger ou dormir"], levels: ['terminale'], exp: "« Est beau ce qui plaît universellement sans concept », indépendamment de l'intérêt matériel." },
+            { q: "Qui a écrit « Le Discours de la servitude volontaire » (vers 1548), s'interrogeant sur la façon dont un peuple entier obéit à un seul tyran ?", correct: "Étienne de La Boétie", wrongs: ["Honoré de Balzac", "Charles Baudelaire", "Albert Camus"], levels: ['1ere', 'terminale'], exp: "L'ami de Montaigne montre que la tyrannie ne tient que par le consentement et l'habitude des sujets." },
+            { q: "En littérature et philosophie, que désigne la « sensibilité romantique » au XIXe siècle (Chateaubriand, Musset, Hugo) ?", correct: "l'exaltation du moi, des passions, de la nature miroir de l'âme et de la mélancolie (« mal du siècle »)", wrongs: ["le refus absolu de toute émotion personnelle", "la copie mécanique des règles classiques", "l'apologie de l'industrie lourde"], levels: ['1ere', 'terminale'], exp: "Le romantisme place l'individu, l'imagination et la liberté créatrice au premier plan." },
+            { q: "Quel roman dystopique de George Orwell (1949) illustre la manipulation du langage (« novlangue ») par un régime totalitaire ?", correct: "1984", wrongs: ["Le Petit Prince", "Madame Bovary", "Les Misérables"], levels: ['1ere', 'terminale'], exp: "En réduisant le vocabulaire, la « novlangue » vise à rendre la pensée critique littéralement impossible." },
+            { q: "Dans le thème HLP « L'humain et ses limites », que désigne le « transhumanisme » ?", correct: "un courant promouvant l'usage des sciences et technologies (IA, génétique, implants) pour augmenter les capacités humaines", wrongs: ["le retour strict à la vie paléolithique", "l'interdiction des bibliothèques", "un mouvement pictural du XVIe siècle"], levels: ['terminale'], exp: "Il soulève d'importants débats éthiques sur la nature humaine, les inégalités et la finitude." },
+            { q: "Quelle femme de lettres des Lumières a rédigé en 1791 la « Déclaration des droits de la femme et de la citoyenne » ?", correct: "Olympe de Gouges", wrongs: ["Madame de La Fayette", "Colette", "Marguerite Duras"], levels: ['1ere', 'terminale'], exp: "Elle affirme l'égalité politique et civile des femmes face à la Déclaration de 1789." },
+            { q: "Selon Sigmund Freud (HLP Terminale — « Les métamorphoses du moi »), quelle blessure narcissique la psychanalyse inflige-t-elle à l'humanité ?", correct: "« le Moi n'est pas maître dans sa propre maison » (existence de l'inconscient)", wrongs: ["la Terre est plate", "l'homme descend des minéraux", "le langage n'existe pas"], levels: ['terminale'], exp: "Après Copernic (astronomie) et Darwin (biologie), Freud évoque la 3e blessure narcissique (psychologie)." },
+            { q: "Dans l'Antiquité, quelle école philosophique (Épictète, Marc Aurèle, Sénèque) enseigne de distinguer ce qui dépend de nous de ce qui n'en dépend pas ?", correct: "le stoïcisme", wrongs: ["le nihilisme", "le positivisme", "le mercantilisme"], levels: ['1ere', 'terminale'], exp: "Le stoïcisme recherche la sérénité (ataraxie) par la maîtrise de ses jugements et l'accord avec la raison." },
+            { q: "Dans « Gargantua » (1534), quelle vision humaniste de l'éducation François Rabelais promeut-il face à la scolastique figée ?", correct: "une éducation complète formant le corps, l'esprit critique, les langues et les sciences (« Science sans conscience n'est que ruine de l'âme »)", wrongs: ["l'apprentissage par cœur sans jamais comprendre", "l'interdiction de lire des auteurs grecs", "l'éducation réservée uniquement à l'escrime"], levels: ['1ere', 'terminale'], exp: "Rabelais célèbre la soif de savoir humaniste associée à la responsabilité morale." },
+            { q: "Quel poète français du XIXe siècle a inauguré la modernité poétique avec « Les Fleurs du mal » (1857), tirant la beauté du « spleen » et de la ville ?", correct: "Charles Baudelaire", wrongs: ["Jean de La Fontaine", "Pierre de Ronsard", "Joachim du Bellay"], levels: ['1ere', 'terminale'], exp: "Baudelaire explore les correspondances sensibles et la tension entre Spleen et Idéal." },
+            { q: "Quelle œuvre d'Aimé Césaire (1939) est un texte fondateur du mouvement de la « négritude » et de la critique anticoloniale ?", correct: "Cahier d'un retour au pays natal", wrongs: ["Le Rouge et le Noir", "Bel-Ami", "L'Assommoir"], levels: ['1ere', 'terminale'], exp: "Césaire y fait de la parole poétique un outil de dignité, de mémoire et d'émancipation." }
+        ],
+
+        dev_bdd: [
+            // BTS SIO (SLAM & SISR) & Spé NSI
+            { q: "En conception de base de données (méthode Merise), que représente le MCD ?", correct: "le Modèle Conceptuel de Données (entités, associations et cardinalités)", wrongs: ["le Module de Calcul Distribué", "la Mémoire Centrale Directe", "le Mode de Chiffrement de Disque"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le MCD se traduit ensuite en MLD (Modèle Logique de Données) puis en MPD (tables SQL)." },
+            { q: "Dans une base relationnelle SQL, quel est le rôle d'une clé étrangère (FOREIGN KEY) ?", correct: "référencer la clé primaire d'une autre table et garantir l'intégrité référentielle", wrongs: ["chiffrer les mots de passe", "compresser les images JPEG", "accélérer la carte graphique"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Une clé étrangère interdit de relier une ligne à un identifiant parent inexistant." },
+            { q: "En SQL, quelle commande du LDD (Langage de Définition de Données) permet de créer une nouvelle table ?", correct: "CREATE TABLE", wrongs: ["INSERT INTO", "SELECT FROM", "UPDATE SET"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "LDD : CREATE, ALTER, DROP ; LMD : SELECT, INSERT, UPDATE, DELETE." },
+            { q: "Que signifie la propriété ACID d'une transaction en base de données relationnelle ?", correct: "Atomicité, Cohérence, Isolation, Durabilité", wrongs: ["Accès, Cloud, Index, Disque", "Algorithme, Code, Interface, Donnée", "Authentification, Cryptage, IP, DNS"], levels: ['bts1', 'bts2', 'terminale'], exp: "Une transaction s'exécute intégralement (COMMIT) ou pas du tout (ROLLBACK) pour garantir la fiabilité des données." },
+            { q: "En modélisation UML, quel diagramme représente les classes, leurs attributs, leurs méthodes et les relations d'héritage/association ?", correct: "le diagramme de classes", wrongs: ["le diagramme de Gantt", "le diagramme de réseau physique", "le diagramme thermique"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le diagramme de classes est la vue statique centrale d'un projet orienté objet." },
+            { q: "Dans une architecture MVC (Modèle-Vue-Contrôleur), quel composant gère l'accès aux données et la logique métier ?", correct: "le Modèle (Model)", wrongs: ["la Vue (View)", "le fichier CSS seul", "le serveur DNS"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Modèle = données/métier ; Vue = interface utilisateur ; Contrôleur = orchestration des requêtes." },
+            { q: "Quel est l'objectif principal des « tests unitaires » automatisés dans un projet logiciel BTS SIO ?", correct: "vérifier isolément le bon fonctionnement de chaque fonction ou méthode et prévenir les régressions", wrongs: ["remplacer le serveur de production", "dessiner la maquette graphique", "supprimer la base de données"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Des tests unitaires rapides garantissent qu'une modification ne casse pas un comportement existant." },
+            { q: "En développement Web / API, quelle est la différence entre une base SQL (PostgreSQL, MySQL) et une base NoSQL orientée documents (MongoDB) ?", correct: "SQL utilise un schéma relationnel strict en tables ; NoSQL document stocke des objets JSON/BSON à schéma flexible", wrongs: ["NoSQL ne peut stocker que des nombres entiers", "SQL ne fonctionne jamais sur Internet", "NoSQL interdit toute recherche"], levels: ['terminale', 'bts1', 'bts2'], exp: "Le choix dépend de la structure des données, du besoin transactionnel ACID et de la montée en charge." },
+            { q: "En gestion de projet agile (Scrum), comment appelle-t-on une itération courte (1 à 4 semaines) produisant un incrément logiciel fonctionnel ?", correct: "un Sprint", wrongs: ["un Firewall", "un Driver", "un Compiler"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Scrum organise le travail en Sprints rythmés par le Product Backlog, le Daily Scrum et la rétrospective." },
+            { q: "En SQL, à quoi sert un INDEX sur une colonne très recherchée (ex : email) ?", correct: "accélérer considérablement les requêtes de recherche (SELECT ... WHERE) grâce à une structure de recherche rapide (B-Tree)", wrongs: ["supprimer automatiquement les anciennes lignes", "chiffrer la base en AES-256", "convertir la table en PDF"], levels: ['terminale', 'bts1', 'bts2'], exp: "L'index accélère les lectures au prix d'un léger surcoût en stockage et en écriture." },
+            { q: "En JavaScript / développement moderne, à quoi sert le mot-clé « async / await » ?", correct: "écrire du code asynchrone (Promesses, appels fetch) de manière lisible et séquentielle sans bloquer l'interface", wrongs: ["arrêter définitivement le navigateur", "compiler du code C++", "supprimer les variables locales"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "await suspend l'exécution de la fonction async jusqu'à la résolution de la Promise." },
+            { q: "En sécurité applicative Web (BTS SIO SLAM), quelle faille consiste à injecter du code JavaScript malveillant qui s'exécute dans le navigateur d'une victime ?", correct: "XSS (Cross-Site Scripting)", wrongs: ["RAID 5", "DHCP Spoofing", "Fragmentation IP"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "On prévient les failles XSS en échappant systématiquement toute donnée utilisateur insérée dans le HTML." },
+            { q: "Dans une requête SQL, quelle est la différence entre INNER JOIN et LEFT JOIN ?", correct: "INNER JOIN ne renvoie que les lignes ayant une correspondance dans les 2 tables ; LEFT JOIN garde toutes les lignes de la table de gauche", wrongs: ["LEFT JOIN supprime la table de droite", "INNER JOIN ne fonctionne qu'avec 1 table", "les deux renvoient toujours le même résultat"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Avec LEFT JOIN, les colonnes sans correspondance à droite prennent la valeur NULL." },
+            { q: "En POO, à quoi sert le « constructeur » d'une classe (ex : __init__ en Python, constructor en JS/PHP) ?", correct: "initialiser les attributs d'un nouvel objet au moment de son instanciation", wrongs: ["détruire toute la base SQL", "envoyer un e-mail automatique", "trier les fichiers sur le disque"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le constructeur est appelé automatiquement lors de la création d'une instance (new MaClasse())." },
+            { q: "En DevOps / CI-CD (BTS SIO), que signifie l'acronyme CI ?", correct: "Continuous Integration (Intégration Continue : compilation et exécution automatique des tests à chaque commit)", wrongs: ["Code Interdit", "Circuit Imprimé", "Copie Manuelle"], levels: ['terminale', 'bts1', 'bts2'], exp: "La CI détecte très tôt les bugs et régressions avant la mise en production (CD)." },
+            { q: "À quoi sert un ORM (Object-Relational Mapping, ex : Doctrine, Prisma, Hibernate) ?", correct: "faire correspondre automatiquement les objets du code et les tables de la base de données relationnelle", wrongs: ["remplacer le câble Ethernet", "compresser les vidéos MP4", "gérer les imprimantes réseau"], levels: ['bts1', 'bts2'], exp: "L'ORM simplifie le CRUD et utilise des requêtes paramétrées qui protègent contre les injections SQL." },
+            { q: "En normalisation relationnelle (1FN, 2FN, 3FN), quel est le but principal des formes normales ?", correct: "éviter la redondance des données et les anomalies de mise à jour, d'insertion ou de suppression", wrongs: ["dupliquer chaque adresse dans 10 tables", "supprimer toutes les clés primaires", "stocker toute la base dans une seule cellule texte"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Une base bien normalisée (3FN) garantit cohérence, intégrité et maintenabilité." },
+            { q: "Que permet la conteneurisation avec Docker dans le déploiement d'applications BTS SIO ?", correct: "empaqueter une application et toutes ses dépendances dans un conteneur portable et reproductible sur n'importe quel serveur", wrongs: ["remplacer le langage HTML", "augmenter la tension du secteur", "supprimer l'authentification des utilisateurs"], levels: ['terminale', 'bts1', 'bts2'], exp: "Docker garantit un environnement identique entre le poste de développement et le serveur de production." }
+        ],
+
+        commerce: [
+            // BTS MCO : Relation Client, Merchandising & Management d'Unité Commerciale
+            { q: "En BTS MCO, que désigne la « zone de chalandise » d'un point de vente ?", correct: "l'aire géographique d'où provient l'essentiel des clients actuels et potentiels du magasin", wrongs: ["l'entrepôt de stockage en arrière-boutique", "le rayon des promotions uniquement", "la salle de pause des vendeurs"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Elle se découpe en zones primaire, secondaire et tertiaire à l'aide de courbes isochrones (temps de trajet)." },
+            { q: "En merchandising (marchandisage), quel niveau de présentation en rayon est le plus vendeur pour les produits à forte marge ?", correct: "le niveau des yeux (et des mains)", wrongs: ["le niveau du sol uniquement", "tout en haut hors d'atteinte", "dans la réserve fermée"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Les clients repèrent d'abord les produits placés à hauteur des yeux et saisissent facilement ceux à hauteur des mains." },
+            { q: "Quelle méthode classique structure un entretien de vente conseil en magasin ?", correct: "la méthode des 4C / SBAM + Découverte (SONCAS) + Argumentation (CAP) + Traitement des objections + Conclusion", wrongs: ["forcer l'achat sans écouter le client", "donner le prix puis quitter le rayon", "ignorer toutes les questions du client"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "SBAM = Sourire, Bonjour, Au revoir, Merci ; découverte des besoins puis argumentation ciblée." },
+            { q: "Dans la typologie commerciale SONCAS (ou SONCASE), quelles motivations d'achat sont regroupées ?", correct: "Sécurité, Orgueil, Nouveauté, Confort, Argent, Sympathie (+ Écologie)", wrongs: ["Stock, Ordre, Numéro, Caisse, Achat, Sortie", "Salaire, Objectif, Norme, Contrat, Annexe, Stage", "Soleil, Océan, Neige, Climat, Air, Saison"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Identifier le mobile d'achat dominant du client permet de personnaliser l'argumentaire CAP." },
+            { q: "Que signifie la méthode d'argumentation commerciale « CAP » ?", correct: "Caractéristique, Avantage, Preuve", wrongs: ["Coût, Achat, Profit", "Client, Accueil, Paiement", "Catalogue, Affiche, Prix"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "On présente une caractéristique technique, l'avantage concret pour le client et une preuve (démonstration, label, avis)." },
+            { q: "En gestion d'unité commerciale, qu'est-ce que la « démarque inconnue » ?", correct: "la perte de stock non expliquée (vols internes/externes, erreurs administratives ou de caisse)", wrongs: ["les articles volontairement soldés à −50 %", "les produits périmés enregistrés et jetés", "les échantillons offerts aux clients"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "À distinguer de la démarque connue (casse, péremption, dons enregistrés)." },
+            { q: "Que mesure le « NPS » (Net Promoter Score) en relation client ?", correct: "la propension des clients à recommander la marque ou le magasin à leur entourage", wrongs: ["le nombre de palettes livrées par camion", "le salaire brut des conseillers", "le taux de TVA réduit"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "NPS = % Promoteurs (notes 9-10) − % Détracteurs (notes 0-6)." },
+            { q: "En merchandising, comment appelle-t-on une extrémité de rayon très visible utilisée pour mettre en avant des promotions ?", correct: "une tête de gondole (TG)", wrongs: ["un fond de réserve", "un quai de déchargement", "un linéaire mort"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "La tête de gondole booste fortement les achats d'impulsion et les mises en avant saisonnières." },
+            { q: "Quelle est la différence entre le « cross-selling » (vente croisée) et l'« up-selling » (montée en gamme) ?", correct: "cross-selling = proposer un produit complémentaire ; up-selling = proposer un modèle supérieur plus performant", wrongs: ["cross-selling consiste à refuser la vente", "up-selling baisse toujours le panier moyen", "les deux techniques sont illégales"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Exemples : coque avec un smartphone (cross-selling) ; modèle 256 Go au lieu de 128 Go (up-selling)." },
+            { q: "En retail omnicanal, que désigne le comportement « ROPO » (Research Online, Purchase Offline) ?", correct: "le client se renseigne sur Internet puis vient acheter le produit en magasin physique", wrongs: ["le client achète uniquement par courrier postal", "le magasin refuse tout site web", "le produit est livré sans paiement"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le ROPO (ou web-to-store) souligne l'importance d'un site web bien renseigné pour générer du trafic en boutique." },
+            { q: "Dans la gestion de l'assortiment d'un magasin, que désigne la « largeur » de l'assortiment ?", correct: "le nombre de familles de produits (besoins différents) proposées par le point de vente", wrongs: ["la largeur physique en mètres des allées", "le nombre de références au sein d'une seule famille", "le poids des cartons en stock"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Largeur = nombre de familles ; Profondeur = nombre de choix (tailles, marques, modèles) par famille." },
+            { q: "Quel indicateur mesure la rapidité avec laquelle un stock est renouvelé sur une période donnée ?", correct: "le coefficient de rotation des stocks", wrongs: ["le taux de transformation", "le panier moyen", "le taux d'absentéisme"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Une forte rotation évite l'immobilisation de trésorerie et le risque d'invendus ou d'obsolescence." },
+            { q: "En management d'équipe commerciale (BTS MCO), que signifie un objectif « SMART » ?", correct: "Spécifique, Mesurable, Atteignable, Réaliste, Temporellement défini", wrongs: ["Simple, Manuel, Automatique, Rapide, Total", "Secret, Minimal, Aléatoire, Rare, Tardif", "Saisonnier, Mensuel, Annuel, Régional, Technique"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Fixer des objectifs SMART clarifie les attentes et motive efficacement l'équipe de vente." },
+            { q: "Que désigne le « facing » (frontale) en gestion de linéaire ?", correct: "le nombre d'exemplaires d'un même produit visibles directement en façade sur la première rangée d'une étagère", wrongs: ["la vitrine extérieure donnant sur la rue", "le badge nominatif du vendeur", "la caméra de vidéosurveillance"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Un minimum de 2 à 3 facings (environ 30-50 cm) est souvent nécessaire pour être bien perçu par le client." },
+            { q: "En relation client, quelle est la différence entre prospection et fidélisation ?", correct: "la prospection vise à conquérir de nouveaux clients ; la fidélisation vise à retenir et développer les clients existants", wrongs: ["la fidélisation consiste à augmenter les prix pour les anciens clients", "la prospection s'adresse uniquement aux fournisseurs", "il est toujours moins cher de conquérir que de fidéliser"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Fidéliser un client existant coûte généralement 5 à 7 fois moins cher que d'en acquérir un nouveau." },
+            { q: "Dans la loi française, qu'est-ce que le « prix psychologique » (ou prix d'acceptabilité) ?", correct: "le prix jugé acceptable par le plus grand nombre de consommateurs (ni trop cher, ni trop bas pour la qualité perçue)", wrongs: ["un prix fixé arbitrairement par l'État", "le prix minimum égal à zéro", "un prix qui change toutes les secondes"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Il s'estime par enquête auprès d'un échantillon de clients (seuil de qualité minimale et seuil de prix maximal)." },
+            { q: "En droit commercial (BTS MCO), qu'est-ce que la garantie légale de conformité dont bénéficie le consommateur sur un bien neuf ?", correct: "une garantie obligatoire de 2 ans permettant réparation, remplacement ou remboursement si le produit présente un défaut", wrongs: ["une assurance payante facultative de 3 mois", "une remise de 10 % sur le prochain achat", "uniquement valable pour les entreprises B2B"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La garantie légale de conformité (Code de la consommation) protège gratuitement le consommateur pendant 2 ans." },
+            { q: "Que signifie le modèle commercial « Click & Collect » ?", correct: "le client commande et paie en ligne puis retire rapidement son achat en point de vente", wrongs: ["le client paie uniquement par chèque postal", "le magasin livre uniquement par avion", "le vendeur démarche en porte-à-porte"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Le Click & Collect génère du trafic additionnel en magasin et évite les frais de livraison." }
+        ],
+
+        comptabilite: [
+            // BTS CG : Comptabilité, Fiscalité & Contrôle de Gestion
+            { q: "En comptabilité générale française (PCG), quel est le principe fondamental de la « partie double » ?", correct: "toute écriture comptable implique au moins un compte débité et un compte crédité pour un montant total strictement égal", wrongs: ["on enregistre chaque facture deux fois pour doubler le bénéfice", "seules les dépenses en espèces sont comptabilisées", "le débit doit toujours être supérieur au crédit"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Pour chaque opération : Total Débit = Total Crédit, garantissant l'équilibre permanent de la balance et du bilan." },
+            { q: "Dans le Plan Comptable Général (PCG), à quoi correspondent les comptes de classe 6 et de classe 7 ?", correct: "Classe 6 = Charges (dépenses/achats) ; Classe 7 = Produits (ventes/recettes)", wrongs: ["Classe 6 = Immobilisations ; Classe 7 = Capital social", "Classe 6 = Clients ; Classe 7 = Banques", "Classe 6 = Impôts uniquement ; Classe 7 = Salaires"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Classes 1 à 5 = comptes de bilan ; Classes 6 et 7 = comptes de gestion (compte de résultat)." },
+            { q: "Dans le bilan comptable, quelle est la relation d'équilibre permanente entre l'Actif et le Passif ?", correct: "Total Actif = Total Passif", wrongs: ["Total Actif = 2 × Total Passif", "Total Actif − Total Passif = Chiffre d'affaires", "Total Passif est toujours égal à zéro"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "L'Actif (emplois) est financé intégralement par le Passif (ressources : capitaux propres + dettes)." },
+            { q: "Dans le Plan Comptable Général, quels numéros identifient respectivement le compte « Clients » et le compte « Fournisseurs » ?", correct: "411 (Clients) et 401 (Fournisseurs)", wrongs: ["512 et 530", "101 et 164", "707 et 607"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Classe 4 = comptes de tiers : 401 Fournisseurs, 411 Clients, 445 État TVA." },
+            { q: "Quel est le numéro de compte du PCG utilisé pour enregistrer les opérations sur le compte bancaire de l'entreprise ?", correct: "512 (Banques)", wrongs: ["401 (Fournisseurs)", "607 (Achats de marchandises)", "218 (Matériel)"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Classe 5 = comptes financiers : 512 Banques, 530 Caisse." },
+            { q: "En comptabilité française, que désigne la « classe 2 » du Plan Comptable Général ?", correct: "les comptes d'immobilisations (biens durables destinés à rester dans l'entreprise plus d'un an)", wrongs: ["les ventes de marchandises", "les dettes sociales", "les stocks de matières premières"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Classe 2 : immobilisations incorporelles (20), corporelles (21 : terrains, matériel) et financières (26-27)." },
+            { q: "En analyse financière (BTS CG), que représente l'EBE (Excédent Brut d'Exploitation) dans les Soldes Intermédiaires de Gestion ?", correct: "la performance économique pure de l'exploitation avant dotations aux amortissements, charges financières et impôts", wrongs: ["le montant de la caisse en pièces", "le total des emprunts bancaires", "le montant total de la TVA déductible"], levels: ['terminale', 'bts1', 'bts2'], exp: "EBE = Valeur Ajoutée + Subventions d'exploitation − Impôts & taxes − Charges de personnel." },
+            { q: "En fiscalité française, quel est le taux normal de TVA applicable par défaut à la majorité des biens et services ?", correct: "20 %", wrongs: ["5,5 %", "10 %", "33 %"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "En France métropolitaine : taux normal 20 %, intermédiaire 10 %, réduit 5,5 %, particulier 2,1 %." },
+            { q: "Qu'est-ce qu'une « provision pour risques et charges » ou une « dépréciation » en travaux d'inventaire (principe de prudence) ?", correct: "la constatation comptable d'une perte probable ou d'une baisse de valeur non définitive (ex : créance douteuse)", wrongs: ["un bonus de chiffre d'affaires garanti", "une vente payée en avance", "un remboursement d'emprunt"], levels: ['terminale', 'bts1', 'bts2'], exp: "Le principe de prudence impose d'enregistrer les pertes probables dès qu'elles sont connues, mais jamais les gains latents." },
+            { q: "En contrôle de gestion (méthode des coûts complets), quelle est la différence entre charges directes et charges indirectes ?", correct: "les charges directes s'affectent sans ambiguïté à un produit ; les charges indirectes nécessitent une clé de répartition (centres d'analyse)", wrongs: ["les charges indirectes ne sont jamais payées", "les charges directes concernent uniquement l'électricité générale", "les deux sont exclues du coût de revient"], levels: ['terminale', 'bts1', 'bts2'], exp: "Matières premières = directes ; loyer de l'usine ou administration = indirectes." },
+            { q: "Que permet de vérifier l'état de « rapprochement bancaire » ?", correct: "la concordance entre le compte 512 (Banque) tenu par l'entreprise et le relevé envoyé par la banque", wrongs: ["le niveau de stock de l'entrepôt", "la conformité RGPD du site web", "le nombre de congés payés"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Il explique les décalages de dates (chèques non encore encaissés, frais bancaires non comptabilisés)." },
+            { q: "Qu'est-ce que la CAF (Capacité d'Autofinancement) d'une entreprise ?", correct: "le flux potentiel de trésorerie dégagé par l'activité qui permet d'investir, rembourser les dettes ou verser des dividendes", wrongs: ["uniquement la Caisse d'Allocations Familiales", "le total des factures clients impayées", "le coût d'achat des fournitures de bureau"], levels: ['terminale', 'bts1', 'bts2'], exp: "La CAF se calcule soit à partir de l'EBE (méthode soustractive), soit du Résultat net (méthode additive)." },
+            { q: "Sur une facture commerciale, dans quel ordre calcule-t-on successivement les réductions commerciales (remise, rabais) et l'escompte financier ?", correct: "d'abord les réductions commerciales (Net commercial), puis l'escompte (Net financier), puis la TVA", wrongs: ["d'abord la TVA puis les remises", "on additionne simplement tous les pourcentages", "l'escompte s'applique après le TTC"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Les réductions s'appliquent en cascade : Brut → Net commercial → Net financier → + TVA = Net à payer TTC." },
+            { q: "Quel document comptable obligatoire enregistre chronologiquement, jour par jour, toutes les opérations de l'entreprise ?", correct: "le livre-journal", wrongs: ["la brochure marketing", "le cahier de présence", "le catalogue fournisseurs"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le livre-journal et le grand-livre (classement par compte) sont les piliers de la tenue comptable." },
+            { q: "En comptabilité analytique, comment calcule-t-on la « marge sur coût variable » (MCV) ?", correct: "MCV = Chiffre d'affaires − Coûts variables", wrongs: ["MCV = Chiffre d'affaires − Coûts fixes", "MCV = Coûts fixes + Coûts variables", "MCV = TVA collectée − TVA déductible"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La MCV doit couvrir les charges fixes ; si MCV > Charges fixes, l'entreprise est rentable." },
+            { q: "En gestion de la paie (BTS CG), quelle est la différence entre le salaire brut et le salaire net à payer avant impôt ?", correct: "Salaire net = Salaire brut − Cotisations sociales salariales", wrongs: ["Salaire net = Salaire brut + Cotisations patronales", "Salaire brut est toujours inférieur au salaire net", "Salaire net = Salaire brut × 1,20"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Les cotisations salariales (retraite, CSG/CRDS, prévoyance) sont précomptées sur le brut." },
+            { q: "Quelle est la principale différence entre un « avoir » (facture d'avoir) et une facture de « doit » ?", correct: "la facture de doit constate la créance du vendeur ; la facture d'avoir constate une somme due au client (retour, rabais après coup)", wrongs: ["l'avoir double le prix initial", "la facture de doit n'est jamais comptabilisée", "l'avoir est interdit en France"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "L'avoir vient en diminution de la facture initiale (retour de marchandise, erreur de prix, RRR accordé)." },
+            { q: "En comptabilité de clôture, quel principe exige de rattacher à un exercice uniquement les charges et produits qui le concernent ?", correct: "le principe d'indépendance des exercices", wrongs: ["le principe d'opacité financière", "le principe de libre estimation", "le principe de double facturation"], levels: ['terminale', 'bts1', 'bts2'], exp: "On utilise pour cela les comptes de régularisation (CCA, PCA, FNP, FAE) en fin d'exercice." }
+        ],
+
+        electrotech: [
+            // Bac Pro MELEC : Électrotechnique, Installations & Énergie
+            { q: "En France, quelle norme régit la conception, la réalisation et la sécurité des installations électriques basse tension dans les bâtiments ?", correct: "la norme NF C 15-100", wrongs: ["la norme ISO 9001", "le protocole IEEE 802.11", "la norme NF C 10-000"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "La NF C 15-100 fixe les calibres des disjoncteurs, sections de câbles, protections différentielles et volumes de salle de bain." },
+            { q: "Quel est le rôle vital d'un interrupteur différentiel haute sensibilité 30 mA dans un tableau électrique domestique ?", correct: "protéger les personnes contre les risques d'électrocution en coupant le courant dès qu'une fuite à la terre dépasse 30 mA", wrongs: ["augmenter la tension du réseau à 400 V", "mesurer la consommation en kWh", "remplacer la prise de terre"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Il compare le courant entrant (phase) et sortant (neutre) et déclenche instantanément en cas de défaut d'isolement." },
+            { q: "Selon le code couleur normalisé des conducteurs électriques (NF C 15-100), quelles couleurs sont STRICTEMENT réservées au Neutre et à la Terre (PE) ?", correct: "Bleu clair pour le Neutre et Vert/Jaune pour la Terre (PE)", wrongs: ["Rouge pour la Terre et Noir pour le Neutre", "Marron pour le Neutre et Bleu pour la Phase", "Blanc pour la Terre et Gris pour le Neutre"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Bleu = Neutre, Vert/Jaune = conducteur de protection (Terre), Rouge/Marron/Noir = Phase." },
+            { q: "En sécurité électrique (MELEC), quelles sont les étapes clés d'une « consignation électrique » avant travaux hors tension ?", correct: "Séparation, Condamnation (cadenas), Identification, Vérification d'Absence de Tension (VAT), Mise à la terre/court-circuit si requis", wrongs: ["Couper la lumière et toucher les fils à mains nues", "Mettre des gants en laine sans couper le disjoncteur", "Débrancher uniquement le téléviseur"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "La VAT (Vérification d'Absence de Tension) se fait avec un vérificateur normé testé juste avant et juste après." },
+            { q: "Sur un réseau triphasé européen standard 230 V / 400 V, quelle est la relation entre tension composée U (entre phases) et tension simple V (phase-neutre) ?", correct: "U = V × √3 (soit 230 × 1,732 ≈ 400 V)", wrongs: ["U = V × 3", "U = V / 2", "U = V + 100"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "En triphasé équilibré 50 Hz : tension simple V = 230 V, tension composée U = 400 V." },
+            { q: "En installation domestique (NF C 15-100), quelle section de câble cuivre et quel calibre max de disjoncteur protègent un circuit d'éclairage standard ?", correct: "1,5 mm² protégé par un disjoncteur de 16 A maximum (souvent 10 A)", wrongs: ["6 mm² avec 40 A", "0,5 mm² avec 32 A", "10 mm² avec 63 A"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Éclairage : 1,5 mm² (max 16 A) ; prises courantes : 1,5 mm² (16 A) ou 2,5 mm² (20 A) ; plaques cuisson : 6 mm² (32 A)." },
+            { q: "Quel est le rôle d'un disjoncteur magnétothermique sur un départ électrique ?", correct: "protéger la ligne et les câbles contre les surcharges (thermique) et les courts-circuits (magnétique)", wrongs: ["transformer du courant continu en alternatif", "produire de la chaleur en hiver", "mesurer la vitesse d'un moteur"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Le bilame thermique déclenche sur surcharge prolongée ; la bobine magnétique déclenche instantanément sur court-circuit." },
+            { q: "Dans un moteur asynchrone triphasé, comment inverse-t-on simplement le sens de rotation ?", correct: "en inversant deux des trois phases d'alimentation (ex : L1 et L2)", wrongs: ["en inversant les trois phases simultanément", "en débranchant le fil de terre", "en doublant la section du câble"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Permuter deux phases inverse le sens du champ magnétique tournant dans le stator." },
+            { q: "En électrotechnique, que signifie le facteur de puissance cos φ d'une installation en courant alternatif ?", correct: "le rapport entre la puissance active P (en W) et la puissance apparente S (en VA) : cos φ = P / S", wrongs: ["la température du transformateur", "le prix du kilowattheure", "la longueur du câble en mètres"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Un cos φ proche de 1 (grâce à des batteries de condensateurs) évite le surdimensionnement des câbles et pénalités réactives." },
+            { q: "Quelles sont les deux configurations possibles de couplage des enroulements d'un moteur triphasé sur sa plaque à bornes ?", correct: "le couplage Étoile (Y) et le couplage Triangle (Δ)", wrongs: ["le couplage Carré et le couplage Ovale", "le couplage Série-LED et Parallel-USB", "le couplage Vertical et Oblique"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le choix Étoile ou Triangle dépend de la tension du réseau et des tensions indiquées sur la plaque signalétique du moteur." },
+            { q: "À quoi sert un « contacteur de puissance » associé à un relais thermique dans une armoire industrielle ?", correct: "commander à distance la mise en marche/arrêt d'un moteur (via une bobine basse tension) tout en le protégeant des surcharges", wrongs: ["remplacer le câble d'alimentation", "mesurer le pH de l'eau", "connecter un écran HDMI"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Le circuit de commande (ex : 24 V) actionne la bobine du contacteur qui ferme les contacts de puissance (400 V)." },
+            { q: "Dans la distribution publique en France (logements), quel régime de neutre (schéma de liaison à la terre) est utilisé ?", correct: "le régime TT (Neutre du transformateur à la Terre, Masses de l'installation à la Terre)", wrongs: ["le régime IT médical", "le régime sans terre", "le régime haute fréquence"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "En régime TT, le dispositif différentiel (DDR) est obligatoire pour couper dès le premier défaut d'isolement." },
+            { q: "Que signifie l'indice de protection « IP65 » inscrit sur un boîtier électrique étanche ?", correct: "6 = totalement étanche aux poussières ; 5 = protégé contre les jets d'eau de toutes directions", wrongs: ["supporte 65 volts maximum", "pèse exactement 65 grammes", "garanti 65 ans"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "1er chiffre (0-6) = protection contre corps solides/poussières ; 2e chiffre (0-9) = protection contre liquides/eau." },
+            { q: "En domotique et gestion technique du bâtiment (MELEC), quel bus filaire standard européen pilote éclairage, chauffage et volets ?", correct: "KNX", wrongs: ["VGA", "PS/2", "POP3"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "KNX est le standard ouvert international de l'automatisation des bâtiments (GTB/GTC)." },
+            { q: "Quel est le rôle d'un « variateur de vitesse » (variateur de fréquence) sur un moteur asynchrone triphasé ?", correct: "faire varier la fréquence et la tension d'alimentation pour piloter finement la vitesse de rotation et économiser l'énergie", wrongs: ["bloquer le rotor mécaniquement", "augmenter la résistance de la terre", "remplacer le disjoncteur général"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La vitesse de synchronisme vaut n_s = f / p : moduler la fréquence f adapte précisément la vitesse du moteur." },
+            { q: "À quoi sert un « parafoudre » installé dans un tableau électrique (TGBT) ?", correct: "écouler vers la terre les surtensions transitoires dues à la foudre ou aux manœuvres réseau pour protéger les appareils", wrongs: ["attirer la foudre sur la maison", "produire de l'électricité solaire", "couper le chauffage la nuit"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Le parafoudre est obligatoire dans certaines zones à fort niveau kéraunique (orages fréquents)." },
+            { q: "Quelle est la formule de la puissance active P en régime triphasé équilibré ?", correct: "P = √3 × U × I × cos φ", wrongs: ["P = U + I", "P = U / (I × √3)", "P = 3 × R × U"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Avec U la tension composée entre phases (400 V), I le courant de ligne et cos φ le facteur de puissance." },
+            { q: "En sécurité électrique domestique (salle d'eau, NF C 15-100), que désigne le « volume 0 » ?", correct: "l'intérieur même de la baignoire ou du receveur de douche (aucun appareil 230 V autorisé)", wrongs: ["le couloir devant la porte", "le grenier au-dessus de la salle de bain", "la zone située à 3 mètres de la douche"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Dans le volume 0, seuls des équipements TBTS 12 V max IPX7 conçus pour immersion sont admis." }
         ]
     };
 
@@ -2778,6 +3621,16 @@ const QuestionBank = (() => {
             if (subjectId === 'cybersecurite') return generateCyberLesson(index, norm, variant, rng);
             if (subjectId === 'reseaux') return generateReseauxLesson(index, norm, variant, rng);
             if (subjectId === 'electronique') return generateElectroniqueLesson(index, norm, variant, rng);
+            if (subjectId === 'biotech') return generateBiotechLesson(index, norm, variant, rng);
+            if (subjectId === 'design') return generateDesignLesson(index, norm, variant, rng);
+            if (subjectId === 'hotellerie') return generateHotellerieLesson(index, norm, variant, rng);
+            if (subjectId === 'agronomie') return generateAgronomieLesson(index, norm, variant, rng);
+            if (subjectId === 'spectacle') return generateSpectacleLesson(index, norm, variant, rng);
+            if (subjectId === 'hlp') return generateHlpLesson(index, norm, variant, rng);
+            if (subjectId === 'dev_bdd') return generateDevBddLesson(index, norm, variant, rng);
+            if (subjectId === 'commerce') return generateCommerceLesson(index, norm, variant, rng);
+            if (subjectId === 'comptabilite') return generateComptabiliteLesson(index, norm, variant, rng);
+            if (subjectId === 'electrotech') return generateElectrotechLesson(index, norm, variant, rng);
         }
 
         const bank = getQuestionsForNiveau(subjectId, norm);

@@ -231,7 +231,7 @@ const QuizEngine = (() => {
             question._cachedDropdownsKey = question.q;
         }
 
-        const sentence = esc(question.textWithBlanks).replace(/___/g, () => {
+        const sentence = esc(question.textWithBlanks).replace(/\[_{3,}\]|_{3,}/g, () => {
             const bIdx = blankIndex++;
             if (isDropdown) {
                 if (!question._cachedDropdowns[bIdx]) {
@@ -309,9 +309,10 @@ const QuizEngine = (() => {
     }
 
     function gradeTexteATrous(question, submitted) {
+        if (!question || !Array.isArray(question.blanks) || question.blanks.length === 0) return false;
         const given = Array.isArray(submitted) ? submitted : [];
         return question.blanks.every((accepted, i) =>
-            accepted.some(a => isFuzzyMatch(a, given[i]))
+            Array.isArray(accepted) && accepted.some(a => isFuzzyMatch(a, given[i]))
         );
     }
 
@@ -366,6 +367,14 @@ const QuizEngine = (() => {
                 chip.classList.toggle('selected', selectedItem === i);
                 chip.classList.toggle('placed', i in pairs);
             });
+            container.querySelectorAll('.dash-dd-target').forEach(target => {
+                const tIdx = target.dataset.target;
+                const assignedItem = Object.keys(pairs).find(k => pairs[k] === tIdx);
+                const dropZone = target.querySelector('.dash-dd-drop');
+                if (dropZone) {
+                    dropZone.textContent = assignedItem !== undefined ? question.items[assignedItem] : '';
+                }
+            });
             submitBtn.disabled = Object.keys(pairs).length < question.items.length;
         }
 
@@ -378,9 +387,12 @@ const QuizEngine = (() => {
         container.querySelectorAll('.dash-dd-target').forEach(target => {
             target.addEventListener('click', () => {
                 if (selectedItem === null) return;
-                pairs[selectedItem] = target.dataset.target;
-                const dropZone = target.querySelector('.dash-dd-drop');
-                if (dropZone) dropZone.textContent = question.items[selectedItem]; // textContent → pas d'échappement nécessaire
+                const targetIdx = target.dataset.target;
+                // Évite qu'un même emplacement cible soit associé à deux éléments différents
+                Object.keys(pairs).forEach(k => {
+                    if (pairs[k] === targetIdx) delete pairs[k];
+                });
+                pairs[selectedItem] = targetIdx;
                 selectedItem = null;
                 refresh();
             });

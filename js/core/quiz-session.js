@@ -119,13 +119,21 @@
                 }
             }
             const shieldId = rules ? rules.SHIELD_ID : 'boost-shield';
+            const comboGuardId = (rules && rules.COMBO_GUARD_ID) ? rules.COMBO_GUARD_ID : 'boost-combo';
             const hasShield = Boolean(db && db.hasBooster && db.hasBooster(shieldId));
+            const streakSnap = (db && typeof db.getStreakData === 'function') ? db.getStreakData() : null;
+            const hasStreakToProtect = !streakSnap || (streakSnap.combo || 0) > 0 || (streakSnap.count || 0) > 0;
+            let comboGuardUsed = false;
             if (rules && rules.shouldShieldAbsorb(attempt, hasShield) && db.useBooster(shieldId)) {
                 attempt.usedShield = true;
                 shieldAbsorbed = true;
                 if (notify) notify('🛡️ Bouclier d\'Étoile consommé : série et 3 étoiles protégées !', 'info');
+            } else if (hasStreakToProtect && db && db.hasBooster && db.hasBooster(comboGuardId) && db.useBooster(comboGuardId)) {
+                attempt.usedComboGuard = true;
+                comboGuardUsed = true;
+                if (notify) notify('🔥 Flamme Éternelle consommée : ta série et ton combo sont sauvegardés !', 'info');
             }
-            if (db && db.recordWrongAnswer) db.recordWrongAnswer(shieldAbsorbed);
+            if (db && db.recordWrongAnswer) db.recordWrongAnswer(shieldAbsorbed || comboGuardUsed);
 
             // Persistance anti-triche immédiate : quitter / recharger la page ne remet pas les étoiles à 3
             if (db && typeof db.recordLevelFailure === 'function' && h.subjectId && h.levelIndex != null) {

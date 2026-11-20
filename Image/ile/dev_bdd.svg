@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
+  <!-- ILOT DEVELOPPEMENT & BASES DE DONNEES (BTS SIO) - EDUQUEST -->
+  <defs>
+    <linearGradient id="dbRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0c2642"/>
+      <stop offset="0.6" stop-color="#071628"/>
+      <stop offset="1" stop-color="#030a14"/>
+    </linearGradient>
+    <linearGradient id="dbRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#164e63"/>
+      <stop offset="0.6" stop-color="#0e3447"/>
+      <stop offset="1" stop-color="#081e2c"/>
+    </linearGradient>
+    <linearGradient id="dbCyl" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0284c7"/>
+      <stop offset="0.5" stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#0369a1"/>
+    </linearGradient>
+    <radialGradient id="dbHalo" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#22d3ee" stop-opacity="0.38"/>
+      <stop offset="0.6" stop-color="#3b82f6" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="dbShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+  <circle cx="210" cy="182" r="148" fill="url(#dbHalo)"/>
+  <g filter="url(#dbShadow)">
+    <path d="M 74 250 Q 210 276 346 250 Q 372 294 318 345 Q 210 398 102 345 Q 48 294 74 250 Z" fill="url(#dbRockDeep)"/>
+    <path d="M 86 244 Q 210 268 334 244 Q 356 278 318 314 Q 210 366 102 314 Q 64 278 86 244 Z" fill="url(#dbRockTop)"/>
+    <ellipse cx="210" cy="244" rx="138" ry="40" fill="#082032"/>
+    <ellipse cx="210" cy="240" rx="126" ry="32" fill="none" stroke="#22d3ee" stroke-width="2.2"/>
+  </g>
+  <!-- Cylindre Base de Données SQL + Fenêtre de Code -->
+  <g filter="url(#dbShadow)">
+    <path d="M 122 140 L 122 218 A 48 16 0 0 0 218 218 L 218 140 Z" fill="url(#dbCyl)" stroke="#bae6fd" stroke-width="2.5"/>
+    <ellipse cx="170" cy="140" rx="48" ry="16" fill="#7dd3fc" stroke="#e0f2fe" stroke-width="2.5"/>
+    <path d="M 122 168 A 48 16 0 0 0 218 168" fill="none" stroke="#e0f2fe" stroke-width="2"/>
+    <path d="M 122 194 A 48 16 0 0 0 218 194" fill="none" stroke="#e0f2fe" stroke-width="2"/>
+    <!-- Écran code API -->
+    <rect x="206" y="116" width="110" height="100" rx="12" fill="#0f172a" stroke="#38bdf8" stroke-width="3"/>
+    <circle cx="222" cy="130" r="4" fill="#f43f5e"/>
+    <circle cx="235" cy="130" r="4" fill="#facc15"/>
+    <circle cx="248" cy="130" r="4" fill="#4ade80"/>
+    <text x="220" y="160" fill="#22d3ee" font-family="monospace" font-size="14" font-weight="bold">SELECT *</text>
+    <text x="220" y="180" fill="#a78bfa" font-family="monospace" font-size="13" font-weight="bold">&lt;API/&gt;</text>
+    <text x="220" y="200" fill="#4ade80" font-family="monospace" font-size="13" font-weight="bold">{ 200 OK }</text>
+  </g>
+</svg>

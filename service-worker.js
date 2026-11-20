@@ -48,6 +48,16 @@ const PRECACHE_URLS = [
   'Image/personnages/hugo.webp',
   'Image/personnages/astronaute.webp',
   'Image/personnages/mage.webp',
+  'Image/personnages/nikola-tesla.svg',
+  'Image/personnages/pasteur.svg',
+  'Image/personnages/rosalind-franklin.svg',
+  'Image/personnages/galilee.svg',
+  'Image/personnages/alan-turing.svg',
+  'Image/personnages/hypatie.svg',
+  'Image/personnages/cleopatre.svg',
+  'Image/personnages/samourai-cyber.svg',
+  'Image/personnages/alchimiste-etoile.svg',
+  'Image/personnages/chevalier-astral.svg',
   'Image/ile/maths.webp',
   'Image/ile/francais.webp',
   'Image/ile/histoire.webp',
@@ -73,7 +83,17 @@ const PRECACHE_URLS = [
   'Image/ile/cybersecurite.svg',
   'Image/ile/reseaux.svg',
   'Image/ile/electronique.svg',
-  'Image/ile/stss.svg'
+  'Image/ile/stss.svg',
+  'Image/ile/biotech.svg',
+  'Image/ile/design.svg',
+  'Image/ile/hotellerie.svg',
+  'Image/ile/agronomie.svg',
+  'Image/ile/spectacle.svg',
+  'Image/ile/hlp.svg',
+  'Image/ile/dev_bdd.svg',
+  'Image/ile/commerce.svg',
+  'Image/ile/comptabilite.svg',
+  'Image/ile/electrotech.svg'
 ];
 
 self.addEventListener('install', event => {

@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
+  <!-- ILOT HOTELLERIE & GASTRONOMIE (STHR) - EDUQUEST -->
+  <defs>
+    <linearGradient id="hrRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a1d0b"/>
+      <stop offset="0.6" stop-color="#2b1006"/>
+      <stop offset="1" stop-color="#140702"/>
+    </linearGradient>
+    <linearGradient id="hrRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8a3817"/>
+      <stop offset="0.6" stop-color="#5c240d"/>
+      <stop offset="1" stop-color="#331307"/>
+    </linearGradient>
+    <linearGradient id="hrGold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fef08a"/>
+      <stop offset="0.5" stop-color="#f59e0b"/>
+      <stop offset="1" stop-color="#b45309"/>
+    </linearGradient>
+    <radialGradient id="hrHalo" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#fb923c" stop-opacity="0.38"/>
+      <stop offset="0.6" stop-color="#f59e0b" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="hrShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+  <circle cx="210" cy="182" r="148" fill="url(#hrHalo)"/>
+  <g filter="url(#hrShadow)">
+    <path d="M 74 250 Q 210 276 346 250 Q 372 294 318 345 Q 210 398 102 345 Q 48 294 74 250 Z" fill="url(#hrRockDeep)"/>
+    <path d="M 86 244 Q 210 268 334 244 Q 356 278 318 314 Q 210 366 102 314 Q 64 278 86 244 Z" fill="url(#hrRockTop)"/>
+    <ellipse cx="210" cy="244" rx="138" ry="40" fill="#3a1608"/>
+    <ellipse cx="210" cy="240" rx="126" ry="32" fill="none" stroke="#fbbf24" stroke-width="2.2"/>
+  </g>
+  <!-- Cloche gastronomique dorée + Toque de chef + Étoiles -->
+  <g filter="url(#hrShadow)">
+    <path d="M 122 224 A 88 74 0 0 1 298 224 Z" fill="url(#hrGold)" stroke="#fef9c3" stroke-width="3"/>
+    <rect x="110" y="224" width="200" height="14" rx="7" fill="#fde68a" stroke="#92400e" stroke-width="2"/>
+    <circle cx="210" cy="144" r="12" fill="#fef08a" stroke="#92400e" stroke-width="2"/>
+    <!-- Toque blanche au-dessus -->
+    <path d="M 176 132 C 160 120 168 94 190 96 C 198 80 222 80 230 96 C 252 94 260 120 244 132 Z" fill="#ffffff" stroke="#e2e8f0" stroke-width="2.5"/>
+    <rect x="180" y="128" width="60" height="16" rx="4" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+    <!-- Étoiles gastronomie -->
+    <polygon points="122,130 126,140 137,140 128,147 131,158 122,151 113,158 116,147 107,140 118,140" fill="#fde047"/>
+    <polygon points="298,130 302,140 313,140 304,147 307,158 298,151 289,158 292,147 283,140 294,140" fill="#fde047"/>
+  </g>
+</svg>

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <radialGradient id="gaBg" cx="40%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#0b1530"/>
+    </radialGradient>
+  </defs>
+  <rect width="120" height="120" fill="url(#gaBg)"/>
+  <!-- Étoiles & lunes de Jupiter -->
+  <circle cx="22" cy="24" r="3" fill="#fde047"/>
+  <circle cx="96" cy="28" r="4" fill="#fef08a"/>
+  <circle cx="88" cy="40" r="2" fill="#bae6fd"/>
+  <!-- Manteau Renaissance + fraise blanche -->
+  <path d="M20 120 L28 84 Q60 76 92 84 L100 120 Z" fill="#1e3a8a" stroke="#0f172a" stroke-width="2"/>
+  <ellipse cx="60" cy="84" rx="22" ry="7" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+  <!-- Visage & barbe blanche de savant -->
+  <rect x="41" y="34" width="38" height="44" rx="16" fill="#f0c4a0" stroke="#9a6b48" stroke-width="2"/>
+  <path d="M38 46 Q42 26 60 26 Q78 26 82 46 Q74 36 60 36 Q46 36 38 46 Z" fill="#cbd5e1"/>
+  <path d="M40 60 Q40 84 60 88 Q80 84 80 60 Q70 72 60 72 Q50 72 40 60 Z" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1.5"/>
+  <circle cx="52" cy="52" r="3" fill="#1e293b"/>
+  <circle cx="68" cy="52" r="3" fill="#1e293b"/>
+  <path d="M46 47 L56 48 M64 48 L74 47" stroke="#94a3b8" stroke-width="2.4" stroke-linecap="round"/>
+  <!-- Lunette astronomique -->
+  <line x1="76" y1="96" x2="108" y2="66" stroke="#f59e0b" stroke-width="7" stroke-linecap="round"/>
+  <line x1="76" y1="96" x2="108" y2="66" stroke="#fde047" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

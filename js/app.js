@@ -261,6 +261,7 @@ function applyAllRuntimeSettings() {
 if (typeof window !== 'undefined') {
     window.addEventListener('storage', (event) => {
         if (event.key === 'eduquest_admin_data') {
+            if (typeof AdminStore !== 'undefined' && typeof AdminStore.invalidateCache === 'function') AdminStore.invalidateCache();
             if (typeof _effectiveSubjectsCache !== 'undefined') _effectiveSubjectsCache.clear();
             refreshFooterCredits();
             applySiteAnnouncement();
@@ -1650,6 +1651,36 @@ function getLessonHint(lesson, subjectId) {
     if (subj.includes('ses')) {
         return "Distingue l'analyse économique (offre/demande, PIB, monnaie) de l'analyse sociologique (socialisation, stratification).";
     }
+    if (subj === 'biotech') {
+        return "Pense aux protocoles de laboratoire STL/ASSP (asepsie, coloration de Gram, dilution C1·V1 = C2·V2, Beer-Lambert, PCR).";
+    }
+    if (subj === 'design') {
+        return "Appuie-toi sur la démarche de projet STD2A : ergonomie, échelles, couleurs complémentaires, CMJN/RVB, typographie et matériaux.";
+    }
+    if (subj === 'hotellerie') {
+        return "Rappelle-toi les règles HACCP (+3 °C froid / +63 °C chaud), la marche en avant, les techniques culinaires et indicateurs hôteliers (TO, RevPAR).";
+    }
+    if (subj === 'agronomie') {
+        return "Pense à l'agroécologie (rotation, légumineuses, complexe argilo-humique, lutte biologique, 1 ha = 10 000 m²).";
+    }
+    if (subj === 'spectacle') {
+        return "Mobilise les repères des arts de la scène : didascalies, catharsis, côté cour/jardin, rythmes musicaux et chorégraphie.";
+    }
+    if (subj === 'hlp') {
+        return "Relie les grands auteurs humanistes, les outils rhétoriques (éthos, pathos, logos) et les enjeux philosophiques du texte.";
+    }
+    if (subj === 'dev_bdd') {
+        return "Vérifie la syntaxe SQL (SELECT, WHERE, JOIN, GROUP BY), la modélisation Merise/UML, les codes HTTP et les principes POO/MVC.";
+    }
+    if (subj === 'commerce') {
+        return "Utilise les repères BTS MCO : zone de chalandise, SONCAS, CAP, panier moyen, taux de transformation et merchandising.";
+    }
+    if (subj === 'comptabilite') {
+        return "Rappelle-toi le PCG (Actif = Passif, Débit = Crédit, classe 6 Charges / classe 7 Produits, TVA 20 %, amortissement linéaire).";
+    }
+    if (subj === 'electrotech') {
+        return "Appuie-toi sur la norme NF C 15-100, l'habilitation NF C 18-510, le 30 mA, P = U·I (mono) et U = V·√3 (triphasé 400 V).";
+    }
 
     return "Lis attentivement l'énoncé et procède par élimination des réponses manifestement fausses.";
 }
@@ -1880,6 +1911,25 @@ function initMap() {
         'Électronique & Systèmes': 'electronique',
         'STSS (Santé & Social)': 'stss',
         'STSS': 'stss',
+        'Biotechnologies & Labo': 'biotech',
+        'Biotechnologies': 'biotech',
+        'Design & Arts Appliqués': 'design',
+        'Design': 'design',
+        'Hôtellerie & Gastronomie': 'hotellerie',
+        'Hôtellerie': 'hotellerie',
+        'Agronomie & Écologie': 'agronomie',
+        'Agronomie': 'agronomie',
+        'Arts de la Scène & Culture': 'spectacle',
+        'Spectacle': 'spectacle',
+        'Humanités & Littérature (HLP)': 'hlp',
+        'HLP': 'hlp',
+        'Développement & BDD': 'dev_bdd',
+        'Relation Client & Commerce': 'commerce',
+        'Commerce': 'commerce',
+        'Comptabilité & Finance': 'comptabilite',
+        'Comptabilité': 'comptabilite',
+        'Électrotechnique & Énergie': 'electrotech',
+        'Électrotechnique': 'electrotech',
     };
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -2543,6 +2593,7 @@ function initMap() {
         let coinsGained = 0;
         let scoreGained = 0;
         let usedDoubleXp = false;
+        let usedDoubleCoins = false;
 
         if (isFirstSuccess) {
             const rewards = (typeof AdminStore !== 'undefined' && typeof AdminStore.getRewardsConfig === 'function')
@@ -2559,13 +2610,22 @@ function initMap() {
                 }
             }
 
+            const doubleCoinsId = GameRules.DOUBLE_COINS_ID || 'boost-coins';
+            if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster(doubleCoinsId)) {
+                usedDoubleCoins = DB.useBooster(doubleCoinsId);
+                if (usedDoubleCoins && typeof showNotification === 'function') {
+                    showNotification('🪙 Élixir de Fortune consommé : pièces doublées !', 'success');
+                }
+            }
+
             const gains = GameRules.computeLevelRewards({
                 stars: starsEarned,
                 multiplier: mult,
                 chronoEnabled: (typeof QuizTimer !== 'undefined') ? QuizTimer.isEnabled() : (getOption('modeChrono') === 'true'),
                 timeRemaining: getMapRemainingTime(),
-                chronoDuration: (typeof QuizTimer !== 'undefined') ? QuizTimer.getConfiguredDuration() : 45,
+                chronoDuration: (attempt && attempt.chronoDuration) || ((typeof QuizTimer !== 'undefined') ? QuizTimer.getConfiguredDuration() : 45),
                 doubleXp: usedDoubleXp,
+                doubleCoins: usedDoubleCoins,
                 rewards,
                 siteXpMultiplier: siteCfg ? siteCfg.xpMultiplier : 1,
                 siteCoinMultiplier: siteCfg ? siteCfg.coinMultiplier : 1,
@@ -2603,9 +2663,10 @@ function initMap() {
                     justAnsweredFirstTry: starsEarned === 3,
                     subjectId: effectiveSubjectId,
                     usedDoubleXp: usedDoubleXp,
+                    usedDoubleCoins: usedDoubleCoins,
                     usedShield: usedShield,
-                    usedBooster: usedDoubleXp ? 'boost-xp' : (usedShield ? 'boost-shield' : null),
-                    boosterId: usedDoubleXp ? 'boost-xp' : (usedShield ? 'boost-shield' : null),
+                    usedBooster: usedDoubleXp ? 'boost-xp' : (usedDoubleCoins ? 'boost-coins' : (usedShield ? 'boost-shield' : null)),
+                    boosterId: usedDoubleXp ? 'boost-xp' : (usedDoubleCoins ? 'boost-coins' : (usedShield ? 'boost-shield' : null)),
                     streakCount: streakRes.streak,
                     comboCount: streakRes.combo,
                     maxCombo: streakRes.maxCombo,
@@ -2767,7 +2828,16 @@ function initMap() {
                 QuizEngine.bind(body, lesson, currentAttempt, _mapSubmitQuiz);
                 // Démarre un chronomètre neuf pour CHAQUE exercice et CHAQUE réessai !
                 if (chronoEnabled && mapTimer) {
-                    mapTimer.start(chronoDuration);
+                    let effectiveDuration = chronoDuration;
+                    const extraTimeId = (typeof GameRules !== 'undefined' && GameRules.EXTRA_TIME_ID) ? GameRules.EXTRA_TIME_ID : 'boost-time';
+                    const extraSec = (typeof GameRules !== 'undefined' && GameRules.EXTRA_TIME_BONUS_S) ? GameRules.EXTRA_TIME_BONUS_S : 15;
+                    if (!currentAttempt.usedExtraTime && typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster(extraTimeId) && DB.useBooster(extraTimeId)) {
+                        currentAttempt.usedExtraTime = true;
+                        effectiveDuration += extraSec;
+                        currentAttempt.chronoDuration = effectiveDuration;
+                        showNotification(`⏳ Sablier Temporel consommé : +${extraSec}s ajoutées au chrono !`, 'info');
+                    }
+                    mapTimer.start(effectiveDuration);
                 }
             }
         } else if (checking) {
@@ -2987,8 +3057,18 @@ const DASH_SKINS = [
     { id: 'pythagore',         name: 'Pythagore',          category: 'avatar', color: '#ffd166', img: 'Image/personnages/pythagore.webp',         cost: 300 },
     { id: 'davinci',           name: 'Léonard de Vinci',   category: 'avatar', color: '#a8dadc', img: 'Image/personnages/davinci.webp',           cost: 350 },
     { id: 'hugo',              name: 'Victor Hugo',        category: 'avatar', color: '#457b9d', img: 'Image/personnages/hugo.webp',              cost: 350 },
-    { id: 'astronaute',        name: 'Astronaute Céleste', category: 'avatar', color: '#f1faee', img: 'Image/personnages/astronaute.webp',        cost: 400 },
-    { id: 'mage',              name: 'Archimage du Savoir',category: 'avatar', color: '#9d4edd', img: 'Image/personnages/mage.webp',              cost: 500 },
+    { id: 'astronaute',        name: 'Astronaute Céleste',  category: 'avatar', color: '#f1faee', img: 'Image/personnages/astronaute.webp',        cost: 400 },
+    { id: 'mage',              name: 'Archimage du Savoir', category: 'avatar', color: '#9d4edd', img: 'Image/personnages/mage.webp',              cost: 500 },
+    { id: 'nikola-tesla',      name: 'Nikola Tesla',        category: 'avatar', color: '#38bdf8', img: 'Image/personnages/nikola-tesla.svg',       cost: 220 },
+    { id: 'pasteur',           name: 'Louis Pasteur',       category: 'avatar', color: '#4ade80', img: 'Image/personnages/pasteur.svg',            cost: 220 },
+    { id: 'rosalind-franklin', name: 'Rosalind Franklin',   category: 'avatar', color: '#34d399', img: 'Image/personnages/rosalind-franklin.svg',  cost: 240 },
+    { id: 'galilee',           name: 'Galilée',             category: 'avatar', color: '#60a5fa', img: 'Image/personnages/galilee.svg',            cost: 240 },
+    { id: 'alan-turing',       name: 'Alan Turing',         category: 'avatar', color: '#22d3ee', img: 'Image/personnages/alan-turing.svg',        cost: 260 },
+    { id: 'hypatie',           name: 'Hypatie d\'Alexandrie',category: 'avatar', color: '#c084fc', img: 'Image/personnages/hypatie.svg',           cost: 260 },
+    { id: 'cleopatre',         name: 'Cléopâtre VII',       category: 'avatar', color: '#fbbf24', img: 'Image/personnages/cleopatre.svg',          cost: 280 },
+    { id: 'samourai-cyber',    name: 'Ronin Cyber',         category: 'avatar', color: '#f43f5e', img: 'Image/personnages/samourai-cyber.svg',     cost: 360 },
+    { id: 'alchimiste-etoile', name: 'Alchimiste Stellaire',category: 'avatar', color: '#a855f7', img: 'Image/personnages/alchimiste-etoile.svg',  cost: 420 },
+    { id: 'chevalier-astral',  name: 'Chevalier Astral',    category: 'avatar', color: '#facc15', img: 'Image/personnages/chevalier-astral.svg',   cost: 550 },
 ];
 
 const RAW_DASH_SUBJECTS = [
@@ -3167,12 +3247,82 @@ const RAW_DASH_SUBJECTS = [
         { type: "texte_a_choix", title: "Mesures électriques", q: "Complète les règles de branchement des appareils de mesure.", textWithBlanks: "Un voltmètre se branche toujours en ___ du composant étudié, tandis qu'un ampèremètre se branche toujours en ___.", choices: [["dérivation (parallèle)", "série", "court-circuit"], ["série", "dérivation (parallèle)", "boucle ouverte"]], blanks: [["dérivation (parallèle)"], ["série"]], exp: "Voltmètre en parallèle (mesure de tension) ; ampèremètre en série (mesure d'intensité)." },
         { type: "drag_and_drop", title: "Composants électroniques", q: "Associe chaque composant à son unité ou sa fonction.", items: ["Condensateur", "Transistor MOSFET", "Oscilloscope"], targets: ["Stocke de l'énergie électrique (Farad)", "Interrupteur commandé en tension", "Visualise l'évolution d'une tension dans le temps"], pairs: { "Condensateur": "Stocke de l'énergie électrique (Farad)", "Transistor MOSFET": "Interrupteur commandé en tension", "Oscilloscope": "Visualise l'évolution d'une tension dans le temps" }, exp: "Des bases incontournables en électronique et systèmes embarqués (CIEL / STI2D)." },
     ]},
-    { id: "stss", name: "STSS (Santé & Social)", icon: "🩺", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["st2s"], island: "Image/ile/stss.svg", lessons: [
+    { id: "stss", name: "STSS (Santé & Social)", icon: "🩺", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["st2s", "bac_pro_assp"], island: "Image/ile/stss.svg", lessons: [
         { title: "Définition de la santé (OMS)", q: "Selon l'OMS (1946), la santé est un état de complet bien-être :", opts: ["uniquement physique", "physique, mental et social", "financier et sportif", "biologique seulement"], correct: 1, exp: "L'OMS définit la santé comme un bien-être physique, mental et social, et non seulement l'absence de maladie." },
         { title: "Niveaux de prévention", q: "La vaccination vise à éviter l'apparition d'une maladie : de quel niveau de prévention s'agit-il ?", opts: ["Prévention primaire", "Prévention secondaire", "Prévention tertiaire", "Réadaptation"], correct: 0, exp: "La prévention primaire agit avant l'apparition de la maladie (vaccination, hygiène)." },
         { type: "vrai_faux", title: "Sécurité sociale", q: "En France, la Sécurité sociale a été créée par les ordonnances de 1945 selon le principe de solidarité nationale.", correct: true, exp: "Vrai : créée en octobre 1945 pour protéger contre les grands risques sociaux." },
         { type: "texte_a_choix", title: "Indicateurs démographiques", q: "Complète les notions d'épidémiologie.", textWithBlanks: "L'___ mesure le nombre de nouveaux cas d'une maladie sur une période donnée, tandis que la ___ mesure le nombre total de cas présents à un instant donné.", choices: [["incidence", "prévalence", "mortalité"], ["prévalence", "incidence", "natalité"]], blanks: [["incidence"], ["prévalence"]], exp: "Incidence = nouveaux cas sur une période ; Prévalence = total des cas existants." },
         { type: "drag_and_drop", title: "Acteurs de santé publique", q: "Associe chaque organisme à sa mission.", items: ["ARS", "PMI", "HAS"], targets: ["Pilote la politique de santé en région", "Protection maternelle et infantile", "Évalue les soins et publie des recommandations médicales"], pairs: { "ARS": "Pilote la politique de santé en région", "PMI": "Protection maternelle et infantile", "HAS": "Évalue les soins et publie des recommandations médicales" }, exp: "Ces acteurs structurent le système de santé et la protection sociale en ST2S." },
+    ]},
+    { id: "biotech", name: "Biotechnologies & Labo", icon: "🧫", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["stl", "bac_pro_assp"], island: "Image/ile/biotech.svg", lessons: [
+        { title: "Coloration de Gram", q: "Après une coloration de Gram, quelle couleur prennent les bactéries Gram positives (Gram+) ?", opts: ["Rose / rouge", "Violette", "Verte fluorescente", "Incolore"], correct: 1, exp: "La paroi épaisse de peptidoglycane des Gram+ retient le violet de gentiane." },
+        { title: "Amplification ADN (PCR)", q: "Quel est l'objectif principal de la technique PCR en biologie moléculaire ?", opts: ["Détruire l'ADN", "Amplifier en millions de copies une séquence précise d'ADN", "Mesurer le pH d'un tampon", "Colorer une coupe de tissu"], correct: 1, exp: "La PCR (Polymerase Chain Reaction) multiplie exponentiellement (2ⁿ) un fragment d'ADN cible." },
+        { type: "vrai_faux", title: "Stérilisation à l'autoclave", q: "Un autoclave stérilise les milieux de culture par vapeur d'eau saturée sous pression à 121 °C.", correct: true, exp: "Vrai : 121 °C sous 1 bar de surpression détruit bactéries, virus et spores." },
+        { type: "texte_a_choix", title: "Antisepsie et Désinfection", q: "Distingue l'usage des produits d'hygiène.", textWithBlanks: "Un ___ s'applique sur les tissus vivants (peau), tandis qu'un ___ s'applique sur les surfaces inertes (paillasse).", choices: [["antiseptique", "désinfectant", "solvant"], ["désinfectant", "antiseptique", "réactif"]], blanks: [["antiseptique"], ["désinfectant"]], exp: "Règle d'or en microbiologie STL et soins ASSP." },
+        { type: "drag_and_drop", title: "Outils de laboratoire", q: "Associe chaque appareil de labo à son rôle.", items: ["Spectrophotomètre", "Micropipette", "Autoclave"], targets: ["Mesure l'absorbance (Beer-Lambert)", "Prélève des microvolumes (µL)", "Stérilise à la vapeur sous pression"], pairs: { "Spectrophotomètre": "Mesure l'absorbance (Beer-Lambert)", "Micropipette": "Prélève des microvolumes (µL)", "Autoclave": "Stérilise à la vapeur sous pression" }, exp: "Ces appareils sont essentiels en travaux pratiques de Biotechnologies." },
+    ]},
+    { id: "design", name: "Design & Arts Appliqués", icon: "🎨", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["std2a"], island: "Image/ile/design.svg", lessons: [
+        { title: "Le Bauhaus (1919)", q: "Quelle école fondée par Walter Gropius a posé les bases du design industriel moderne ?", opts: ["Le Bauhaus", "Le Baroque", "L'Impressionnisme", "Le Surréalisme"], correct: 0, exp: "Le Bauhaus relie création artistique, fonctionnalité et production industrielle." },
+        { title: "Synthèse d'impression", q: "Quel mode colorimétrique à 4 encres utilise-t-on pour imprimer une affiche ou un magazine ?", opts: ["RVB", "CMJN", "ASCII", "MP4"], correct: 1, exp: "CMJN (Cyan, Magenta, Jaune, Noir) est le standard d'imprimerie (synthèse soustractive)." },
+        { type: "vrai_faux", title: "Image vectorielle", q: "Un logo conçu en format vectoriel (SVG) peut être agrandi à l'échelle d'un panneau publicitaire sans pixelliser.", correct: true, exp: "Vrai : le vectoriel utilise des courbes mathématiques (Bézier) indépendantes de la résolution." },
+        { type: "texte_a_choix", title: "Typographie", q: "Complète les deux grandes familles typographiques.", textWithBlanks: "Une police ___ possède des empattements (ex : Garamond), tandis qu'une police ___ n'en possède pas (ex : Helvetica).", choices: [["Serif", "Sans-Serif", "Bitmap"], ["Sans-Serif", "Serif", "CMJN"]], blanks: [["Serif"], ["Sans-Serif"]], exp: "Les polices Sans-Serif (linéales) offrent une excellente lisibilité sur écrans et signalétiques." },
+        { type: "drag_and_drop", title: "Pôles du design", q: "Associe chaque domaine du design à un exemple concret.", items: ["Design d'espace", "Design graphique", "Design produit"], targets: ["Aménagement d'un musée", "Identité visuelle & logo", "Fauteuil ergonomique"], pairs: { "Design d'espace": "Aménagement d'un musée", "Design graphique": "Identité visuelle & logo", "Design produit": "Fauteuil ergonomique" }, exp: "Les 4 pôles STD2A : produit, espace, graphique et mode/textile." },
+    ]},
+    { id: "hotellerie", name: "Hôtellerie & Gastronomie", icon: "🍽️", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["sthr"], island: "Image/ile/hotellerie.svg", lessons: [
+        { title: "Démarche HACCP", q: "Quel est l'objectif de la méthode HACCP en cuisine professionnelle ?", opts: ["Maîtriser la sécurité sanitaire des aliments", "Décorer les chambres d'hôtel", "Calculer les pourboires", "Choisir la musique de salle"], correct: 0, exp: "HACCP identifie les points critiques (températures, hygiène, traçabilité) pour prévenir les contaminations." },
+        { title: "Liaison chaude", q: "Quelle est la température minimale réglementaire de maintien en liaison chaude avant service ?", opts: ["+20 °C", "+40 °C", "+63 °C", "+100 °C"], correct: 2, exp: "En dessous de +63 °C (et au-dessus de +10 °C), les bactéries se multiplient rapidement." },
+        { type: "vrai_faux", title: "Réaction de Maillard", q: "La réaction de Maillard est responsable du brunissement et des arômes grillés d'une viande saisie ou d'une croûte de pain.", correct: true, exp: "Vrai : elle se produit à haute température entre sucres réducteurs et acides aminés." },
+        { type: "texte_a_choix", title: "Service en salle", q: "Complète les règles classiques du service à table.", textWithBlanks: "En service à l'assiette, on sert le client par la ___, tandis que le pain et le service au plat se présentent par la ___.", choices: [["droite", "gauche", "cuisine"], ["gauche", "droite", "réserve"]], blanks: [["droite"], ["gauche"]], exp: "Règle protocolaire de service en restauration française." },
+        { type: "drag_and_drop", title: "Indicateurs hôteliers", q: "Associe chaque terme STHR à sa définition.", items: ["RevPAR", "Taux d'occupation", "Marche en avant"], targets: ["CA hébergement par chambre disponible", "Pourcentage de chambres vendues", "Séparation stricte circuits propre et sale"], pairs: { "RevPAR": "CA hébergement par chambre disponible", "Taux d'occupation": "Pourcentage de chambres vendues", "Marche en avant": "Séparation stricte circuits propre et sale" }, exp: "Des repères incontournables en gestion hôtelière et sciences culinaires." },
+    ]},
+    { id: "agronomie", name: "Agronomie & Écologie", icon: "🌱", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["stav"], island: "Image/ile/agronomie.svg", lessons: [
+        { title: "Éléments NPK", q: "Quels sont les trois éléments nutritifs majeurs (NPK) indispensables aux plantes ?", opts: ["Azote, Phosphore, Potassium", "Nickel, Plomb, Krypton", "Or, Fer, Zinc", "Sodium, Chlore, Soufre"], correct: 0, exp: "N (azote), P (phosphore) et K (potassium) assurent croissance, enracinement et floraison." },
+        { title: "Légumineuses et azote", q: "Pourquoi introduit-on des légumineuses (trèfle, luzerne, pois) dans une rotation agricole ?", opts: ["Elles fixent l'azote de l'air grâce à une symbiose racinaire", "Elles stérilisent le sol", "Elles empêchent la pluie de tomber", "Elles produisent du pétrole"], correct: 0, exp: "Les bactéries Rhizobium dans leurs nodosités enrichissent naturellement le sol en azote." },
+        { type: "vrai_faux", title: "Conversion en hectares", q: "Un hectare (1 ha) correspond exactement à 10 000 m² (un carré de 100 m × 100 m).", correct: true, exp: "Vrai : 1 ha = 100 ares = 10 000 m²." },
+        { type: "texte_a_choix", title: "Agroécologie", q: "Complète les démarches durables du programme STAV.", textWithBlanks: "La ___ utilise des insectes auxiliaires contre les ravageurs, et l'___ associe arbres et cultures sur une même parcelle.", choices: [["lutte biologique", "monoculture", "déforestation"], ["agroforesterie", "hydroponie", "urbanisation"]], blanks: [["lutte biologique"], ["agroforesterie"]], exp: "L'agroécologie s'appuie sur les services rendus par les écosystèmes." },
+        { type: "drag_and_drop", title: "Fertilité des sols", q: "Associe chaque notion agronomique à son rôle.", items: ["Complexe argilo-humique", "Haie bocagère", "CIPAN"], targets: ["Retient l'eau et les sels minéraux du sol", "Brise-vent et corridor écologique", "Couvert végétal piégeant les nitrates en hiver"], pairs: { "Complexe argilo-humique": "Retient l'eau et les sels minéraux du sol", "Haie bocagère": "Brise-vent et corridor écologique", "CIPAN": "Couvert végétal piégeant les nitrates en hiver" }, exp: "Pédologie et biodiversité sont au cœur de la filière STAV." },
+    ]},
+    { id: "spectacle", name: "Arts de la Scène & Culture", icon: "🎭", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale"], allowedFilieres: ["s2tmd"], island: "Image/ile/spectacle.svg", lessons: [
+        { title: "Catharsis antique", q: "Selon Aristote, comment appelle-t-on la purgation des passions vécue par le spectateur de tragédie ?", opts: ["La catharsis", "La didascalie", "La pantomime", "L'ellipse"], correct: 0, exp: "Dans La Poétique, la tragédie suscite terreur et pitié pour opérer la catharsis." },
+        { title: "Côté cour / Côté jardin", q: "Au théâtre, vu depuis la salle (le public), quel côté est le « côté cour » ?", opts: ["La droite", "La gauche", "Le balcon supérieur", "La fosse d'orchestre"], correct: 0, exp: "Repère historique (Tuileries) : Jardin = Gauche, Cour = Droite (vus du public)." },
+        { type: "vrai_faux", title: "Les didascalies", q: "Dans une pièce de théâtre, les didascalies sont les indications scéniques destinées à la mise en scène et ne sont pas dites par les acteurs.", correct: true, exp: "Vrai : elles précisent déplacements, intonations, costumes et décors." },
+        { type: "texte_a_choix", title: "Théorie musicale", q: "Complète les bases du solfège.", textWithBlanks: "Un ___ hausse une note d'un demi-ton, tandis qu'un ___ l'abaisse d'un demi-ton.", choices: [["dièse (♯)", "bémol (♭)", "soupir"], ["bémol (♭)", "dièse (♯)", "point d'orgue"]], blanks: [["dièse (♯)"], ["bémol (♭)"]], exp: "Le bécarre (♮) annule ensuite l'altération." },
+        { type: "drag_and_drop", title: "Figures de la scène", q: "Associe chaque créateur majeur à son art.", items: ["Molière", "Pina Bausch", "Igor Stravinsky"], targets: ["Comédie française du XVIIe siècle", "Tanztheater (danse contemporaine)", "Musique du Sacre du printemps"], pairs: { "Molière": "Comédie française du XVIIe siècle", "Pina Bausch": "Tanztheater (danse contemporaine)", "Igor Stravinsky": "Musique du Sacre du printemps" }, exp: "Théâtre, Danse et Musique dialoguent dans la filière S2TMD." },
+    ]},
+    { id: "hlp", name: "Humanités & Littérature (HLP)", icon: "📖", band: "lycee", allowedNiveaux: ["1ere", "terminale"], allowedFilieres: ["hlp_llce", "generale"], island: "Image/ile/hlp.svg", lessons: [
+        { title: "Rhétorique d'Aristote", q: "Quels sont les trois piliers de la persuasion selon Aristote ?", opts: ["Éthos, Pathos, Logos", "Sujet, Verbe, Complément", "Acte, Scène, Prologue", "Thèse, Somme, Calcul"], correct: 0, exp: "Éthos (crédibilité de l'orateur), Pathos (émotions), Logos (raisonnement logique)." },
+        { title: "Humanisme de Montaigne", q: "Quelle célèbre devise résume le doute critique de Michel de Montaigne dans les Essais ?", opts: ["Que sais-je ?", "Je pense donc je suis", "Alea jacta est", "Veni, vidi, vici"], correct: 0, exp: "Montaigne fait graver « Que sais-je ? » sur sa médaille en 1576." },
+        { type: "vrai_faux", title: "Maïeutique socratique", q: "La maïeutique de Socrate consiste à questionner son interlocuteur pour l'aider à « accoucher » lui-même de la vérité.", correct: true, exp: "Vrai : Socrate comparait sa méthode philosophique au métier de sage-femme de sa mère." },
+        { type: "texte_a_choix", title: "Banalité du mal & Lumières", q: "Complète ces repères majeurs du programme HLP.", textWithBlanks: "La philosophe ___ a forgé le concept de « banalité du mal », tandis que ___ critique les préjugés parisiens dans Les Lettres persanes.", choices: [["Hannah Arendt", "Olympe de Gouges", "George Sand"], ["Montesquieu", "Rabelais", "Baudelaire"]], blanks: [["Hannah Arendt"], ["Montesquieu"]], exp: "Deux auteurs incontournables d'HLP 1ère et Terminale." },
+        { type: "drag_and_drop", title: "Œuvres clés HLP", q: "Associe chaque œuvre à son auteur.", items: ["Les Confessions", "Si c'est un homme", "1984"], targets: ["Jean-Jacques Rousseau", "Primo Levi", "George Orwell"], pairs: { "Les Confessions": "Jean-Jacques Rousseau", "Si c'est un homme": "Primo Levi", "1984": "George Orwell" }, exp: "Autobiographie, témoignage historique et dystopie sur le langage." },
+    ]},
+    { id: "dev_bdd", name: "Développement & BDD", icon: "🖥️", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["bts_sio", "nsi_spe"], island: "Image/ile/dev_bdd.svg", lessons: [
+        { title: "Modélisation Merise", q: "Dans la méthode Merise (BTS SIO), quel modèle décrit les entités, associations et cardinalités avant le passage en tables ?", opts: ["Le MCD (Modèle Conceptuel de Données)", "Le TCP/IP", "Le CSS Grid", "Le BIOS"], correct: 0, exp: "MCD → MLD (Modèle Logique) → MPD (script SQL de création des tables)." },
+        { title: "Intégrité référentielle SQL", q: "Quelle contrainte SQL garantit qu'une valeur d'une table correspond bien à une clé primaire d'une autre table ?", opts: ["FOREIGN KEY", "ORDER BY", "DISTINCT", "GROUP BY"], correct: 0, exp: "La clé étrangère (FOREIGN KEY) maintient la cohérence relationnelle entre tables." },
+        { type: "vrai_faux", title: "Transactions ACID", q: "En SQL, la propriété Atomicité d'une transaction garantit que toutes les opérations réussissent ensemble ou sont toutes annulées (ROLLBACK).", correct: true, exp: "Vrai : ACID = Atomicité, Cohérence, Isolation, Durabilité." },
+        { type: "texte_a_choix", title: "Architecture MVC & HTTP", q: "Complète ces standards de développement BTS SIO.", textWithBlanks: "En architecture MVC, le ___ gère les données et règles métier ; sur une API REST, le code HTTP ___ indique une ressource introuvable.", choices: [["Modèle", "Navigateur", "Style CSS"], ["404", "200", "201"]], blanks: [["Modèle"], ["404"]], exp: "MVC sépare les responsabilités ; 200 = OK, 201 = Créé, 404 = Introuvable." },
+        { type: "drag_and_drop", title: "Git & Qualité logicielle", q: "Associe chaque outil ou commande à sa fonction.", items: ["git commit", "Test unitaire", "Docker"], targets: ["Enregistre un instantané dans l'historique local", "Vérifie automatiquement une fonction isolée", "Empaquette l'app et ses dépendances en conteneur"], pairs: { "git commit": "Enregistre un instantané dans l'historique local", "Test unitaire": "Vérifie automatiquement une fonction isolée", "Docker": "Empaquette l'app et ses dépendances en conteneur" }, exp: "Les fondamentaux du développeur moderne en BTS SIO SLAM." },
+    ]},
+    { id: "commerce", name: "Relation Client & Commerce", icon: "🛒", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["bts_mco"], island: "Image/ile/commerce.svg", lessons: [
+        { title: "Zone de chalandise", q: "Que désigne la « zone de chalandise » d'un magasin ?", opts: ["L'aire géographique d'où proviennent ses clients actuels et potentiels", "La réserve arrière du point de vente", "La vitrine extérieure", "Le budget publicitaire"], correct: 0, exp: "Elle s'analyse souvent par courbes isochrones (temps d'accès en minutes)." },
+        { title: "Argumentation CAP", q: "En vente conseil (BTS MCO), que signifie l'acronyme de la méthode CAP ?", opts: ["Caractéristique, Avantage, Preuve", "Client, Achat, Prix", "Caisse, Accueil, Promotion", "Catalogue, Article, Panier"], correct: 0, exp: "Un argument solide relie une caractéristique technique à un avantage client étayé par une preuve." },
+        { type: "vrai_faux", title: "Merchandising en rayon", q: "En linéaire, le niveau des yeux et le niveau des mains sont les zones les plus vendeuses d'un rayon.", correct: true, exp: "Vrai : ce sont les niveaux privilégiés pour les produits à forte marge ou les marques phares." },
+        { type: "texte_a_choix", title: "Indicateurs commerciaux", q: "Complète les formules clés d'une unité commerciale.", textWithBlanks: "Le ___ divise le CA par le nombre de clients acheteurs, tandis que le ___ mesure le pourcentage de visiteurs qui achètent.", choices: [["panier moyen", "facing", "NPS"], ["taux de transformation", "stock de sécurité", "loyer"]], blanks: [["panier moyen"], ["taux de transformation"]], exp: "Panier moyen = CA / Acheteurs ; Taux de transfo = (Acheteurs / Visiteurs) × 100." },
+        { type: "drag_and_drop", title: "Techniques commerciales", q: "Associe chaque technique BTS MCO à son principe.", items: ["Cross-selling", "Up-selling", "Click & Collect"], targets: ["Proposer un article complémentaire", "Proposer un modèle de gamme supérieure", "Commander en ligne et retirer en magasin"], pairs: { "Cross-selling": "Proposer un article complémentaire", "Up-selling": "Proposer un modèle de gamme supérieure", "Click & Collect": "Commander en ligne et retirer en magasin" }, exp: "Des leviers clés de performance omnicanale en BTS MCO." },
+    ]},
+    { id: "comptabilite", name: "Comptabilité & Finance", icon: "🧮", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["bts_cg"], island: "Image/ile/comptabilite.svg", lessons: [
+        { title: "Principe de la partie double", q: "Quelle égalité fondamentale doit vérifier CHAQUE écriture comptable ?", opts: ["Total Débit = Total Crédit", "Total Débit = 2 × Total Crédit", "TVA = Chiffre d'affaires", "Charges = Capital social"], correct: 0, exp: "La partie double impose que chaque emploi (débit) corresponde à une ressource égale (crédit)." },
+        { title: "Classes du PCG", q: "Dans le Plan Comptable Général, quels comptes enregistrent les Charges et les Produits ?", opts: ["Classe 6 (Charges) et Classe 7 (Produits)", "Classe 1 et Classe 2", "Classe 4 et Classe 5", "Classe 8 et Classe 9"], correct: 0, exp: "Classes 1 à 5 = Bilan ; Classes 6 (Charges) et 7 (Produits) = Compte de résultat." },
+        { type: "vrai_faux", title: "Équilibre du bilan", q: "Dans un bilan comptable, le Total de l'Actif est toujours strictement égal au Total du Passif.", correct: true, exp: "Vrai : le résultat net (bénéfice ou perte) au passif assure l'équilibre exact Actif = Passif." },
+        { type: "texte_a_choix", title: "Comptes de tiers et banque", q: "Identifie les numéros de comptes clés du PCG.", textWithBlanks: "Le compte ___ enregistre les créances Clients, le compte ___ les dettes Fournisseurs et le compte ___ la Banque.", choices: [["411", "707", "101"], ["401", "512", "606"], ["512", "411", "218"]], blanks: [["411"], ["401"], ["512"]], exp: "411 Clients, 401 Fournisseurs, 512 Banques : les numéros les plus utilisés en BTS CG." },
+        { type: "drag_and_drop", title: "Notions comptables BTS CG", q: "Associe chaque notion à sa définition.", items: ["TVA à décaisser", "Amortissement linéaire", "Rapprochement bancaire"], targets: ["TVA collectée moins TVA déductible", "Répartition constante du coût d'un bien sur sa durée", "Vérification entre compte 512 et relevé de banque"], pairs: { "TVA à décaisser": "TVA collectée moins TVA déductible", "Amortissement linéaire": "Répartition constante du coût d'un bien sur sa durée", "Rapprochement bancaire": "Vérification entre compte 512 et relevé de banque" }, exp: "Des fondamentaux de comptabilité générale et fiscale." },
+    ]},
+    { id: "electrotech", name: "Électrotechnique & Énergie", icon: "⚡", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["bac_pro_melec"], island: "Image/ile/electrotech.svg", lessons: [
+        { title: "Norme NF C 15-100", q: "Quelle norme française encadre les installations électriques basse tension dans les bâtiments ?", opts: ["NF C 15-100", "ISO 216", "HTTP/3", "NF Z 00-100"], correct: 0, exp: "La norme NF C 15-100 fixe les règles de sécurité, protections et sections de câbles." },
+        { title: "Protection différentielle 30 mA", q: "Que protège prioritairement un interrupteur différentiel 30 mA dans un tableau électrique ?", opts: ["Les personnes contre l'électrocution lors d'une fuite de courant à la terre", "Uniquement les ampoules LED", "La vitesse du Wi-Fi", "La pression d'eau chaude"], correct: 0, exp: "Il détecte un déséquilibre phase/neutre > 30 mA et coupe quasi instantanément le circuit." },
+        { type: "vrai_faux", title: "Code couleur normalisé", q: "En installation électrique NF C 15-100, le conducteur bleu clair est réservé au Neutre et le vert/jaune à la Terre (PE).", correct: true, exp: "Vrai : le respect strict du code couleur est vital pour la sécurité des intervenants." },
+        { type: "texte_a_choix", title: "Réseau triphasé européen", q: "Complète les tensions standard en basse tension.", textWithBlanks: "Sur un réseau européen 50 Hz, la tension simple (phase-neutre) vaut ___ V et la tension composée (entre deux phases) vaut ___ V.", choices: [["230", "12", "110"], ["400", "230", "1000"]], blanks: [["230"], ["400"]], exp: "En triphasé équilibré : U = V × √3 = 230 × 1,732 ≈ 400 V." },
+        { type: "drag_and_drop", title: "Appareillage électrique", q: "Associe chaque organe électrique à sa fonction.", items: ["Disjoncteur magnétothermique", "VAT", "Contacteur"], targets: ["Protège la ligne contre surcharges et courts-circuits", "Vérifie l'absence de tension lors d'une consignation", "Commande un circuit de puissance à distance"], pairs: { "Disjoncteur magnétothermique": "Protège la ligne contre surcharges et courts-circuits", "VAT": "Vérifie l'absence de tension lors d'une consignation", "Contacteur": "Commande un circuit de puissance à distance" }, exp: "Des compétences clés du technicien Bac Pro MELEC." },
     ]},
 ];
 
@@ -3192,12 +3342,10 @@ function getEffectiveSubjects(niveau, filiere) {
     const currentNiv = niveau || currentNiveau();
     const currentFil = filiere || currentFiliere();
     const cacheKey = `${currentNiv}::${currentFil}`;
-    const hasAdminCustom = (typeof AdminStore !== 'undefined' && typeof AdminStore.load === 'function')
+    const hasAdminCustom = (typeof AdminStore !== 'undefined' && typeof AdminStore.hasSubjectCustomizations === 'function')
         ? (() => {
-            try {
-                const cfg = AdminStore.load();
-                return Boolean(cfg && ((cfg.customSubjects && cfg.customSubjects.length) || (cfg.subjectOverrides && Object.keys(cfg.subjectOverrides).length)));
-            } catch { return false; }
+            try { return Boolean(AdminStore.hasSubjectCustomizations()); }
+            catch { return false; }
         })()
         : false;
 
@@ -3279,8 +3427,18 @@ const SUBJECT_TO_MATIERE = {
     sin:           { name: 'SIN (Info & Numérique)', icon: 'sin.svg' },
     cybersecurite: { name: 'Cybersécurité',          icon: 'cybersecurite.svg' },
     reseaux:       { name: 'Réseaux & Systèmes',     icon: 'reseaux.svg' },
-    electronique:  { name: 'Électronique & Systèmes',icon: 'electronique.svg' },
-    stss:          { name: 'STSS (Santé & Social)',  icon: 'stss.svg' },
+    electronique:  { name: 'Électronique & Systèmes',       icon: 'electronique.svg' },
+    stss:          { name: 'STSS (Santé & Social)',         icon: 'stss.svg' },
+    biotech:       { name: 'Biotechnologies & Labo',        icon: 'biotech.svg' },
+    design:        { name: 'Design & Arts Appliqués',       icon: 'design.svg' },
+    hotellerie:    { name: 'Hôtellerie & Gastronomie',      icon: 'hotellerie.svg' },
+    agronomie:     { name: 'Agronomie & Écologie',          icon: 'agronomie.svg' },
+    spectacle:     { name: 'Arts de la Scène & Culture',    icon: 'spectacle.svg' },
+    hlp:           { name: 'Humanités & Littérature (HLP)', icon: 'hlp.svg' },
+    dev_bdd:       { name: 'Développement & BDD',           icon: 'dev_bdd.svg' },
+    commerce:      { name: 'Relation Client & Commerce',    icon: 'commerce.svg' },
+    comptabilite:  { name: 'Comptabilité & Finance',        icon: 'comptabilite.svg' },
+    electrotech:   { name: 'Électrotechnique & Énergie',    icon: 'electrotech.svg' },
 };
 
 /**
@@ -3457,8 +3615,17 @@ function checkBadges(extra = {}) {
             case 'streak_5':
                 pass = (extra.streakCount >= 5) || (typeof DB !== 'undefined' && DB.getStreak && DB.getStreak() >= 5);
                 break;
+            case 'streak_10':
+                pass = (extra.streakCount >= 10) || (typeof DB !== 'undefined' && DB.getStreakData && Math.max(DB.getStreakData().count || 0, DB.getStreakData().best || 0) >= 10);
+                break;
+            case 'streak_20':
+                pass = (extra.streakCount >= 20) || (typeof DB !== 'undefined' && DB.getStreakData && Math.max(DB.getStreakData().count || 0, DB.getStreakData().best || 0) >= 20);
+                break;
             case 'combo_5':
                 pass = (extra.comboCount >= 5) || (extra.maxCombo >= 5) || (typeof DB !== 'undefined' && DB.getStreakData && DB.getStreakData().maxCombo >= 5);
+                break;
+            case 'combo_10':
+                pass = (extra.comboCount >= 10) || (extra.maxCombo >= 10) || (typeof DB !== 'undefined' && DB.getStreakData && DB.getStreakData().maxCombo >= 10);
                 break;
             case 'toutes_matieres':
                 pass = (subjects.length > 0 && subjects.every(s => (completedPerSubject[s.id] || 0) >= 1)) || !!extra.allSubjectsStarted;
@@ -3469,6 +3636,12 @@ function checkBadges(extra = {}) {
             case 'dix_niveaux':
                 pass = totalCompleted >= 10;
                 break;
+            case 'vingt_cinq_niveaux':
+                pass = totalCompleted >= 25;
+                break;
+            case 'cinquante_niveaux':
+                pass = totalCompleted >= 50;
+                break;
             case 'matiere_complete':
                 pass = Object.values(completedPerSubject).some(c => c >= 5) || !!extra.oneSubjectAdvanced;
                 break;
@@ -3478,11 +3651,20 @@ function checkBadges(extra = {}) {
             case 'grand_maitre':
                 pass = threeStarCount >= 10;
                 break;
+            case 'perfectionniste_25':
+                pass = threeStarCount >= 25;
+                break;
             case 'premier_achat':
                 pass = ownedSkins.length > 2 || !!extra.boughtSkin || !!extra.boughtBooster || totalBoostersAcquired > 0;
                 break;
             case 'collectionneur':
                 pass = ownedSkins.length >= 3;
+                break;
+            case 'garde_robe_10':
+                pass = ownedSkins.length >= 10;
+                break;
+            case 'musee_20':
+                pass = ownedSkins.length >= 20;
                 break;
             case 'fashion_victim':
                 pass = (equippedAura && equippedAura !== 'aurore') || ownedSkins.length >= 3 || !!extra.auraEquipped || !!extra.boughtSkin;
@@ -3490,11 +3672,17 @@ function checkBadges(extra = {}) {
             case 'theme_custom':
                 pass = (theme && theme !== 'default') || (extra.theme && extra.theme !== 'default') || !!extra.themeEquipped;
                 break;
+            case 'titre_equipe':
+                pass = Boolean(DB.getOption('dash_equippedTitle')) || !!extra.titleEquipped;
+                break;
             case 'niveau_5':
                 pass = playerLevel >= 5;
                 break;
             case 'niveau_10':
                 pass = playerLevel >= 10;
+                break;
+            case 'niveau_15':
+                pass = playerLevel >= 15;
                 break;
             case 'niveau_20':
                 pass = playerLevel >= 20;
@@ -3508,12 +3696,21 @@ function checkBadges(extra = {}) {
             case 'magnat':
                 pass = coins >= 250;
                 break;
+            case 'tresorier_500':
+                pass = coins >= 500;
+                break;
+            case 'milliardaire_1000':
+                pass = coins >= 1000;
+                break;
             case 'alchimiste':
             case 'potion_xp':
                 pass = hasAnyBooster;
                 break;
             case 'potion_double_xp':
                 pass = !!extra.usedDoubleXp || extra.usedBooster === 'boost-xp' || ((boostersHistory.used && boostersHistory.used['boost-xp']) > 0);
+                break;
+            case 'potion_fortune':
+                pass = !!extra.usedDoubleCoins || extra.usedBooster === 'boost-coins' || ((boostersHistory.used && boostersHistory.used['boost-coins']) > 0);
                 break;
             case 'bouclier_etoile':
             case 'potion_shield':
@@ -3602,6 +3799,45 @@ function checkBadges(extra = {}) {
             case 'acteur_sante':
                 pass = (completedPerSubject['stss'] || 0) >= 10;
                 break;
+            case 'stl_biotech':
+                pass = (completedPerSubject['biotech'] || 0) >= 5;
+                break;
+            case 'stl_expert':
+                pass = Math.max(completedPerSubject['biotech'] || 0, completedPerSubject['chimie'] || 0) >= 10;
+                break;
+            case 'std2a_design':
+                pass = (completedPerSubject['design'] || 0) >= 5;
+                break;
+            case 'sthr_chef':
+                pass = (completedPerSubject['hotellerie'] || 0) >= 5;
+                break;
+            case 'stav_agronome':
+                pass = (completedPerSubject['agronomie'] || 0) >= 5;
+                break;
+            case 's2tmd_virtuose':
+                pass = (completedPerSubject['spectacle'] || 0) >= 5;
+                break;
+            case 'hlp_orateur':
+                pass = (completedPerSubject['hlp'] || 0) >= 5;
+                break;
+            case 'sciences_spe_crack':
+                pass = Math.max(completedPerSubject['maths'] || 0, completedPerSubject['physique'] || 0, completedPerSubject['chimie'] || 0, completedPerSubject['svt'] || 0) >= 10;
+                break;
+            case 'sio_architecte':
+                pass = (completedPerSubject['dev_bdd'] || 0) >= 5;
+                break;
+            case 'mco_negociateur':
+                pass = (completedPerSubject['commerce'] || 0) >= 5;
+                break;
+            case 'cg_auditeur':
+                pass = (completedPerSubject['comptabilite'] || 0) >= 5;
+                break;
+            case 'melec_technicien':
+                pass = (completedPerSubject['electrotech'] || 0) >= 5;
+                break;
+            case 'assp_bienveillant':
+                pass = Math.max(completedPerSubject['stss'] || 0, completedPerSubject['biotech'] || 0) >= 5;
+                break;
             case 'queteur':
                 pass = !!extra.questClaimed;
                 break;
@@ -3620,12 +3856,14 @@ function checkBadges(extra = {}) {
             const cond = String(b.condition).trim();
             if (cond === 'hasBooster' && hasAnyBooster) pass = true;
             else if (cond === 'usedDoubleXp' && (!!extra.usedDoubleXp || extra.usedBooster === 'boost-xp' || (boostersHistory.used && boostersHistory.used['boost-xp'] > 0))) pass = true;
+            else if (cond === 'usedDoubleCoins' && (!!extra.usedDoubleCoins || extra.usedBooster === 'boost-coins' || (boostersHistory.used && boostersHistory.used['boost-coins'] > 0))) pass = true;
             else if (cond === 'usedShield' && (!!extra.usedShield || extra.usedBooster === 'boost-shield' || (boostersHistory.used && boostersHistory.used['boost-shield'] > 0))) pass = true;
             else if (cond === 'questClaimed' && !!extra.questClaimed) pass = true;
             else if (cond === 'dailyChestOpened' && !!extra.dailyChestOpened) pass = true;
             else if (cond === 'justAnsweredFirstTry' && (!!extra.justAnsweredFirstTry || extra.starsEarned === 3)) pass = true;
             else if (cond === 'auraEquipped' && ((equippedAura && equippedAura !== 'aurore') || !!extra.auraEquipped || !!extra.boughtSkin)) pass = true;
             else if (cond === 'themeEquipped' && ((theme && theme !== 'default') || (extra.theme && extra.theme !== 'default') || !!extra.themeEquipped)) pass = true;
+            else if (cond === 'titleEquipped' && (Boolean(DB.getOption('dash_equippedTitle')) || !!extra.titleEquipped)) pass = true;
             else if (cond === 'allSubjectsStarted' && subjects.length > 0 && subjects.every(s => (completedPerSubject[s.id] || 0) >= 1)) pass = true;
             else if (cond === 'oneSubjectAdvanced' && Object.values(completedPerSubject).some(c => c >= 5)) pass = true;
             else {
@@ -3641,6 +3879,7 @@ function checkBadges(extra = {}) {
                     histoireLevel: completedPerSubject['histoire'] || 0,
                     geoLevel: completedPerSubject['geo'] || 0,
                     scienceLevel: Math.max(completedPerSubject['svt'] || 0, completedPerSubject['physique'] || 0, completedPerSubject['chimie'] || 0),
+                    sciencesSpeLevel: Math.max(completedPerSubject['maths'] || 0, completedPerSubject['physique'] || 0, completedPerSubject['chimie'] || 0, completedPerSubject['svt'] || 0),
                     philoLevel: completedPerSubject['philo'] || 0,
                     anglaisLevel: completedPerSubject['anglais'] || 0,
                     espagnolLevel: completedPerSubject['espagnol'] || 0,
@@ -3663,8 +3902,21 @@ function checkBadges(extra = {}) {
                     sti2dLevel: Math.max(completedPerSubject['i2d'] || 0, completedPerSubject['sin'] || 0, completedPerSubject['si'] || 0),
                     cielLevel: Math.max(completedPerSubject['cybersecurite'] || 0, completedPerSubject['reseaux'] || 0, completedPerSubject['electronique'] || 0),
                     stssLevel: completedPerSubject['stss'] || 0,
+                    biotechLevel: completedPerSubject['biotech'] || 0,
+                    stlLevel: Math.max(completedPerSubject['biotech'] || 0, completedPerSubject['chimie'] || 0),
+                    asspLevel: Math.max(completedPerSubject['stss'] || 0, completedPerSubject['biotech'] || 0),
+                    designLevel: completedPerSubject['design'] || 0,
+                    hotellerieLevel: completedPerSubject['hotellerie'] || 0,
+                    agronomieLevel: completedPerSubject['agronomie'] || 0,
+                    spectacleLevel: completedPerSubject['spectacle'] || 0,
+                    hlpLevel: completedPerSubject['hlp'] || 0,
+                    devBddLevel: completedPerSubject['dev_bdd'] || 0,
+                    commerceLevel: completedPerSubject['commerce'] || 0,
+                    comptabiliteLevel: completedPerSubject['comptabilite'] || 0,
+                    electrotechLevel: completedPerSubject['electrotech'] || 0,
                     hasBooster: hasAnyBooster ? 1 : 0,
                     usedDoubleXp: (extra.usedDoubleXp || extra.usedBooster === 'boost-xp') ? 1 : 0,
+                    usedDoubleCoins: (extra.usedDoubleCoins || extra.usedBooster === 'boost-coins') ? 1 : 0,
                     usedShield: (extra.usedShield || extra.usedBooster === 'boost-shield') ? 1 : 0,
                     streakCount: (typeof extra.streakCount === 'number') ? extra.streakCount : ((typeof DB !== 'undefined' && DB.getStreak) ? DB.getStreak() : 0),
                     comboCount: (typeof extra.comboCount === 'number') ? extra.comboCount : ((typeof DB !== 'undefined' && DB.getCombo) ? DB.getCombo() : 0),
@@ -4443,7 +4695,14 @@ function initDashboard() {
                     <div style="width: 16px; height: 16px; border-radius: 50%; background: #ffd166;"></div>
                 </div>`;
             } else if (isBooster) {
-                const boosterGlyph = s.id === 'boost-shield' ? '🛡️' : '🧪';
+                const boosterGlyphMap = {
+                    'boost-shield': '🛡️',
+                    'boost-xp': '🧪',
+                    'boost-coins': '🪙',
+                    'boost-time': '⏳',
+                    'boost-combo': '🔥',
+                };
+                const boosterGlyph = boosterGlyphMap[s.id] || '⚡';
                 visualHtml = `<div class="dash-shop-booster-preview" style="width: 48px; height: 48px; line-height: 48px; border-radius: 50%; margin: 0 auto 12px; background: radial-gradient(circle, ${s.color}66, rgba(0,0,0,0.5)); border: 1px solid ${s.color}; font-size: 22px;">${boosterGlyph}</div>`;
             } else {
                 visualHtml = `<div class="dash-skin-orb" style="--sc:${s.color || '#4fd8c4'}"></div>`;
@@ -4635,8 +4894,9 @@ function initDashboard() {
                         multiplier,
                         chronoEnabled,
                         timeRemaining: getDashRemainingTime(),
-                        chronoDuration,
+                        chronoDuration: state.quiz.chronoDuration || chronoDuration,
                         doubleXp: (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster(GameRules.DOUBLE_XP_ID)),
+                        doubleCoins: (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster(GameRules.DOUBLE_COINS_ID || 'boost-coins')),
                         rewards: (typeof AdminStore !== 'undefined' && typeof AdminStore.getRewardsConfig === 'function')
                             ? AdminStore.getRewardsConfig() : null,
                         siteXpMultiplier: siteCfg ? siteCfg.xpMultiplier : 1,
@@ -4720,7 +4980,16 @@ function initDashboard() {
         } else if (lesson) {
             QuizEngine.bind(body, lesson, state.quiz, window._dashSubmitQuiz);
             if (chronoEnabled && dashTimer) {
-                dashTimer.start(chronoDuration);
+                let effectiveDuration = chronoDuration;
+                const extraTimeId = (typeof GameRules !== 'undefined' && GameRules.EXTRA_TIME_ID) ? GameRules.EXTRA_TIME_ID : 'boost-time';
+                const extraSec = (typeof GameRules !== 'undefined' && GameRules.EXTRA_TIME_BONUS_S) ? GameRules.EXTRA_TIME_BONUS_S : 15;
+                if (!state.quiz.usedExtraTime && typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster(extraTimeId) && DB.useBooster(extraTimeId)) {
+                    state.quiz.usedExtraTime = true;
+                    effectiveDuration += extraSec;
+                    state.quiz.chronoDuration = effectiveDuration;
+                    showNotification(`⏳ Sablier Temporel consommé : +${extraSec}s ajoutées au chrono !`, 'info');
+                }
+                dashTimer.start(effectiveDuration);
             }
         }
     }
@@ -4965,9 +5234,15 @@ function initDashboard() {
                 : null;
 
             let usedDoubleXp = false;
+            let usedDoubleCoins = false;
             if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster(GameRules.DOUBLE_XP_ID)) {
                 usedDoubleXp = DB.useBooster(GameRules.DOUBLE_XP_ID);
                 if (usedDoubleXp) showNotification('🧪 Potion Double XP consommée : XP doublée !', 'success');
+            }
+            const doubleCoinsId = GameRules.DOUBLE_COINS_ID || 'boost-coins';
+            if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster(doubleCoinsId)) {
+                usedDoubleCoins = DB.useBooster(doubleCoinsId);
+                if (usedDoubleCoins) showNotification('🪙 Élixir de Fortune consommé : pièces doublées !', 'success');
             }
 
             const gains = GameRules.computeLevelRewards({
@@ -4975,8 +5250,9 @@ function initDashboard() {
                 multiplier: mult,
                 chronoEnabled: (typeof QuizTimer !== 'undefined') ? QuizTimer.isEnabled() : (getOption('modeChrono') === 'true'),
                 timeRemaining: getDashRemainingTime(),
-                chronoDuration: (typeof QuizTimer !== 'undefined') ? QuizTimer.getConfiguredDuration() : 45,
+                chronoDuration: (state.quiz && state.quiz.chronoDuration) || ((typeof QuizTimer !== 'undefined') ? QuizTimer.getConfiguredDuration() : 45),
                 doubleXp: usedDoubleXp,
+                doubleCoins: usedDoubleCoins,
                 rewards,
                 siteXpMultiplier: siteCfg ? siteCfg.xpMultiplier : 1,
                 siteCoinMultiplier: siteCfg ? siteCfg.coinMultiplier : 1,
@@ -4995,9 +5271,10 @@ function initDashboard() {
                 starsEarned: stars,
                 subjectId,
                 usedDoubleXp,
+                usedDoubleCoins,
                 usedShield,
-                usedBooster: usedDoubleXp ? 'boost-xp' : (usedShield ? 'boost-shield' : null),
-                boosterId: usedDoubleXp ? 'boost-xp' : (usedShield ? 'boost-shield' : null),
+                usedBooster: usedDoubleXp ? 'boost-xp' : (usedDoubleCoins ? 'boost-coins' : (usedShield ? 'boost-shield' : null)),
+                boosterId: usedDoubleXp ? 'boost-xp' : (usedDoubleCoins ? 'boost-coins' : (usedShield ? 'boost-shield' : null)),
                 streakCount: streakRes.streak,
                 comboCount: streakRes.combo,
                 maxCombo: streakRes.maxCombo,
@@ -5090,8 +5367,14 @@ function initDashboard() {
             state.equippedAura = id;
             state.equippedSkin = id;
         }
-        triggerBadgesCheck({ boughtSkin: true, skinId: id });
         persistState();
+        triggerBadgesCheck({
+            boughtSkin: true,
+            skinId: id,
+            titleEquipped: cat === 'title',
+            themeEquipped: cat === 'theme' && id !== 'default',
+            auraEquipped: cat === 'aura' && id !== 'aurore',
+        });
         render();
         showNotification(`✓ « ${item.name} » débloqué et équipé !`);
     };
@@ -5110,30 +5393,39 @@ function initDashboard() {
         }
         if (cat === 'title') {
             state.equippedTitle = (state.equippedTitle === id ? '' : id);
+            persistState();
+            if (state.equippedTitle) triggerBadgesCheck({ titleEquipped: true });
             showNotification(state.equippedTitle ? `🏷️ Titre « ${item.name} » activé !` : 'Titre retiré.');
         } else if (cat === 'theme') {
             if (id === 'default') {
                 state.equippedTheme = 'default';
                 document.documentElement.setAttribute('data-theme', 'default');
+                persistState();
                 showNotification(`🎨 Thème d'origine Astral rétabli !`);
             } else {
                 state.equippedTheme = (state.equippedTheme === id ? 'default' : id);
                 document.documentElement.setAttribute('data-theme', state.equippedTheme);
-                triggerBadgesCheck({ theme: state.equippedTheme });
-                showNotification(`🎨 Thème « ${item.name} » appliqué !`);
+                persistState();
+                triggerBadgesCheck({ theme: state.equippedTheme, themeEquipped: state.equippedTheme !== 'default' });
+                showNotification(state.equippedTheme === 'default'
+                    ? `🎨 Thème d'origine Astral rétabli !`
+                    : `🎨 Thème « ${item.name} » appliqué !`);
             }
         } else if (cat === 'avatar') {
             state.equippedAvatar = id;
+            persistState();
             showNotification(`👤 Avatar « ${item.name} » équipé !`);
         } else if (cat === 'aura') {
             state.equippedAura = id;
             state.equippedSkin = id;
+            persistState();
+            triggerBadgesCheck({ auraEquipped: id !== 'aurore' });
             showNotification(`✨ Aura « ${item.name} » équipée !`);
         } else {
             state.equippedSkin = id;
+            persistState();
             showNotification(`✓ « ${item.name} » équipé !`);
         }
-        persistState();
         render();
     };
 

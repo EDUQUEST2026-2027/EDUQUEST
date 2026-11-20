@@ -21,12 +21,17 @@ const DB = require(path.join(ROOT, 'js', 'db.js'));
 const AdminStore = require(path.join(ROOT, 'js', 'admin-store.js'));
 const QuestionBank = require(path.join(ROOT, 'js', 'question-bank.js'));
 const AdaptiveEngine = require(path.join(ROOT, 'js', 'core', 'adaptive-engine.js'));
+const QuizEngine = require(path.join(ROOT, 'js', 'quiz-engine.js'));
+const GameRules = require(path.join(ROOT, 'js', 'core', 'game-rules.js'));
+const QuizSession = require(path.join(ROOT, 'js', 'core', 'quiz-session.js'));
 
-const ALL_26_SUBJECTS = [
+const ALL_36_SUBJECTS = [
     'maths', 'francais', 'histoire', 'geo', 'emc', 'anglais', 'espagnol',
     'svt', 'physique', 'chimie', 'techno', 'arts', 'philo', 'nsi', 'ses',
     'hggsp', 'si', 'msgn', 'droit_eco', 'mercatique', 'i2d', 'sin',
     'cybersecurite', 'reseaux', 'electronique', 'stss',
+    'biotech', 'design', 'hotellerie', 'agronomie', 'spectacle',
+    'hlp', 'dev_bdd', 'commerce', 'comptabilite', 'electrotech',
 ];
 
 function resetStorage() {
@@ -56,6 +61,8 @@ test.describe('Filières (STMG, CIEL, STI2D, NSI, ST2S, Générale) & Programme 
         const forbiddenAtCollege = [
             'nsi', 'ses', 'philo', 'hggsp', 'si', 'msgn', 'droit_eco',
             'mercatique', 'i2d', 'sin', 'cybersecurite', 'reseaux', 'electronique', 'stss',
+            'biotech', 'design', 'hotellerie', 'agronomie', 'spectacle',
+            'hlp', 'dev_bdd', 'commerce', 'comptabilite', 'electrotech',
         ];
         for (const niv of ['6eme', '5eme', '4eme', '3eme']) {
             assert.equal(AdminStore.isFiliereApplicable(niv), false);
@@ -122,10 +129,27 @@ test.describe('Filières (STMG, CIEL, STI2D, NSI, ST2S, Générale) & Programme 
         assert.equal(AdminStore.isSubjectSpecialtyForFiliere({ id: 'cybersecurite' }, 'ciel'), true);
         assert.equal(AdminStore.isSubjectSpecialtyForFiliere({ id: 'msgn' }, 'stmg'), true);
         assert.equal(AdminStore.isSubjectSpecialtyForFiliere({ id: 'maths' }, 'ciel'), false);
+
+        // Vérification des 12 nouvelles filières (STL, STD2A, STHR, STAV, S2TMD, HLP/LLCE, Spé Sciences, BTS SIO, BTS MCO, BTS CG, MELEC, ASSP)
+        assert.equal(AdminStore.getFilieres().length, 18, '18 filières officielles attendues (6 + 12 nouvelles)');
+        assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'biotech' }, 'terminale', 'stl'), true);
+        assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'design' }, '1ere', 'std2a'), true);
+        assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'hotellerie' }, 'terminale', 'sthr'), true);
+        assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'agronomie' }, '1ere', 'stav'), true);
+        assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'spectacle' }, 'terminale', 's2tmd'), true);
+        assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'hlp' }, 'terminale', 'hlp_llce'), true);
+        assert.equal(AdminStore.isSubjectSpecialtyForFiliere({ id: 'maths' }, 'sciences_spe'), true);
+        assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'dev_bdd' }, 'bts1', 'bts_sio'), true);
+        assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'commerce' }, 'bts2', 'bts_mco'), true);
+        assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'comptabilite' }, 'bts1', 'bts_cg'), true);
+        assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'electrotech' }, 'terminale', 'bac_pro_melec'), true);
+        assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'biotech' }, '1ere', 'bac_pro_assp'), true);
+        assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'stss' }, '1ere', 'bac_pro_assp'), true);
+        assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'electrotech' }, 'terminale', 'sthr'), false);
     });
 });
 
-test.describe('QuestionBank — Intégrité complète des 26 matières (Collège, Lycée & BTS)', () => {
+test.describe('QuestionBank — Intégrité complète des 36 matières (Collège, Lycée & BTS)', () => {
     test('Chaque matière génère 25 niveaux valides sans doublon d\'options ni index invalide', () => {
         const sampleLevelBySubject = {
             techno: '4eme',
@@ -145,9 +169,19 @@ test.describe('QuestionBank — Intégrité complète des 26 matières (Collège
             si: 'terminale',
             espagnol: '4eme',
             arts: '5eme',
+            biotech: 'terminale',
+            design: '1ere',
+            hotellerie: 'terminale',
+            agronomie: '1ere',
+            spectacle: 'terminale',
+            hlp: 'terminale',
+            dev_bdd: 'bts1',
+            commerce: 'bts2',
+            comptabilite: 'bts1',
+            electrotech: 'terminale',
         };
 
-        for (const subjectId of ALL_26_SUBJECTS) {
+        for (const subjectId of ALL_36_SUBJECTS) {
             const niv = sampleLevelBySubject[subjectId] || '3eme';
             for (let lvl = 0; lvl < 25; lvl++) {
                 const lesson = QuestionBank.generateOne(subjectId, lvl, niv, 0);
@@ -203,6 +237,16 @@ test.describe('Anti-répétition renforcée (AdaptiveEngine + QuestionBank)', ()
             ['si', '1ere'],
             ['stss', 'terminale'],
             ['arts', '6eme'],
+            ['biotech', 'terminale'],
+            ['design', '1ere'],
+            ['hotellerie', 'terminale'],
+            ['agronomie', '1ere'],
+            ['spectacle', 'terminale'],
+            ['hlp', 'terminale'],
+            ['dev_bdd', 'bts1'],
+            ['commerce', 'bts2'],
+            ['comptabilite', 'bts1'],
+            ['electrotech', 'terminale'],
         ];
 
         for (const [subjectId, niveau] of cases) {
@@ -239,6 +283,10 @@ test.describe('Assets, PWA Service Worker & HTML — Cohérence v1.28.1', () => 
             'msgn.svg', 'droit_eco.svg', 'mercatique.svg',
             'i2d.svg', 'sin.svg', 'cybersecurite.svg',
             'reseaux.svg', 'electronique.svg', 'stss.svg',
+            'biotech.svg', 'design.svg', 'hotellerie.svg',
+            'agronomie.svg', 'spectacle.svg', 'hlp.svg',
+            'dev_bdd.svg', 'commerce.svg', 'comptabilite.svg',
+            'electrotech.svg',
         ];
         for (const file of allIslands) {
             const fullPath = path.join(ROOT, 'Image', 'ile', file);
@@ -333,38 +381,38 @@ test.describe('Succès triés/filtrés par filière & Pilotage intégral Admin (
 
         // 1. Gestion complète des filières (ajout + désactivation)
         const baseFil = AdminStore.getFilieres();
-        assert.equal(baseFil.length, 6);
+        assert.equal(baseFil.length, 18);
         const editedFil = baseFil.map(f => f.id === 'st2s' ? { ...f, enabled: false } : f);
-        editedFil.push({ id: 'sio', label: 'BTS SIO', shortLabel: 'SIO', icon: '🖥️', enabled: true, desc: 'Services Informatiques aux Organisations' });
+        editedFil.push({ id: 'bts_ndrc_custom', label: 'BTS NDRC', shortLabel: 'NDRC', icon: '📞', enabled: true, desc: 'Négociation et Digitalisation de la Relation Client' });
         const filRes = AdminStore.saveFilieres(editedFil);
         assert.equal(filRes.ok, true);
-        assert.equal(AdminStore.getFilieres().length, 7);
+        assert.equal(AdminStore.getFilieres().length, 19);
         assert.equal(AdminStore.getActiveFilieres().some(f => f.id === 'st2s'), false);
-        assert.equal(AdminStore.getActiveFilieres().some(f => f.id === 'sio'), true);
+        assert.equal(AdminStore.getActiveFilieres().some(f => f.id === 'bts_ndrc_custom'), true);
 
         // 2. Pilotage filières & spécialités d'une matière
         const metaRes = AdminStore.saveSubjectMeta('reseaux', {
-            allowedFilieres: ['ciel', 'nsi_spe', 'sio'],
-            specialtyFilieres: ['ciel', 'sio'],
+            allowedFilieres: ['ciel', 'nsi_spe', 'bts_sio', 'bts_ndrc_custom'],
+            specialtyFilieres: ['ciel', 'bts_ndrc_custom'],
         });
         assert.equal(metaRes.ok, true);
         const applied = AdminStore.applyOverrides([{ id: 'reseaux', name: 'Réseaux & Systèmes' }]);
-        assert.equal(AdminStore.isSubjectAllowedForNiveau(applied[0], 'bts1', 'sio'), true);
-        assert.equal(AdminStore.isSubjectSpecialtyForFiliere(applied[0], 'sio'), true);
+        assert.equal(AdminStore.isSubjectAllowedForNiveau(applied[0], 'bts1', 'bts_ndrc_custom'), true);
+        assert.equal(AdminStore.isSubjectSpecialtyForFiliere(applied[0], 'bts_ndrc_custom'), true);
 
-        // 3. Création d'un succès ciblé sur la nouvelle filière SIO
+        // 3. Création d'un succès ciblé sur la nouvelle filière custom
         const bRes = AdminStore.saveBadge({
-            id: 'sio_expert',
-            name: 'Expert SIO',
-            icon: '🖥️',
+            id: 'ndrc_expert',
+            name: 'Expert NDRC',
+            icon: '📞',
             category: 'matieres',
             band: 'lycee',
-            allowedFilieres: ['sio'],
-            desc: 'Maîtrise le parcours BTS SIO.',
+            allowedFilieres: ['bts_ndrc_custom'],
+            desc: 'Maîtrise le parcours BTS NDRC.',
             condition: 'reseauxLevel >= 5',
         });
         assert.equal(bRes.ok, true);
-        assert.equal(AdminStore.isBadgeRelevantFor(bRes.badge, 'bts1', 'sio'), true);
+        assert.equal(AdminStore.isBadgeRelevantFor(bRes.badge, 'bts1', 'bts_ndrc_custom'), true);
         assert.equal(AdminStore.isBadgeRelevantFor(bRes.badge, 'bts1', 'stmg'), false);
 
         // 4. Pilotage du pool de quêtes quotidiennes
@@ -397,17 +445,34 @@ test.describe('Succès triés/filtrés par filière & Pilotage intégral Admin (
         // 6. Export / Import intégral préserve filières, quêtes, succès et siteConfig
         const exported = AdminStore.exportJson();
         AdminStore.resetAll();
-        assert.equal(AdminStore.getFilieres().length, 6);
+        assert.equal(AdminStore.getFilieres().length, 18);
         const imp = AdminStore.importJson(exported);
         assert.equal(imp.ok, true);
-        assert.equal(AdminStore.getFilieres().length, 7);
+        assert.equal(AdminStore.getFilieres().length, 19);
         assert.equal(AdminStore.getQuestPool().length, 1);
-        assert.ok(AdminStore.getBadge('sio_expert'));
+        assert.ok(AdminStore.getBadge('ndrc_expert'));
         assert.equal(AdminStore.getSiteConfig().defaultFiliere, 'ciel');
 
-        // 7. Boutique enrichie (47 articles par défaut)
+        // 7. Boutique enrichie (97 articles par défaut : 47 + 50 nouveaux), thèmes CSS et 78 succès uniques
         AdminStore.resetAll();
-        assert.ok(AdminStore.getShopItems().length >= 47);
+        const shopItems = AdminStore.getShopItems();
+        assert.equal(shopItems.length, 97, `97 articles attendus en boutique, reçu ${shopItems.length}`);
+        assert.equal(new Set(shopItems.map(i => i.id)).size, shopItems.length, 'Identifiants boutique uniques');
+
+        const globalCss = fs.readFileSync(path.join(ROOT, 'css', 'global.css'), 'utf8');
+        const themes = shopItems.filter(i => i.category === 'theme' && i.id !== 'default');
+        assert.equal(themes.length, 14, '14 thèmes CSS personnalisés attendus (+ default)');
+        for (const t of themes) {
+            assert.ok(globalCss.includes(`[data-theme="${t.id}"]`), `Règle CSS manquante pour ${t.id}`);
+        }
+
+        const allBadges = AdminStore.getBadges();
+        assert.equal(allBadges.length, 78, `78 succès attendus (46 + 32 nouveaux), reçu ${allBadges.length}`);
+        assert.equal(new Set(allBadges.map(b => b.id)).size, allBadges.length, 'Identifiants de succès uniques');
+        assert.equal(AdminStore.isBadgeRelevantFor(allBadges.find(b => b.id === 'stl_biotech'), 'terminale', 'stl'), true);
+        assert.equal(AdminStore.isBadgeRelevantFor(allBadges.find(b => b.id === 'stl_biotech'), 'terminale', 'stmg'), false);
+        assert.equal(AdminStore.isBadgeRelevantFor(allBadges.find(b => b.id === 'sio_architecte'), 'bts1', 'bts_sio'), true);
+        assert.equal(AdminStore.isBadgeRelevantFor(allBadges.find(b => b.id === 'melec_technicien'), 'terminale', 'bac_pro_melec'), true);
     });
 
     test('Pilotage admin des comptes locaux : classe, filière, XP, pièces et réinitialisation', async () => {
@@ -438,5 +503,69 @@ test.describe('Succès triés/filtrés par filière & Pilotage intégral Admin (
         assert.equal(rst.ok, true);
         assert.equal(rst.stats.xp, 0);
         assert.equal(rst.stats.coins, 30);
+    });
+});
+
+test.describe('Non-régression — Intégrité FACT_BANKS, AdminStore, QuizEngine & QuizSession', () => {
+    test('js/question-bank.js ne contient aucune clé FACT_BANKS dupliquée ni texte corrompu', () => {
+        const src = fs.readFileSync(path.join(ROOT, 'js', 'question-bank.js'), 'utf8');
+        const start = src.indexOf('const FACT_BANKS = {');
+        const end = src.indexOf('function getQuestionsForNiveau', start);
+        assert.ok(start > 0 && end > start, 'Bloc FACT_BANKS introuvable');
+        const bankSlice = src.slice(start, end);
+        const keys = [...bankSlice.matchAll(/^\s{8}([a-z0-9_]+):\s*\[/gm)].map(m => m[1]);
+        assert.equal(new Set(keys).size, keys.length, `Clés dupliquées détectées dans FACT_BANKS : ${keys.filter((k, i) => keys.indexOf(k) !== i).join(', ')}`);
+        assert.equal(bankSlice.includes('robot.tw'), false, 'Texte corrompu détecté dans FACT_BANKS');
+        assert.equal(/je veut/i.test(bankSlice), false, 'Texte parasite détecté dans FACT_BANKS');
+    });
+
+    test('AdminStore.hasSubjectCustomizations détecte les surcharges et matières personnalisées', () => {
+        resetStorage();
+        assert.equal(AdminStore.hasSubjectCustomizations(), false);
+        AdminStore.saveSubjectMeta('maths', { name: 'Maths Avancées' });
+        assert.equal(AdminStore.hasSubjectCustomizations(), true);
+        AdminStore.resetAll();
+        assert.equal(AdminStore.hasSubjectCustomizations(), false);
+        const created = AdminStore.createCustomSubject('Astronomie', '🔭');
+        assert.equal(created.ok, true);
+        assert.equal(AdminStore.hasSubjectCustomizations(), true);
+        AdminStore.resetAll();
+        assert.equal(AdminStore.hasSubjectCustomizations(), false);
+    });
+
+    test('QuizEngine rend proprement [___] / ____ et ne plante pas sur blanks absent', () => {
+        const html = QuizEngine.renderBody({
+            type: 'texte_a_choix',
+            q: 'Test',
+            textWithBlanks: 'Le ciel est [___] et la nuit ____.',
+            blanks: [['bleu'], ['sombre']],
+            choices: [['bleu', 'vert'], ['sombre', 'claire']],
+        });
+        assert.equal(html.includes('['), false, 'Aucun crochet résiduel autour du select');
+        assert.equal(html.includes('___'), false, 'Aucun underscore résiduel dans le rendu');
+        assert.equal((html.match(/<select\b/g) || []).length, 2, 'Deux menus déroulants attendus');
+        assert.equal(QuizEngine.grade({ type: 'texte_a_choix', textWithBlanks: 'A [___] B' }, ['1']), false);
+    });
+
+    test('QuizSession ne gaspille pas boost-combo quand combo === 0 et streak === 0', async () => {
+        const attempt = QuizSession.createAttempt({ lesson: { q: 'Q' }, questionId: 'q_zero' });
+        let comboStock = 1;
+        const mockDeps = {
+            AiProvider: { submitAnswer: async () => ({ isCorrect: false, explanation: 'Faux' }) },
+            DB: {
+                getStreakData: () => ({ count: 0, combo: 0, maxCombo: 0, best: 0 }),
+                hasBooster: (id) => id === 'boost-combo' && comboStock > 0,
+                useBooster: (id) => {
+                    if (id === 'boost-combo' && comboStock > 0) { comboStock--; return true; }
+                    return false;
+                },
+                recordWrongAnswer: () => {},
+            },
+            GameRules,
+            notify: () => {},
+        };
+        const res = await QuizSession.submit(attempt, 'Mauvaise', {}, mockDeps);
+        assert.equal(res.isCorrect, false);
+        assert.equal(comboStock, 1, 'Flamme Éternelle ne doit pas être consommée sans série/combo actif');
     });
 });

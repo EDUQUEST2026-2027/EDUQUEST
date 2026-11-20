@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <radialGradient id="aeBg" cx="50%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#0d0724"/>
+    </radialGradient>
+  </defs>
+  <rect width="120" height="120" fill="url(#aeBg)"/>
+  <!-- Étoiles alchimiques -->
+  <circle cx="22" cy="30" r="3" fill="#fde047"/>
+  <circle cx="98" cy="36" r="3.5" fill="#34d399"/>
+  <circle cx="94" cy="76" r="2.5" fill="#38bdf8"/>
+  <!-- Cape d'alchimiste étoilée -->
+  <path d="M18 120 L28 80 Q60 72 92 80 L102 120 Z" fill="#4c1d95" stroke="#c084fc" stroke-width="2.2"/>
+  <polygon points="60,84 68,104 52,104" fill="#facc15"/>
+  <!-- Capuche mystique + visage lumineux -->
+  <path d="M30 78 Q26 30 60 20 Q94 30 90 78 Z" fill="#3b0764" stroke="#a855f7" stroke-width="2.5"/>
+  <ellipse cx="60" cy="56" rx="20" ry="20" fill="#13072b"/>
+  <!-- Yeux brillants émeraude + lunettes d'alchimiste sur la capuche -->
+  <circle cx="52" cy="54" r="4" fill="#34d399"/>
+  <circle cx="68" cy="54" r="4" fill="#34d399"/>
+  <circle cx="50" cy="34" r="6" fill="#38bdf8" stroke="#facc15" stroke-width="2"/>
+  <circle cx="70" cy="34" r="6" fill="#f472b6" stroke="#facc15" stroke-width="2"/>
+  <line x1="56" y1="34" x2="64" y2="34" stroke="#facc15" stroke-width="2"/>
+</svg>
