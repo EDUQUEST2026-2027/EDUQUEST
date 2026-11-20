@@ -1,4 +1,5 @@
-const CACHE_NAME = 'eduquest-cache-v1.29.0';
+/* SERVICE-WORKER.JS — EDUQUEST v1.29.1 (PWA hors-ligne, 93 ressources pré-cachées) */
+const CACHE_NAME = 'eduquest-cache-v1.29.1';
 
 const PRECACHE_URLS = [
   './',

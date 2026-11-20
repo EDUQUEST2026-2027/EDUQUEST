@@ -1,5 +1,5 @@
 /* =============================================================================
-   QUIZ-TIMER.JS — EDUQUEST v1.28.1
+   QUIZ-TIMER.JS — EDUQUEST v1.29.1
    Gestionnaire unifié et fiable du chronomètre des exercices.
 
    POURQUOI CE MODULE :

@@ -1,14 +1,15 @@
 -- =============================================================================
--- SCHEMA.SQL — EDUQUEST v1.28.1
+-- SCHEMA.SQL — EDUQUEST v1.29.1
 -- Script de création de la base de données SQL (MySQL / MariaDB / PostgreSQL / SQLite)
 -- =============================================================================
 --
 -- RÔLE :
 -- Schéma relationnel complet pour le mode serveur (backend d'établissement).
--- Il prend en charge l'authentification (élèves & administrateurs), les 26 matières
--- officielles (Collège, Lycée & BTS, 6 filières : Générale, NSI, STMG, STI2D, CIEL, ST2S),
--- la configuration intégrale du site et du pool Multi-IA, les leçons manuelles,
--- les options, quêtes journalières et l'inventaire boutique.
+-- Il prend en charge l'authentification (élèves & administrateurs), les 36 matières
+-- officielles (Collège, Lycée & BTS, 18 filières : Générale, Spé NSI, STMG, STI2D,
+-- CIEL, ST2S, STL, STD2A, STHR, STAV, S2TMD, HLP/LLCE, Spé Sciences, BTS SIO/MCO/CG,
+-- Bac Pro MELEC/ASSP), la configuration intégrale du site et du pool Multi-IA,
+-- les leçons manuelles, les options, quêtes journalières et l'inventaire boutique.
 --
 -- COMPATIBILITÉ MOTEURS :
 --   - MySQL 8.0+ / MariaDB 10.5+ : syntaxe native directe
@@ -116,7 +117,7 @@ CREATE TABLE IF NOT EXISTS lecons_manuelles (
 CREATE INDEX IF NOT EXISTS idx_lecons_matiere ON lecons_manuelles(matiere_id);
 
 -- =============================================================================
--- 7. TABLE : progression (Parcours des 26 matières et 100 niveaux)
+-- 7. TABLE : progression (Parcours des 36 matières et 100 niveaux)
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS progression (
     id           INT AUTO_INCREMENT PRIMARY KEY,
@@ -157,7 +158,7 @@ CREATE INDEX IF NOT EXISTS idx_quetes_joueur_date ON quetes_journalieres(joueur_
 CREATE TABLE IF NOT EXISTS inventaire (
     id         INT AUTO_INCREMENT PRIMARY KEY,
     joueur_id  INT          NOT NULL,
-    item_id    VARCHAR(100) NOT NULL, -- Ex: 'boost-shield', 'boost-xp', 'einstein', 'halo-aurora'
+    item_id    VARCHAR(100) NOT NULL, -- Ex: 'boost-shield', 'boost-xp', 'boost-coins', 'boost-time', 'boost-combo', 'einstein', 'aurore'
     categorie  VARCHAR(50)  NOT NULL DEFAULT 'booster', -- 'booster', 'avatar', 'halo', 'titre', 'theme'
     quantite   INT          NOT NULL DEFAULT 1,
     equipe     BOOLEAN      NOT NULL DEFAULT FALSE,
@@ -252,12 +253,20 @@ INSERT IGNORE INTO parametres (joueur_id, cle, valeur) VALUES
 INSERT IGNORE INTO configuration_site (cle, valeur, description) VALUES
     ('siteTitle',            'EDUQUEST — Révision Gamifiée',       'Titre principal affiché dans l’en-tête'),
     ('tagline',              'Explore les îles du savoir !',       'Slogan affiché sur la page d’accueil'),
+    ('defaultNiveau',        '6eme',                               'Classe scolaire par défaut'),
+    ('defaultFiliere',       'generale',                           'Filière par défaut au lycée / BTS'),
     ('chronoQuestionSeconds','30',                                 'Durée en secondes du défi chronométré'),
     ('xpMultiplier',         '1.0',                                'Multiplicateur global d’expérience'),
     ('coinsMultiplier',      '1.0',                                'Multiplicateur global de pièces'),
-    ('soundVolume',          '80',                                 'Volume par défaut des effets sonores'),
-    ('musicVolume',          '70',                                 'Volume par défaut de la musique d’ambiance'),
-    ('allowRegistration',    'true',                               'Autoriser l’auto-inscription des élèves');
+    ('soundVolume',          '60',                                 'Volume par défaut des effets sonores'),
+    ('musicVolume',          '35',                                 'Volume par défaut de la musique d’ambiance'),
+    ('allowRegistration',    'true',                               'Autoriser l’auto-inscription des élèves'),
+    ('enableShop',           'true',                               'Activer la boutique (97 articles)'),
+    ('enableQuests',         'true',                               'Activer les missions quotidiennes'),
+    ('enableBadges',         'true',                               'Activer les succès (78 badges)'),
+    ('enableChrono',         'true',                               'Autoriser le mode chronométré'),
+    ('enableConfetti',       'true',                               'Activer les célébrations confettis'),
+    ('maintenanceMode',      'false',                              'Mode maintenance / examen');
 
 -- Configuration de l’IA et Webhooks Make.com (synchronisée avec AdminStore.getAiConfig)
 INSERT IGNORE INTO configuration_ia (cle, valeur, description) VALUES
@@ -269,44 +278,44 @@ INSERT IGNORE INTO configuration_ia (cle, valeur, description) VALUES
     ('providers',            '[]',                                 'Pool JSON de fournisseurs IA (Make, OpenAI-compatible, Gemini)'),
     ('fallbackToOffline',    'true',                               'Basculer automatiquement sur la banque locale en cas d’erreur');
 
--- Configuration des 26 matières officielles (Collège, Lycée & BTS par filière)
+-- Configuration des 36 matières officielles (Collège, Lycée & BTS sur 18 filières — synchronisée avec AdminStore.SUBJECT_DEFAULT_RULES)
 INSERT IGNORE INTO matieres_config (id, nom, icone, bande, classes_json, filieres_json, active, est_custom, description) VALUES
-    ('maths',         'Mathématiques',           'Image/ile/maths.webp',         'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale","bts1","bts2"]', '["all"]',                           TRUE, FALSE, 'Algèbre, géométrie, analyse, probabilités et maths appliquées BTS'),
-    ('francais',      'Français',                'Image/ile/francais.webp',      'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale","bts1","bts2"]', '["all"]',                           TRUE, FALSE, 'Grammaire, littérature, orthographe et culture générale'),
-    ('histoire',      'Histoire',                'Image/ile/histoire.webp',      'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["all"]',                           TRUE, FALSE, 'Grandes époques et repères historiques'),
-    ('geo',           'Géographie',              'Image/ile/geo.svg',            'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["all"]',                           TRUE, FALSE, 'Territoires, mondialisation, climat et cartes'),
-    ('emc',           'EMC',                     'Image/ile/emc.svg',            'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["all"]',                           TRUE, FALSE, 'Enseignement Moral et Civique, institutions et valeurs'),
-    ('anglais',       'Anglais',                 'Image/ile/anglais.webp',       'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale","bts1","bts2"]', '["all"]',                           TRUE, FALSE, 'Vocabulaire, temps verbaux, grammaire et anglais technique'),
-    ('espagnol',      'Espagnol',                'Image/ile/espagnol.svg',       'all',     '["5eme","4eme","3eme","2nde","1ere","terminale"]',                      '["generale","stmg","st2s"]',        TRUE, FALSE, 'Langue vivante 2 dès la 5ème : grammaire, lexique et culture hispanique'),
-    ('svt',           'SVT',                     'Image/ile/svt.webp',           'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["generale","st2s"]',               TRUE, FALSE, 'Sciences de la Vie et de la Terre'),
-    ('physique',      'Physique',                'Image/ile/physique.webp',      'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale","bts1","bts2"]', '["generale","nsi_spe","sti2d","ciel","st2s"]', TRUE, FALSE, 'Électricité, mécanique, énergie et optique'),
-    ('chimie',        'Chimie',                  'Image/ile/chimie.svg',         'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["generale","nsi_spe","sti2d","st2s"]', TRUE, FALSE, 'Atomes, molécules, pH et réactions chimiques'),
-    ('techno',        'Technologie',             'Image/ile/technologie.webp',   'college', '["6eme","5eme","4eme","3eme"]',                                         '["all"]',                           TRUE, FALSE, 'Algorithmique, capteurs, matériaux et réseaux du collège'),
-    ('arts',          'Arts & Musique',          'Image/ile/arts.svg',           'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["generale"]',                      TRUE, FALSE, 'Histoire des arts, perspective, couleurs et culture musicale'),
-    ('philo',         'Philosophie',             'Image/ile/philo.svg',          'lycee',   '["terminale"]',                                                         '["generale","nsi_spe","stmg","sti2d","st2s"]', TRUE, FALSE, 'Concepts, auteurs et grandes notions de Terminale'),
-    ('nsi',           'NSI & Numérique',         'Image/ile/nsi.svg',            'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["generale","nsi_spe","sti2d","ciel"]', TRUE, FALSE, 'Informatique, Python, algorithmique, Web, SQL et architectures'),
-    ('ses',           'SES (Économie)',          'Image/ile/ses.svg',            'lycee',   '["2nde","1ere","terminale"]',                                           '["generale"]',                      TRUE, FALSE, 'Économie, sociologie et sciences politiques'),
-    ('hggsp',         'HGGSP (Géopolitique)',    'Image/ile/hggsp.svg',          'lycee',   '["1ere","terminale"]',                                                  '["generale"]',                      TRUE, FALSE, 'Histoire-géographie, géopolitique et sciences politiques'),
-    ('si',            'Sciences de l\'Ingénieur','Image/ile/si.svg',             'lycee',   '["2nde","1ere","terminale"]',                                           '["generale","nsi_spe","sti2d"]',    TRUE, FALSE, 'SysML, chaînes d\'énergie et d\'information, mécanique'),
-    ('msgn',          'Management & Gestion',    'Image/ile/msgn.svg',           'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["stmg"]',                          TRUE, FALSE, 'Management, sciences de gestion et numérique (STMG / BTS)'),
-    ('droit_eco',     'Droit & Économie',        'Image/ile/droit_eco.svg',      'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["stmg","ciel"]',                   TRUE, FALSE, 'Droit des contrats, travail, RGPD et macroéconomie'),
-    ('mercatique',    'Mercatique (Marketing)',  'Image/ile/mercatique.svg',     'lycee',   '["1ere","terminale","bts1","bts2"]',                                    '["stmg"]',                          TRUE, FALSE, 'Marketing mix (4P), segmentation, gestion et analyse financière'),
-    ('i2d',           'I2D (Innovation & Éco)',  'Image/ile/i2d.svg',            'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["sti2d"]',                         TRUE, FALSE, 'Éco-conception, ACV, matériaux, thermique et développement durable'),
-    ('sin',           'SIN (Info & Numérique)',  'Image/ile/sin.svg',            'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["sti2d"]',                         TRUE, FALSE, 'Signaux numériques, CAN, PWM, logique booléenne et IoT'),
-    ('cybersecurite', 'Cybersécurité',           'Image/ile/cybersecurite.svg',  'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["ciel","nsi_spe"]',                TRUE, FALSE, 'Triade CIA, OWASP, cryptographie, RGPD/ANSSI et défense réseau'),
-    ('reseaux',       'Réseaux & Systèmes',      'Image/ile/reseaux.svg',        'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["ciel","nsi_spe"]',                TRUE, FALSE, 'Modèle OSI, TCP/IP, CIDR, routage, ports et administration Linux'),
-    ('electronique',  'Électronique & Systèmes',      'Image/ile/electronique.svg',   'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["ciel","sti2d","bac_pro_melec"]', TRUE, FALSE, 'Loi d\'Ohm, Kirchhoff, diodes, transistors, PCB et embarqué'),
-    ('stss',          'STSS (Santé & Social)',        'Image/ile/stss.svg',           'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["st2s","bac_pro_assp"]',          TRUE, FALSE, 'Santé publique, épidémiologie, prévention et protection sociale'),
-    ('biotech',       'Biotechnologies & Labo',       'Image/ile/biotech.svg',        'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["stl","bac_pro_assp"]',           TRUE, FALSE, 'Microbiologie, biochimie, PCR, spectrophotométrie et hygiène de laboratoire'),
-    ('design',        'Design & Arts Appliqués',      'Image/ile/design.svg',         'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["std2a"]',                        TRUE, FALSE, 'Design produit, espace, graphisme, ergonomie, typographie et matériaux'),
-    ('hotellerie',    'Hôtellerie & Gastronomie',     'Image/ile/hotellerie.svg',     'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["sthr"]',                         TRUE, FALSE, 'Sciences culinaires, hygiène HACCP, service, œnologie et hébergement'),
-    ('agronomie',     'Agronomie & Écologie',         'Image/ile/agronomie.svg',      'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["stav"]',                         TRUE, FALSE, 'Pédologie, agroécologie, biodiversité, gestion de l\'eau et territoires'),
-    ('spectacle',     'Arts de la Scène & Culture',   'Image/ile/spectacle.svg',      'lycee',   '["2nde","1ere","terminale"]',                                           '["s2tmd"]',                        TRUE, FALSE, 'Dramaturgie, histoire du théâtre, musicologie, chorégraphie et scénographie'),
-    ('hlp',           'Humanités & Littérature (HLP)','Image/ile/hlp.svg',            'lycee',   '["1ere","terminale"]',                                                  '["hlp_llce","generale"]',          TRUE, FALSE, 'Pouvoirs de la parole, représentations du monde, recherche de soi et humanité'),
-    ('dev_bdd',       'Développement & BDD',          'Image/ile/dev_bdd.svg',        'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["bts_sio","nsi_spe"]',            TRUE, FALSE, 'SQL avancé, modélisation Merise/UML, POO, API REST, Git et tests logiciels'),
-    ('commerce',      'Relation Client & Commerce',   'Image/ile/commerce.svg',       'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["bts_mco"]',                      TRUE, FALSE, 'Merchandising, négociation, fidélisation omnicanale et pilotage d\'unité commerciale'),
-    ('comptabilite',  'Comptabilité & Finance',       'Image/ile/comptabilite.svg',   'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["bts_cg"]',                       TRUE, FALSE, 'Plan comptable général, partie double, TVA, SIG, amortissements et bilan'),
-    ('electrotech',   'Électrotechnique & Énergie',   'Image/ile/electrotech.svg',    'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["bac_pro_melec"]',                TRUE, FALSE, 'Norme NF C 15-100, habilitation électrique, régimes de neutre, triphasé et moteurs');
+    ('maths',         'Mathématiques',                'Image/ile/maths.webp',         'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale","bts1","bts2"]', '["all"]',                                                                                                TRUE, FALSE, 'Algèbre, géométrie, analyse, probabilités et maths appliquées BTS'),
+    ('francais',      'Français',                     'Image/ile/francais.webp',      'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale","bts1","bts2"]', '["all"]',                                                                                                TRUE, FALSE, 'Grammaire, littérature, orthographe et culture générale'),
+    ('histoire',      'Histoire',                     'Image/ile/histoire.webp',      'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["all"]',                                                                                                TRUE, FALSE, 'Grandes époques et repères historiques'),
+    ('geo',           'Géographie',                   'Image/ile/geo.svg',            'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["all"]',                                                                                                TRUE, FALSE, 'Territoires, mondialisation, climat et cartes'),
+    ('emc',           'EMC',                          'Image/ile/emc.svg',            'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["all"]',                                                                                                TRUE, FALSE, 'Enseignement Moral et Civique, institutions et valeurs'),
+    ('anglais',       'Anglais',                      'Image/ile/anglais.webp',       'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale","bts1","bts2"]', '["all"]',                                                                                                TRUE, FALSE, 'Vocabulaire, temps verbaux, grammaire et anglais technique'),
+    ('espagnol',      'Espagnol',                     'Image/ile/espagnol.svg',       'all',     '["5eme","4eme","3eme","2nde","1ere","terminale"]',                      '["generale","stmg","st2s","stl","std2a","sthr","stav","s2tmd","hlp_llce","sciences_spe","bts_mco","bac_pro_assp"]', TRUE, FALSE, 'Langue vivante 2 dès la 5ème : grammaire, lexique et culture hispanique'),
+    ('svt',           'SVT',                          'Image/ile/svt.webp',           'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["generale","st2s","stl","stav","sciences_spe","bac_pro_assp"]',                                         TRUE, FALSE, 'Sciences de la Vie et de la Terre'),
+    ('physique',      'Physique',                     'Image/ile/physique.webp',      'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale","bts1","bts2"]', '["generale","nsi_spe","sti2d","ciel","st2s","stl","std2a","stav","sciences_spe","bac_pro_melec"]',       TRUE, FALSE, 'Électricité, mécanique, énergie et optique'),
+    ('chimie',        'Chimie',                       'Image/ile/chimie.svg',         'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["generale","nsi_spe","sti2d","st2s","stl","std2a","stav","sciences_spe","bac_pro_assp"]',               TRUE, FALSE, 'Atomes, molécules, pH et réactions chimiques'),
+    ('techno',        'Technologie',                  'Image/ile/technologie.webp',   'college', '["6eme","5eme","4eme","3eme"]',                                         '["all"]',                                                                                                TRUE, FALSE, 'Algorithmique, capteurs, matériaux et réseaux du collège'),
+    ('arts',          'Arts & Musique',               'Image/ile/arts.svg',           'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["generale","std2a","s2tmd","hlp_llce"]',                                                                TRUE, FALSE, 'Histoire des arts, perspective, couleurs et culture musicale'),
+    ('philo',         'Philosophie',                  'Image/ile/philo.svg',          'lycee',   '["terminale"]',                                                         '["generale","nsi_spe","stmg","sti2d","st2s","stl","std2a","sthr","stav","s2tmd","hlp_llce","sciences_spe"]', TRUE, FALSE, 'Concepts, auteurs et grandes notions de Terminale'),
+    ('nsi',           'NSI & Numérique',              'Image/ile/nsi.svg',            'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["generale","nsi_spe","sti2d","ciel","bts_sio"]',                                                        TRUE, FALSE, 'Informatique, Python, algorithmique, Web, SQL et architectures'),
+    ('ses',           'SES (Économie)',               'Image/ile/ses.svg',            'lycee',   '["2nde","1ere","terminale"]',                                           '["generale"]',                                                                                           TRUE, FALSE, 'Économie, sociologie et sciences politiques'),
+    ('hggsp',         'HGGSP (Géopolitique)',         'Image/ile/hggsp.svg',          'lycee',   '["1ere","terminale"]',                                                  '["generale","hlp_llce"]',                                                                                TRUE, FALSE, 'Histoire-géographie, géopolitique et sciences politiques'),
+    ('si',            'Sciences de l\'Ingénieur',     'Image/ile/si.svg',             'lycee',   '["2nde","1ere","terminale"]',                                           '["generale","nsi_spe","sti2d","sciences_spe"]',                                                          TRUE, FALSE, 'SysML, chaînes d\'énergie et d\'information, mécanique'),
+    ('msgn',          'Management & Gestion',         'Image/ile/msgn.svg',           'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["stmg","sthr","bts_sio","bts_mco","bts_cg"]',                                                           TRUE, FALSE, 'Management, sciences de gestion et numérique (STMG / STHR / BTS)'),
+    ('droit_eco',     'Droit & Économie',             'Image/ile/droit_eco.svg',      'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["stmg","ciel","sthr","bts_sio","bts_mco","bts_cg"]',                                                    TRUE, FALSE, 'Droit des contrats, travail, RGPD et macroéconomie'),
+    ('mercatique',    'Mercatique (Marketing)',       'Image/ile/mercatique.svg',     'lycee',   '["1ere","terminale","bts1","bts2"]',                                    '["stmg","sthr","bts_mco"]',                                                                              TRUE, FALSE, 'Marketing mix (4P), segmentation, gestion et analyse financière'),
+    ('i2d',           'I2D (Innovation & Éco)',       'Image/ile/i2d.svg',            'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["sti2d"]',                                                                                              TRUE, FALSE, 'Éco-conception, ACV, matériaux, thermique et développement durable'),
+    ('sin',           'SIN (Info & Numérique)',       'Image/ile/sin.svg',            'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["sti2d","bac_pro_melec"]',                                                                              TRUE, FALSE, 'Signaux numériques, CAN, PWM, logique booléenne et IoT'),
+    ('cybersecurite', 'Cybersécurité',                'Image/ile/cybersecurite.svg',  'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["ciel","nsi_spe","bts_sio"]',                                                                           TRUE, FALSE, 'Triade CIA, OWASP, cryptographie, RGPD/ANSSI et défense réseau'),
+    ('reseaux',       'Réseaux & Systèmes',           'Image/ile/reseaux.svg',        'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["ciel","nsi_spe","bts_sio"]',                                                                           TRUE, FALSE, 'Modèle OSI, TCP/IP, CIDR, routage, ports et administration Linux'),
+    ('electronique',  'Électronique & Systèmes',      'Image/ile/electronique.svg',   'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["ciel","sti2d","bac_pro_melec"]',                                                                       TRUE, FALSE, 'Loi d\'Ohm, Kirchhoff, diodes, transistors, PCB et embarqué'),
+    ('stss',          'STSS (Santé & Social)',        'Image/ile/stss.svg',           'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["st2s","bac_pro_assp"]',                                                                                TRUE, FALSE, 'Santé publique, épidémiologie, prévention et protection sociale'),
+    ('biotech',       'Biotechnologies & Labo',       'Image/ile/biotech.svg',        'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["stl","bac_pro_assp"]',                                                                                 TRUE, FALSE, 'Microbiologie, biochimie, PCR, spectrophotométrie et hygiène de laboratoire'),
+    ('design',        'Design & Arts Appliqués',      'Image/ile/design.svg',         'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["std2a"]',                                                                                              TRUE, FALSE, 'Design produit, espace, graphisme, ergonomie, typographie et matériaux'),
+    ('hotellerie',    'Hôtellerie & Gastronomie',     'Image/ile/hotellerie.svg',     'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["sthr"]',                                                                                               TRUE, FALSE, 'Sciences culinaires, hygiène HACCP, service, œnologie et hébergement'),
+    ('agronomie',     'Agronomie & Écologie',         'Image/ile/agronomie.svg',      'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["stav"]',                                                                                               TRUE, FALSE, 'Pédologie, agroécologie, biodiversité, gestion de l\'eau et territoires'),
+    ('spectacle',     'Arts de la Scène & Culture',   'Image/ile/spectacle.svg',      'lycee',   '["2nde","1ere","terminale"]',                                           '["s2tmd"]',                                                                                              TRUE, FALSE, 'Dramaturgie, histoire du théâtre, musicologie, chorégraphie et scénographie'),
+    ('hlp',           'Humanités & Littérature (HLP)','Image/ile/hlp.svg',            'lycee',   '["1ere","terminale"]',                                                  '["hlp_llce","generale"]',                                                                                TRUE, FALSE, 'Pouvoirs de la parole, représentations du monde, recherche de soi et humanité'),
+    ('dev_bdd',       'Développement & BDD',          'Image/ile/dev_bdd.svg',        'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["bts_sio","nsi_spe"]',                                                                                  TRUE, FALSE, 'SQL avancé, modélisation Merise/UML, POO, API REST, Git et tests logiciels'),
+    ('commerce',      'Relation Client & Commerce',   'Image/ile/commerce.svg',       'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["bts_mco"]',                                                                                            TRUE, FALSE, 'Merchandising, négociation, fidélisation omnicanale et pilotage d\'unité commerciale'),
+    ('comptabilite',  'Comptabilité & Finance',       'Image/ile/comptabilite.svg',   'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["bts_cg"]',                                                                                             TRUE, FALSE, 'Plan comptable général, partie double, TVA, SIG, amortissements et bilan'),
+    ('electrotech',   'Électrotechnique & Énergie',   'Image/ile/electrotech.svg',    'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["bac_pro_melec"]',                                                                                      TRUE, FALSE, 'Norme NF C 15-100, habilitation électrique, régimes de neutre, triphasé et moteurs');
 
 -- Inventaire initial de l'élève
 INSERT IGNORE INTO inventaire (joueur_id, item_id, categorie, quantite, equipe) VALUES

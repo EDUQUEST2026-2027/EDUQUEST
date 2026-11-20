@@ -1,26 +1,26 @@
 /* =============================================================================
-   QUIZ-ENGINE.JS — EDUQUEST v1.28.1
-   Moteur de rendu et de correction pour les questions du dashboard.
+   QUIZ-ENGINE.JS — EDUQUEST v1.29.1
+   Moteur de rendu et de correction pour les questions (dashboard & carte).
 
    RÔLE :
-   Ce fichier isole tout ce qui dépend du TYPE de question (QCM, Vrai/Faux,
-   Réponse courte, Texte à trous, Association) du reste du dashboard
-   (app.js → initDashboard). Ajouter un nouveau type de question ne demande
-   de toucher qu'à ce fichier : enregistrer un nouveau moteur dans
-   QUESTION_ENGINES, rien d'autre à changer côté dashboard.
+   Ce fichier isole tout ce qui dépend du TYPE de question (6 formats : QCM,
+   Vrai/Faux, Réponse courte, Texte à trous, Texte à choix, Association) du
+   reste de l'application. Ajouter un nouveau type de question ne demande de
+   toucher qu'à ce fichier : enregistrer un moteur dans QUESTION_ENGINES.
 
    TYPES SUPPORTÉS (valeur du champ `type` d'une leçon) :
      'qcm'            → question.opts (array), question.correct (index)
      'vrai_faux'      → question.correct (booléen : true = Vrai, false = Faux)
      'reponse_courte' → question.accepted (array de réponses acceptées)
-     'texte_a_trous'  → question.textWithBlanks (string, "___" = un trou),
+     'texte_a_trous'  → question.textWithBlanks (string, "___" ou "[___]" = un trou),
                          question.blanks (array de tableaux de réponses acceptées, un par trou)
+     'texte_a_choix'  → question.textWithBlanks + question.choices (listes déroulantes)
+                         + question.blanks (réponses attendues)
      'drag_and_drop'  → question.items (array), question.targets (array),
                          question.pairs (objet { item: target })
-                         Implémenté en "cliquer pour associer" plutôt qu'en
-                         glisser-déposer natif : plus fiable au clavier/tactile
-                         (tablette de classe), sans perdre le principe pédagogique
-                         d'association.
+                         Implémenté en "cliquer pour associer" sans collision de
+                         cibles : plus fiable au clavier/tactile (tablette de classe),
+                         sans perdre le principe pédagogique d'association.
 
    Une leçon sans champ `type` est traitée comme 'qcm' (rétrocompatibilité
    avec les leçons déjà écrites dans DASH_SUBJECTS).

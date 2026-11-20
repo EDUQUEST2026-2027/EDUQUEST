@@ -1,5 +1,5 @@
 /* =============================================================================
-   QUIZ-SESSION.JS — EDUQUEST v1.28.1
+   QUIZ-SESSION.JS — EDUQUEST v1.29.1
    Soumission d'une réponse UNIFIÉE pour la carte (map.html) et le tableau de
    bord (dashboard.html). Gère la correction (AiProvider → QuizEngine), le combo,
    le Bouclier d'Étoile, la persistance anti-triche des erreurs et la mise à jour

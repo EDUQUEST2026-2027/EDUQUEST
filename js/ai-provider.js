@@ -1,5 +1,5 @@
 /* =============================================================================
-   AI-PROVIDER.JS — EDUQUEST v1.28.1
+   AI-PROVIDER.JS — EDUQUEST v1.29.1
    Orchestrateur Multi-IA & Repli Adaptatif Local.
 
    CAPACITÉS :

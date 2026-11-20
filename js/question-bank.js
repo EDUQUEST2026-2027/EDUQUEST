@@ -1,19 +1,20 @@
 /* =============================================================================
-   QUESTION-BANK.JS — EDUQUEST v1.28.1
-   Banque de questions et générateur procédural adaptés par NIVEAU SCOLAIRE :
+   QUESTION-BANK.JS — EDUQUEST v1.29.1
+   Banque de questions et générateur procédural pour les 36 matières officielles
+   et les 9 niveaux scolaires (18 filières au lycée & BTS) :
    - 6ème, 5ème, 4ème, 3ème (Collège)
-   - 2nde, 1ère, Terminale (Lycée)
+   - 2nde, 1ère, Terminale, BTS 1ère année, BTS 2ème année (Lycée & Post-Bac)
 
-   RÉSOLUTIONS & AMÉLIORATIONS MAJEURES (v3.0) :
-   1. Résolution définitive du "manque de questions" sur 100 niveaux :
-      - Intégration de générateurs procéduraux avancés pour chaque matière
-        (Maths, Français, Anglais, Géographie, Physique, Chimie, Technologie).
-      - Enrichissement massif des banques de questions (>450 questions ciblées).
-   2. Différenciation stricte par classe (6ème, 5ème, 4ème, 3ème, 2nde, 1ère, Terminale) :
-      - Chaque niveau scolaire reçoit des questions conformes aux programmes officiels.
-   3. Variété multi-types de questions :
-      - QCM (4 choix avec mélange déterministe), Vrai/Faux, Réponse courte.
-   4. Absence de répétition consécutive grâce au brassage déterministe par graine.
+   CAPACITÉS CLÉS :
+   1. Couverture complète des 36 matières jusqu'à 100 niveaux chacune :
+      - Banques de faits ciblés par classe (FACT_BANKS) + générateurs procéduraux
+        déterministes (Maths collège/lycée/BTS, Français, Anglais, Espagnol, Physique,
+        Chimie, Technologie, NSI, SES, STMG, STI2D, CIEL, STL, STD2A, STHR, STAV,
+        S2TMD, HLP, BTS SIO/MCO/CG, Bac Pro MELEC/ASSP…).
+   2. Différenciation stricte par classe et cycle (jamais de mélange Collège ↔ Lycée).
+   3. Variété multi-types : QCM (4 choix mélangés déterministes), Vrai/Faux, Réponse courte.
+   4. Absence de répétition consécutive grâce aux decks stables, variantes paresseuses
+      (lazy getters) et mémoire adaptative dans js/core/adaptive-engine.js.
    ============================================================================= */
 
 const QuestionBank = (() => {

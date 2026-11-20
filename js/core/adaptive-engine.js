@@ -1,5 +1,5 @@
 /**
- * ADAPTIVE-ENGINE.JS — EDUQUEST v1.28.1
+ * ADAPTIVE-ENGINE.JS — EDUQUEST v1.29.1
  * Moteur d'apprentissage adaptatif & anti-répétition (UMD)
  *
  * - Mémorise par élève, matière et classe l'historique des questions déjà vues

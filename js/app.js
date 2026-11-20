@@ -1,5 +1,5 @@
 /* ==========================================================================
-   APP.JS — EDUQUEST v1.28.1
+   APP.JS — EDUQUEST v1.29.1
    Contrôleur principal du jeu : cycle de vie des vues, apparence, audio,
    chronomètre, anti-triche, moteur adaptatif / multi-IA, HUD et modales.
    ========================================================================== */
@@ -93,7 +93,7 @@ setupGlobalErrorHandler();
    ========================================================================== */
 
 /** Version de l'application — affichée dans le footer de toutes les pages. */
-const APP_VERSION = '1.29.0';
+const APP_VERSION = '1.29.1';
 
 /**
  * Calcule une couleur de texte à fort contraste (#0b1220 ou #f0f4ff) selon
@@ -3330,7 +3330,7 @@ if (typeof AdminStore !== 'undefined' && AdminStore.registerDefaults) {
     AdminStore.registerDefaults(RAW_DASH_SUBJECTS);
 }
 
-// Cache mémoire des matières étendues par (niveau, filière) — évite de régénérer 26×100 leçons à chaque navigation
+// Cache mémoire des matières étendues par (niveau, filière) — évite de régénérer 36×100 leçons à chaque navigation
 const _effectiveSubjectsCache = new Map();
 
 /**

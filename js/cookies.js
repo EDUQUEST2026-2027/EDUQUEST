@@ -1,5 +1,5 @@
 /* =============================================================================
-   COOKIES.JS — EDUQUEST v1.28.1
+   COOKIES.JS — EDUQUEST v1.29.1
    Bandeau de consentement aux cookies (RGPD / CNIL) + mémorisation du choix (12 mois).
 
    RÔLE :

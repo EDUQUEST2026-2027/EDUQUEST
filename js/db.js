@@ -1,5 +1,5 @@
 /* ==========================================================================
-   DB.JS — EDUQUEST v1.28.1
+   DB.JS — EDUQUEST v1.29.1
    Couche d'abstraction Base de Données (LocalStorage / API REST MySQL).
 
    RÔLE :
@@ -401,9 +401,9 @@ const DB = (() => {
     /* -----------------------------------------------------------------------
        NIVEAU SCOLAIRE SÉLECTIONNÉ
        -----------------------------------------------------------------------
-       Détermine quel contenu est affiché (6ème → Terminale).
+       Détermine quel contenu est affiché (6ème → Terminale, BTS 1 & 2).
        Sélectionné sur le tableau de bord (dashboard.html) ou dans les options.
-       Valeurs : '6eme', '5eme', '4eme', '3eme', '2nde', '1ere', 'terminale'
+       Valeurs : '6eme', '5eme', '4eme', '3eme', '2nde', '1ere', 'terminale', 'bts1', 'bts2'
     ----------------------------------------------------------------------- */
 
     function _niveauKey() {
@@ -443,8 +443,10 @@ const DB = (() => {
     }
 
     /* -----------------------------------------------------------------------
-       FILIÈRE / VOIE D'ÉTUDES SÉLECTIONNÉE (Lycée & BTS)
-       Valeurs : 'generale', 'nsi_spe', 'stmg', 'sti2d', 'ciel', 'st2s'
+       FILIÈRE / VOIE D'ÉTUDES SÉLECTIONNÉE (Lycée & BTS — 18 filières officielles)
+       Ex : 'generale', 'nsi_spe', 'stmg', 'sti2d', 'ciel', 'st2s', 'stl', 'std2a',
+            'sthr', 'stav', 's2tmd', 'hlp_llce', 'sciences_spe', 'bts_sio',
+            'bts_mco', 'bts_cg', 'bac_pro_melec', 'bac_pro_assp'
     ----------------------------------------------------------------------- */
 
     function _filiereKey() {

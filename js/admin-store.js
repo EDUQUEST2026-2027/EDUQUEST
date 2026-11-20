@@ -1,17 +1,18 @@
 /* =============================================================================
-   ADMIN-STORE.JS — EDUQUEST v1.28.1
+   ADMIN-STORE.JS — EDUQUEST v1.29.1
    Couche de configuration centrale du panneau d'administration (admin.html).
 
    RÔLE :
    Ce fichier stocke, valide et synchronise l'ensemble des personnalisations
    administratives sans altérer le moteur de jeu :
-     - Niveaux scolaires  → Liste des classes et cycles d'étude (6e → Terminale).
-     - Matières & Leçons  → Rattachement des cycles (band) et classes autorisées,
-                            questions manuelles & variantes procédurales aléatoires.
-     - Configuration site → Titre, slogan, chrono, multiplicateurs XP/pièces, sons.
+     - Niveaux & Filières → 9 classes (6e → BTS 2) et 18 filières officielles.
+     - Matières & Leçons  → 36 matières officielles (cycle, classes, filières,
+                            spécialités), leçons manuelles & aperçus procéduraux.
+     - Configuration site → Titre, slogan, chrono, multiplicateurs XP/pièces,
+                            feature flags, maintenance et sons.
      - Configuration IA   → Pool multi-IA (Make, OpenAI-compatible, Gemini), mode
                             adaptatif et webhooks de génération/validation.
-     - Boutique & Succès  → Articles, prix, visuels et attribution des récompenses.
+     - Boutique, Succès & Quêtes → 97 articles, 78 succès filtrés par filière et 9 quêtes.
 
    PERSISTANCE :
    Tout est unifié sous la clé localStorage 'eduquest_admin_data' et synchronisable

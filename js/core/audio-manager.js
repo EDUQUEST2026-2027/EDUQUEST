@@ -1,5 +1,5 @@
 /* =============================================================================
-   AUDIO-MANAGER.JS — EDUQUEST v1.28.1
+   AUDIO-MANAGER.JS — EDUQUEST v1.29.1
    Gestionnaire audio global (musique de fond continue + bruitages Web Audio).
 
    CORRECTIFS MAJEURS (v1.27.0) :

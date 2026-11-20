@@ -1,14 +1,15 @@
 /* =============================================================================
-   ADMIN.JS — EDUQUEST v1.28.1
+   ADMIN.JS — EDUQUEST v1.29.1
    Interface du panneau d'administration (admin.html).
 
    PRINCIPE :
    - Accès PROTÉGÉ : le panneau exige un compte avec le rôle « admin ».
-   - Onglets :
-       • Niveaux scolaires → AdminStore (clé 'eduquest_admin_data')
-       • Matières & leçons → AdminStore (surcharges + matières personnalisées)
-       • Membres           → comptes locaux (db.js, rôle élève/admin)
-       • Réglages          → profil, export/import, reset
+   - Onglets (pilotage intégral) :
+       • Niveaux & Filières → 9 niveaux (6e → BTS 2) et 18 filières (AdminStore)
+       • Matières & leçons  → 36 matières + personnalisées, 6 types de questions
+       • Boutique & Succès  → 97 articles, 78 succès filtrés par filière, 9 quêtes
+       • Membres            → comptes locaux (db.js, rôle élève/admin, XP/pièces/filière)
+       • Réglages, IA & Crédits → feature flags, Multi-IA, export/import, reset
    - Toutes les saisies utilisateur sont échappées (esc) avant insertion HTML.
    - Les actions mutent l'état puis re-rendent la vue : aucun framework.
 
@@ -1676,7 +1677,7 @@
             <div class="adm-card">
                 <div class="adm-toolbar">
                     <h2 style="margin:0;">⚙️ Configuration Générale &amp; Pilotage Global du Site</h2>
-                    <span class="adm-badge adm-badge-system">v1.29.0</span>
+                    <span class="adm-badge adm-badge-system">v1.29.1</span>
                 </div>
                 <p class="adm-hint">Pilotez ici l'ensemble des paramètres globaux d'EDUQUEST : identité, parcours par défaut, modules actifs (Boutique, Missions, Succès, Confettis, Chrono), mode maintenance/examen, audio et inscriptions.</p>
 

@@ -1,5 +1,5 @@
 /* =============================================================================
-   DAILY-QUESTS.JS — EDUQUEST v1.28.1 (extrait d'app.js)
+   DAILY-QUESTS.JS — EDUQUEST v1.29.1 (extrait d'app.js)
    Quêtes journalières : 1 quête de connexion + 3 quêtes tirées chaque jour
    dans QUEST_POOL (tirage déterministe basé sur la date LOCALE), à réclamer
    sur le tableau de bord, puis coffre bonus quand tout est réclamé.

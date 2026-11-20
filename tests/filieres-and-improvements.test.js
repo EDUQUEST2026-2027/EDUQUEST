@@ -39,7 +39,7 @@ function resetStorage() {
     if (typeof AdminStore.invalidateCache === 'function') AdminStore.invalidateCache();
 }
 
-test.describe('Filières (STMG, CIEL, STI2D, NSI, ST2S, Générale) & Programme officiel', () => {
+test.describe('Filières (18 voies officielles) & Programme officiel', () => {
     test('DB.getFiliere / DB.setFiliere persiste la filière et l\'isole par compte', async () => {
         resetStorage();
         assert.equal(DB.getFiliere(), 'generale');
@@ -272,8 +272,8 @@ test.describe('Anti-répétition renforcée (AdaptiveEngine + QuestionBank)', ()
     });
 });
 
-test.describe('Assets, PWA Service Worker & HTML — Cohérence v1.28.1', () => {
-    test('Toutes les 26 îles (dont les 13 nouvelles SVG) et tous les avatars existent, sont non vides, valides XML et pré-cachés', () => {
+test.describe('Assets, PWA Service Worker & HTML — Cohérence v1.29.1', () => {
+    test('Toutes les 36 îles (29 SVG + 7 WebP) et tous les 27 avatars existent, sont non vides, valides XML et pré-cachés', () => {
         const swContent = fs.readFileSync(path.join(ROOT, 'service-worker.js'), 'utf8');
         const allIslands = [
             'maths.webp', 'francais.webp', 'histoire.webp', 'geo.svg', 'svt.webp',
@@ -337,7 +337,7 @@ test.describe('Assets, PWA Service Worker & HTML — Cohérence v1.28.1', () => 
     });
 });
 
-test.describe('Succès triés/filtrés par filière & Pilotage intégral Admin (v1.29.0)', () => {
+test.describe('Succès triés/filtrés par filière & Pilotage intégral Admin (v1.29.1)', () => {
     test('Un élève CIEL voit les succès CIEL & universels mais pas les succès STSS, STMG, STI2D-only ni Collège', () => {
         resetStorage();
         const badges = AdminStore.getBadges();
