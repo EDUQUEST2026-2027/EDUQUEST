@@ -206,11 +206,11 @@
                 </label>
             </div>
 
-            <!-- Option 6.5 : Mode Défi Chronométré -->
-            <div class="option-group">
+            <!-- Option 6.5 : Mode Défi Chronométré (état par défaut piloté par AdminStore) -->
+            <div class="option-group" id="optionsChronoGroup">
                 <label class="checkbox-container">
                     <span class="checkbox">
-                        <input type="checkbox" id="modeChrono">
+                        <input type="checkbox" id="modeChrono" checked>
                         <span class="checkbox-mark">✓</span>
                     </span>
                     <span class="option-label">⏱ Mode Défi Chronométré (<span id="chronoDurationLabel">45s</span>)</span>
@@ -314,7 +314,8 @@
                 </p>
             </div>
 
-            <!-- Section Apparence : Couleur de l'interface, Couleur des boutons, Luminosité des boutons (v1.27.0) -->
+            <!-- Section Apparence : Couleur de l'interface, Couleur des boutons, Luminosité des boutons (pilotable en admin) -->
+            <div id="optionsAppearanceSection">
             <div class="options-section-title">🎨 Apparence &amp; Confort Visuel</div>
 
             <div class="option-group">
@@ -359,6 +360,7 @@
                     <button type="button" class="btn-appearance-reset" id="resetAppearanceBtn">↺ Réinitialiser l'apparence</button>
                 </div>
             </div>
+            </div><!-- fin #optionsAppearanceSection -->
 
             <!-- Section GitHub & Projet Open Source (Étape 11) -->
             <div class="options-project-info" style="margin-top: 10px; margin-bottom: 12px; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); text-align: center; font-size: 13px; color: var(--muted, #94a3b8);">

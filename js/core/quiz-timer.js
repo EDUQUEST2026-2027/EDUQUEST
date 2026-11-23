@@ -39,15 +39,44 @@
         return (rules && Number(rules.QUIZ_DURATION_S) > 0) ? Number(rules.QUIZ_DURATION_S) : DEFAULT_DURATION_S;
     }
 
-    /** Retourne true si le mode Défi Chronométré est activé par le joueur. */
+    /** Retourne true si le mode Défi Chronométré est autorisé globalement par l'admin. */
+    function isAllowedByAdmin() {
+        try {
+            const store = root && root.AdminStore;
+            if (store && typeof store.getSiteConfig === 'function') {
+                const cfg = store.getSiteConfig();
+                if (cfg && cfg.enableChrono === false) return false;
+            }
+        } catch { /* ignore */ }
+        return true;
+    }
+
+    /** Retourne true si le mode Défi Chronométré est activé par défaut (pilotable en admin). */
+    function isEnabledByDefault() {
+        try {
+            const store = root && root.AdminStore;
+            if (store && typeof store.getSiteConfig === 'function') {
+                const cfg = store.getSiteConfig();
+                if (cfg && typeof cfg.chronoEnabledByDefault === 'boolean') {
+                    return cfg.chronoEnabledByDefault;
+                }
+            }
+        } catch { /* ignore */ }
+        return true;
+    }
+
+    /** Retourne true si le mode Défi Chronométré est actif pour le joueur. */
     function isEnabled() {
+        if (!isAllowedByAdmin()) return false;
         try {
             const db = root && root.DB;
             if (db && typeof db.getOption === 'function') {
-                return db.getOption('modeChrono') === 'true';
+                const opt = db.getOption('modeChrono');
+                if (opt === 'true') return true;
+                if (opt === 'false') return false;
             }
         } catch { /* ignore */ }
-        return false;
+        return isEnabledByDefault();
     }
 
     /** Résout les IDs DOM à partir d'un containerId exact ou d'un préfixe. */
@@ -193,6 +222,8 @@
     return Object.freeze({
         DEFAULT_DURATION_S,
         getConfiguredDuration,
+        isAllowedByAdmin,
+        isEnabledByDefault,
         isEnabled,
         create,
         renderBarHtml,

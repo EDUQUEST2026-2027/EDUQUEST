@@ -109,28 +109,120 @@ function _contrastTextForHex(hex) {
     return lum > 0.62 ? '#0b1220' : '#f0f4ff';
 }
 
+/** Helper sûr pour lire la configuration globale du site pilotée depuis admin.html. */
+function getSiteConfigSafe() {
+    return (typeof AdminStore !== 'undefined' && typeof AdminStore.getSiteConfig === 'function')
+        ? (AdminStore.getSiteConfig() || {})
+        : {};
+}
+
+/**
+ * Applique l'identité visuelle textuelle (titre, textes de sortie) configurée dans admin.html.
+ */
+function applySiteBranding() {
+    if (typeof document === 'undefined') return;
+    const cfg = getSiteConfigSafe();
+    const siteTitle = (typeof cfg.title === 'string' && cfg.title.trim()) ? cfg.title.trim() : 'EDUQUEST';
+    if (document.title && siteTitle !== 'EDUQUEST') {
+        document.title = document.title.replace(/EDUQUEST/g, siteTitle);
+    }
+    const logoImg = document.querySelector('.logo-image');
+    if (logoImg) logoImg.alt = siteTitle;
+    const exitTitleEl = document.querySelector('#exitPage .exit-title');
+    if (exitTitleEl && cfg.exitTitle) exitTitleEl.textContent = cfg.exitTitle;
+    const exitSubEl = document.querySelector('#exitPage .exit-subtitle');
+    if (exitSubEl && cfg.exitSubtitle) exitSubEl.textContent = cfg.exitSubtitle;
+}
+
+/**
+ * Affiche une transition dynamique d'expulsion lors d'un changement de classe ou
+ * d'accès à une matière hors programme, puis exécute `onComplete` ou redirige.
+ * Pilotable via `AdminStore.siteConfig.showExpulsionTransition`.
+ */
+function triggerClassChangeExpulsion(newNiveauLabel, reasonText = '', targetUrl = 'dashboard.html', onComplete = null) {
+    const cfg = getSiteConfigSafe();
+    if (cfg.showExpulsionTransition === false) {
+        if (typeof onComplete === 'function') onComplete();
+        else if (targetUrl) window.location.replace(targetUrl);
+        return;
+    }
+
+    const existing = document.getElementById('eduquest-class-expulsion');
+    if (existing) existing.remove();
+
+    const descHtml = reasonText
+        ? escapeHtml(reasonText)
+        : `Passage au programme <b>${escapeHtml(newNiveauLabel || 'scolaire')}</b>.<br>Retour dynamique vers les matières autorisées…`;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'eduquest-class-expulsion';
+    overlay.className = 'class-expulsion-overlay';
+    overlay.setAttribute('role', 'alertdialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.innerHTML = `
+        <div class="class-expulsion-card">
+            <div class="class-expulsion-icon">🎓</div>
+            <div class="class-expulsion-title">Changement de parcours détecté</div>
+            <div class="class-expulsion-desc">${descHtml}</div>
+            <div class="class-expulsion-bar">
+                <div class="class-expulsion-bar-fill" id="class-expulsion-bar-fill"></div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => {
+            const fill = document.getElementById('class-expulsion-bar-fill');
+            if (fill) fill.style.width = '100%';
+        });
+    }
+
+    setTimeout(() => {
+        if (typeof onComplete === 'function') {
+            overlay.remove();
+            onComplete();
+        } else if (targetUrl) {
+            window.location.replace(targetUrl);
+        }
+    }, 850);
+}
+
 /**
  * Applique globalement les réglages d'apparence (thème boutique, couleur
  * de l'interface, couleur des boutons, luminosité des boutons) sur TOUTES
- * les pages du site.
+ * les pages du site. Respecte les valeurs par défaut et verrouillages admin.
  */
 function applyAppearanceSettings() {
     if (typeof document === 'undefined' || !document.documentElement) return;
     const root = document.documentElement;
+    const cfg = getSiteConfigSafe();
+    const allowClient = cfg.allowClientAppearance !== false;
 
     // 1. Thème de la boutique (data-theme) appliqué partout (index, dashboard, map)
-    const shopTheme = getOption('dash_equippedTheme') || 'default';
+    const adminTheme = cfg.defaultTheme || 'default';
+    const clientTheme = getOption('dash_equippedTheme');
+    const shopTheme = allowClient ? (clientTheme || adminTheme) : adminTheme;
     root.setAttribute('data-theme', shopTheme);
 
-    // 2. Luminosité des boutons (défaut adouci : 80 % = 0.80)
-    const rawBrightness = parseInt(getOption('btnBrightness') || '80', 10);
-    const clampedPct = Number.isFinite(rawBrightness) ? Math.min(110, Math.max(45, rawBrightness)) : 80;
+    // 2. Luminosité des boutons (défaut pilotable en admin, 80 % par défaut)
+    const adminBrightness = Number.isFinite(Number(cfg.defaultBtnBrightness)) ? Number(cfg.defaultBtnBrightness) : 80;
+    const clientBrightness = getOption('btnBrightness');
+    const rawBrightness = allowClient && clientBrightness !== null
+        ? parseInt(clientBrightness, 10)
+        : adminBrightness;
+    const clampedPct = Number.isFinite(rawBrightness) ? Math.min(110, Math.max(45, rawBrightness)) : adminBrightness;
     root.style.setProperty('--btn-brightness', (clampedPct / 100).toFixed(2));
 
     // 3. Couleur personnalisée de l'interface
-    const uiPreset = getOption('uiPreset') || 'default';
-    const uiColor = getOption('uiColor') || '';
-    const uiAccent = getOption('uiAccent') || '';
+    const uiPreset = (allowClient && getOption('uiPreset') !== null)
+        ? (getOption('uiPreset') || 'default')
+        : (cfg.defaultUiPreset || 'default');
+    const uiColor = (allowClient && getOption('uiColor') !== null)
+        ? (getOption('uiColor') || '')
+        : (cfg.defaultUiColor || '');
+    const uiAccent = (allowClient && getOption('uiAccent') !== null)
+        ? (getOption('uiAccent') || '')
+        : (cfg.defaultUiAccent || '');
     if (uiPreset !== 'default' && /^#[0-9a-f]{6}$/i.test(uiColor)) {
         root.setAttribute('data-ui-custom', 'true');
         root.style.setProperty('--ui-bg-tint', uiColor);
@@ -148,8 +240,12 @@ function applyAppearanceSettings() {
     }
 
     // 4. Couleur personnalisée des boutons
-    const btnPreset = getOption('btnPreset') || 'default';
-    const btnColor = getOption('btnColor') || '';
+    const btnPreset = (allowClient && getOption('btnPreset') !== null)
+        ? (getOption('btnPreset') || 'default')
+        : (cfg.defaultBtnPreset || 'default');
+    const btnColor = (allowClient && getOption('btnColor') !== null)
+        ? (getOption('btnColor') || '')
+        : (cfg.defaultBtnColor || '');
     if (btnPreset !== 'default' && /^#[0-9a-f]{6}$/i.test(btnColor)) {
         root.setAttribute('data-btn-custom', 'true');
         root.style.setProperty('--ui-btn-bg', btnColor);
@@ -252,6 +348,7 @@ function applyAllRuntimeSettings() {
     applyEcoModeSetting();
     applyAnimationsSetting();
     applySiteAnnouncement();
+    applySiteBranding();
     if (typeof AudioManager !== 'undefined' && typeof AudioManager.syncWithOptions === 'function') {
         AudioManager.syncWithOptions(false);
     }
@@ -264,7 +361,8 @@ if (typeof window !== 'undefined') {
             if (typeof AdminStore !== 'undefined' && typeof AdminStore.invalidateCache === 'function') AdminStore.invalidateCache();
             if (typeof _effectiveSubjectsCache !== 'undefined') _effectiveSubjectsCache.clear();
             refreshFooterCredits();
-            applySiteAnnouncement();
+            applyAllRuntimeSettings();
+            if (typeof window._syncOptionsModalUI === 'function') window._syncOptionsModalUI();
         }
         if (event.key && (event.key === 'eduquest_options' || event.key.startsWith('eduquest_opts_'))) {
             applyAllRuntimeSettings();
@@ -600,16 +698,22 @@ function initAccueil() {
     const confirmCancel = document.getElementById('confirmQuitCancel');
 
     function performQuitExpulsion() {
+        const cfg = getSiteConfigSafe();
         // 1. Coupe tout son immédiatement
         if (typeof AudioManager !== 'undefined' && typeof AudioManager.stopAll === 'function') {
             AudioManager.stopAll();
+        }
+        // 1b. Déconnexion automatique sur Quitter (pilotable en admin)
+        if (cfg.logoutOnQuit !== false && typeof DB !== 'undefined' && typeof DB.logout === 'function') {
+            try { DB.logout(); } catch (_) {}
         }
         // 2. Quitte le plein écran si actif
         if (document.fullscreenElement) {
             const exitFs = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
             if (exitFs) { try { exitFs.call(document); } catch (_) {} }
         }
-        // 3. Bascule vers l'écran de sortie
+        // 3. Bascule vers l'écran de sortie (textes pilotables en admin)
+        applySiteBranding();
         if (quitModal) quitModal.hidden = true;
         const mainPage = document.getElementById('mainPage');
         const exitPage = document.getElementById('exitPage');
@@ -639,6 +743,11 @@ function initAccueil() {
         quitButton.addEventListener('click', () => {
             if (typeof AudioManager !== 'undefined' && typeof AudioManager.playSfx === 'function') {
                 AudioManager.playSfx('click');
+            }
+            const cfg = getSiteConfigSafe();
+            if (cfg.confirmBeforeQuit === false) {
+                performQuitExpulsion();
+                return;
             }
             if (quitModal) {
                 quitModal.hidden = false;
@@ -1051,6 +1160,14 @@ function initOptions() {
         const defaultBgm = siteCfg && siteCfg.defaultBgmVolume != null ? String(siteCfg.defaultBgmVolume) : '35';
         const defaultSfx = siteCfg && siteCfg.defaultSfxVolume != null ? String(siteCfg.defaultSfxVolume) : '60';
         const defaultSoundOn = !siteCfg || siteCfg.soundEnabledByDefault !== false;
+        const chronoAllowed = !siteCfg || siteCfg.enableChrono !== false;
+        const defaultChronoOn = chronoAllowed && (!siteCfg || siteCfg.chronoEnabledByDefault !== false);
+        const allowClientAppearance = !siteCfg || siteCfg.allowClientAppearance !== false;
+
+        const chronoGroup = document.getElementById('optionsChronoGroup');
+        if (chronoGroup) chronoGroup.style.display = chronoAllowed ? '' : 'none';
+        const appearanceSection = document.getElementById('optionsAppearanceSection');
+        if (appearanceSection) appearanceSection.style.display = allowClientAppearance ? '' : 'none';
 
         if (chronoDurLabel && typeof QuizTimer !== 'undefined' && typeof QuizTimer.getConfiguredDuration === 'function') {
             chronoDurLabel.textContent = QuizTimer.getConfiguredDuration() + 's';
@@ -1065,22 +1182,30 @@ function initOptions() {
             const value = getOption(id);
             const el    = document.getElementById(id);
             if (!el) return;
+            if (id === 'modeChrono' && !chronoAllowed) {
+                el.checked = false;
+                return;
+            }
             if (value !== null) {
                 el.checked = value === 'true';
             } else if (['sonsActifs', 'musiqueActive', 'effetsActifs'].includes(id)) {
                 el.checked = defaultSoundOn;
-            } else if (id === 'animationsActives' || id === 'particules') {
+            } else if (id === 'modeChrono') {
+                el.checked = defaultChronoOn;
+            } else if (id === 'animationsActives') {
                 el.checked = true;
+            } else if (id === 'particules') {
+                el.checked = !siteCfg || siteCfg.enableParticlesByDefault !== false;
             } else {
                 el.checked = false;
             }
         });
 
         if (optNiveauSelect && typeof DB !== 'undefined' && DB.getNiveau) {
-            optNiveauSelect.value = DB.getNiveau() || '6eme';
+            optNiveauSelect.value = DB.getNiveau() || (siteCfg && siteCfg.defaultNiveau) || '6eme';
         }
         if (optFiliereSelect && typeof DB !== 'undefined' && DB.getFiliere) {
-            optFiliereSelect.value = DB.getFiliere() || 'generale';
+            optFiliereSelect.value = DB.getFiliere() || (siteCfg && siteCfg.defaultFiliere) || 'generale';
         }
         syncFiliereGroupVisibility();
 
@@ -1091,14 +1216,21 @@ function initOptions() {
         // Mise à jour visuelle UNIQUEMENT (userInitiated = false)
         updateSoundControlsState(false);
 
-        // Apparence
-        curUiPreset  = getOption('uiPreset') || 'default';
-        curUiColor   = getOption('uiColor') || '#0d1f3a';
-        curUiAccent  = getOption('uiAccent') || '#c8a84b';
-        curBtnPreset = getOption('btnPreset') || 'default';
-        curBtnColor  = getOption('btnColor') || '#24354f';
+        // Apparence (repli sur les valeurs par défaut pilotées depuis admin.html)
+        const adminUiPreset = (siteCfg && siteCfg.defaultUiPreset) || 'default';
+        const adminUiColor = (siteCfg && siteCfg.defaultUiColor) || '#0d1f3a';
+        const adminUiAccent = (siteCfg && siteCfg.defaultUiAccent) || '#c8a84b';
+        const adminBtnPreset = (siteCfg && siteCfg.defaultBtnPreset) || 'default';
+        const adminBtnColor = (siteCfg && siteCfg.defaultBtnColor) || '#24354f';
+        const adminBtnBright = (siteCfg && siteCfg.defaultBtnBrightness != null) ? String(siteCfg.defaultBtnBrightness) : '80';
+
+        curUiPreset  = getOption('uiPreset') || adminUiPreset;
+        curUiColor   = getOption('uiColor') || adminUiColor;
+        curUiAccent  = getOption('uiAccent') || adminUiAccent;
+        curBtnPreset = getOption('btnPreset') || adminBtnPreset;
+        curBtnColor  = getOption('btnColor') || adminBtnColor;
         if (btnBrightness) {
-            btnBrightness.value = getOption('btnBrightness') || '80';
+            btnBrightness.value = getOption('btnBrightness') || adminBtnBright;
             updateBtnBrightnessDisplay();
         }
         refreshAppearanceSwatches();
@@ -1244,13 +1376,14 @@ function initOptions() {
     }
     if (resetAppearanceBtn) {
         resetAppearanceBtn.addEventListener('click', () => {
-            curUiPreset  = 'default';
-            curUiColor   = '#0d1f3a';
-            curUiAccent  = '#c8a84b';
-            curBtnPreset = 'default';
-            curBtnColor  = '#24354f';
+            const cfg = getSiteConfigSafe();
+            curUiPreset  = cfg.defaultUiPreset || 'default';
+            curUiColor   = cfg.defaultUiColor || '#0d1f3a';
+            curUiAccent  = cfg.defaultUiAccent || '#c8a84b';
+            curBtnPreset = cfg.defaultBtnPreset || 'default';
+            curBtnColor  = cfg.defaultBtnColor || '#24354f';
             if (btnBrightness) {
-                btnBrightness.value = '80';
+                btnBrightness.value = String(cfg.defaultBtnBrightness != null ? cfg.defaultBtnBrightness : 80);
                 updateBtnBrightnessDisplay();
             }
             refreshAppearanceSwatches();
@@ -1788,16 +1921,33 @@ function renderQuizMetaStripHtml(attempt) {
         ? `${starsHtml} Max ${maxStars} étoile${maxStars > 1 ? 's' : ''}`
         : `${starsHtml} 3 étoiles en jeu`;
 
+    const aiCfg = (typeof AdminStore !== 'undefined' && typeof AdminStore.getAiConfig === 'function')
+        ? AdminStore.getAiConfig()
+        : { showAiBadgeInQuiz: true };
+    if (aiCfg && aiCfg.showAiBadgeInQuiz === false) {
+        return `<span class="quiz-stars-stake ${penalized ? 'penalized' : ''}" title="${penalized ? 'Une erreur précédente sur ce niveau réduit le maximum d\'étoiles.' : 'Réponds juste du premier coup pour 3 étoiles !'}">${stakeLabel}</span>`;
+    }
+
     const isAi = attempt.source === 'ai';
     const tierId = attempt.difficultyTier || (attempt.tierInfo && attempt.tierInfo.id) || 'standard';
     const tierIcon = (attempt.tierInfo && attempt.tierInfo.icon) || (tierId === 'remediation' ? '🌱' : tierId === 'approfondissement' ? '🚀' : '⚡');
-    const sourceLabel = isAi
-        ? `🤖 ${attempt.providerName || 'IA adaptative'}`
-        : `${tierIcon} ${attempt.providerName || 'Adaptatif'}`;
+    const persona = (!isAi && ((attempt.lesson && attempt.lesson.aiAgent) || attempt.aiAgent)) || null;
+
+    let sourcePillHtml = '';
+    if (persona) {
+        const personaRole = persona.adaptedAfterFailure ? 'Question réinitialisée & adaptée' : (persona.role || 'Adaptatif');
+        const safeColor = /^#[0-9a-f]{6}$/i.test(String(persona.color || '')) ? persona.color : '#4cc9f0';
+        sourcePillHtml = `<span class="ai-pool-badge ${persona.adaptedAfterFailure ? 'is-adapted' : ''}" style="--persona-color:${safeColor};" title="${escapeHtml(persona.name)} — ${escapeHtml(personaRole)}">${escapeHtml(persona.icon || '🤖')} <span>${escapeHtml(persona.name)} · ${escapeHtml(personaRole)}</span></span>`;
+    } else {
+        const sourceLabel = isAi
+            ? `🤖 ${attempt.providerName || 'IA adaptative'}`
+            : `${tierIcon} ${attempt.providerName || 'Adaptatif'}`;
+        sourcePillHtml = `<span class="quiz-source-pill ${isAi ? 'is-ai' : ''} tier-${escapeHtml(tierId)}" title="Difficulté adaptative & anti-répétition">${escapeHtml(sourceLabel)}</span>`;
+    }
 
     return `
         <span class="quiz-stars-stake ${penalized ? 'penalized' : ''}" title="${penalized ? 'Une erreur précédente sur ce niveau réduit le maximum d\'étoiles.' : 'Réponds juste du premier coup pour 3 étoiles !'}">${stakeLabel}</span>
-        <span class="quiz-source-pill ${isAi ? 'is-ai' : ''} tier-${escapeHtml(tierId)}" title="Difficulté adaptative & anti-répétition">${escapeHtml(sourceLabel)}</span>
+        ${sourcePillHtml}
     `;
 }
 
@@ -1958,6 +2108,11 @@ function initMap() {
 
     /** Transition dynamique d'expulsion vers le tableau de bord si la matière est hors programme. */
     function triggerExpulsionToDashboard(reasonText) {
+        const cfg = getSiteConfigSafe();
+        if (cfg.showExpulsionTransition === false) {
+            window.location.replace('dashboard.html');
+            return;
+        }
         const overlay = document.getElementById('mapExpelOverlay');
         const textEl = document.getElementById('mapExpelText');
         if (textEl && reasonText) textEl.textContent = reasonText;
@@ -1968,7 +2123,7 @@ function initMap() {
                 window.location.replace('dashboard.html');
             }, 1250);
         } else {
-            window.location.replace('dashboard.html');
+            triggerClassChangeExpulsion(niveauLabel, reasonText, 'dashboard.html');
         }
     }
 
@@ -2572,6 +2727,8 @@ function initMap() {
      */
     function unlockNextAndSave(starsEarned, attempt = null) {
         stopMapTimer();
+        const cfg = getSiteConfigSafe();
+        const strictAntiCheat = cfg.strictStarsAntiCheat !== false;
         const isFirstSuccess = progress.levels[currentModalLevel].stars === 0 && starsEarned > 0;
         if (starsEarned > progress.levels[currentModalLevel].stars) {
             progress.levels[currentModalLevel].stars = starsEarned;
@@ -2580,8 +2737,14 @@ function initMap() {
             progress.levels[currentModalLevel + 1].unlocked = true;
         }
 
-        // Réussite validée → on efface le compteur anti-triche d'erreurs de ce niveau
-        if (typeof DB !== 'undefined' && typeof DB.clearLevelAttempt === 'function') {
+        // Anti-triche 3★ (pilotable en admin) :
+        // - strictStarsAntiCheat = true : on conserve le compteur d'échecs après erreur pour empêcher
+        //   d'obtenir 3★ en rejouant le niveau (sauf réinitialisation explicite de la matière).
+        // - strictStarsAntiCheat = false : on efface le compteur à la victoire (permet de rejouer pour 3★).
+        const hadUnshieldedError = attempt && GameRules && typeof GameRules.effectiveAttempts === 'function'
+            ? GameRules.effectiveAttempts(attempt.attempts, attempt.usedShield) > 1
+            : (starsEarned < 3);
+        if ((!strictAntiCheat || !hadUnshieldedError) && typeof DB !== 'undefined' && typeof DB.clearLevelAttempt === 'function') {
             DB.clearLevelAttempt(effectiveSubjectId, niveauActuel, currentModalLevel - 1);
         }
 
@@ -2676,8 +2839,8 @@ function initMap() {
         return { isFirstSuccess, xpGained, coinsGained, scoreGained, multiplier: mult, streak: streakRes.streak };
     }
 
-    /** Charge une nouvelle question via AiProvider (Multi-IA + AdaptiveEngine local). */
-    async function loadQuestionForAttempt(attempt, levelNumber, { excludeProviderId = null } = {}) {
+    /** Charge une nouvelle question via AiProvider (Multi-IA + AdaptiveEngine local + Personas). */
+    async function loadQuestionForAttempt(attempt, levelNumber, { excludeProviderId = null, excludePersonaId = null } = {}) {
         const idx = levelNumber - 1;
         const duration = (typeof QuizTimer !== 'undefined') ? QuizTimer.getConfiguredDuration() : 45;
         attempt.chronoDuration = duration;
@@ -2690,6 +2853,8 @@ function initMap() {
                 localLesson: (attempt.salt === 0 && carteSubject && carteSubject.lessons[idx]) ? carteSubject.lessons[idx] : null,
                 excludeSignatures: attempt.failedSignatures || [],
                 excludeProviderId,
+                excludePersonaId,
+                afterFailure: (attempt.salt || 0) > 0,
             });
             if (currentAttempt !== attempt || currentModalLevel !== levelNumber || modal.hidden) return;
             attempt.lesson = fetched.lesson;
@@ -2697,6 +2862,7 @@ function initMap() {
             attempt.source = fetched.source || 'local';
             attempt.providerId = fetched.providerId || null;
             attempt.providerName = fetched.providerName || '';
+            attempt.aiAgent = fetched.aiAgent || (fetched.lesson && fetched.lesson.aiAgent) || null;
             attempt.difficultyTier = fetched.difficultyTier || 'standard';
             attempt.tierInfo = fetched.tierInfo || null;
             attempt.signature = fetched.signature || (typeof QuestionBank !== 'undefined' && QuestionBank.questionSignature ? QuestionBank.questionSignature(fetched.lesson) : '');
@@ -2800,7 +2966,8 @@ function initMap() {
         }
 
         const hintSlot = document.getElementById('modal-quiz-hint-slot');
-        const hintText = getLessonHint(lesson, effectiveSubjectId);
+        const showHints = getSiteConfigSafe().showHintsInQuiz !== false;
+        const hintText = showHints ? getLessonHint(lesson, effectiveSubjectId) : '';
 
         if (!answered && !checking) {
             if (hintSlot) {
@@ -2884,10 +3051,11 @@ function initMap() {
                     stopMapTimer();
                     delete body.dataset.renderedLessonKey;
                     const prevProviderId = currentAttempt.providerId;
+                    const prevPersonaId = currentAttempt.aiAgent ? currentAttempt.aiAgent.id : null;
                     const nextVariant = QuizSession.nextVariant(currentAttempt.variant);
                     QuizSession.resetForRetry(currentAttempt, nextVariant);
                     renderModalQuiz();
-                    await loadQuestionForAttempt(currentAttempt, currentModalLevel, { excludeProviderId: prevProviderId });
+                    await loadQuestionForAttempt(currentAttempt, currentModalLevel, { excludeProviderId: prevProviderId, excludePersonaId: prevPersonaId });
                 });
             }
         }
@@ -2994,6 +3162,14 @@ function initMap() {
         saveProgress(progress);
         modal.hidden = true;
         renderLevels(progress);
+    });
+
+    // Resynchronisation de la progression lors d'un retour de page (BFCache / bouton Précédent)
+    window.addEventListener('pageshow', () => {
+        loadProgress().then(loaded => {
+            progress = loaded;
+            renderLevels(progress);
+        });
     });
 
     const backBtn = document.querySelector('.back-button');
@@ -3990,7 +4166,11 @@ function initDashboard() {
 
         const equippedAura = savedAura || (curCat === 'aura' ? savedSkin : 'aurore');
         const equippedAvatar = getEquippedAvatarId();
-        const equippedTheme = getOption('dash_equippedTheme') || 'default';
+        const siteCfg = getSiteConfigSafe();
+        const adminTheme = siteCfg.defaultTheme || 'default';
+        const equippedTheme = siteCfg.allowClientAppearance === false
+            ? adminTheme
+            : (getOption('dash_equippedTheme') || adminTheme);
         document.documentElement.setAttribute('data-theme', equippedTheme);
 
         let parsedProgress = {};
@@ -4088,12 +4268,17 @@ function initDashboard() {
 
     /** Point d'entrée du rendu — reconstruit tout le contenu de #dashboard-app */
     function render() {
+        const siteCfg = getSiteConfigSafe();
+        const activeTheme = siteCfg.allowClientAppearance === false
+            ? (siteCfg.defaultTheme || 'default')
+            : (state.equippedTheme || siteCfg.defaultTheme || 'default');
         document.documentElement.style.setProperty('--dash-skin', skinColor(state.equippedAura));
-        document.documentElement.setAttribute('data-theme', state.equippedTheme || 'default');
+        document.documentElement.setAttribute('data-theme', activeTheme);
         if (document.body) {
             document.body.classList.toggle('bnav-collapsed', Boolean(state.bottomNavHidden));
         }
         _lastDashSyncSig = computeDashSyncSig();
+        const footerNote = siteCfg.dashboardFooterNote || 'EDUQUEST — Contenus alignés sur les programmes officiels.';
         dashApp.innerHTML = `
             ${renderHeader()}
             ${renderHud()}
@@ -4102,7 +4287,7 @@ function initDashboard() {
             ${state.view === 'map' ? renderMap() : ''}
             ${state.view === 'shop' ? renderShop() : ''}
             ${state.view === 'badges' ? renderBadges() : ''}
-            <div class="dash-footer-note">EDUQUEST — Contenus alignés sur les programmes officiels.</div>
+            <div class="dash-footer-note">${escapeHtml(footerNote)}</div>
         `;
         if (state.quiz) renderQuizModal();
     }
@@ -4154,10 +4339,17 @@ function initDashboard() {
                 </select>`;
         }
 
+        const siteCfg = getSiteConfigSafe();
+        const hideControlsDuringQuiz = Boolean(state.quiz && siteCfg.hideGradeDuringQuiz !== false);
+        const brandTitle = (typeof siteCfg.title === 'string' && siteCfg.title.trim()) ? siteCfg.title.trim() : 'EDUQUEST';
+        const brandHtml = brandTitle.toUpperCase() === 'EDUQUEST'
+            ? '<b>EDU</b><span>QUEST</span>'
+            : `<b>${escapeHtml(brandTitle)}</b>`;
+
         return `<header class="dash-header">
             <div class="dash-header-left">
-                <div class="dash-brand"><b>EDU</b><span>QUEST</span></div>
-                <div class="dash-header-controls">
+                <div class="dash-brand">${brandHtml}</div>
+                <div class="dash-header-controls" ${hideControlsDuringQuiz ? 'style="display:none;"' : ''}>
                     <select class="dash-grade-select" id="dashGradeSelect" ${state.quiz ? 'disabled title="Changement de classe verrouillé pendant un exercice"' : ''} onchange="window._dashChangeNiveau(this.value)" aria-label="Choisir sa classe">
                         ${optionsHtml}
                     </select>
@@ -4762,7 +4954,7 @@ function initDashboard() {
         }
     });
 
-    async function loadDashQuestion(quizObj, { excludeProviderId = null } = {}) {
+    async function loadDashQuestion(quizObj, { excludeProviderId = null, excludePersonaId = null } = {}) {
         const { subjectId, lessonIndex } = quizObj;
         const currentNiv = currentNiveau();
         const dashSubj = DASH_SUBJECTS.find(s => s.id === subjectId);
@@ -4777,6 +4969,8 @@ function initDashboard() {
                 localLesson: (quizObj.salt === 0 && dashSubj && dashSubj.lessons[lessonIndex]) ? dashSubj.lessons[lessonIndex] : null,
                 excludeSignatures: quizObj.failedSignatures || [],
                 excludeProviderId,
+                excludePersonaId,
+                afterFailure: (quizObj.salt || 0) > 0,
             });
             if (state.quiz !== quizObj) return;
             quizObj.lesson = fetched.lesson;
@@ -4784,6 +4978,7 @@ function initDashboard() {
             quizObj.source = fetched.source || 'local';
             quizObj.providerId = fetched.providerId || null;
             quizObj.providerName = fetched.providerName || '';
+            quizObj.aiAgent = fetched.aiAgent || (fetched.lesson && fetched.lesson.aiAgent) || null;
             quizObj.difficultyTier = fetched.difficultyTier || 'standard';
             quizObj.tierInfo = fetched.tierInfo || null;
             quizObj.signature = fetched.signature || (typeof QuestionBank !== 'undefined' && QuestionBank.questionSignature ? QuestionBank.questionSignature(fetched.lesson) : '');
@@ -4851,7 +5046,8 @@ function initDashboard() {
         const comboBarHtml = renderQuizComboBarHtml(streakData);
 
         const lesson = state.quiz.lesson;
-        const hintText = getLessonHint(lesson, subjectId);
+        const showHints = getSiteConfigSafe().showHintsInQuiz !== false;
+        const hintText = showHints ? getLessonHint(lesson, subjectId) : '';
         const hintButtonHtml = (!answered && !checking && hintText) ? `
             <div class="dash-hint-container">
                 <button class="dash-hint-toggle-btn" type="button" onclick="window._toggleQuizHint(this)" aria-expanded="false">
@@ -5016,13 +5212,14 @@ function initDashboard() {
             : [];
         const found = niveaux.find(n => n.id === val);
         const label = found ? (found.label || found.name) : val;
-        if (state.view === 'map' && state.currentSubject && !DASH_SUBJECTS.some(s => s.id === state.currentSubject)) {
-            state.view = 'dashboard';
-            state.currentSubject = null;
-            showNotification(`🎓 Programme actualisé (${label}) : retour aux matières autorisées.`, 'info');
-        } else {
-            showNotification(`🎓 Programme actualisé pour la classe : ${label}`, 'info');
+        if (state.view === 'map') {
+            triggerClassChangeExpulsion(label, `Programme actualisé (${label}) : retour dynamique vers les matières autorisées…`, null, () => {
+                navigateToView('dashboard');
+                showNotification(`🎓 Programme actualisé pour la classe : ${label}`, 'info');
+            });
+            return;
         }
+        showNotification(`🎓 Programme actualisé pour la classe : ${label}`, 'info');
         render();
     };
 
@@ -5047,8 +5244,11 @@ function initDashboard() {
             ? AdminStore.filiereLabel(val)
             : val;
         if (state.view === 'map' && state.currentSubject && !DASH_SUBJECTS.some(s => s.id === state.currentSubject)) {
-            state.view = 'dashboard';
-            state.currentSubject = null;
+            triggerClassChangeExpulsion(filLabel, `Filière actualisée (${filLabel}) : cette matière n'y est plus au programme. Retour aux matières…`, null, () => {
+                navigateToView('dashboard');
+                showNotification(`🧭 Filière actualisée : ${filLabel} (${DASH_SUBJECTS.length} matières)`);
+            });
+            return;
         }
         showNotification(`🧭 Filière actualisée : ${filLabel} (${DASH_SUBJECTS.length} matières)`);
         render();
@@ -5184,11 +5384,12 @@ function initDashboard() {
         const overlay = document.getElementById('dashQuizOverlay');
         if (overlay) delete overlay.dataset.quizKey;
         const prevProviderId = state.quiz.providerId;
+        const prevPersonaId = state.quiz.aiAgent ? state.quiz.aiAgent.id : null;
         const nextVariant = QuizSession.nextVariant(state.quiz.variant);
         QuizSession.resetForRetry(state.quiz, nextVariant);
         state.quiz.loading = true;
         renderQuizModal();
-        await loadDashQuestion(state.quiz, { excludeProviderId: prevProviderId });
+        await loadDashQuestion(state.quiz, { excludeProviderId: prevProviderId, excludePersonaId: prevPersonaId });
     };
 
     window._dashSubmitQuiz = async function (rawAnswer) {
@@ -5212,8 +5413,12 @@ function initDashboard() {
         const usedShield = Boolean(state.quiz.usedShield);
         const stars = GameRules.starsFor(attempts, usedShield);
 
-        // Réussite validée → purge du compteur anti-triche pour ce niveau
-        if (typeof DB !== 'undefined' && typeof DB.clearLevelAttempt === 'function') {
+        // Anti-triche 3★ pilotable en admin (conserve le plafond si erreur et mode strict actif)
+        const strictAntiCheat = getSiteConfigSafe().strictStarsAntiCheat !== false;
+        const hadUnshieldedError = GameRules && typeof GameRules.effectiveAttempts === 'function'
+            ? GameRules.effectiveAttempts(attempts, usedShield) > 1
+            : (stars < 3);
+        if ((!strictAntiCheat || !hadUnshieldedError) && typeof DB !== 'undefined' && typeof DB.clearLevelAttempt === 'function') {
             DB.clearLevelAttempt(subjectId, currentNiveau(), lessonIndex);
         }
 
@@ -5461,6 +5666,16 @@ function initDashboard() {
         render();
     });
 
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'eduquest_admin_data') {
+            if (typeof AdminStore !== 'undefined' && typeof AdminStore.invalidateCache === 'function') AdminStore.invalidateCache();
+            _effectiveSubjectsCache.clear();
+            DASH_SUBJECTS = getEffectiveSubjects();
+            applyAllRuntimeSettings();
+            render();
+        }
+    });
+
     /* ============ PREMIER RENDU ============ */
     persistState();
     render();
@@ -5471,9 +5686,10 @@ function initDashboard() {
    ========================================================================== */
 document.addEventListener('DOMContentLoaded', () => {
 
-    // 0. Apparence globale (thème boutique + couleur interface + couleur/luminosité boutons) & annonce
+    // 0. Apparence globale (thème boutique + couleur interface + couleur/luminosité boutons), identité & annonce
     applyAppearanceSettings();
     applySiteAnnouncement();
+    applySiteBranding();
 
     // 1. Initialisation du gestionnaire audio global (musique continue + zéro réactivation parasite)
     initGlobalMusic();

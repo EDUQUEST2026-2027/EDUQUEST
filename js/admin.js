@@ -1672,14 +1672,19 @@
         const aiCfg = (typeof AdminStore !== 'undefined') ? AdminStore.getAiConfig() : {};
         const levels = (typeof AdminStore !== 'undefined' && AdminStore.getLevels) ? AdminStore.getLevels() : [];
         const filieres = (typeof AdminStore !== 'undefined' && AdminStore.getFilieres) ? AdminStore.getFilieres() : [];
+        const shopThemes = (typeof AdminStore !== 'undefined' && AdminStore.getShopItems)
+            ? AdminStore.getShopItems().filter(i => i.category === 'theme')
+            : [{ id: 'default', name: '🌌 Thème Astral (Origine)' }];
+        const localPersonas = Array.isArray(aiCfg.localPersonas) ? aiCfg.localPersonas : [];
+        const defBright = siteCfg.defaultBtnBrightness != null ? siteCfg.defaultBtnBrightness : 80;
 
         return `
             <div class="adm-card">
                 <div class="adm-toolbar">
-                    <h2 style="margin:0;">⚙️ Configuration Générale &amp; Pilotage Global du Site</h2>
-                    <span class="adm-badge adm-badge-system">v1.29.1</span>
+                    <h2 style="margin:0;">⚙️ Configuration Générale &amp; Pilotage Intégral de l'Interface Client</h2>
+                    <span class="adm-badge adm-badge-system">v1.29.2</span>
                 </div>
-                <p class="adm-hint">Pilotez ici l'ensemble des paramètres globaux d'EDUQUEST : identité, parcours par défaut, modules actifs (Boutique, Missions, Succès, Confettis, Chrono), mode maintenance/examen, audio et inscriptions.</p>
+                <p class="adm-hint">Pilotez ici l'intégralité de l'interface client : identité, textes, parcours par défaut, chronomètre, anti-triche 3★, verrouillage collège, bouton Quitter, apparence par défaut, modules actifs et mode examen.</p>
 
                 <div class="adm-form" style="margin-top:14px;">
                     <div class="adm-grid-2">
@@ -1696,6 +1701,21 @@
                     <div class="adm-field">
                         <label>Annonce d'accueil / Message d'information (affiché sur l'accueil &amp; le dashboard)</label>
                         <input class="adm-input" id="admSiteAnnouncement" value="${esc(siteCfg.announcement || '')}" placeholder="Ex: Bienvenue pour la rentrée ! Nouveaux quiz CIEL & STMG disponibles.">
+                    </div>
+
+                    <div class="adm-grid-3">
+                        <div class="adm-field">
+                            <label>Titre écran de sortie (Quitter)</label>
+                            <input class="adm-input" id="admSiteExitTitle" value="${esc(siteCfg.exitTitle || "✨ Merci d'avoir joué à notre jeu ! ✨")}">
+                        </div>
+                        <div class="adm-field">
+                            <label>Sous-titre écran de sortie</label>
+                            <input class="adm-input" id="admSiteExitSubtitle" value="${esc(siteCfg.exitSubtitle || 'À bientôt pour de nouvelles aventures !')}">
+                        </div>
+                        <div class="adm-field">
+                            <label>Pied de page du Dashboard</label>
+                            <input class="adm-input" id="admSiteDashFooter" value="${esc(siteCfg.dashboardFooterNote || 'EDUQUEST — Contenus alignés sur les programmes officiels.')}">
+                        </div>
                     </div>
 
                     <div class="adm-grid-2">
@@ -1730,28 +1750,89 @@
 
                     <div class="adm-grid-2">
                         <div class="adm-field">
-                            <label>Volume des effets sonores (%)</label>
-                            <input class="adm-input" type="range" id="admSiteSfxVol" min="0" max="100" value="${Math.round((siteCfg.sfxVolume ?? 0.7) * 100)}" oninput="document.getElementById('admSiteSfxVal').textContent=this.value+'%'">
-                            <span id="admSiteSfxVal" class="adm-hint">${Math.round((siteCfg.sfxVolume ?? 0.7) * 100)}%</span>
+                            <label>Volume des effets sonores par défaut (%)</label>
+                            <input class="adm-input" type="range" id="admSiteSfxVol" min="0" max="100" value="${Math.round((siteCfg.sfxVolume ?? 0.6) * 100)}" oninput="document.getElementById('admSiteSfxVal').textContent=this.value+'%'">
+                            <span id="admSiteSfxVal" class="adm-hint">${Math.round((siteCfg.sfxVolume ?? 0.6) * 100)}%</span>
                         </div>
                         <div class="adm-field">
-                            <label>Volume de la musique d'ambiance (%)</label>
-                            <input class="adm-input" type="range" id="admSiteMusVol" min="0" max="100" value="${Math.round((siteCfg.musicVolume ?? 0.4) * 100)}" oninput="document.getElementById('admSiteMusVal').textContent=this.value+'%'">
-                            <span id="admSiteMusVal" class="adm-hint">${Math.round((siteCfg.musicVolume ?? 0.4) * 100)}%</span>
+                            <label>Volume de la musique d'ambiance par défaut (%)</label>
+                            <input class="adm-input" type="range" id="admSiteMusVol" min="0" max="100" value="${Math.round((siteCfg.musicVolume ?? 0.35) * 100)}" oninput="document.getElementById('admSiteMusVal').textContent=this.value+'%'">
+                            <span id="admSiteMusVal" class="adm-hint">${Math.round((siteCfg.musicVolume ?? 0.35) * 100)}%</span>
                         </div>
                     </div>
 
                     <div class="adm-field">
-                        <label>Activation des modules &amp; comportement global</label>
+                        <label>Activation des modules, règles de jeu &amp; comportements de l'interface client</label>
                         <div class="adm-feature-grid">
                             <label class="adm-feature-toggle"><input type="checkbox" id="admSiteAllowReg" ${siteCfg.allowRegistration !== false ? 'checked' : ''}> 👥 Autoriser l'auto-inscription</label>
-                            <label class="adm-feature-toggle"><input type="checkbox" id="admSiteSoundDef" ${siteCfg.soundEnabledByDefault ? 'checked' : ''}> 🔊 Son actif à la 1ère visite</label>
+                            <label class="adm-feature-toggle"><input type="checkbox" id="admSiteSoundDef" ${siteCfg.soundEnabledByDefault !== false ? 'checked' : ''}> 🔊 Son actif à la 1ère visite</label>
+                            <label class="adm-feature-toggle"><input type="checkbox" id="admSiteShowAudioBtn" ${siteCfg.showAudioToggleButton !== false ? 'checked' : ''}> 🎛️ Bouton flottant Audio 🔊/🔇</label>
                             <label class="adm-feature-toggle"><input type="checkbox" id="admSiteEnableShop" ${siteCfg.enableShop !== false ? 'checked' : ''}> 🛍️ Activer la Boutique</label>
                             <label class="adm-feature-toggle"><input type="checkbox" id="admSiteEnableQuests" ${siteCfg.enableQuests !== false ? 'checked' : ''}> 📋 Activer les Missions du jour</label>
                             <label class="adm-feature-toggle"><input type="checkbox" id="admSiteEnableBadges" ${siteCfg.enableBadges !== false ? 'checked' : ''}> 🏆 Activer les Succès</label>
                             <label class="adm-feature-toggle"><input type="checkbox" id="admSiteEnableChrono" ${siteCfg.enableChrono !== false ? 'checked' : ''}> ⏱️ Autoriser le Mode Chrono</label>
+                            <label class="adm-feature-toggle"><input type="checkbox" id="admSiteChronoDef" ${siteCfg.chronoEnabledByDefault !== false ? 'checked' : ''}> ⏱️ Chrono activé par défaut</label>
+                            <label class="adm-feature-toggle"><input type="checkbox" id="admSiteShowHints" ${siteCfg.showHintsInQuiz !== false ? 'checked' : ''}> 💡 Indices actifs dans les quiz</label>
+                            <label class="adm-feature-toggle"><input type="checkbox" id="admSiteStrictStars" ${siteCfg.strictStarsAntiCheat !== false ? 'checked' : ''}> 🛡️ Anti-triche 3★ strict (même en rejeu)</label>
+                            <label class="adm-feature-toggle"><input type="checkbox" id="admSiteStrictCollege" ${siteCfg.strictCollegeSubjects !== false ? 'checked' : ''}> 🎓 Verrou strict Collège (bloquer SES/Philo)</label>
+                            <label class="adm-feature-toggle"><input type="checkbox" id="admSiteHideGradeQuiz" ${siteCfg.hideGradeDuringQuiz !== false ? 'checked' : ''}> 🔒 Masquer la classe pendant un quiz</label>
+                            <label class="adm-feature-toggle"><input type="checkbox" id="admSiteExpulsion" ${siteCfg.showExpulsionTransition !== false ? 'checked' : ''}> 🧭 Transition animée d'expulsion</label>
+                            <label class="adm-feature-toggle"><input type="checkbox" id="admSiteConfirmQuit" ${siteCfg.confirmBeforeQuit !== false ? 'checked' : ''}> ❓ Confirmation avant Quitter</label>
+                            <label class="adm-feature-toggle"><input type="checkbox" id="admSiteLogoutQuit" ${siteCfg.logoutOnQuit !== false ? 'checked' : ''}> 🚪 Déconnecter la session sur Quitter</label>
                             <label class="adm-feature-toggle"><input type="checkbox" id="admSiteEnableParticles" ${siteCfg.enableParticlesByDefault !== false ? 'checked' : ''}> ✨ Particules actives par défaut</label>
                             <label class="adm-feature-toggle"><input type="checkbox" id="admSiteEnableConfetti" ${siteCfg.enableConfetti !== false ? 'checked' : ''}> 🎉 Confettis de célébration</label>
+                        </div>
+                    </div>
+
+                    <!-- Pilotage Apparence Client par défaut & verrouillage -->
+                    <div class="adm-card" style="border-color: rgba(168,85,247,0.3); margin: 8px 0;">
+                        <div class="adm-toolbar" style="margin-bottom:8px;">
+                            <h3 style="font-family:'Cinzel',serif; font-size:14px; color:#d8b4fe; margin:0;">🎨 Apparence Client par Défaut &amp; Verrouillage</h3>
+                            <label class="adm-feature-toggle" style="padding:4px 10px;">
+                                <input type="checkbox" id="admSiteAllowClientApp" ${siteCfg.allowClientAppearance !== false ? 'checked' : ''}>
+                                Autoriser les élèves à modifier l'apparence (Options)
+                            </label>
+                        </div>
+                        <p class="adm-hint" style="margin-bottom:10px;">Si vous décochez l'autorisation ci-dessus, tous les clients héritent automatiquement et strictement de l'apparence définie ci-dessous.</p>
+                        <div class="adm-grid-3">
+                            <div class="adm-field">
+                                <label>Thème visuel par défaut</label>
+                                <select class="adm-select" id="admSiteDefTheme">
+                                    ${shopThemes.map(t => `<option value="${esc(t.id)}"${(siteCfg.defaultTheme || 'default') === t.id ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div class="adm-field">
+                                <label>Préréglage interface par défaut</label>
+                                <select class="adm-select" id="admSiteDefUiPreset">
+                                    <option value="default"${(siteCfg.defaultUiPreset || 'default') === 'default' ? ' selected' : ''}>Thème actif (Défaut)</option>
+                                    <option value="custom"${siteCfg.defaultUiPreset && siteCfg.defaultUiPreset !== 'default' ? ' selected' : ''}>Couleur personnalisée ci-contre</option>
+                                </select>
+                            </div>
+                            <div class="adm-field">
+                                <label>Préréglage boutons par défaut</label>
+                                <select class="adm-select" id="admSiteDefBtnPreset">
+                                    <option value="default"${(siteCfg.defaultBtnPreset || 'default') === 'default' ? ' selected' : ''}>Acier nocturne (Défaut)</option>
+                                    <option value="custom"${siteCfg.defaultBtnPreset && siteCfg.defaultBtnPreset !== 'default' ? ' selected' : ''}>Couleur personnalisée ci-contre</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="adm-grid-3" style="margin-top:8px;">
+                            <div class="adm-field">
+                                <label>Couleur interface / Accent</label>
+                                <div style="display:flex; gap:8px; align-items:center;">
+                                    <input type="color" id="admSiteDefUiColor" value="${esc(siteCfg.defaultUiColor || '#0d1f3a')}" title="Teinte d'arrière-plan">
+                                    <input type="color" id="admSiteDefUiAccent" value="${esc(siteCfg.defaultUiAccent || '#c8a84b')}" title="Couleur d'accent">
+                                </div>
+                            </div>
+                            <div class="adm-field">
+                                <label>Couleur des boutons</label>
+                                <input type="color" id="admSiteDefBtnColor" value="${esc(siteCfg.defaultBtnColor || '#24354f')}">
+                            </div>
+                            <div class="adm-field">
+                                <label>Luminosité des boutons par défaut (%)</label>
+                                <input class="adm-input" type="range" id="admSiteDefBtnBright" min="45" max="110" value="${defBright}" oninput="document.getElementById('admSiteDefBtnBrightVal').textContent=this.value+'%'">
+                                <span id="admSiteDefBtnBrightVal" class="adm-hint">${defBright}%</span>
+                            </div>
                         </div>
                     </div>
 
@@ -1775,10 +1856,10 @@
 
             <div class="adm-card">
                 <div class="adm-toolbar">
-                    <h2 style="margin:0;">🤖 Pool Multi-IA &amp; Mode Adaptatif</h2>
-                    <span class="adm-badge adm-badge-type">${(aiCfg.providers || []).filter(p => p.enabled !== false).length} IA dans le pool</span>
+                    <h2 style="margin:0;">🤖 Pool Multi-IA, Mode Adaptatif &amp; Personas Locales</h2>
+                    <span class="adm-badge adm-badge-type">${(aiCfg.providers || []).filter(p => p.enabled !== false).length} API + ${localPersonas.filter(p => p.enabled !== false).length} personas</span>
                 </div>
-                <p class="adm-hint">Configurez un <b>lot de plusieurs IA</b> (Make.com, API compatibles OpenAI/Mistral/Groq/Ollama, Google Gemini) sélectionnées aléatoirement à chaque question avec bascule en cascade. En l'absence d'IA externe ou hors-ligne, le <b>moteur adaptatif local</b> prend automatiquement le relais sans répétition.</p>
+                <p class="adm-hint">Configurez un <b>lot de plusieurs IA externes</b> (Make.com, OpenAI/Mistral/Groq/Ollama, Google Gemini) et/ou pilotez le <b>lot de personas IA pédagogiques locales</b> (Athéna, Socrate, Chronos, Da Vinci, Turing) utilisées en mode hors-ligne ou en repli adaptatif sans répétition.</p>
 
                 <div class="adm-form" style="margin-top:14px;">
                     <div class="adm-grid-2">
@@ -1792,6 +1873,63 @@
                                 <option value="random"${(aiCfg.selectionStrategy || 'random') === 'random' ? ' selected' : ''}>🎲 Aléatoire pondéré par question (recommandé)</option>
                                 <option value="round_robin"${aiCfg.selectionStrategy === 'round_robin' ? ' selected' : ''}>🔄 Rotation circulaire (Round-Robin)</option>
                             </select>
+                        </div>
+                    </div>
+
+                    <div class="adm-feature-grid" style="margin-bottom:10px;">
+                        <label class="adm-feature-toggle"><input type="checkbox" id="admAiLocalPersonas" ${aiCfg.enableLocalPersonas !== false ? 'checked' : ''}> 🎭 Activer les personas IA locales (mode autonome / repli)</label>
+                        <label class="adm-feature-toggle"><input type="checkbox" id="admAiShowBadge" ${aiCfg.showAiBadgeInQuiz !== false ? 'checked' : ''}> 🏷️ Afficher le badge IA / Moteur adaptatif dans les quiz</label>
+                    </div>
+
+                    <!-- Gestionnaire des personas IA locales -->
+                    <div class="adm-card" style="border-color: rgba(179,136,255,0.3); margin: 8px 0 14px;">
+                        <div class="adm-toolbar" style="margin-bottom:8px;">
+                            <h3 style="font-family:'Cinzel',serif; font-size:14px; color:#e0c3fc; margin:0;">🎭 Personas IA Locales (rotation aléatoire &amp; changement après erreur)</h3>
+                            <button type="button" class="adm-btn adm-btn-ghost" style="padding:4px 10px; font-size:0.8rem;" onclick="ADM.resetLocalPersonas()">↺ Rétablir les 5 personas</button>
+                        </div>
+                        <div class="adm-ai-pool" id="admLocalPersonasList">
+                            ${localPersonas.map((p, idx) => `
+                                <div class="adm-ai-provider-card ${p.enabled === false ? 'is-disabled' : ''}" style="border-left: 3px solid ${esc(p.color || '#4cc9f0')};">
+                                    <div class="adm-ai-provider-head">
+                                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                            <span>${esc(p.icon || '🤖')}</span>
+                                            <b>${esc(p.name)}</b>
+                                            <span class="adm-ai-provider-type">${esc(p.role || 'Adaptative')}</span>
+                                            ${p.hintPrefix ? `<span class="adm-hint">Indice : « ${esc(p.hintPrefix)} »</span>` : ''}
+                                        </div>
+                                        <div style="display:flex; gap:6px;">
+                                            <button type="button" class="adm-btn adm-btn-ghost" style="padding:4px 10px; font-size:0.8rem;" onclick="ADM.toggleLocalPersona(${idx})">${p.enabled === false ? '▶ Activer' : '⏸ Pause'}</button>
+                                            <button type="button" class="adm-btn adm-btn-danger" style="padding:4px 10px; font-size:0.8rem;" onclick="ADM.deleteLocalPersona(${idx})">🗑</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="adm-grid-3" style="margin-top:10px;">
+                            <div class="adm-field">
+                                <label>Nom de la persona</label>
+                                <input class="adm-input" id="admNewPersonaName" placeholder="Ex: IA Hypatie">
+                            </div>
+                            <div class="adm-field">
+                                <label>Rôle affiché dans le quiz</label>
+                                <input class="adm-input" id="admNewPersonaRole" placeholder="Ex: Géométrie & Logique">
+                            </div>
+                            <div class="adm-field">
+                                <label>Icône &amp; Couleur</label>
+                                <div style="display:flex; gap:6px;">
+                                    <input class="adm-input" id="admNewPersonaIcon" value="✨" style="width:62px; text-align:center;">
+                                    <input type="color" id="admNewPersonaColor" value="#4cc9f0">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="adm-grid-2" style="margin-top:8px;">
+                            <div class="adm-field">
+                                <label>Préfixe d'indice pédagogique (optionnel)</label>
+                                <input class="adm-input" id="admNewPersonaHint" placeholder="Ex: Conseil d'Hypatie : ">
+                            </div>
+                            <div class="adm-field" style="display:flex; align-items:flex-end;">
+                                <button type="button" class="adm-btn" onclick="ADM.addLocalPersona()">➕ Ajouter cette persona locale</button>
+                            </div>
                         </div>
                     </div>
 
@@ -2784,6 +2922,9 @@
             const title = (document.getElementById('admSiteTitle') || {}).value;
             const tagline = (document.getElementById('admSiteTagline') || {}).value;
             const announcement = (document.getElementById('admSiteAnnouncement') || {}).value;
+            const exitTitle = (document.getElementById('admSiteExitTitle') || {}).value;
+            const exitSubtitle = (document.getElementById('admSiteExitSubtitle') || {}).value;
+            const dashboardFooterNote = (document.getElementById('admSiteDashFooter') || {}).value;
             const defaultNiveau = (document.getElementById('admSiteDefaultNiveau') || {}).value || '6eme';
             const defaultFiliere = (document.getElementById('admSiteDefaultFiliere') || {}).value || 'generale';
             const quizTimerSeconds = parseInt((document.getElementById('admSiteTimer') || {}).value, 10);
@@ -2793,28 +2934,50 @@
             const musVol = parseInt((document.getElementById('admSiteMusVol') || {}).value, 10);
             const allowRegistration = Boolean((document.getElementById('admSiteAllowReg') || {}).checked);
             const soundEnabledByDefault = Boolean((document.getElementById('admSiteSoundDef') || {}).checked);
+            const showAudioToggleButton = Boolean((document.getElementById('admSiteShowAudioBtn') || {}).checked);
             const enableShop = Boolean((document.getElementById('admSiteEnableShop') || {}).checked);
             const enableQuests = Boolean((document.getElementById('admSiteEnableQuests') || {}).checked);
             const enableBadges = Boolean((document.getElementById('admSiteEnableBadges') || {}).checked);
             const enableChrono = Boolean((document.getElementById('admSiteEnableChrono') || {}).checked);
+            const chronoEnabledByDefault = Boolean((document.getElementById('admSiteChronoDef') || {}).checked);
+            const showHintsInQuiz = Boolean((document.getElementById('admSiteShowHints') || {}).checked);
+            const strictStarsAntiCheat = Boolean((document.getElementById('admSiteStrictStars') || {}).checked);
+            const strictCollegeSubjects = Boolean((document.getElementById('admSiteStrictCollege') || {}).checked);
+            const hideGradeDuringQuiz = Boolean((document.getElementById('admSiteHideGradeQuiz') || {}).checked);
+            const showExpulsionTransition = Boolean((document.getElementById('admSiteExpulsion') || {}).checked);
+            const confirmBeforeQuit = Boolean((document.getElementById('admSiteConfirmQuit') || {}).checked);
+            const logoutOnQuit = Boolean((document.getElementById('admSiteLogoutQuit') || {}).checked);
             const enableParticlesByDefault = Boolean((document.getElementById('admSiteEnableParticles') || {}).checked);
             const enableConfetti = Boolean((document.getElementById('admSiteEnableConfetti') || {}).checked);
+            const allowClientAppearance = Boolean((document.getElementById('admSiteAllowClientApp') || {}).checked);
+            const defaultTheme = (document.getElementById('admSiteDefTheme') || {}).value || 'default';
+            const defaultUiPreset = (document.getElementById('admSiteDefUiPreset') || {}).value || 'default';
+            const defaultUiColor = (document.getElementById('admSiteDefUiColor') || {}).value || '#0d1f3a';
+            const defaultUiAccent = (document.getElementById('admSiteDefUiAccent') || {}).value || '#c8a84b';
+            const defaultBtnPreset = (document.getElementById('admSiteDefBtnPreset') || {}).value || 'default';
+            const defaultBtnColor = (document.getElementById('admSiteDefBtnColor') || {}).value || '#24354f';
+            const defaultBtnBrightness = parseInt((document.getElementById('admSiteDefBtnBright') || {}).value, 10);
             const maintenanceMode = Boolean((document.getElementById('admSiteMaintMode') || {}).checked);
             const maintenanceMessage = (document.getElementById('admSiteMaintMsg') || {}).value || '';
 
             const r = AdminStore.saveSiteConfig({
-                title, tagline, announcement, defaultNiveau, defaultFiliere,
+                title, tagline, announcement, exitTitle, exitSubtitle, dashboardFooterNote,
+                defaultNiveau, defaultFiliere,
                 quizTimerSeconds, xpMultiplier, coinMultiplier,
-                sfxVolume: isNaN(sfxVol) ? 0.7 : sfxVol / 100,
-                musicVolume: isNaN(musVol) ? 0.4 : musVol / 100,
-                allowRegistration, soundEnabledByDefault,
-                enableShop, enableQuests, enableBadges, enableChrono,
+                sfxVolume: isNaN(sfxVol) ? 0.6 : sfxVol / 100,
+                musicVolume: isNaN(musVol) ? 0.35 : musVol / 100,
+                allowRegistration, soundEnabledByDefault, showAudioToggleButton,
+                enableShop, enableQuests, enableBadges, enableChrono, chronoEnabledByDefault,
+                showHintsInQuiz, strictStarsAntiCheat, strictCollegeSubjects,
+                hideGradeDuringQuiz, showExpulsionTransition, confirmBeforeQuit, logoutOnQuit,
                 enableParticlesByDefault, enableConfetti,
+                allowClientAppearance, defaultTheme, defaultUiPreset, defaultUiColor, defaultUiAccent,
+                defaultBtnPreset, defaultBtnColor, defaultBtnBrightness,
                 maintenanceMode, maintenanceMessage
             });
             if (!r.ok) { toast(r.error || 'Erreur lors de la sauvegarde.', 'err'); return; }
             renderTabContent();
-            toast('Configuration générale du site enregistrée ✔', 'ok');
+            toast('Configuration intégrale du site enregistrée ✔', 'ok');
         },
         resetSiteSettings() {
             if (!confirm('Rétablir la configuration générale par défaut du site ?')) return;
@@ -2829,14 +2992,57 @@
             const fallbackToOffline = Boolean((document.getElementById('admAiFallback') || {}).checked);
             const adaptiveMode = Boolean((document.getElementById('admAiAdaptive') || {}).checked);
             const selectionStrategy = (document.getElementById('admAiStrategy') || {}).value || 'random';
+            const enableLocalPersonas = Boolean((document.getElementById('admAiLocalPersonas') || {}).checked);
+            const showAiBadgeInQuiz = Boolean((document.getElementById('admAiShowBadge') || {}).checked);
 
             const r = AdminStore.saveAiConfig({
                 generateWebhookUrl, validateWebhookUrl, fetchTimeoutMs, fallbackToOffline,
-                adaptiveMode, selectionStrategy,
+                adaptiveMode, selectionStrategy, enableLocalPersonas, showAiBadgeInQuiz,
             });
             if (!r.ok) { toast(r.error || 'Erreur lors de la sauvegarde de l\'IA.', 'err'); return; }
             renderTabContent();
-            toast('Configuration Multi-IA & Adaptatif enregistrée ✔', 'ok');
+            toast('Configuration Multi-IA, Adaptatif & Personas enregistrée ✔', 'ok');
+        },
+        addLocalPersona() {
+            const name = ((document.getElementById('admNewPersonaName') || {}).value || '').trim();
+            const role = ((document.getElementById('admNewPersonaRole') || {}).value || '').trim() || 'Adaptative';
+            const icon = ((document.getElementById('admNewPersonaIcon') || {}).value || '').trim() || '✨';
+            const color = ((document.getElementById('admNewPersonaColor') || {}).value || '').trim() || '#4cc9f0';
+            const hintPrefix = (document.getElementById('admNewPersonaHint') || {}).value || '';
+            if (!name) { toast('Donnez un nom à cette persona IA.', 'err'); return; }
+            const cur = AdminStore.getAiConfig();
+            const personas = (cur.localPersonas || []).slice();
+            personas.push({
+                id: 'ai-' + AdminStore.slug(name) + '-' + (Date.now() % 1000),
+                name, role, icon, color, hintPrefix, variantOffset: personas.length, enabled: true,
+            });
+            const r = AdminStore.saveAiConfig({ localPersonas: personas });
+            if (!r.ok) { toast(r.error || 'Ajout impossible.', 'err'); return; }
+            renderTabContent();
+            toast(`Persona « ${name} » ajoutée au lot local ✔`, 'ok');
+        },
+        toggleLocalPersona(idx) {
+            const cur = AdminStore.getAiConfig();
+            const personas = (cur.localPersonas || []).slice();
+            if (!personas[idx]) return;
+            personas[idx].enabled = personas[idx].enabled === false;
+            AdminStore.saveAiConfig({ localPersonas: personas });
+            renderTabContent();
+            toast(personas[idx].enabled ? `Persona « ${personas[idx].name} » activée.` : `Persona « ${personas[idx].name} » mise en pause.`, 'ok');
+        },
+        deleteLocalPersona(idx) {
+            const cur = AdminStore.getAiConfig();
+            const personas = (cur.localPersonas || []).slice();
+            if (!personas[idx]) return;
+            const removed = personas.splice(idx, 1)[0];
+            AdminStore.saveAiConfig({ localPersonas: personas.length > 0 ? personas : null });
+            renderTabContent();
+            toast(`Persona « ${removed.name} » retirée.`, 'ok');
+        },
+        resetLocalPersonas() {
+            AdminStore.saveAiConfig({ localPersonas: null });
+            renderTabContent();
+            toast('Les 5 personas IA locales par défaut ont été rétablies.', 'ok');
         },
         addAiProvider() {
             const name = ((document.getElementById('admNewAiName') || {}).value || '').trim();

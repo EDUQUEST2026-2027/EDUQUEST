@@ -3609,7 +3609,7 @@ const QuestionBank = (() => {
             if (subjectId === 'svt') return generateSvtLesson(index, norm, variant, rng);
             if (subjectId === 'physique') return generatePhysicsLesson(index, norm, variant, rng);
             if (subjectId === 'chimie') return generateChemistryLesson(index, norm, variant, rng);
-            if (subjectId === 'techno') return generateTechnoLesson(index, norm, variant, rng);
+            if (subjectId === 'techno' || subjectId === 'technologie') return generateTechnoLesson(index, norm, variant, rng);
             if (subjectId === 'emc') return generateEmcLesson(index, norm, variant, rng);
             if (subjectId === 'philo') return generatePhiloLesson(index, norm, variant, rng);
             if (subjectId === 'nsi') return generateNsiLesson(index, norm, variant, rng);
@@ -3694,7 +3694,24 @@ const QuestionBank = (() => {
         };
     }
 
-    /** Attache des variantes paresseuses (lazy) : 3x plus rapide au démarrage, 100 % rétrocompatible. */
+    /** Génère une variante distincte de toutes les questions déjà présentes dans `forbiddenSet`. */
+    function generateDistinctVariant(subjectId, idx, norm, startVar, forbiddenSet) {
+        let candidate = QuestionBank.generateOne(subjectId, idx, norm, startVar);
+        if (!forbiddenSet || !candidate || !candidate.q || !forbiddenSet.has(candidate.q)) {
+            return candidate;
+        }
+        for (let step = 1; step <= 24; step++) {
+            const tryIdx = step <= 12 ? idx : (idx + step);
+            const tryVar = startVar + step * 3;
+            const next = QuestionBank.generateOne(subjectId, tryIdx, norm, tryVar);
+            if (next && next.q && !forbiddenSet.has(next.q)) {
+                return { ...next, title: 'Niveau ' + (idx + 1) };
+            }
+        }
+        return candidate;
+    }
+
+    /** Attache des variantes paresseuses (lazy) garanties distinctes : 3x plus rapide au démarrage, 100 % rétrocompatible. */
     function attachLazyVariants(lesson, subjectId, index, norm) {
         if (lesson.variants && lesson.variants.length > 0) return lesson;
         let cachedVariants = null;
@@ -3703,8 +3720,10 @@ const QuestionBank = (() => {
             configurable: true,
             get() {
                 if (!cachedVariants) {
-                    const l1 = QuestionBank.generateOne(subjectId, index, norm, 1);
-                    const l2 = QuestionBank.generateOne(subjectId, index, norm, 2);
+                    const localSet = new Set(lesson && lesson.q ? [lesson.q] : []);
+                    const l1 = generateDistinctVariant(subjectId, index, norm, 1, localSet);
+                    if (l1 && l1.q) localSet.add(l1.q);
+                    const l2 = generateDistinctVariant(subjectId, index, norm, 2, localSet);
                     cachedVariants = [lesson, l1, l2];
                 }
                 return cachedVariants;
@@ -3736,19 +3755,24 @@ const QuestionBank = (() => {
 
         /**
          * Étend une matière (objet DASH_SUBJECTS) jusqu'à `totalCount` niveaux,
-         * avec un contenu adapté au niveau scolaire (`niveau`) pour les 100 niveaux.
+         * avec un contenu adapté au niveau scolaire (`niveau`) pour les 100 niveaux,
+         * tout en évitant la répétition des questions d'un niveau ou d'une variante à l'autre.
          * Optimisé via variantes paresseuses (génération à la demande).
          */
         extend(subject, totalCount, niveau) {
             const norm = normalizeNiveau(niveau);
+            const usedLevelQuestions = new Set();
+
             const handWritten = (subject.lessons || []).map((lesson, i) => {
                 const l0 = reshuffleHandWritten(lesson, subject.id, i);
+                if (l0 && l0.q) usedLevelQuestions.add(l0.q);
                 return attachLazyVariants(l0, subject.id, i, norm);
             });
 
             const lessons = handWritten.slice();
             for (let i = lessons.length; i < totalCount; i++) {
-                const l0 = QuestionBank.generateOne(subject.id, i, norm, 0);
+                const l0 = generateDistinctVariant(subject.id, i, norm, 0, usedLevelQuestions);
+                if (l0 && l0.q) usedLevelQuestions.add(l0.q);
                 attachLazyVariants(l0, subject.id, i, norm);
                 lessons.push(l0);
             }
@@ -3756,7 +3780,8 @@ const QuestionBank = (() => {
         },
 
         /**
-         * Récupère une leçon / variante spécifique parmi les 3 du niveau.
+         * Récupère une leçon / variante spécifique du niveau.
+         * Si `variant >= variants.length`, génère dynamiquement une nouvelle variante inédite.
          */
         getLesson(subjectOrId, index, niveau, variant = 0) {
             const norm = normalizeNiveau(niveau);
@@ -3765,8 +3790,8 @@ const QuestionBank = (() => {
 
             if (subjectObj && subjectObj.lessons && subjectObj.lessons[index]) {
                 const lesson = subjectObj.lessons[index];
-                if (lesson.variants && Array.isArray(lesson.variants) && lesson.variants.length > 0) {
-                    return lesson.variants[variant % lesson.variants.length];
+                if (lesson.variants && Array.isArray(lesson.variants) && lesson.variants.length > 0 && variant >= 0 && variant < lesson.variants.length) {
+                    return lesson.variants[variant];
                 }
                 if (variant === 0) return lesson;
             }

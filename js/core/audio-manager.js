@@ -226,10 +226,24 @@
         attemptPlay(false);
     }
 
+    function isQuickToggleAllowedByAdmin() {
+        try {
+            const store = root && root.AdminStore;
+            if (store && typeof store.getSiteConfig === 'function') {
+                const cfg = store.getSiteConfig();
+                if (cfg && cfg.showAudioToggleButton === false) return false;
+            }
+        } catch { /* ignore */ }
+        return true;
+    }
+
     function updateQuickToggleUI() {
         if (typeof document === 'undefined') return;
         const btn = document.getElementById('eduquest-audio-toggle');
         if (!btn) return;
+        const showBtn = isQuickToggleAllowedByAdmin();
+        btn.hidden = !showBtn;
+        btn.style.display = showBtn ? '' : 'none';
         const active = isGlobalSoundEnabled() && isMusicOptionEnabled() && !isManuallyMuted() && !userPausedByBrowser;
         btn.classList.toggle('is-muted', !active);
         btn.classList.toggle('is-playing', active && isPlaying);

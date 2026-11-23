@@ -1055,13 +1055,22 @@
             });
         });
 
-        // --- SUITE 9 : RÉSILIENCE IA (AiProvider) ---
-        describe('AiProvider — Tolérance Hors-Ligne & Fallback', function (it) {
-            it('Repli automatique sur QuestionBank quand non configuré', async function () {
+        // --- SUITE 9 : RÉSILIENCE IA & LOT MULTI-IA ADAPTATIF (AiProvider) ---
+        describe('AiProvider — Tolérance Hors-Ligne, Personas Locales & Fallback', function (it) {
+            it('Repli automatique sur AdaptiveEngine / QuestionBank avec persona locale active', async function () {
                 assert.strictEqual(AiProvider.isConfigured(), false);
                 const q = await AiProvider.fetchQuestion('maths', 1, '6eme');
                 assert.strictEqual(q.source, 'local');
                 assert.ok(q.lesson && q.lesson.q);
+                assert.ok(q.aiAgent && q.aiAgent.id, 'Une persona IA locale du lot doit être attribuée par défaut');
+            });
+
+            it('Lot de personas locales : tirage aléatoire et rotation après échec', async function () {
+                const pool = AiProvider.getAiPool();
+                assert.ok(Array.isArray(pool) && pool.length >= 5, 'Le lot doit contenir les 5 personas par défaut');
+                const firstAi = AiProvider.pickRandomAi();
+                const resetRes = AiProvider.resetLevelQuestions('maths', 2, '5eme');
+                assert.ok(resetRes.aiAgent && resetRes.aiAgent.id !== firstAi.id, 'Une autre persona doit être sélectionnée après échec');
             });
 
             it('Soumission avec correction locale de secours', async function () {
@@ -1234,8 +1243,8 @@
                 });
             });
 
-            it('Boutique (97 articles) et Succès (78 badges) cohérents', function () {
-                assert.strictEqual(AdminStore.DEFAULT_SHOP_ITEMS.length, 97);
+            it('Boutique (98 articles dont thème Rubis) et Succès (78 badges) cohérents', function () {
+                assert.strictEqual(AdminStore.DEFAULT_SHOP_ITEMS.length, 98);
                 assert.strictEqual(AdminStore.DEFAULT_BADGES.length, 78);
             });
         });

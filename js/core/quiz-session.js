@@ -145,6 +145,9 @@
                     attempt.salt = persisted.questionSalt;
                 }
             }
+            if (ai && typeof ai.resetLevelQuestions === 'function' && h.subjectId && h.levelIndex != null) {
+                ai.resetLevelQuestions(h.subjectId, h.levelIndex, h.niveau || '6eme');
+            }
             if (audio && typeof audio.playSfx === 'function') audio.playSfx('wrong');
         }
 

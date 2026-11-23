@@ -236,6 +236,37 @@ test('Multi-IA Pool (AiProvider) — Sélection aléatoire, bascule en cascade e
         assert.equal(res.source, 'local');
         assert.ok(res.lesson && res.lesson.q);
     });
+
+    await t.test('Lot de personas IA locales pilotable en admin : rotation après échec, désactivation et personnalisation', async () => {
+        const pool = AiProvider.getAiPool();
+        assert.equal(pool.length, 5, '5 personas locales par défaut attendues');
+
+        const firstAi = AiProvider.pickRandomAi();
+        assert.ok(firstAi && firstAi.id);
+        const reset = AiProvider.resetLevelQuestions('maths', 1, '6eme');
+        assert.ok(reset.aiAgent && reset.aiAgent.id !== firstAi.id, 'Doit changer de persona après un échec');
+
+        const localFetch = await AiProvider.fetchQuestion('maths', 2, '5eme');
+        assert.equal(localFetch.source, 'local');
+        assert.ok(localFetch.aiAgent && localFetch.lesson.aiAgent, 'La leçon locale doit être enrichie par une persona active');
+
+        // Personnalisation depuis AdminStore
+        AdminStore.saveAiConfig({
+            enableLocalPersonas: true,
+            localPersonas: [
+                { id: 'ai-hypatie', name: 'IA Hypatie', role: 'Géométrie', icon: '📐', color: '#4cc9f0', hintPrefix: 'Hypatie : ', enabled: true },
+            ],
+        });
+        const customFetch = await AiProvider.fetchQuestion('maths', 3, '4eme');
+        assert.equal(customFetch.aiAgent.id, 'ai-hypatie');
+        assert.equal(customFetch.lesson.aiAgent.name, 'IA Hypatie');
+
+        // Désactivation complète des personas depuis AdminStore
+        AdminStore.saveAiConfig({ enableLocalPersonas: false });
+        const noPersonaFetch = await AiProvider.fetchQuestion('maths', 4, '4eme');
+        assert.equal(noPersonaFetch.aiAgent, null);
+        assert.equal(noPersonaFetch.lesson.aiAgent, undefined);
+    });
 });
 
 test('QuestionBank — Intégrité des QCM (aucune option dupliquée, aucune date future en histoire)', async () => {

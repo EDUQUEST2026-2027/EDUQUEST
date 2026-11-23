@@ -19,11 +19,24 @@ test('QuizTimer - Chronomètre unifié sur tous les exercices et réessais', asy
         assert.equal(QuizTimer.getConfiguredDuration(), 60);
     });
 
-    await t.test('Détecte correctement l\'état d\'activation du mode chrono via DB', () => {
-        DB.saveOption('modeChrono', 'false');
+    await t.test('Détecte correctement l\'état d\'activation du mode chrono via DB et AdminStore', () => {
+        // Actif par défaut selon AdminStore.siteConfig.chronoEnabledByDefault (true)
+        assert.equal(QuizTimer.isEnabled(), true);
+
+        // Pilotage admin : désactiver par défaut pour les nouveaux joueurs
+        AdminStore.saveSiteConfig({ chronoEnabledByDefault: false });
         assert.equal(QuizTimer.isEnabled(), false);
+
+        // Préférence explicite du joueur
         DB.saveOption('modeChrono', 'true');
         assert.equal(QuizTimer.isEnabled(), true);
+        DB.saveOption('modeChrono', 'false');
+        assert.equal(QuizTimer.isEnabled(), false);
+
+        // Désactivation globale en admin (enableChrono = false) prime sur le choix client
+        DB.saveOption('modeChrono', 'true');
+        AdminStore.saveSiteConfig({ enableChrono: false });
+        assert.equal(QuizTimer.isEnabled(), false);
     });
 
     await t.test('Démarre, s\'arrête et redémarre proprement sur Exercice 1, Exercice 2, Exercice 3 et Réessai', async () => {

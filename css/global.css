@@ -894,6 +894,20 @@ button::after,
                 linear-gradient(160deg, #120824 0%, #200e3d 52%, #0a0417 100%) !important;
 }
 
+[data-theme="theme-rubis"] {
+    --c-night: #16060c;
+    --c-deep: #260b15;
+    --c-ocean: #451425;
+    --c-blue: #9e2a4b;
+    --c-gold: #e56b6f;
+    --dash-skin: #e56b6f;
+}
+[data-theme="theme-rubis"] .background {
+    background: radial-gradient(circle at 50% 20%, rgba(229, 107, 111, 0.24), transparent 60%),
+                radial-gradient(circle at 20% 80%, rgba(158, 42, 75, 0.18), transparent 55%),
+                linear-gradient(135deg, #16060c 0%, #260b15 50%, #120408 100%) !important;
+}
+
 [data-theme="theme-parchemin"] {
     --c-night: #1a1209;
     --c-deep: #2c1e0e;
@@ -976,5 +990,87 @@ button::after,
         0 2px 0 rgba(255, 255, 255, 0.06) inset,
         0 24px 64px rgba(0, 0, 0, 0.65),
         0 0 40px color-mix(in srgb, var(--ui-accent) 14%, transparent);
+}
+
+/* --------------------------------------------------------------------------
+   TRANSITION DYNAMIQUE D'EXPULSION (Changement de classe / matière hors programme)
+   -------------------------------------------------------------------------- */
+.class-expulsion-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200000;
+    background: radial-gradient(circle at center, rgba(14, 25, 52, 0.96) 0%, rgba(6, 11, 24, 0.99) 100%);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+    color: #fff;
+    animation: fadeIn 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.class-expulsion-card {
+    max-width: 460px;
+    width: 100%;
+    padding: 30px 26px;
+    border-radius: 20px;
+    background: rgba(12, 20, 40, 0.88);
+    border: 1px solid rgba(200, 168, 75, 0.45);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.75), 0 0 30px rgba(200, 168, 75, 0.15);
+    animation: panelSlideIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.class-expulsion-icon {
+    font-size: 2.8rem;
+    margin-bottom: 12px;
+}
+.class-expulsion-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.3rem;
+    color: var(--c-gold, #ffd166);
+    margin-bottom: 10px;
+    letter-spacing: 0.8px;
+}
+.class-expulsion-desc {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.02rem;
+    color: rgba(255, 255, 255, 0.84);
+    margin-bottom: 18px;
+    line-height: 1.45;
+}
+.class-expulsion-bar {
+    width: 100%;
+    height: 6px;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+}
+.class-expulsion-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--c-gold, #c8a84b), var(--c-green-light, #6bca82));
+    transition: width 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Badge du lot Multi-IA adaptatif (personas locales pilotables en admin) */
+.ai-pool-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.35px;
+    background: color-mix(in srgb, var(--persona-color, #4cc9f0) 14%, rgba(8, 16, 30, 0.65));
+    border: 1px solid color-mix(in srgb, var(--persona-color, #4cc9f0) 44%, transparent);
+    color: color-mix(in srgb, var(--persona-color, #9ae4f0) 72%, #ffffff 28%);
+}
+.ai-pool-badge.is-adapted {
+    background: rgba(179, 136, 255, 0.18);
+    border-color: rgba(179, 136, 255, 0.5);
+    color: #e4ccff;
 }
 

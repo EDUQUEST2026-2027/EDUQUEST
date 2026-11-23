@@ -453,18 +453,63 @@ test.describe('Succès triés/filtrés par filière & Pilotage intégral Admin (
         assert.ok(AdminStore.getBadge('ndrc_expert'));
         assert.equal(AdminStore.getSiteConfig().defaultFiliere, 'ciel');
 
-        // 7. Boutique enrichie (97 articles par défaut : 47 + 50 nouveaux), thèmes CSS et 78 succès uniques
+        // 7. Boutique enrichie (98 articles par défaut : 97 + thème Rubis Crépusculaire), thèmes CSS et 78 succès uniques
         AdminStore.resetAll();
         const shopItems = AdminStore.getShopItems();
-        assert.equal(shopItems.length, 97, `97 articles attendus en boutique, reçu ${shopItems.length}`);
+        assert.equal(shopItems.length, 98, `98 articles attendus en boutique, reçu ${shopItems.length}`);
         assert.equal(new Set(shopItems.map(i => i.id)).size, shopItems.length, 'Identifiants boutique uniques');
 
         const globalCss = fs.readFileSync(path.join(ROOT, 'css', 'global.css'), 'utf8');
         const themes = shopItems.filter(i => i.category === 'theme' && i.id !== 'default');
-        assert.equal(themes.length, 14, '14 thèmes CSS personnalisés attendus (+ default)');
+        assert.equal(themes.length, 15, '15 thèmes CSS personnalisés attendus (+ default)');
         for (const t of themes) {
             assert.ok(globalCss.includes(`[data-theme="${t.id}"]`), `Règle CSS manquante pour ${t.id}`);
         }
+
+        // 8. Pilotage intégral des réglages client depuis AdminStore (chrono, anti-triche, collège strict, quitter, apparence, personas)
+        const fullSiteRes = AdminStore.saveSiteConfig({
+            exitTitle: 'Au revoir classe !',
+            exitSubtitle: 'Bonne révision !',
+            dashboardFooterNote: 'Lycée Pilote — Eduquest',
+            chronoEnabledByDefault: false,
+            strictStarsAntiCheat: false,
+            strictCollegeSubjects: true,
+            confirmBeforeQuit: false,
+            logoutOnQuit: false,
+            hideGradeDuringQuiz: false,
+            showExpulsionTransition: false,
+            showAudioToggleButton: false,
+            showHintsInQuiz: false,
+            allowClientAppearance: false,
+            defaultTheme: 'theme-rubis',
+            defaultBtnBrightness: 70,
+        });
+        assert.equal(fullSiteRes.ok, true);
+        const fullCfg = AdminStore.getSiteConfig();
+        assert.equal(fullCfg.exitTitle, 'Au revoir classe !');
+        assert.equal(fullCfg.dashboardFooterNote, 'Lycée Pilote — Eduquest');
+        assert.equal(fullCfg.chronoEnabledByDefault, false);
+        assert.equal(fullCfg.strictStarsAntiCheat, false);
+        assert.equal(fullCfg.confirmBeforeQuit, false);
+        assert.equal(fullCfg.logoutOnQuit, false);
+        assert.equal(fullCfg.showAudioToggleButton, false);
+        assert.equal(fullCfg.showHintsInQuiz, false);
+        assert.equal(fullCfg.allowClientAppearance, false);
+        assert.equal(fullCfg.defaultTheme, 'theme-rubis');
+        assert.equal(fullCfg.defaultBtnBrightness, 70);
+
+        // Verrouillage strict SES / Philosophie contre matière custom au collège (et déverrouillable en admin)
+        const customPhilo = AdminStore.createCustomSubject('Philosophie Junior', '🏛️', null, {
+            band: 'all',
+            allowedNiveaux: ['6eme', '5eme', '2nde'],
+        });
+        assert.equal(customPhilo.ok, true);
+        const withStrict = AdminStore.applyOverrides([]).find(s => s.id === customPhilo.id);
+        assert.equal(AdminStore.isSubjectAllowedForNiveau(withStrict, '6eme'), false, 'Verrou strict bloque Philosophie custom au collège');
+        AdminStore.saveSiteConfig({ strictCollegeSubjects: false });
+        const withoutStrict = AdminStore.applyOverrides([]).find(s => s.id === customPhilo.id);
+        assert.equal(AdminStore.isSubjectAllowedForNiveau(withoutStrict, '6eme'), true, 'Désactiver strictCollegeSubjects en admin autorise la surcharge');
+        AdminStore.resetAll();
 
         const allBadges = AdminStore.getBadges();
         assert.equal(allBadges.length, 78, `78 succès attendus (46 + 32 nouveaux), reçu ${allBadges.length}`);

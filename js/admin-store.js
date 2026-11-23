@@ -205,7 +205,7 @@ const AdminStore = (() => {
         { id: 'titre-polyvalent', name: '🧭 Polymathe Universel', category: 'title', color: '#a78bfa', cost: 450, desc: 'Récompense la maîtrise pluridisciplinaire sur toutes les îles.' },
         { id: 'titre-legende', name: '🌠 Légende d\'Eduquest', category: 'title', color: '#ffd700', cost: 650, desc: 'Titre mythique réservé aux vétérans de la galaxie du savoir.' },
 
-        // --- THÈMES & EFFETS (15) ---
+        // --- THÈMES & EFFETS (16) ---
         { id: 'default', name: '🌌 Thème Astral (Origine)', category: 'theme', color: '#c8a84b', cost: 0, desc: 'Le décor cosmique classique d\'EDUQUEST, offert par défaut.' },
         { id: 'theme-cyber', name: '🌐 Thème Cyber Néon', category: 'theme', color: '#00f5d4', cost: 180, desc: 'Ambiance futuriste aux teintes cyan et magenta.' },
         { id: 'theme-galaxie', name: '🌌 Thème Abysses Stellaires', category: 'theme', color: '#7b2cbf', cost: 220, desc: 'Fond spatial étoilé et nébuleuses profondes.' },
@@ -218,6 +218,7 @@ const AdminStore = (() => {
         { id: 'theme-volcan', name: '🌋 Thème Forge Volcanique', category: 'theme', color: '#f97316', cost: 230, desc: 'Lave incandescente, basalte sombre et braises ardentes.' },
         { id: 'theme-sakura', name: '🌸 Thème Nuit Sakura', category: 'theme', color: '#f472b6', cost: 240, desc: 'Nuit japonaise veloutée aux fleurs de cerisier rose.' },
         { id: 'theme-amethyste', name: '🔮 Thème Cristal Améthyste', category: 'theme', color: '#a855f7', cost: 250, desc: 'Sanctuaire de quartz violet aux éclats mystiques.' },
+        { id: 'theme-rubis', name: '🍷 Thème Rubis Crépusculaire', category: 'theme', color: '#e56b6f', cost: 250, desc: 'Éclat pourpre profond et reflets rubis nocturnes.' },
         { id: 'theme-parchemin', name: '📜 Thème Bibliothèque Antique', category: 'theme', color: '#d97706', cost: 260, desc: 'Ambiance grimoires anciens, boiseries et ambre chaud.' },
         { id: 'theme-retro', name: '🕹️ Thème Synthwave 80s', category: 'theme', color: '#ec4899', cost: 280, desc: 'Horizon rétro-futuriste néon rose, violet et cyan.' },
         { id: 'theme-celeste', name: '✨ Thème Sanctuaire Solaire', category: 'theme', color: '#facc15', cost: 360, desc: 'Voûte étoilée azur royal et éclats solaires.' },
@@ -253,45 +254,77 @@ const AdminStore = (() => {
         questRewardMultiplier: 1,// Multiplicateur récompenses des quêtes
     };
 
-    // Configuration par défaut globale du site (v1.29.0+)
+    // Configuration par défaut globale du site (v1.29.2 — pilotage intégral client depuis admin)
     const DEFAULT_SITE_CONFIG = {
         title: 'EDUQUEST',
         siteTitle: 'EDUQUEST',
         tagline: 'Le jeu de révision Collège, Lycée & BTS',
         announcement: '',
+        exitTitle: "✨ Merci d'avoir joué à notre jeu ! ✨",
+        exitSubtitle: 'À bientôt pour de nouvelles aventures !',
+        dashboardFooterNote: 'EDUQUEST — Contenus alignés sur les programmes officiels.',
         defaultNiveau: '6eme',
         defaultFiliere: 'generale',
-        quizTimerSeconds: 45,         // Durée standard en secondes du compte à rebours chrono
-        xpMultiplier: 1.0,            // Multiplicateur global d'XP
-        coinMultiplier: 1.0,          // Multiplicateur global de pièces
+        quizTimerSeconds: 45,          // Durée standard en secondes du compte à rebours chrono
+        xpMultiplier: 1.0,             // Multiplicateur global d'XP
+        coinMultiplier: 1.0,           // Multiplicateur global de pièces
         coinsMultiplier: 1.0,
         sfxVolume: 0.6,
         musicVolume: 0.35,
-        defaultBgmVolume: 35,         // Volume musique par défaut (0-100)
-        defaultSfxVolume: 60,         // Volume effets sonores par défaut (0-100)
-        soundEnabledByDefault: true,  // Son actif par défaut
-        allowRegistration: true,      // Autoriser de nouveaux élèves à créer un compte
-        enableShop: true,             // Activer l'onglet Boutique
-        enableQuests: true,           // Activer le bloc Missions quotidiennes
-        enableBadges: true,           // Activer l'onglet Succès
-        enableChrono: true,           // Autoriser le Mode Défi Chronométré
-        enableParticlesByDefault: true, // Particules étoilées actives par défaut
-        enableConfetti: true,         // Confettis de célébration actifs globalement
-        maintenanceMode: false,       // Mode bandeau d'alerte / examen
+        defaultBgmVolume: 35,          // Volume musique par défaut (0-100)
+        defaultSfxVolume: 60,          // Volume effets sonores par défaut (0-100)
+        soundEnabledByDefault: true,   // Son actif par défaut
+        allowRegistration: true,       // Autoriser de nouveaux élèves à créer un compte
+        enableShop: true,              // Activer l'onglet Boutique
+        enableQuests: true,            // Activer le bloc Missions quotidiennes
+        enableBadges: true,            // Activer l'onglet Succès
+        enableChrono: true,            // Autoriser le Mode Défi Chronométré
+        chronoEnabledByDefault: true,  // Activer le Mode Défi Chronométré par défaut
+        strictStarsAntiCheat: true,    // Conserver le plafond d'étoiles (2★/1★) après erreur même en rejouant
+        strictCollegeSubjects: true,   // Bloquer SES & Philosophie au collège même contre surcharges/matières custom
+        confirmBeforeQuit: true,       // Afficher la modale de confirmation avant de quitter
+        logoutOnQuit: true,            // Déconnecter la session active lors du clic sur Quitter
+        hideGradeDuringQuiz: true,     // Masquer le sélecteur classe/filière pendant un exercice en cours
+        showExpulsionTransition: true, // Afficher la transition animée d'expulsion lors d'un changement de classe
+        showAudioToggleButton: true,   // Afficher le bouton flottant global 🔊/🔇 sur l'interface client
+        showHintsInQuiz: true,         // Afficher le bouton d'indice pédagogique dans les exercices
+        allowClientAppearance: true,   // Autoriser les élèves à personnaliser l'apparence dans Options
+        defaultTheme: 'default',       // Thème visuel par défaut du site
+        defaultUiPreset: 'default',    // Préréglage couleur d'interface par défaut
+        defaultUiColor: '#0d1f3a',     // Couleur d'interface par défaut
+        defaultUiAccent: '#c8a84b',    // Couleur d'accent par défaut
+        defaultBtnPreset: 'default',   // Préréglage couleur des boutons par défaut
+        defaultBtnColor: '#24354f',    // Couleur des boutons par défaut
+        defaultBtnBrightness: 80,      // Luminosité des boutons par défaut (45..110 %)
+        enableParticlesByDefault: true,// Particules étoilées actives par défaut
+        enableConfetti: true,          // Confettis de célébration actifs globalement
+        maintenanceMode: false,        // Mode bandeau d'alerte / examen
         maintenanceMessage: '',
     };
 
-    // Configuration par défaut de l'intégration IA (Multi-IA + Make.com + Adaptatif)
+    // Lot de personas IA pédagogiques locales par défaut (pilotable depuis le panneau admin)
+    const DEFAULT_LOCAL_AI_PERSONAS = [
+        { id: 'ai-athena',  name: 'IA Athéna',   role: 'Analytique & Académique',    icon: '🧠', color: '#4cc9f0', variantOffset: 0, hintPrefix: 'Analyse méthodique (Athéna) : ', enabled: true },
+        { id: 'ai-socrate', name: 'IA Socrate',  role: 'Maïeutique & Guidée',        icon: '🏛️', color: '#ffd166', variantOffset: 1, hintPrefix: 'Piste de réflexion (Socrate) : ', enabled: true },
+        { id: 'ai-chronos', name: 'IA Chronos',  role: 'Défi & Réflexes',            icon: '⚡', color: '#ff9f43', variantOffset: 2, hintPrefix: 'Astuce rapide (Chronos) : ', enabled: true },
+        { id: 'ai-davinci', name: 'IA Da Vinci', role: 'Créative & Contextuelle',    icon: '🎨', color: '#b388ff', variantOffset: 3, hintPrefix: 'Intuition visuelle (Da Vinci) : ', enabled: true },
+        { id: 'ai-turing',  name: 'IA Turing',   role: 'Algorithmique & Adaptative', icon: '💻', color: '#3ddc97', variantOffset: 4, hintPrefix: 'Décomposition logique (Turing) : ', enabled: true },
+    ];
+
+    // Configuration par défaut de l'intégration IA (Multi-IA + Make.com + Adaptatif + Personas locales)
     const DEFAULT_AI_CONFIG = {
-        generateWebhookUrl: '',       // Webhook POST de génération (Make, rétrocompatible)
-        validateWebhookUrl: '',       // Webhook POST de validation (Make, rétrocompatible)
-        providers: [],                // Pool multi-IA [{ id, name, type, endpoint, validateEndpoint, apiKey, model, enabled, weight }]
-        adaptiveMode: true,           // Active la difficulté adaptative et la non-répétition
-        selectionStrategy: 'random',  // 'random' | 'round_robin'
-        fetchTimeoutMs: 8000,         // Délai avant repli local en millisecondes
+        generateWebhookUrl: '',        // Webhook POST de génération (Make, rétrocompatible)
+        validateWebhookUrl: '',        // Webhook POST de validation (Make, rétrocompatible)
+        providers: [],                 // Pool multi-IA [{ id, name, type, endpoint, validateEndpoint, apiKey, model, enabled, weight }]
+        adaptiveMode: true,            // Active la difficulté adaptative et la non-répétition
+        selectionStrategy: 'random',   // 'random' | 'round_robin'
+        fetchTimeoutMs: 8000,          // Délai avant repli local en millisecondes
         timeoutMs: 8000,
-        fallbackToOffline: true,      // Repli automatique sur AdaptiveEngine/QuestionBank si indisponible
+        fallbackToOffline: true,       // Repli automatique sur AdaptiveEngine/QuestionBank si indisponible
         fallbackToLocal: true,
+        enableLocalPersonas: true,     // Activer le lot de personas IA locales (Athéna, Socrate, Chronos, Da Vinci, Turing)
+        showAiBadgeInQuiz: true,       // Afficher le badge IA / Moteur adaptatif dans les quiz
+        localPersonas: null,           // null → DEFAULT_LOCAL_AI_PERSONAS ; tableau personnalisé si édité en admin
     };
 
     // Catalogue des 78 succès / badges par défaut d'EDUQUEST (46 existants + 32 nouveaux, filtrables par filière & cycle)
@@ -832,6 +865,18 @@ const AdminStore = (() => {
         return specs.includes(f);
     }
 
+    /** Détecte les matières SES / Philosophie (strictement interdites au collège si strictCollegeSubjects actif). */
+    function _isStrictLyceeSubject(subject) {
+        if (!subject) return false;
+        const id = String(subject.id || '').toLowerCase().trim();
+        const name = String(subject.name || '').toLowerCase().trim();
+        return id === 'ses' || id === 'philo'
+            || /^(ses|philo|philosophie)\b/i.test(id)
+            || /^(ses|philo|philosophie)\b/i.test(name);
+    }
+
+    const COLLEGE_LEVEL_IDS = ['6eme', '5eme', '4eme', '3eme'];
+
     /**
      * Source unique de vérité : retourne true si et seulement si `subject`
      * est active et autorisée pour la classe `niveauId` (et la filière `filiereId`
@@ -844,6 +889,10 @@ const AdminStore = (() => {
         const norm = (typeof QuestionBank !== 'undefined' && typeof QuestionBank.normalizeNiveau === 'function')
             ? QuestionBank.normalizeNiveau(niveauId)
             : String(niveauId || '6eme').toLowerCase().trim();
+        const siteCfg = getSiteConfig();
+        if (siteCfg.strictCollegeSubjects !== false && COLLEGE_LEVEL_IDS.includes(norm) && _isStrictLyceeSubject(subject)) {
+            return false;
+        }
         const allowed = Array.isArray(subject.allowedNiveaux) && subject.allowedNiveaux.length > 0
             ? subject.allowedNiveaux
             : defaultAllowedNiveauxForSubject(subject);
@@ -944,6 +993,15 @@ const AdminStore = (() => {
      */
     function applyOverrides(rawSubjects) {
         const data = _data();
+        const strictCollege = getSiteConfig().strictCollegeSubjects !== false;
+        const enforceStrictCollege = (sub) => {
+            if (!strictCollege || !_isStrictLyceeSubject(sub)) return sub;
+            sub.band = 'lycee';
+            if (Array.isArray(sub.allowedNiveaux) && sub.allowedNiveaux.length > 0) {
+                sub.allowedNiveaux = sub.allowedNiveaux.filter(n => !COLLEGE_LEVEL_IDS.includes(n));
+            }
+            return sub;
+        };
         const result = (Array.isArray(rawSubjects) ? rawSubjects : []).map(raw => {
             const rule = SUBJECT_DEFAULT_RULES[raw.id];
             const out = _clone(raw);
@@ -958,7 +1016,7 @@ const AdminStore = (() => {
                 out.specialtyFilieres = _clone(rule.specialtyFilieres);
             }
             const ov = data.subjects.overrides[raw.id];
-            if (!ov) return out;
+            if (!ov) return enforceStrictCollege(out);
             if (typeof ov.name === 'string' && ov.name.trim()) out.name = ov.name.trim();
             if (typeof ov.icon === 'string' && ov.icon.trim()) {
                 out.icon = ov.icon.trim();
@@ -978,10 +1036,10 @@ const AdminStore = (() => {
             if (typeof ov.enabled === 'boolean') out.enabled = ov.enabled;
             if (typeof ov.description === 'string') out.description = ov.description;
             if (Array.isArray(ov.lessons) && ov.lessons.length) out.lessons = _clone(ov.lessons);
-            return out;
+            return enforceStrictCollege(out);
         });
         data.subjects.customs.forEach(c => {
-            result.push({
+            result.push(enforceStrictCollege({
                 id: c.id,
                 name: c.name,
                 icon: c.icon,
@@ -993,7 +1051,7 @@ const AdminStore = (() => {
                 description: c.description || '',
                 lessons: _clone(c.lessons),
                 _custom: true,
-            });
+            }));
         });
         return result;
     }
@@ -1534,10 +1592,20 @@ const AdminStore = (() => {
     function saveSiteConfig(values) {
         if (!values || typeof values !== 'object') return { ok: false, error: 'Configuration invalide.' };
         const cur = getSiteConfig();
+        const boolOpt = (key, fallback) => (typeof values[key] === 'boolean' ? values[key] : (cur[key] !== undefined ? Boolean(cur[key]) : fallback));
+        const hexOpt = (key, fallback) => {
+            const v = typeof values[key] === 'string' ? values[key].trim() : '';
+            if (/^#[0-9a-f]{6}$/i.test(v)) return v;
+            return (typeof cur[key] === 'string' && /^#[0-9a-f]{6}$/i.test(cur[key])) ? cur[key] : fallback;
+        };
+
         const title = (typeof values.title === 'string' && values.title.trim()) ? values.title.trim()
             : (typeof values.siteTitle === 'string' && values.siteTitle.trim()) ? values.siteTitle.trim() : cur.title;
         const tagline = (typeof values.tagline === 'string') ? values.tagline.trim() : cur.tagline;
         const announcement = (typeof values.announcement === 'string') ? values.announcement.trim() : (cur.announcement || '');
+        const exitTitle = (typeof values.exitTitle === 'string' && values.exitTitle.trim()) ? values.exitTitle.trim() : (cur.exitTitle || DEFAULT_SITE_CONFIG.exitTitle);
+        const exitSubtitle = (typeof values.exitSubtitle === 'string' && values.exitSubtitle.trim()) ? values.exitSubtitle.trim() : (cur.exitSubtitle || DEFAULT_SITE_CONFIG.exitSubtitle);
+        const dashboardFooterNote = (typeof values.dashboardFooterNote === 'string') ? values.dashboardFooterNote.trim() : (cur.dashboardFooterNote || DEFAULT_SITE_CONFIG.dashboardFooterNote);
         const defaultNiveau = (typeof values.defaultNiveau === 'string' && values.defaultNiveau.trim()) ? values.defaultNiveau.trim() : (cur.defaultNiveau || '6eme');
         const defaultFiliere = (typeof values.defaultFiliere === 'string' && values.defaultFiliere.trim()) ? values.defaultFiliere.trim().toLowerCase() : (cur.defaultFiliere || 'generale');
         const timerSec = values.quizTimerSeconds != null ? Math.max(0, parseInt(values.quizTimerSeconds, 10) || 0) : cur.quizTimerSeconds;
@@ -1548,15 +1616,12 @@ const AdminStore = (() => {
             : values.defaultSfxVolume != null ? (parseInt(values.defaultSfxVolume, 10) || 60) / 100 : cur.sfxVolume;
         const mus = values.musicVolume != null ? Math.min(1, Math.max(0, parseFloat(values.musicVolume) || 0))
             : values.defaultBgmVolume != null ? (parseInt(values.defaultBgmVolume, 10) || 35) / 100 : cur.musicVolume;
-        const soundDef = typeof values.soundEnabledByDefault === 'boolean' ? values.soundEnabledByDefault : cur.soundEnabledByDefault;
-        const allowReg = typeof values.allowRegistration === 'boolean' ? values.allowRegistration : cur.allowRegistration;
-        const enableShop = typeof values.enableShop === 'boolean' ? values.enableShop : (cur.enableShop !== false);
-        const enableQuests = typeof values.enableQuests === 'boolean' ? values.enableQuests : (cur.enableQuests !== false);
-        const enableBadges = typeof values.enableBadges === 'boolean' ? values.enableBadges : (cur.enableBadges !== false);
-        const enableChrono = typeof values.enableChrono === 'boolean' ? values.enableChrono : (cur.enableChrono !== false);
-        const enableParticlesByDefault = typeof values.enableParticlesByDefault === 'boolean' ? values.enableParticlesByDefault : (cur.enableParticlesByDefault !== false);
-        const enableConfetti = typeof values.enableConfetti === 'boolean' ? values.enableConfetti : (cur.enableConfetti !== false);
-        const maintenanceMode = typeof values.maintenanceMode === 'boolean' ? values.maintenanceMode : Boolean(cur.maintenanceMode);
+        const defaultBtnBrightness = values.defaultBtnBrightness != null
+            ? Math.min(110, Math.max(45, parseInt(values.defaultBtnBrightness, 10) || 80))
+            : (cur.defaultBtnBrightness != null ? cur.defaultBtnBrightness : 80);
+        const defaultTheme = (typeof values.defaultTheme === 'string' && values.defaultTheme.trim()) ? values.defaultTheme.trim() : (cur.defaultTheme || 'default');
+        const defaultUiPreset = (typeof values.defaultUiPreset === 'string' && values.defaultUiPreset.trim()) ? values.defaultUiPreset.trim() : (cur.defaultUiPreset || 'default');
+        const defaultBtnPreset = (typeof values.defaultBtnPreset === 'string' && values.defaultBtnPreset.trim()) ? values.defaultBtnPreset.trim() : (cur.defaultBtnPreset || 'default');
         const maintenanceMessage = (typeof values.maintenanceMessage === 'string') ? values.maintenanceMessage.trim() : (cur.maintenanceMessage || '');
 
         const clean = {
@@ -1564,6 +1629,9 @@ const AdminStore = (() => {
             siteTitle: title,
             tagline,
             announcement,
+            exitTitle,
+            exitSubtitle,
+            dashboardFooterNote,
             defaultNiveau,
             defaultFiliere,
             quizTimerSeconds: timerSec,
@@ -1574,15 +1642,32 @@ const AdminStore = (() => {
             musicVolume: mus,
             defaultSfxVolume: Math.round(sfx * 100),
             defaultBgmVolume: Math.round(mus * 100),
-            soundEnabledByDefault: soundDef,
-            allowRegistration: allowReg,
-            enableShop,
-            enableQuests,
-            enableBadges,
-            enableChrono,
-            enableParticlesByDefault,
-            enableConfetti,
-            maintenanceMode,
+            soundEnabledByDefault: boolOpt('soundEnabledByDefault', true),
+            allowRegistration: boolOpt('allowRegistration', true),
+            enableShop: boolOpt('enableShop', true),
+            enableQuests: boolOpt('enableQuests', true),
+            enableBadges: boolOpt('enableBadges', true),
+            enableChrono: boolOpt('enableChrono', true),
+            chronoEnabledByDefault: boolOpt('chronoEnabledByDefault', true),
+            strictStarsAntiCheat: boolOpt('strictStarsAntiCheat', true),
+            strictCollegeSubjects: boolOpt('strictCollegeSubjects', true),
+            confirmBeforeQuit: boolOpt('confirmBeforeQuit', true),
+            logoutOnQuit: boolOpt('logoutOnQuit', true),
+            hideGradeDuringQuiz: boolOpt('hideGradeDuringQuiz', true),
+            showExpulsionTransition: boolOpt('showExpulsionTransition', true),
+            showAudioToggleButton: boolOpt('showAudioToggleButton', true),
+            showHintsInQuiz: boolOpt('showHintsInQuiz', true),
+            allowClientAppearance: boolOpt('allowClientAppearance', true),
+            defaultTheme,
+            defaultUiPreset,
+            defaultUiColor: hexOpt('defaultUiColor', '#0d1f3a'),
+            defaultUiAccent: hexOpt('defaultUiAccent', '#c8a84b'),
+            defaultBtnPreset,
+            defaultBtnColor: hexOpt('defaultBtnColor', '#24354f'),
+            defaultBtnBrightness,
+            enableParticlesByDefault: boolOpt('enableParticlesByDefault', true),
+            enableConfetti: boolOpt('enableConfetti', true),
+            maintenanceMode: boolOpt('maintenanceMode', false),
             maintenanceMessage,
         };
         const data = _data();
@@ -1614,7 +1699,21 @@ const AdminStore = (() => {
         return { id, name, type, endpoint, validateEndpoint, apiKey, model, enabled, weight };
     }
 
-    /** Configuration effective de l'intégration IA (Multi-IA + Make + Adaptatif). */
+    /** Normalise une persona IA pédagogique locale (pilotable depuis le panneau admin). */
+    function _normalizeLocalPersona(p, idx = 0) {
+        if (!p || typeof p !== 'object') return null;
+        const name = String(p.name || `IA Locale #${idx + 1}`).trim() || `IA Locale #${idx + 1}`;
+        const id = String(p.id || slug(name) || `ai-local-${idx + 1}`).trim();
+        const role = String(p.role || 'Adaptative').trim();
+        const icon = String(p.icon || '🤖').trim() || '🤖';
+        const color = (typeof p.color === 'string' && /^#[0-9a-f]{6}$/i.test(p.color.trim())) ? p.color.trim() : '#4cc9f0';
+        const hintPrefix = typeof p.hintPrefix === 'string' ? p.hintPrefix : '';
+        const variantOffset = Math.max(0, parseInt(p.variantOffset, 10) || idx);
+        const enabled = p.enabled !== false;
+        return { id, name, role, icon, color, hintPrefix, variantOffset, enabled };
+    }
+
+    /** Configuration effective de l'intégration IA (Multi-IA + Make + Adaptatif + Personas locales). */
     function getAiConfig() {
         const data = _data();
         const merged = Object.assign(_clone(DEFAULT_AI_CONFIG), data.aiConfig || {});
@@ -1623,10 +1722,16 @@ const AdminStore = (() => {
             : [];
         merged.adaptiveMode = merged.adaptiveMode !== false;
         merged.selectionStrategy = (merged.selectionStrategy === 'round_robin') ? 'round_robin' : 'random';
+        merged.enableLocalPersonas = merged.enableLocalPersonas !== false;
+        merged.showAiBadgeInQuiz = merged.showAiBadgeInQuiz !== false;
+        const rawPersonas = Array.isArray(merged.localPersonas) && merged.localPersonas.length > 0
+            ? merged.localPersonas
+            : DEFAULT_LOCAL_AI_PERSONAS;
+        merged.localPersonas = rawPersonas.map((p, i) => _normalizeLocalPersona(p, i)).filter(Boolean);
         return merged;
     }
 
-    /** Sauvegarde la configuration de l'IA (pool multi-IA, webhooks Make.com, mode adaptatif et délai). */
+    /** Sauvegarde la configuration de l'IA (pool multi-IA, webhooks Make.com, mode adaptatif, personas locales et délai). */
     function saveAiConfig(values) {
         if (!values || typeof values !== 'object') return { ok: false, error: 'Configuration invalide.' };
         const cur = getAiConfig();
@@ -1641,6 +1746,15 @@ const AdminStore = (() => {
         const providers = Array.isArray(values.providers)
             ? values.providers.map((p, i) => _normalizeAiProvider(p, i)).filter(Boolean)
             : cur.providers;
+        const enableLocalPersonas = typeof values.enableLocalPersonas === 'boolean'
+            ? values.enableLocalPersonas
+            : (cur.enableLocalPersonas !== false);
+        const showAiBadgeInQuiz = typeof values.showAiBadgeInQuiz === 'boolean'
+            ? values.showAiBadgeInQuiz
+            : (cur.showAiBadgeInQuiz !== false);
+        const localPersonas = Array.isArray(values.localPersonas)
+            ? values.localPersonas.map((p, i) => _normalizeLocalPersona(p, i)).filter(Boolean)
+            : (values.localPersonas === null ? null : cur.localPersonas);
 
         const clean = {
             generateWebhookUrl: (typeof values.generateWebhookUrl === 'string') ? values.generateWebhookUrl.trim() : (cur.generateWebhookUrl || ''),
@@ -1652,6 +1766,9 @@ const AdminStore = (() => {
             timeoutMs: timeout,
             fallbackToOffline: fallback,
             fallbackToLocal: fallback,
+            enableLocalPersonas,
+            showAiBadgeInQuiz,
+            localPersonas,
         };
         const data = _data();
         data.aiConfig = clean;
@@ -1819,6 +1936,7 @@ const AdminStore = (() => {
         DEFAULT_REWARDS: _clone(DEFAULT_REWARDS),
         DEFAULT_SITE_CONFIG: _clone(DEFAULT_SITE_CONFIG),
         DEFAULT_AI_CONFIG: _clone(DEFAULT_AI_CONFIG),
+        DEFAULT_LOCAL_AI_PERSONAS: _clone(DEFAULT_LOCAL_AI_PERSONAS),
         SUBJECT_DEFAULT_RULES: _clone(SUBJECT_DEFAULT_RULES),
         LESSON_TYPES: LESSON_TYPES.slice(),
 

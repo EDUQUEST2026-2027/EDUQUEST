@@ -27,7 +27,20 @@
     const VALIDATE_WEBHOOK_URL = '';
     const FETCH_TIMEOUT_MS = 8000;
 
+    /**
+     * Lot par défaut de personas IA pédagogiques locales (surchargé par AdminStore.getAiConfig().localPersonas).
+     */
+    const AI_POOL = Object.freeze([
+        { id: 'ai-athena',  name: 'IA Athéna',   role: 'Analytique & Académique',    icon: '🧠', color: '#4cc9f0', variantOffset: 0, hintPrefix: 'Analyse méthodique (Athéna) : ', enabled: true },
+        { id: 'ai-socrate', name: 'IA Socrate',  role: 'Maïeutique & Guidée',        icon: '🏛️', color: '#ffd166', variantOffset: 1, hintPrefix: 'Piste de réflexion (Socrate) : ', enabled: true },
+        { id: 'ai-chronos', name: 'IA Chronos',  role: 'Défi & Réflexes',            icon: '⚡', color: '#ff9f43', variantOffset: 2, hintPrefix: 'Astuce rapide (Chronos) : ', enabled: true },
+        { id: 'ai-davinci', name: 'IA Da Vinci', role: 'Créative & Contextuelle',    icon: '🎨', color: '#b388ff', variantOffset: 3, hintPrefix: 'Intuition visuelle (Da Vinci) : ', enabled: true },
+        { id: 'ai-turing',  name: 'IA Turing',   role: 'Algorithmique & Adaptative', icon: '💻', color: '#3ddc97', variantOffset: 4, hintPrefix: 'Décomposition logique (Turing) : ', enabled: true },
+    ]);
+
     let roundRobinCursor = 0;
+    let lastSelectedAiId = null;
+    const levelResetCounters = {};
     const validationEndpointsByQuestionId = new Map();
 
     function getAdminStore() {
@@ -67,6 +80,11 @@
                     selectionStrategy: conf.selectionStrategy === 'round_robin' ? 'round_robin' : 'random',
                     timeout: conf.fetchTimeoutMs || conf.timeoutMs || FETCH_TIMEOUT_MS,
                     fallbackToOffline: conf.fallbackToOffline !== false,
+                    enableLocalPersonas: conf.enableLocalPersonas !== false,
+                    showAiBadgeInQuiz: conf.showAiBadgeInQuiz !== false,
+                    localPersonas: Array.isArray(conf.localPersonas) && conf.localPersonas.length > 0
+                        ? conf.localPersonas
+                        : AI_POOL.slice(),
                 };
             }
         }
@@ -78,7 +96,61 @@
             selectionStrategy: 'random',
             timeout: FETCH_TIMEOUT_MS,
             fallbackToOffline: true,
+            enableLocalPersonas: true,
+            showAiBadgeInQuiz: true,
+            localPersonas: AI_POOL.slice(),
         };
+    }
+
+    /** Retourne les personas IA locales actives (pilotables depuis admin.html). */
+    function getAiPool() {
+        const conf = getConfig();
+        const raw = Array.isArray(conf.localPersonas) && conf.localPersonas.length > 0 ? conf.localPersonas : AI_POOL;
+        const active = raw.filter(p => p && p.enabled !== false);
+        return active.length > 0 ? active.map(p => ({ ...p })) : [];
+    }
+
+    /** Sélectionne aléatoirement une persona IA locale en évitant de répéter `excludeId` sur un retry. */
+    function pickRandomAi(excludeId) {
+        const pool = getAiPool();
+        if (pool.length === 0) return null;
+        const candidates = excludeId ? pool.filter(a => a.id !== excludeId) : pool;
+        const list = candidates.length > 0 ? candidates : pool;
+        const chosen = list[Math.floor(Math.random() * list.length)];
+        lastSelectedAiId = chosen.id;
+        return chosen;
+    }
+
+    /** Réinitialise le tirage d'un niveau suite à un échec et sélectionne une autre persona du lot. */
+    function resetLevelQuestions(subjectId, index, niveau) {
+        const qb = getQuestionBank();
+        const norm = (qb && qb.normalizeNiveau) ? qb.normalizeNiveau(niveau) : String(niveau || '6eme').toLowerCase();
+        const lvlKey = `${String(subjectId || 'general').toLowerCase()}::${norm}::lvl_${Number(index || 0)}`;
+        levelResetCounters[lvlKey] = (levelResetCounters[lvlKey] || 0) + 1;
+        const nextAi = pickRandomAi(lastSelectedAiId);
+        return {
+            resetCount: levelResetCounters[lvlKey],
+            aiAgent: nextAi,
+        };
+    }
+
+    /** Enrichit une leçon locale avec la persona IA active (sans modifier la question d'origine). */
+    function enrichLessonWithAi(lesson, aiAgent, isResetAfterFailure) {
+        if (!lesson || !aiAgent) return lesson;
+        const copy = Object.assign({}, lesson);
+        copy.aiAgent = {
+            id: aiAgent.id,
+            name: aiAgent.name,
+            role: aiAgent.role,
+            icon: aiAgent.icon,
+            color: aiAgent.color,
+            hintPrefix: aiAgent.hintPrefix || '',
+            adaptedAfterFailure: Boolean(isResetAfterFailure),
+        };
+        if (copy.hint && aiAgent.hintPrefix && !copy.hint.startsWith(aiAgent.hintPrefix)) {
+            copy.hint = aiAgent.hintPrefix + copy.hint;
+        }
+        return copy;
     }
 
     /** Retourne la liste des fournisseurs IA distants réellement exploitables. */
@@ -386,23 +458,37 @@
             }
         }
 
-        // Repli local adaptatif & non-répétitif
+        // Repli local adaptatif & non-répétitif (enrichi par les personas locales si activées en admin)
+        const isAfterFailure = Boolean(opts && (opts.afterFailure || opts.resetOnFailure || salt > 0 || excludeSignatures.length > 0));
+        const chosenPersona = conf.enableLocalPersonas
+            ? ((opts && opts.aiAgent) ? opts.aiAgent : pickRandomAi(isAfterFailure ? (opts.excludePersonaId || lastSelectedAiId) : null))
+            : null;
+        const lvlKey = `${String(subjectId || 'general').toLowerCase()}::${norm}::lvl_${Number(index || 0)}`;
+        const resetOffset = levelResetCounters[lvlKey] || 0;
+        const effectiveSalt = (salt > 0 || isAfterFailure)
+            ? (salt + (chosenPersona ? (chosenPersona.variantOffset || 0) : 0) + resetOffset * 3)
+            : 0;
+
         if (ae && typeof ae.pickLocalQuestion === 'function') {
             const subjectForAdaptive = opts.subject || (opts.localLesson ? { id: subjectId, lessons: { [index]: opts.localLesson } } : null);
             // Si une leçon locale explicite est fournie pour le 1er essai et non exclue, la respecter si inédite
-            if (opts.localLesson && salt === 0) {
+            if (opts.localLesson && salt === 0 && !isAfterFailure) {
                 const localSig = ae.signatureOf(opts.localLesson);
                 if (localSig && !excludedSet.has(localSig) && !ae.getSeenSignatures(subjectId, norm).includes(localSig)) {
                     ae.markSeen(subjectId, norm, opts.localLesson);
+                    const enrichedLocal = enrichLessonWithAi(opts.localLesson, chosenPersona, false);
                     return {
-                        lesson: opts.localLesson,
+                        lesson: enrichedLocal,
                         questionId: null,
                         source: 'local',
-                        providerId: 'local-adaptive',
-                        providerName: conf.adaptiveMode ? `Moteur adaptatif (${tierInfo.shortLabel})` : 'Banque locale',
+                        providerId: chosenPersona ? chosenPersona.id : 'local-adaptive',
+                        providerName: chosenPersona
+                            ? `${chosenPersona.name} · ${tierInfo.shortLabel}`
+                            : (conf.adaptiveMode ? `Moteur adaptatif (${tierInfo.shortLabel})` : 'Banque locale'),
                         difficultyTier: conf.adaptiveMode ? tierInfo.id : 'standard',
                         tierInfo,
                         signature: localSig,
+                        aiAgent: chosenPersona,
                     };
                 }
             }
@@ -411,37 +497,43 @@
                 subjectId,
                 levelIndex: index,
                 niveau: norm,
-                salt,
+                salt: effectiveSalt,
                 excludeSignatures,
                 adaptiveMode: conf.adaptiveMode,
             });
+            const enrichedPicked = enrichLessonWithAi(picked.lesson, chosenPersona, isAfterFailure);
             return {
-                lesson: picked.lesson,
+                lesson: enrichedPicked,
                 questionId: null,
                 source: 'local',
-                providerId: picked.providerId,
-                providerName: picked.providerName,
+                providerId: chosenPersona ? chosenPersona.id : picked.providerId,
+                providerName: chosenPersona
+                    ? `${chosenPersona.name} · ${picked.tierInfo ? picked.tierInfo.shortLabel : tierInfo.shortLabel}`
+                    : picked.providerName,
                 difficultyTier: picked.difficultyTier,
                 tierInfo: picked.tierInfo,
                 signature: picked.signature,
+                aiAgent: chosenPersona,
             };
         }
 
         // Ultime repli direct sur QuestionBank (ex: test isolé sans AdaptiveEngine)
-        const variant = salt;
-        const lesson = (opts && opts.localLesson && variant === 0)
+        const variant = effectiveSalt;
+        const rawLesson = (opts && opts.localLesson && variant === 0)
             ? opts.localLesson
             : (qb ? qb.getLesson(opts.subject || subjectId, index, norm, variant) : null);
+        const lesson = enrichLessonWithAi(rawLesson, chosenPersona, isAfterFailure);
         const sig = (qb && qb.questionSignature && lesson) ? qb.questionSignature(lesson) : '';
         return {
             lesson,
             questionId: null,
             source: 'local',
-            providerId: 'local-bank',
-            providerName: 'Banque locale',
+            providerId: chosenPersona ? chosenPersona.id : 'local-bank',
+            providerName: chosenPersona ? chosenPersona.name : 'Banque locale',
             difficultyTier: 'standard',
             tierInfo,
             signature: sig,
+            aiAgent: chosenPersona,
         };
     }
 
@@ -489,6 +581,10 @@
     }
 
     return {
+        AI_POOL,
+        getAiPool,
+        pickRandomAi,
+        resetLevelQuestions,
         isConfigured,
         getActiveProviders,
         selectProvidersOrder,
