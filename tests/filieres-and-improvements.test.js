@@ -32,6 +32,7 @@ const ALL_36_SUBJECTS = [
     'cybersecurite', 'reseaux', 'electronique', 'stss',
     'biotech', 'design', 'hotellerie', 'agronomie', 'spectacle',
     'hlp', 'dev_bdd', 'commerce', 'comptabilite', 'electrotech',
+    'biopathologie', 'spcl', 'rh_comm', 'architecture_habitat', 'llce', 'pse',
 ];
 
 function resetStorage() {
@@ -63,6 +64,7 @@ test.describe('Filières (18 voies officielles) & Programme officiel', () => {
             'mercatique', 'i2d', 'sin', 'cybersecurite', 'reseaux', 'electronique', 'stss',
             'biotech', 'design', 'hotellerie', 'agronomie', 'spectacle',
             'hlp', 'dev_bdd', 'commerce', 'comptabilite', 'electrotech',
+            'biopathologie', 'spcl', 'rh_comm', 'architecture_habitat', 'llce', 'pse',
         ];
         for (const niv of ['6eme', '5eme', '4eme', '3eme']) {
             assert.equal(AdminStore.isFiliereApplicable(niv), false);
@@ -145,7 +147,35 @@ test.describe('Filières (18 voies officielles) & Programme officiel', () => {
         assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'electrotech' }, 'terminale', 'bac_pro_melec'), true);
         assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'biotech' }, '1ere', 'bac_pro_assp'), true);
         assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'stss' }, '1ere', 'bac_pro_assp'), true);
+        assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'biopathologie' }, '1ere', 'st2s'), true);
+        assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'spcl' }, 'terminale', 'stl'), true);
+        assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'rh_comm' }, 'terminale', 'stmg'), true);
+        assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'architecture_habitat' }, '1ere', 'sti2d'), true);
+        assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'llce' }, '1ere', 'hlp_llce'), true);
+        assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'pse' }, 'terminale', 'bac_pro_assp'), true);
         assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'electrotech' }, 'terminale', 'sthr'), false);
+
+        // Vérifie que CHAQUE filière dispose d'au moins 11 matières et 4 spécialités sur tous les niveaux Lycée & BTS (y compris via RAW_DASH_SUBJECTS)
+        const appSrc = fs.readFileSync(path.join(ROOT, 'js', 'app.js'), 'utf8');
+        const rawMatch = appSrc.match(/const RAW_DASH_SUBJECTS = (\[[\s\S]*?\n\]);/);
+        assert.ok(rawMatch, 'RAW_DASH_SUBJECTS doit être présent dans js/app.js');
+        const rawDashSubjects = eval(rawMatch[1]);
+        assert.equal(rawDashSubjects.length, 42, '42 matières officielles attendues dans RAW_DASH_SUBJECTS');
+        const effectiveSubs = AdminStore.applyOverrides(rawDashSubjects);
+        for (const f of AdminStore.getFilieres()) {
+            for (const niv of ['2nde', '1ere', 'terminale', 'bts1', 'bts2']) {
+                const allowed = effectiveSubs.filter(s => AdminStore.isSubjectAllowedForNiveau(s, niv, f.id));
+                const specs = allowed.filter(s => AdminStore.isSubjectSpecialtyForFiliere(s, f.id));
+                assert.ok(
+                    allowed.length >= 11,
+                    `Filière ${f.id} en ${niv} a trop peu de matières (${allowed.length}) : ${allowed.map(s => s.id).join(', ')}`
+                );
+                assert.ok(
+                    specs.length >= 4,
+                    `Filière ${f.id} en ${niv} a trop peu de spécialités (${specs.length}) : ${specs.map(s => s.id).join(', ')}`
+                );
+            }
+        }
     });
 });
 
@@ -179,6 +209,12 @@ test.describe('QuestionBank — Intégrité complète des 36 matières (Collège
             commerce: 'bts2',
             comptabilite: 'bts1',
             electrotech: 'terminale',
+            biopathologie: '1ere',
+            spcl: 'terminale',
+            rh_comm: 'terminale',
+            architecture_habitat: '1ere',
+            llce: '1ere',
+            pse: 'terminale',
         };
 
         for (const subjectId of ALL_36_SUBJECTS) {
@@ -247,6 +283,12 @@ test.describe('Anti-répétition renforcée (AdaptiveEngine + QuestionBank)', ()
             ['commerce', 'bts2'],
             ['comptabilite', 'bts1'],
             ['electrotech', 'terminale'],
+            ['biopathologie', '1ere'],
+            ['spcl', 'terminale'],
+            ['rh_comm', 'terminale'],
+            ['architecture_habitat', '1ere'],
+            ['llce', '1ere'],
+            ['pse', 'terminale'],
         ];
 
         for (const [subjectId, niveau] of cases) {
@@ -294,7 +336,8 @@ test.describe('Assets, PWA Service Worker & HTML — Cohérence v1.30.0 (100 % S
             'biotech.svg', 'design.svg', 'hotellerie.svg',
             'agronomie.svg', 'spectacle.svg', 'hlp.svg',
             'dev_bdd.svg', 'commerce.svg', 'comptabilite.svg',
-            'electrotech.svg',
+            'electrotech.svg', 'biopathologie.svg', 'spcl.svg',
+            'rh_comm.svg', 'architecture_habitat.svg', 'llce.svg', 'pse.svg',
         ];
         for (const file of allIslands) {
             const fullPath = path.join(ROOT, 'Image', 'ile', file);

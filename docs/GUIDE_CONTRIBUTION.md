@@ -53,7 +53,7 @@ Ouvrez simplement [test.html](../test.html) dans n'importe quel navigateur (y co
 
 Les questions sont structurées dans `js/question-bank.js` (`FACT_BANKS` + générateurs procéduraux) et peuvent également être créées et modifiées dynamiquement depuis le panneau d'administration (`admin.html`).
 
-Chaque matière officielle (36 au total) dispose :
+Chaque matière officielle (42 au total, couvrant le Collège, le Lycée et le BTS sur 18 filières) dispose :
 1. De leçons socles écrites à la main dans `RAW_DASH_SUBJECTS` (`js/app.js`) pour les premiers niveaux.
 2. D'un générateur procédural déterministe (`QuestionBank.generateOne`) capable d'étendre la matière jusqu'au niveau 100 de façon reproductible.
 3. De variantes aléatoires tirées en *lazy getter* selon le niveau d'étude choisi.

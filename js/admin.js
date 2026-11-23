@@ -93,6 +93,12 @@
         { value: 'Image/ile/commerce.svg', label: 'Île de Relation Client & Commerce (BTS MCO)' },
         { value: 'Image/ile/comptabilite.svg', label: 'Île de Comptabilité & Finance (BTS CG)' },
         { value: 'Image/ile/electrotech.svg', label: 'Île d\'Électrotechnique & Énergie (MELEC)' },
+        { value: 'Image/ile/biopathologie.svg', label: 'Île de Biologie & Physiopathologie (ST2S / ASSP / STL)' },
+        { value: 'Image/ile/spcl.svg', label: 'Île de Sciences & Chimie de Labo (SPCL / STL)' },
+        { value: 'Image/ile/rh_comm.svg', label: 'Île de RH & Communication (STMG / MCO / CG)' },
+        { value: 'Image/ile/architecture_habitat.svg', label: 'Île d\'Architecture & Habitat Durable (STI2D / STD2A / MELEC)' },
+        { value: 'Image/ile/llce.svg', label: 'Île de Langues & Cultures Étrangères (LLCE)' },
+        { value: 'Image/ile/pse.svg', label: 'Île de Prévention, Santé & Environnement (PSE)' },
     ];
 
     function renderSubjectIcon(icon, altText = '', extraClass = '') {

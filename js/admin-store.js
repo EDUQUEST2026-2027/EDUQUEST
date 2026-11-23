@@ -30,78 +30,86 @@ const AdminStore = (() => {
 
     // Filières / voies officielles (Lycée Général, Technologique, Professionnel & Post-Bac BTS — 18 filières)
     const DEFAULT_FILIERES = [
-        { id: 'generale',      label: 'Voie Générale', shortLabel: 'Générale', icon: '📚', enabled: true, desc: 'Tronc commun et spécialités du lycée général (SES, NSI, HGGSP, SI, HLP, Sciences)' },
-        { id: 'nsi_spe',       label: 'Spécialité NSI & Numérique', shortLabel: 'Spé NSI', icon: '💻', enabled: true, desc: 'Parcours informatique, algorithmique, réseaux, cybersécurité et sciences' },
-        { id: 'stmg',          label: 'STMG (Management & Gestion)', shortLabel: 'STMG', icon: '📊', enabled: true, desc: 'Management (MSGN), Droit & Économie, Mercatique & Gestion-Finance' },
-        { id: 'sti2d',         label: 'STI2D (Industrie & Dév. Durable)', shortLabel: 'STI2D', icon: '⚙️', enabled: true, desc: 'Innovation Technologique (I2D), Systèmes d\'Info & Énergie (SIN), Électronique' },
-        { id: 'ciel',          label: 'CIEL (Cyber, Réseaux & Électronique)', shortLabel: 'CIEL', icon: '🛡️', enabled: true, desc: 'Bac Pro & BTS CIEL : Cybersécurité, Réseaux & Systèmes, Électronique, Code' },
-        { id: 'st2s',          label: 'ST2S (Santé & Social)', shortLabel: 'ST2S', icon: '🩺', enabled: true, desc: 'Sciences Sanitaires & Sociales (STSS), Biologie humaine & Sciences' },
-        // --- 12 NOUVELLES FILIÈRES OFFICIELLES (TECHNO, GÉNÉRAL, PRO & BTS) ---
-        { id: 'stl',           label: 'STL (Sciences & Tech. de Laboratoire)', shortLabel: 'STL', icon: '🧫', enabled: true, desc: 'Biotechnologies, biochimie, physique-chimie de laboratoire et démarches expérimentales' },
-        { id: 'std2a',         label: 'STD2A (Design & Arts Appliqués)', shortLabel: 'STD2A', icon: '🎨', enabled: true, desc: 'Design produit, graphisme, espace, mode, arts appliqués et culture artistique' },
-        { id: 'sthr',          label: 'STHR (Hôtellerie & Restauration)', shortLabel: 'STHR', icon: '🍽️', enabled: true, desc: 'Sciences culinaires, service hôtelier, hygiène HACCP, gestion et tourisme' },
-        { id: 'stav',          label: 'STAV (Agronomie & Vivant)', shortLabel: 'STAV', icon: '🌱', enabled: true, desc: 'Agronomie, agroécologie, gestion durable des territoires, vivant et environnement' },
-        { id: 's2tmd',         label: 'S2TMD (Théâtre, Musique & Danse)', shortLabel: 'S2TMD', icon: '🎭', enabled: true, desc: 'Arts de la scène, dramaturgie, musicologie, chorégraphie et culture du spectacle' },
-        { id: 'hlp_llce',      label: 'Humanités, Lettres & Langues (HLP)', shortLabel: 'HLP/LLCE', icon: '📖', enabled: true, desc: 'Humanités, Littérature & Philosophie (HLP), géopolitique et langues vivantes' },
-        { id: 'sciences_spe',  label: 'Spécialités Maths & Sciences (PC/SVT)', shortLabel: 'Spé Sciences', icon: '🔬', enabled: true, desc: 'Parcours scientifique approfondi : Mathématiques, Physique, Chimie, SVT et SI' },
-        { id: 'bts_sio',       label: 'BTS SIO (Services Informatiques)', shortLabel: 'BTS SIO', icon: '🖥️', enabled: true, desc: 'Options SLAM & SISR : Développement, SQL/BDD, Réseaux, Cybersécurité et droit IT' },
-        { id: 'bts_mco',       label: 'BTS MCO (Management Commercial)', shortLabel: 'BTS MCO', icon: '🛒', enabled: true, desc: 'Relation client, animation commerciale, merchandising, mercatique et gestion d\'UC' },
-        { id: 'bts_cg',        label: 'BTS CG (Comptabilité & Gestion)', shortLabel: 'BTS CG', icon: '🧮', enabled: true, desc: 'Comptabilité générale, fiscalité TVA, contrôle de gestion, finance et droit social' },
-        { id: 'bac_pro_melec', label: 'Bac Pro MELEC (Électricité & Connecté)', shortLabel: 'MELEC', icon: '⚡', enabled: true, desc: 'Électrotechnique, norme NF C 15-100, habilitation électrique, triphasé et domotique' },
-        { id: 'bac_pro_assp',  label: 'Bac Pro ASSP (Soins & Accompagnement)', shortLabel: 'ASSP', icon: '🏥', enabled: true, desc: 'Accompagnement, soins d\'hygiène, biologie/microbiologie, nutrition et secteur social' },
+        { id: 'generale',      label: 'Voie Générale', shortLabel: 'Générale', icon: '📚', enabled: true, desc: 'Tronc commun et spécialités du lycée général (SES, NSI, HGGSP, SI, HLP, LLCE, Sciences & Arts)' },
+        { id: 'nsi_spe',       label: 'Spécialité NSI & Numérique', shortLabel: 'Spé NSI', icon: '💻', enabled: true, desc: 'Parcours informatique, algorithmique, développement/BDD, réseaux, cybersécurité, SIN et SI' },
+        { id: 'stmg',          label: 'STMG (Management & Gestion)', shortLabel: 'STMG', icon: '📊', enabled: true, desc: 'Management (MSGN), Droit & Économie, Mercatique, Gestion-Finance (Comptabilité), RH & Comm et SIG' },
+        { id: 'sti2d',         label: 'STI2D (Industrie & Dév. Durable)', shortLabel: 'STI2D', icon: '⚙️', enabled: true, desc: 'I2D (ITEC), SIN, Architecture & Habitat (AC), Énergie & Électrotechnique (EE), Électronique et SI' },
+        { id: 'ciel',          label: 'CIEL (Cyber, Réseaux & Électronique)', shortLabel: 'CIEL', icon: '🛡️', enabled: true, desc: 'Bac Pro & BTS CIEL : Cybersécurité, Réseaux & Systèmes, Électronique, SIN, Dév/BDD, NSI, Droit IT & PSE' },
+        { id: 'st2s',          label: 'ST2S (Santé & Social)', shortLabel: 'ST2S', icon: '🩺', enabled: true, desc: 'Sciences Sanitaires & Sociales (STSS), Biologie & Physiopathologie (BPH), Biotechnologies, Chimie, SVT & PSE' },
+        // --- 12 FILIÈRES OFFICIELLES COMPLÉMENTAIRES (TECHNO, GÉNÉRAL, PRO & BTS) ---
+        { id: 'stl',           label: 'STL (Sciences & Tech. de Laboratoire)', shortLabel: 'STL', icon: '🧫', enabled: true, desc: 'Biotechnologies, Sciences & Chimie de Labo (SPCL), Biochimie, Biopathologie, Physique-Chimie et SVT' },
+        { id: 'std2a',         label: 'STD2A (Design & Arts Appliqués)', shortLabel: 'STD2A', icon: '🎨', enabled: true, desc: 'Design & Arts Appliqués, Architecture & Habitat, Arts & Musique, Éco-conception (I2D), Scénographie et Culture' },
+        { id: 'sthr',          label: 'STHR (Hôtellerie & Restauration)', shortLabel: 'STHR', icon: '🍽️', enabled: true, desc: 'Hôtellerie & Gastronomie, Management (MSGN), Mercatique, Commerce, RH & Comm, Comptabilité, PSE et Langues' },
+        { id: 'stav',          label: 'STAV (Agronomie & Vivant)', shortLabel: 'STAV', icon: '🌱', enabled: true, desc: 'Agronomie & Écologie, SVT, Biotechnologies, Chimie, PSE, Éco-technologies (I2D), Aménagement et Gestion' },
+        { id: 's2tmd',         label: 'S2TMD (Théâtre, Musique & Danse)', shortLabel: 'S2TMD', icon: '🎭', enabled: true, desc: 'Arts de la Scène & Culture, Arts & Musique, Design & Scénographie, Humanités (HLP), LLCE et Géopolitique' },
+        { id: 'hlp_llce',      label: 'Humanités, Lettres & Langues (HLP)', shortLabel: 'HLP/LLCE', icon: '📖', enabled: true, desc: 'Humanités, Littérature & Philosophie (HLP), Langues & Cultures (LLCE), Géopolitique (HGGSP), Arts et Sciences humaines' },
+        { id: 'sciences_spe',  label: 'Spécialités Maths & Sciences (PC/SVT)', shortLabel: 'Spé Sciences', icon: '🔬', enabled: true, desc: 'Parcours scientifique complet : Mathématiques, Physique, Chimie, SVT, SI, Labo (SPCL), Biopathologie et NSI' },
+        { id: 'bts_sio',       label: 'BTS SIO (Services Informatiques)', shortLabel: 'BTS SIO', icon: '🖥️', enabled: true, desc: 'Options SLAM & SISR : Développement & BDD, Réseaux & Systèmes, Cybersécurité, NSI, SIN, CEJM (Droit-Éco & MSGN)' },
+        { id: 'bts_mco',       label: 'BTS MCO (Management Commercial)', shortLabel: 'BTS MCO', icon: '🛒', enabled: true, desc: 'Relation Client & Commerce, Mercatique, Management (MSGN), RH & Comm, Comptabilité-Gestion, CEJM (Droit-Éco) & Langues' },
+        { id: 'bts_cg',        label: 'BTS CG (Comptabilité & Gestion)', shortLabel: 'BTS CG', icon: '🧮', enabled: true, desc: 'Comptabilité, Fiscalité & Contrôle de gestion, CEJM (Droit-Éco & MSGN), SI Comptable & SQL (Dév/BDD), RH & Paie' },
+        { id: 'bac_pro_melec', label: 'Bac Pro MELEC (Électricité & Connecté)', shortLabel: 'MELEC', icon: '⚡', enabled: true, desc: 'Électrotechnique (NF C 15-100), Électronique, SIN & Domotique, Réseaux connectés, Habitat (AC), I2D et PSE' },
+        { id: 'bac_pro_assp',  label: 'Bac Pro ASSP (Soins & Accompagnement)', shortLabel: 'ASSP', icon: '🏥', enabled: true, desc: 'STSS (Médico-Social), Biologie & Physiopathologie (BPH & Soins), Biotechnologies & Hygiène, PSE, SVT et Chimie' },
     ];
 
     const ALL_NIVEAUX = ['6eme', '5eme', '4eme', '3eme', '2nde', '1ere', 'terminale', 'bts1', 'bts2'];
     const COLLEGE_LYCEE = ['6eme', '5eme', '4eme', '3eme', '2nde', '1ere', 'terminale'];
+    const FROM_5EME_TO_BTS = ['5eme', '4eme', '3eme', '2nde', '1ere', 'terminale', 'bts1', 'bts2'];
     const LYCEE_ONLY = ['2nde', '1ere', 'terminale'];
     const LYCEE_BTS = ['2nde', '1ere', 'terminale', 'bts1', 'bts2'];
 
-    // Règles pédagogiques conformes au programme officiel (Collège, Lycée & BTS, par filière — 36 matières)
+    // Règles pédagogiques conformes au programme officiel (Collège, Lycée & BTS, par filière — 42 matières)
     // - Technologie : Collège uniquement (6e → 3e)
-    // - Espagnol LV2 : dès la 5ème (5e → Terminale)
-    // - NSI & SES : Lycée uniquement — jamais au collège
+    // - Espagnol LV2 : dès la 5ème (5e → BTS 2)
+    // - NSI & SES : Lycée & BTS uniquement — jamais au collège
     // - Philosophie : Terminale uniquement — jamais au collège
     // - Matières de spécialité & filières (HGGSP, SI, MSGN, Droit-Éco, Mercatique, I2D, SIN,
     //   Cybersécurité, Réseaux, Électronique, STSS, Biotech, Design, Hôtellerie, Agronomie,
-    //   Spectacle, HLP, Dév & BDD, Commerce, Comptabilité, Électrotechnique) : Lycée / BTS selon la filière.
+    //   Spectacle, HLP, Dév & BDD, Commerce, Comptabilité, Électrotechnique, Biopathologie,
+    //   SPCL, RH & Comm, Architecture & Habitat, LLCE, PSE) : Lycée & BTS selon la filière.
     const SUBJECT_DEFAULT_RULES = {
-        maths:         { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['all'], specialtyFilieres: ['sciences_spe'] },
-        francais:      { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['all'], specialtyFilieres: [] },
-        histoire:      { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['all'], specialtyFilieres: [] },
-        geo:           { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['all'], specialtyFilieres: [] },
-        emc:           { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['all'], specialtyFilieres: [] },
-        anglais:       { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['all'], specialtyFilieres: [] },
-        espagnol:      { band: 'all',     allowedNiveaux: ['5eme', '4eme', '3eme', '2nde', '1ere', 'terminale'], allowedFilieres: ['generale', 'stmg', 'st2s', 'stl', 'std2a', 'sthr', 'stav', 's2tmd', 'hlp_llce', 'sciences_spe', 'bts_mco', 'bac_pro_assp'], specialtyFilieres: [] },
-        svt:           { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['generale', 'st2s', 'stl', 'stav', 'sciences_spe', 'bac_pro_assp'], specialtyFilieres: ['st2s', 'stav', 'sciences_spe', 'bac_pro_assp'] },
-        physique:      { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel', 'st2s', 'stl', 'std2a', 'stav', 'sciences_spe', 'bac_pro_melec'], specialtyFilieres: ['stl', 'sciences_spe'] },
-        chimie:        { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'st2s', 'stl', 'std2a', 'stav', 'sciences_spe', 'bac_pro_assp'], specialtyFilieres: ['stl', 'sciences_spe'] },
-        techno:        { band: 'college', allowedNiveaux: ['6eme', '5eme', '4eme', '3eme'], allowedFilieres: ['all'], specialtyFilieres: [] },
-        arts:          { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['generale', 'std2a', 's2tmd', 'hlp_llce'], specialtyFilieres: ['std2a', 's2tmd'] },
-        philo:         { band: 'lycee',   allowedNiveaux: ['terminale'], allowedFilieres: ['generale', 'nsi_spe', 'stmg', 'sti2d', 'st2s', 'stl', 'std2a', 'sthr', 'stav', 's2tmd', 'hlp_llce', 'sciences_spe'], specialtyFilieres: ['hlp_llce'] },
-        nsi:           { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel', 'bts_sio'], specialtyFilieres: ['nsi_spe', 'ciel'] },
-        ses:           { band: 'lycee',   allowedNiveaux: LYCEE_ONLY, allowedFilieres: ['generale'], specialtyFilieres: ['generale'] },
-        hggsp:         { band: 'lycee',   allowedNiveaux: ['1ere', 'terminale'], allowedFilieres: ['generale', 'hlp_llce'], specialtyFilieres: ['generale', 'hlp_llce'] },
-        si:            { band: 'lycee',   allowedNiveaux: LYCEE_ONLY, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'sciences_spe'], specialtyFilieres: ['nsi_spe', 'sti2d', 'generale'] },
-        msgn:          { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stmg', 'sthr', 'bts_sio', 'bts_mco', 'bts_cg'], specialtyFilieres: ['stmg', 'sthr', 'bts_mco', 'bts_cg'] },
-        droit_eco:     { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stmg', 'ciel', 'sthr', 'bts_sio', 'bts_mco', 'bts_cg'], specialtyFilieres: ['stmg', 'ciel', 'bts_cg'] },
-        mercatique:    { band: 'lycee',   allowedNiveaux: ['1ere', 'terminale', 'bts1', 'bts2'], allowedFilieres: ['stmg', 'sthr', 'bts_mco'], specialtyFilieres: ['stmg', 'bts_mco'] },
-        i2d:           { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['sti2d'], specialtyFilieres: ['sti2d'] },
-        sin:           { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['sti2d', 'bac_pro_melec'], specialtyFilieres: ['sti2d'] },
-        cybersecurite: { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['ciel', 'nsi_spe', 'bts_sio'], specialtyFilieres: ['ciel', 'nsi_spe', 'bts_sio'] },
-        reseaux:       { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['ciel', 'nsi_spe', 'bts_sio'], specialtyFilieres: ['ciel', 'nsi_spe', 'bts_sio'] },
-        electronique:  { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['ciel', 'sti2d', 'bac_pro_melec'], specialtyFilieres: ['ciel', 'sti2d', 'bac_pro_melec'] },
-        stss:          { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['st2s', 'bac_pro_assp'], specialtyFilieres: ['st2s', 'bac_pro_assp'] },
-        // --- 10 NOUVELLES MATIÈRES DÉDIÉES AUX NOUVELLES FILIÈRES ---
-        biotech:       { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stl', 'bac_pro_assp'], specialtyFilieres: ['stl', 'bac_pro_assp'] },
-        design:        { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['std2a'], specialtyFilieres: ['std2a'] },
-        hotellerie:    { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['sthr'], specialtyFilieres: ['sthr'] },
-        agronomie:     { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stav'], specialtyFilieres: ['stav'] },
-        spectacle:     { band: 'lycee',   allowedNiveaux: LYCEE_ONLY, allowedFilieres: ['s2tmd'], specialtyFilieres: ['s2tmd'] },
-        hlp:           { band: 'lycee',   allowedNiveaux: ['1ere', 'terminale'], allowedFilieres: ['hlp_llce', 'generale'], specialtyFilieres: ['hlp_llce'] },
-        dev_bdd:       { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['bts_sio', 'nsi_spe'], specialtyFilieres: ['bts_sio'] },
-        commerce:      { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['bts_mco'], specialtyFilieres: ['bts_mco'] },
-        comptabilite:  { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['bts_cg'], specialtyFilieres: ['bts_cg'] },
-        electrotech:   { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['bac_pro_melec'], specialtyFilieres: ['bac_pro_melec'] },
+        maths:                { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['all'], specialtyFilieres: ['sciences_spe'] },
+        francais:             { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['all'], specialtyFilieres: ['hlp_llce'] },
+        histoire:             { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['all'], specialtyFilieres: [] },
+        geo:                  { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['all'], specialtyFilieres: [] },
+        emc:                  { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['all'], specialtyFilieres: [] },
+        anglais:              { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['all'], specialtyFilieres: ['hlp_llce'] },
+        espagnol:             { band: 'all',     allowedNiveaux: FROM_5EME_TO_BTS, allowedFilieres: ['all'], specialtyFilieres: ['hlp_llce'] },
+        svt:                  { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['generale', 'st2s', 'stl', 'sthr', 'stav', 's2tmd', 'hlp_llce', 'sciences_spe', 'bac_pro_assp'], specialtyFilieres: ['st2s', 'stav', 'sciences_spe', 'bac_pro_assp', 'stl'] },
+        physique:             { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel', 'st2s', 'stl', 'std2a', 'stav', 's2tmd', 'hlp_llce', 'sciences_spe', 'bts_sio', 'bac_pro_melec', 'bac_pro_assp'], specialtyFilieres: ['stl', 'sciences_spe'] },
+        chimie:               { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel', 'st2s', 'stl', 'std2a', 'sthr', 'stav', 'hlp_llce', 'sciences_spe', 'bac_pro_melec', 'bac_pro_assp'], specialtyFilieres: ['stl', 'sciences_spe', 'st2s', 'stav'] },
+        techno:               { band: 'college', allowedNiveaux: ['6eme', '5eme', '4eme', '3eme'], allowedFilieres: ['all'], specialtyFilieres: [] },
+        arts:                 { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['generale', 'ciel', 'std2a', 's2tmd', 'hlp_llce', 'bac_pro_melec', 'bac_pro_assp'], specialtyFilieres: ['std2a', 's2tmd'] },
+        philo:                { band: 'lycee',   allowedNiveaux: ['terminale'], allowedFilieres: ['generale', 'nsi_spe', 'stmg', 'sti2d', 'st2s', 'stl', 'std2a', 'sthr', 'stav', 's2tmd', 'hlp_llce', 'sciences_spe'], specialtyFilieres: ['hlp_llce', 'generale'] },
+        nsi:                  { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel', 'sciences_spe', 'bts_sio'], specialtyFilieres: ['nsi_spe', 'ciel', 'bts_sio'] },
+        ses:                  { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['generale', 'stmg', 'hlp_llce', 'bts_mco', 'bts_cg'], specialtyFilieres: ['generale'] },
+        hggsp:                { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['generale', 'hlp_llce', 's2tmd'], specialtyFilieres: ['generale', 'hlp_llce'] },
+        si:                   { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'sciences_spe', 'bac_pro_melec'], specialtyFilieres: ['nsi_spe', 'sti2d', 'generale', 'sciences_spe'] },
+        msgn:                 { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stmg', 'sthr', 'stav', 'bts_sio', 'bts_mco', 'bts_cg', 'bac_pro_assp'], specialtyFilieres: ['stmg', 'sthr', 'bts_mco', 'bts_cg'] },
+        droit_eco:            { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stmg', 'ciel', 'st2s', 'sthr', 'stav', 'bts_sio', 'bts_mco', 'bts_cg', 'bac_pro_melec', 'bac_pro_assp'], specialtyFilieres: ['stmg', 'ciel', 'bts_sio', 'bts_mco', 'bts_cg'] },
+        mercatique:           { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stmg', 'sthr', 'bts_mco', 'bts_cg'], specialtyFilieres: ['stmg', 'sthr', 'bts_mco'] },
+        i2d:                  { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['sti2d', 'std2a', 'stav', 'bac_pro_melec'], specialtyFilieres: ['sti2d', 'std2a'] },
+        sin:                  { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['sti2d', 'nsi_spe', 'ciel', 'bts_sio', 'bac_pro_melec'], specialtyFilieres: ['sti2d', 'nsi_spe', 'ciel', 'bac_pro_melec'] },
+        cybersecurite:        { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['ciel', 'nsi_spe', 'bts_sio'], specialtyFilieres: ['ciel', 'nsi_spe', 'bts_sio'] },
+        reseaux:              { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['ciel', 'nsi_spe', 'bts_sio', 'bac_pro_melec'], specialtyFilieres: ['ciel', 'nsi_spe', 'bts_sio', 'bac_pro_melec'] },
+        electronique:         { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['ciel', 'sti2d', 'nsi_spe', 'bts_sio', 'bac_pro_melec'], specialtyFilieres: ['ciel', 'sti2d', 'bac_pro_melec'] },
+        stss:                 { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['st2s', 'bac_pro_assp'], specialtyFilieres: ['st2s', 'bac_pro_assp'] },
+        // --- 16 MATIÈRES DÉDIÉES AUX FILIÈRES TECHNO, GÉNÉRALES, PRO & BTS ---
+        biotech:              { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stl', 'st2s', 'sthr', 'stav', 'sciences_spe', 'bac_pro_assp'], specialtyFilieres: ['stl', 'st2s', 'stav', 'bac_pro_assp'] },
+        design:               { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['std2a', 's2tmd'], specialtyFilieres: ['std2a', 's2tmd'] },
+        hotellerie:           { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['sthr'], specialtyFilieres: ['sthr'] },
+        agronomie:            { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stav'], specialtyFilieres: ['stav'] },
+        spectacle:            { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['s2tmd', 'std2a', 'hlp_llce'], specialtyFilieres: ['s2tmd', 'std2a'] },
+        hlp:                  { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['hlp_llce', 'generale', 's2tmd', 'std2a'], specialtyFilieres: ['hlp_llce', 'generale', 's2tmd'] },
+        dev_bdd:              { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['bts_sio', 'nsi_spe', 'ciel', 'stmg', 'bts_cg'], specialtyFilieres: ['bts_sio', 'nsi_spe', 'ciel', 'bts_cg'] },
+        commerce:             { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['bts_mco', 'stmg', 'sthr', 'bts_cg'], specialtyFilieres: ['bts_mco', 'stmg', 'sthr'] },
+        comptabilite:         { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['bts_cg', 'stmg', 'bts_mco', 'sthr'], specialtyFilieres: ['bts_cg', 'stmg', 'bts_mco'] },
+        electrotech:          { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['bac_pro_melec', 'sti2d'], specialtyFilieres: ['bac_pro_melec', 'sti2d'] },
+        biopathologie:        { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['st2s', 'bac_pro_assp', 'stl', 'sciences_spe'], specialtyFilieres: ['st2s', 'bac_pro_assp', 'stl'] },
+        spcl:                 { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stl', 'sciences_spe', 'st2s', 'stav', 'sti2d'], specialtyFilieres: ['stl', 'sciences_spe'] },
+        rh_comm:              { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stmg', 'bts_mco', 'bts_cg', 'sthr', 'bts_sio'], specialtyFilieres: ['stmg', 'bts_mco', 'bts_cg', 'sthr'] },
+        architecture_habitat: { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['sti2d', 'std2a', 'bac_pro_melec', 'stav', 'sciences_spe'], specialtyFilieres: ['sti2d', 'std2a', 'bac_pro_melec'] },
+        llce:                 { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['hlp_llce', 'generale', 's2tmd', 'std2a', 'sthr', 'bts_mco'], specialtyFilieres: ['hlp_llce', 'generale', 's2tmd'] },
+        pse:                  { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['bac_pro_assp', 'bac_pro_melec', 'ciel', 'sthr', 'stav', 'st2s', 'stl'], specialtyFilieres: ['bac_pro_assp', 'bac_pro_melec', 'ciel', 'sthr', 'stav'] },
     };
 
     // Niveaux scolaires par défaut (6ème → Terminale + BTS 1/2)

@@ -96,7 +96,13 @@ const MEDIA_PRECACHE_URLS = [
   'Image/ile/dev_bdd.svg',
   'Image/ile/commerce.svg',
   'Image/ile/comptabilite.svg',
-  'Image/ile/electrotech.svg'
+  'Image/ile/electrotech.svg',
+  'Image/ile/biopathologie.svg',
+  'Image/ile/spcl.svg',
+  'Image/ile/rh_comm.svg',
+  'Image/ile/architecture_habitat.svg',
+  'Image/ile/llce.svg',
+  'Image/ile/pse.svg'
 ];
 
 const PRECACHE_URLS = CORE_PRECACHE_URLS.concat(MEDIA_PRECACHE_URLS);

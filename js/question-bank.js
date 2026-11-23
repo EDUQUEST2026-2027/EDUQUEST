@@ -1,16 +1,17 @@
 /* =============================================================================
    QUESTION-BANK.JS — EDUQUEST v1.30.0
-   Banque de questions et générateur procédural pour les 36 matières officielles
+   Banque de questions et générateur procédural pour les 42 matières officielles
    et les 9 niveaux scolaires (18 filières au lycée & BTS) :
    - 6ème, 5ème, 4ème, 3ème (Collège)
    - 2nde, 1ère, Terminale, BTS 1ère année, BTS 2ème année (Lycée & Post-Bac)
 
    CAPACITÉS CLÉS :
-   1. Couverture complète des 36 matières jusqu'à 100 niveaux chacune :
+   1. Couverture complète des 42 matières jusqu'à 100 niveaux chacune :
       - Banques de faits ciblés par classe (FACT_BANKS) + générateurs procéduraux
         déterministes (Maths collège/lycée/BTS, Français, Anglais, Espagnol, Physique,
-        Chimie, Technologie, NSI, SES, STMG, STI2D, CIEL, STL, STD2A, STHR, STAV,
-        S2TMD, HLP, BTS SIO/MCO/CG, Bac Pro MELEC/ASSP…).
+        Chimie, Technologie, NSI, SES, HGGSP, SI, STMG, STI2D, CIEL, ST2S, STL, STD2A,
+        STHR, STAV, S2TMD, HLP, LLCE, Biopathologie, SPCL, RH & Comm, Architecture &
+        Habitat, PSE, BTS SIO/MCO/CG, Bac Pro MELEC/ASSP…).
    2. Différenciation stricte par classe et cycle (jamais de mélange Collège ↔ Lycée).
    3. Variété multi-types : QCM (4 choix mélangés déterministes), Vrai/Faux, Réponse courte.
    4. Absence de répétition consécutive grâce aux decks stables, variantes paresseuses
@@ -2672,13 +2673,623 @@ const QuestionBank = (() => {
         };
     }
 
+    /** Générateur procédural pour HGGSP (Géopolitique & Sciences Politiques) */
+    function generateHggspLesson(index, norm, variant, rng) {
+        const items = [
+            { q: "En droit maritime international (Montego Bay, 1982), quelle est la largeur maximale des eaux territoriales d'un État côtier ?", ans: "12 milles marins", wrongs: ["200 milles marins", "50 milles marins", "350 milles marins"], exp: "La souveraineté complète s'exerce sur la mer territoriale (12 milles), suivie de la ZEE jusqu'à 200 milles." },
+            { q: "En quelle année l'Organisation des Nations Unies (ONU) a-t-elle été fondée par la Charte de San Francisco ?", ans: "1945", wrongs: ["1919", "1948", "1957"], exp: "L'ONU succède à la SDN en 1945 au lendemain de la Seconde Guerre mondiale." },
+            { q: "Quel politologue américain a théorisé l'opposition entre « hard power » et « soft power » ?", ans: "Joseph Nye", wrongs: ["Samuel Huntington", "Francis Fukuyama", "Zbigniew Brzezinski"], exp: "Joseph Nye définit le soft power comme la capacité d'attraction culturelle et idéologique." },
+            { q: "En quelle année la chute du mur de Berlin marque-t-elle la fin symbolique de la division de l'Europe ?", ans: "1989", wrongs: ["1961", "1979", "1995"], exp: "Érigé en août 1961, le mur de Berlin tombe le 9 novembre 1989." },
+            { q: "Quelle conférence internationale de 1955 en Indonésie marque l'émergence politique du Tiers-Monde ?", ans: "la conférence de Bandung", wrongs: ["la conférence de Yalta", "la conférence de Berlin", "les accords de Bretton Woods"], exp: "29 pays d'Asie et d'Afrique y affirment leur anticolonialisme et le non-alignement." },
+            { q: "Quel traité signé en 1957 institue la Communauté Économique Européenne (CEE) ?", ans: "le traité de Rome", wrongs: ["le traité de Lisbonne", "le traité de Versailles", "le traité d'Amsterdam"], exp: "Les six États fondateurs signent le traité de Rome le 25 mars 1957." },
+            { q: "Comment appelle-t-on la doctrine géopolitique américaine de 1947 visant à endiguer l'expansion du communisme ?", ans: "le containment (endiguement — doctrine Truman)", wrongs: ["l'isolationnisme de Monroe", "la Détente", "la Perestroïka"], exp: "La doctrine Truman et le plan Marshall mettent en œuvre l'endiguement dès 1947." },
+            { q: "Quelle juridiction pénale internationale créée en 1945 a jugé les principaux dirigeants nazis ?", ans: "le tribunal militaire international de Nuremberg", wrongs: ["la Cour de justice de l'UE", "le tribunal de Tokyo", "la Cour permanente d'arbitrage"], exp: "Le procès de Nuremberg (1945-1946) définit juridiquement le crime contre l'humanité." },
+            { q: "Quel premier satellite artificiel de l'Histoire a été placé en orbite par l'URSS le 4 octobre 1957 ?", ans: "Spoutnik 1", wrongs: ["Apollo 11", "Vostok 1", "Explorer 1"], exp: "Spoutnik 1 inaugure l'ère spatiale et la course à l'espace de la Guerre froide." },
+            { q: "Quel astronaute américain est devenu le premier être humain à marcher sur la Lune le 21 juillet 1969 ?", ans: "Neil Armstrong (Apollo 11)", wrongs: ["Youri Gagarine", "Buzz Aldrin", "John Glenn"], exp: "Youri Gagarine fut le premier homme dans l'espace (1961) et Neil Armstrong le premier sur la Lune (1969)." },
+        ];
+        const deck = seededShuffle(items, 'hggsp-proc:' + norm + ':v' + variant);
+        const pick = deck[(Math.floor(index / 2) + variant * 3) % deck.length];
+        const wrongs = uniqueStringWrongs(pick.ans, pick.wrongs);
+        const { opts, correct } = shuffleOptions([pick.ans, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: pick.q,
+            opts,
+            correct,
+            exp: pick.exp
+        };
+    }
+
+    /** Générateur procédural pour Droit & Économie (STMG / CIEL / BTS CEJM) */
+    function generateDroitEcoLesson(index, norm, variant, rng) {
+        const kinds = ['taux_chomage', 'pouvoir_achat', 'juridiction', 'contrat_clause'];
+        const pIdx = procIdx(index, variant);
+        const subIdx = Math.floor(pIdx / kinds.length);
+        const kind = kinds[pIdx % kinds.length];
+
+        if (kind === 'taux_chomage') {
+            const actifs = [20, 25, 30][Math.floor(rng() * 3)]; // millions
+            const taux = [6, 8, 10][Math.floor(rng() * 3)]; // %
+            const chomeurs = (actifs * taux) / 100;
+            const cStr = String(chomeurs).replace('.', ',');
+            const wrongs = uniqueWrongs(taux, [taux + 2, Math.max(2, taux - 2), taux * 2, actifs], false).map(n => `${n} %`);
+            const { opts, correct } = shuffleOptions([`${taux} %`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `En économie, un pays compte ${actifs} millions d'actifs (occupés + chômeurs) dont ${cStr} millions de chômeurs au sens du BIT. Quel est le taux de chômage ?`,
+                opts,
+                correct,
+                exp: `Taux de chômage = (Chômeurs / Population active) × 100 = (${cStr} / ${actifs}) × 100 = ${taux} %.`
+            };
+        }
+        if (kind === 'pouvoir_achat') {
+            const hausseRevenu = [3, 4, 5, 6][Math.floor(rng() * 4)];
+            const inflation = [1, 2, 3][Math.floor(rng() * 3)];
+            const gain = hausseRevenu - inflation;
+            const wrongs = uniqueWrongs(gain, [hausseRevenu + inflation, gain + 2, gain - 1, inflation], true).map(n => `${n >= 0 ? '+' : ''}${n} %`);
+            const { opts, correct } = shuffleOptions([`${gain >= 0 ? '+' : ''}${gain} %`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Le revenu disponible d'un ménage augmente de +${hausseRevenu} % sur l'année tandis que l'inflation est de +${inflation} %. Quelle est l'évolution approximative de son pouvoir d'achat ?`,
+                opts,
+                correct,
+                exp: `Évolution du pouvoir d'achat ≈ Évolution du revenu nominal − Inflation = ${hausseRevenu} − ${inflation} = +${gain} %.`
+            };
+        }
+        if (kind === 'juridiction') {
+            const cas = [
+                { litige: "un litige lié à la rupture d'un contrat de travail entre un salarié et son employeur", jur: "le Conseil de prud'hommes" },
+                { litige: "un litige commercial entre deux sociétés (ex : inexécution d'un contrat de fourniture)", jur: "le Tribunal de commerce" },
+                { litige: "un recours visant à annuler un arrêté municipal ou une décision de l'administration", jur: "le Tribunal administratif" },
+                { litige: "un pourvoi vérifiant la bonne application des règles de droit par une cour d'appel civile", jur: "la Cour de cassation" },
+            ];
+            const pick = cas[subIdx % cas.length];
+            const others = cas.filter(c => c.jur !== pick.jur).map(c => c.jur).concat(["la Cour d'assises"]);
+            const wrongs = uniqueStringWrongs(pick.jur, others);
+            const { opts, correct } = shuffleOptions([pick.jur, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `En droit français, quelle juridiction est compétente pour trancher ${pick.litige} ?`,
+                opts,
+                correct,
+                exp: `Ce type de contentieux relève de la compétence ${deNom(pick.jur)}.`
+            };
+        }
+        const notions = [
+            { terme: "la politique budgétaire de relance", def: "augmenter les dépenses publiques ou réduire les impôts pour soutenir la demande et l'emploi" },
+            { terme: "la politique monétaire restrictive", def: "relever les taux d'intérêt directeurs de la banque centrale pour freiner le crédit et l'inflation" },
+            { terme: "la responsabilité civile contractuelle", def: "réparer le préjudice causé à son cocontractant par l'inexécution ou le retard d'un contrat" },
+            { terme: "le RGPD (Règlement Général sur la Protection des Données)", def: "encadrer la collecte des données personnelles et garantir le consentement et le droit à l'effacement" },
+        ];
+        const pick = notions[subIdx % notions.length];
+        const others = notions.filter(n => n.terme !== pick.terme).map(n => n.terme);
+        const wrongs = uniqueStringWrongs(pick.terme, others);
+        const { opts, correct } = shuffleOptions([pick.terme, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `En Droit & Économie (CEJM), quelle notion consiste à ${pick.def} ?`,
+            opts,
+            correct,
+            exp: `Il s'agit ${deNom(pick.terme)}.`
+        };
+    }
+
+    /** Générateur procédural pour STSS (Sciences et Techniques Sanitaires et Sociales — ST2S / ASSP) */
+    function generateStssLesson(index, norm, variant, rng) {
+        const kinds = ['prevalence', 'incidence', 'prevention_type', 'risque_social'];
+        const pIdx = procIdx(index, variant);
+        const subIdx = Math.floor(pIdx / kinds.length);
+        const kind = kinds[pIdx % kinds.length];
+
+        if (kind === 'prevalence') {
+            const pop = [10000, 20000, 50000][Math.floor(rng() * 3)];
+            const tauxPourMille = [5, 10, 20, 25][Math.floor(rng() * 4)];
+            const cas = (pop * tauxPourMille) / 1000;
+            const wrongs = uniqueWrongs(cas, [cas * 2, Math.max(10, Math.round(cas / 2)), cas + 50, pop / 10], false).map(n => `${n} cas`);
+            const { opts, correct } = shuffleOptions([`${cas} cas`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `En épidémiologie (STSS), dans une ville de ${pop.toLocaleString('fr-FR')} habitants, la prévalence d'une pathologie chronique est de ${tauxPourMille} cas pour 1 000 habitants. Combien de cas sont recensés au total ?`,
+                opts,
+                correct,
+                exp: `Nombre de cas = (${pop.toLocaleString('fr-FR')} / 1 000) × ${tauxPourMille} = ${cas} cas.`
+            };
+        }
+        if (kind === 'incidence') {
+            const anciens = [120, 200, 350][Math.floor(rng() * 3)];
+            const nouveaux = [30, 50, 80][Math.floor(rng() * 3)];
+            const total = anciens + nouveaux;
+            const wrongs = uniqueWrongs(nouveaux, [anciens, total, nouveaux * 2, anciens - nouveaux], false).map(n => `${n} nouveaux cas`);
+            const { opts, correct } = shuffleOptions([`${nouveaux} nouveaux cas`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Une région comptait ${anciens} patients atteints d'une maladie au 1er janvier et enregistre ${nouveaux} nouveaux diagnostics durant l'année (total = ${total}). Que vaut l'INCIDENCE annuelle ?`,
+                opts,
+                correct,
+                exp: `L'incidence ne compte que les NOUVEAUX cas apparus sur la période (${nouveaux}), tandis que la prévalence compte le total (${total}).`
+            };
+        }
+        if (kind === 'prevention_type') {
+            const actions = [
+                { act: "une campagne de vaccination et d'éducation à l'hygiène des mains avant toute maladie", niv: "Prévention primaire (éviter l'apparition de la maladie)" },
+                { act: "un dépistage organisé précoce (ex : mammographie, test colorectal) pour traiter au plus tôt", niv: "Prévention secondaire (dépister au stade précoce)" },
+                { act: "l'éducation thérapeutique et la rééducation fonctionnelle d'un patient chronique pour éviter les rechutes", niv: "Prévention tertiaire (limiter les complications et handicaps)" },
+            ];
+            const pick = actions[subIdx % actions.length];
+            const others = actions.filter(a => a.niv !== pick.niv).map(a => a.niv).concat(["Urgence chirurgicale uniquement"]);
+            const wrongs = uniqueStringWrongs(pick.niv, others);
+            const { opts, correct } = shuffleOptions([pick.niv, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Selon la classification de l'OMS en santé publique (STSS), à quel niveau correspond ${pick.act} ?`,
+                opts,
+                correct,
+                exp: `Cette démarche relève de la ${pick.niv}.`
+            };
+        }
+        const branches = [
+            { br: "la branche Maladie (CNAM / CPAM)", role: "rembourser les frais médicaux et verser les indemnités journalières en cas d'arrêt maladie" },
+            { br: "la branche Famille (CNAF / CAF)", role: "verser les prestations familiales, aides au logement et soutenir la petite enfance" },
+            { br: "la branche Vieillesse (CNAV / CARSAT)", role: "gérer et verser les pensions de retraite par répartition" },
+            { br: "la branche Autonomie (CNSA)", role: "accompagner la perte d'autonomie des personnes âgées (APA) et des personnes en situation de handicap" },
+        ];
+        const pick = branches[subIdx % branches.length];
+        const others = branches.filter(b => b.br !== pick.br).map(b => b.br);
+        const wrongs = uniqueStringWrongs(pick.br, others);
+        const { opts, correct } = shuffleOptions([pick.br, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `Dans l'organisation de la Sécurité sociale française, quelle branche a pour mission ${deInf(pick.role)} ?`,
+            opts,
+            correct,
+            exp: `Cette mission est assurée par ${pick.br}.`
+        };
+    }
+
+    /** Générateur procédural pour Biologie & Physiopathologie Humaines (BPH — ST2S / ASSP / STL) */
+    function generateBiopathologieLesson(index, norm, variant, rng) {
+        const kinds = ['debit_cardiaque', 'debit_perfusion', 'terme_medical', 'imagerie_med'];
+        const pIdx = procIdx(index, variant);
+        const subIdx = Math.floor(pIdx / kinds.length);
+        const kind = kinds[pIdx % kinds.length];
+
+        if (kind === 'debit_cardiaque') {
+            const fc = [60, 70, 75, 80][Math.floor(rng() * 4)]; // bpm
+            const ves = [70, 80, 90, 100][Math.floor(rng() * 4)]; // mL
+            const qMl = fc * ves;
+            const qL = Math.round((qMl / 1000) * 100) / 100;
+            const qStr = String(qL).replace('.', ',');
+            const wrongs = uniqueStringWrongs(`${qStr} L/min`, [
+                `${String(Math.round(((fc + ves) / 100) * 100) / 100).replace('.', ',')} L/min`,
+                `${String(Math.round((qL + 1.5) * 100) / 100).replace('.', ',')} L/min`,
+                `${String(Math.max(1.5, Math.round((qL - 1.2) * 100) / 100)).replace('.', ',')} L/min`,
+                `${fc} L/min`
+            ]);
+            const { opts, correct } = shuffleOptions([`${qStr} L/min`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `En physiologie cardiovasculaire (BPH), un patient a une fréquence cardiaque FC = ${fc} battements/min et un volume d'éjection systolique VES = ${ves} mL. Quel est son débit cardiaque Q = FC × VES (en L/min) ?`,
+                opts,
+                correct,
+                exp: `Q = ${fc} × ${ves} = ${qMl} mL/min = ${qStr} L/min.`
+            };
+        }
+        if (kind === 'debit_perfusion') {
+            const volMl = [500, 1000][Math.floor(rng() * 2)];
+            const heures = [5, 10][Math.floor(rng() * 2)];
+            const mlHeure = volMl / heures;
+            const wrongs = uniqueWrongs(mlHeure, [mlHeure * 2, Math.max(10, Math.round(mlHeure / 2)), mlHeure + 25, volMl], false).map(n => `${n} mL/h`);
+            const { opts, correct } = shuffleOptions([`${mlHeure} mL/h`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `En soins infirmiers / ASSP, une poche de perfusion de ${volMl} mL doit être administrée de façon régulière en ${heures} heures. Quel est le débit horaire en mL/h ?`,
+                opts,
+                correct,
+                exp: `Débit = Volume / Durée = ${volMl} mL / ${heures} h = ${mlHeure} mL/h.`
+            };
+        }
+        if (kind === 'terme_medical') {
+            const termes = [
+                { mot: "tachycardie", sens: "une accélération anormale du rythme cardiaque (> 100 bpm au repos)" },
+                { mot: "bradycardie", sens: "un ralentissement du rythme cardiaque (< 60 bpm au repos)" },
+                { mot: "hyperglycémie", sens: "un taux de glucose dans le sang supérieur à la valeur normale (> 1,26 g/L à jeun)" },
+                { mot: "hypoxie", sens: "une diminution de l'apport de dioxygène aux tissus de l'organisme" },
+                { mot: "dyspnée", sens: "une difficulté respiratoire accompagnée d'une sensation d'essoufflement" },
+                { mot: "antalgique", sens: "un médicament destiné à diminuer ou supprimer la douleur" },
+            ];
+            const pick = termes[subIdx % termes.length];
+            const others = termes.filter(t => t.mot !== pick.mot).map(t => t.mot);
+            const wrongs = uniqueStringWrongs(pick.mot, seededShuffle(others, 'bph:' + index + ':' + variant));
+            const { opts, correct } = shuffleOptions([pick.mot, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `En terminologie médicale (ST2S / ASSP), quel terme désigne ${pick.sens} ?`,
+                opts,
+                correct,
+                exp: `Le terme médical « ${pick.mot} » désigne ${pick.sens}.`
+            };
+        }
+        const techniques = [
+            { tech: "l'échographie", principe: "la réflexion d'ultrasons sur les organes (totalement non irradiante)" },
+            { tech: "la radiographie standard / le scanner (TDM)", principe: "l'atténuation différentielle des rayons X selon la densité des tissus (os vs tissus mous)" },
+            { tech: "l'IRM (Imagerie par Résonance Magnétique)", principe: "l'excitation des atomes d'hydrogène de l'eau par un fort champ magnétique et des ondes radio" },
+            { tech: "la scintigraphie", principe: "l'administration d'un traceur faiblement radioactif dont on capte le rayonnement gamma" },
+        ];
+        const pick = techniques[subIdx % techniques.length];
+        const others = techniques.filter(t => t.tech !== pick.tech).map(t => t.tech);
+        const wrongs = uniqueStringWrongs(pick.tech, others);
+        const { opts, correct } = shuffleOptions([pick.tech, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `En imagerie médicale (BPH), quelle technique repose sur ${pick.principe} ?`,
+            opts,
+            correct,
+            exp: `C'est le principe physique utilisé par ${pick.tech}.`
+        };
+    }
+
+    /** Générateur procédural pour Sciences & Chimie de Labo (SPCL — STL / Spé Sciences) */
+    function generateSpclLesson(index, norm, variant, rng) {
+        const kinds = ['titrage_eq', 'ccm_rf', 'grandissement', 'beer_lambert'];
+        const pIdx = procIdx(index, variant);
+        const kind = kinds[pIdx % kinds.length];
+
+        if (kind === 'titrage_eq') {
+            const cb = [1, 2, 5][Math.floor(rng() * 3)] / 10; // 0.1, 0.2, 0.5 mol/L
+            const ve = [10, 15, 20][Math.floor(rng() * 3)]; // mL
+            const va = 10; // mL
+            const ca = Math.round((cb * ve / va) * 100) / 100;
+            const caStr = String(ca).replace('.', ',');
+            const cbStr = String(cb).replace('.', ',');
+            const wrongs = uniqueStringWrongs(`${caStr} mol/L`, [
+                `${String(Math.round((ca * 2) * 100) / 100).replace('.', ',')} mol/L`,
+                `${String(Math.round((ca / 2) * 100) / 100).replace('.', ',')} mol/L`,
+                `${String(Math.round((ca + 0.15) * 100) / 100).replace('.', ',')} mol/L`,
+                `${ve} mol/L`
+            ]);
+            const { opts, correct } = shuffleOptions([`${caStr} mol/L`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `En chimie analytique (SPCL / STL), on titre V_A = ${va} mL d'acide par une base de concentration C_B = ${cbStr} mol/L (réaction 1:1). L'équivalence est atteinte pour V_E = ${ve} mL. Que vaut C_A = (C_B × V_E) / V_A ?`,
+                opts,
+                correct,
+                exp: `À l'équivalence C_A × V_A = C_B × V_E, donc C_A = (${cbStr} × ${ve}) / ${va} = ${caStr} mol/L.`
+            };
+        }
+        if (kind === 'ccm_rf') {
+            const D = 10; // cm (front du solvant)
+            const d = [2, 4, 5, 6, 8][Math.floor(rng() * 5)]; // cm
+            const rf = Math.round((d / D) * 100) / 100;
+            const rfStr = String(rf).replace('.', ',');
+            const wrongs = uniqueStringWrongs(rfStr, [
+                String(Math.round((D / d) * 100) / 100).replace('.', ','),
+                String(Math.min(0.95, Math.round((rf + 0.15) * 100) / 100)).replace('.', ','),
+                String(Math.max(0.05, Math.round((rf - 0.15) * 100) / 100)).replace('.', ','),
+                '1,5'
+            ]);
+            const { opts, correct } = shuffleOptions([rfStr, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Lors d'une chromatographie sur couche mince (CCM), une espèce chimique parcourt d = ${d} cm tandis que le front de l'éluant parcourt D = ${D} cm. Quel est son rapport frontal R_f = d / D ?`,
+                opts,
+                correct,
+                exp: `R_f = d / D = ${d} / ${D} = ${rfStr} (toujours compris entre 0 et 1).`
+            };
+        }
+        if (kind === 'grandissement') {
+            const ab = [2, 4, 5][Math.floor(rng() * 3)]; // cm
+            const a1b1 = ab * [2, 3, 4][Math.floor(rng() * 3)]; // cm
+            const gamma = a1b1 / ab;
+            const wrongs = uniqueWrongs(gamma, [a1b1 + ab, a1b1 - ab, gamma + 2, gamma * 2], false).map(n => `×${n}`);
+            const { opts, correct } = shuffleOptions([`×${gamma}`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `En optique de laboratoire (SPCL), un objet de taille AB = ${ab} cm donne à travers une lentille convergente une image de taille A'B' = ${a1b1} cm. Que vaut la valeur absolue du grandissement |γ| = A'B' / AB ?`,
+                opts,
+                correct,
+                exp: `|γ| = A'B' / AB = ${a1b1} / ${ab} = ×${gamma}.`
+            };
+        }
+        const cMmol = [2, 4, 5, 8][Math.floor(rng() * 4)];
+        const k = 0.15;
+        const abs = Math.round(k * cMmol * 100) / 100;
+        const absStr = String(abs).replace('.', ',');
+        const wrongs = uniqueStringWrongs(absStr, [
+            String(Math.round((abs * 2) * 100) / 100).replace('.', ','),
+            String(Math.round((abs + 0.25) * 100) / 100).replace('.', ','),
+            String(cMmol),
+            '0,05'
+        ]);
+        const { opts, correct } = shuffleOptions([absStr, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `En spectrophotométrie (loi de Beer-Lambert : A = k × C avec k = 0,15 L/mmol), quelle est l'absorbance A d'une solution de concentration C = ${cMmol} mmol/L ?`,
+            opts,
+            correct,
+            exp: `A = 0,15 × ${cMmol} = ${absStr} (sans unité).`
+        };
+    }
+
+    /** Générateur procédural pour RH & Communication (STMG / BTS MCO / BTS CG / STHR) */
+    function generateRhCommLesson(index, norm, variant, rng) {
+        const kinds = ['turnover', 'absenteisme', 'cout_salaire', 'motivation'];
+        const pIdx = procIdx(index, variant);
+        const subIdx = Math.floor(pIdx / kinds.length);
+        const kind = kinds[pIdx % kinds.length];
+
+        if (kind === 'turnover') {
+            const eff = [50, 100, 200][Math.floor(rng() * 3)];
+            const taux = [6, 8, 10, 12][Math.floor(rng() * 4)];
+            const mouvements = (eff * taux) / 100; // (départs + arrivées)/2
+            const wrongs = uniqueWrongs(taux, [taux * 2, Math.max(2, taux - 3), taux + 5, eff], false).map(n => `${n} %`);
+            const { opts, correct } = shuffleOptions([`${taux} %`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `En gestion des ressources humaines (RHC), une entreprise de ${eff} salariés enregistre une moyenne de ${mouvements} mouvements [(départs + embauches) / 2] sur l'année. Quel est son taux de rotation du personnel (turn-over) ?`,
+                opts,
+                correct,
+                exp: `Turn-over = (Mouvements moyens / Effectif moyen) × 100 = (${mouvements} / ${eff}) × 100 = ${taux} %.`
+            };
+        }
+        if (kind === 'absenteisme') {
+            const joursTheo = [1000, 2000][Math.floor(rng() * 2)];
+            const taux = [3, 4, 5, 6][Math.floor(rng() * 4)];
+            const joursAbs = (joursTheo * taux) / 100;
+            const wrongs = uniqueWrongs(taux, [taux + 3, Math.max(1, taux - 2), taux * 2, 100 - taux], false).map(n => `${n} %`);
+            const { opts, correct } = shuffleOptions([`${taux} %`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Sur un mois représentant ${joursTheo} jours théoriques travaillés, le tableau de bord social recense ${joursAbs} jours d'absence. Quel est le taux d'absentéisme ?`,
+                opts,
+                correct,
+                exp: `Taux d'absentéisme = (${joursAbs} / ${joursTheo}) × 100 = ${taux} %.`
+            };
+        }
+        if (kind === 'cout_salaire') {
+            const brut = [2000, 2500, 3000][Math.floor(rng() * 3)];
+            const cotPat = Math.round(brut * 0.4);
+            const coutTotal = brut + cotPat;
+            const wrongs = uniqueWrongs(coutTotal, [brut - cotPat, brut, coutTotal + 400, cotPat], false).map(n => `${n} €`);
+            const { opts, correct } = shuffleOptions([`${coutTotal} €`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Un salarié perçoit un salaire brut de ${brut} € et les cotisations sociales patronales s'élèvent à ${cotPat} €. Quel est le coût global du salarié pour l'employeur ?`,
+                opts,
+                correct,
+                exp: `Coût global employeur = Salaire brut + Cotisations patronales = ${brut} + ${cotPat} = ${coutTotal} €.`
+            };
+        }
+        const concepts = [
+            { nom: "la théorie bi-factorielle de Frederick Herzberg", desc: "distinguer les facteurs d'hygiène (salaire, conditions) et les facteurs moteurs de motivation (reconnaissance, autonomie)" },
+            { nom: "l'écoute active de Carl Rogers", desc: "pratiquer la reformulation, l'empathie et le questionnement ouvert lors d'un entretien professionnel" },
+            { nom: "la GEPP (ex-GPEC)", desc: "anticiper l'évolution des métiers et adapter les compétences des salariés par la formation et la mobilité" },
+            { nom: "le CSE (Comité Social et Économique)", desc: "représenter les salariés et veiller à la santé, la sécurité et aux conditions de travail dans l'entreprise" },
+        ];
+        const pick = concepts[subIdx % concepts.length];
+        const others = concepts.filter(c => c.nom !== pick.nom).map(c => c.nom);
+        const wrongs = uniqueStringWrongs(pick.nom, others);
+        const { opts, correct } = shuffleOptions([pick.nom, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `En Ressources Humaines & Communication (STMG / MCO / CG), quel concept ou instance a pour objet ${deInf(pick.desc)} ?`,
+            opts,
+            correct,
+            exp: `Il s'agit ${deNom(pick.nom)}.`
+        };
+    }
+
+    /** Générateur procédural pour Architecture & Habitat Durable (AC — STI2D / STD2A / MELEC) */
+    function generateArchitectureHabitatLesson(index, norm, variant, rng) {
+        const kinds = ['res_thermique', 'flux_thermique', 'charge_dalle', 'norme_bat'];
+        const pIdx = procIdx(index, variant);
+        const subIdx = Math.floor(pIdx / kinds.length);
+        const kind = kinds[pIdx % kinds.length];
+
+        if (kind === 'res_thermique') {
+            const eMm = [120, 160, 200, 240][Math.floor(rng() * 4)]; // mm -> 0.12 to 0.24 m
+            const eM = eMm / 1000;
+            const lambda = 0.04; // W/(m·K) laine isolante
+            const R = Math.round((eM / lambda) * 10) / 10;
+            const rStr = String(R).replace('.', ',');
+            const wrongs = uniqueStringWrongs(`${rStr} m²·K/W`, [
+                `${String(Math.round((R * 2) * 10) / 10).replace('.', ',')} m²·K/W`,
+                `${String(Math.round((R / 2) * 10) / 10).replace('.', ',')} m²·K/W`,
+                `${String(Math.round((R + 1.5) * 10) / 10).replace('.', ',')} m²·K/W`,
+                `0,04 m²·K/W`
+            ]);
+            const { opts, correct } = shuffleOptions([`${rStr} m²·K/W`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `En thermique de l'habitat (AC / STI2D), on pose une couche d'isolant d'épaisseur e = ${eMm} mm (${String(eM).replace('.', ',')} m) et de conductivité λ = 0,04 W/(m·K). Quelle est sa résistance thermique R = e / λ ?`,
+                opts,
+                correct,
+                exp: `R = e / λ = ${String(eM).replace('.', ',')} / 0,04 = ${rStr} m²·K/W.`
+            };
+        }
+        if (kind === 'flux_thermique') {
+            const S = [10, 20, 30][Math.floor(rng() * 3)]; // m²
+            const dT = [15, 20][Math.floor(rng() * 2)]; // K
+            const R = [2, 4, 5][Math.floor(rng() * 3)]; // m²·K/W
+            const phi = (S * dT) / R;
+            const wrongs = uniqueWrongs(phi, [phi * 2, S * dT * R, phi + 40, Math.max(10, phi - 25)], false).map(n => `${n} W`);
+            const { opts, correct } = shuffleOptions([`${phi} W`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `Une paroi de surface S = ${S} m² et de résistance thermique R = ${R} m²·K/W sépare un intérieur et un extérieur avec un écart de température ΔT = ${dT} °C. Quel est le flux thermique déperditif Φ = (S × ΔT) / R ?`,
+                opts,
+                correct,
+                exp: `Φ = (${S} × ${dT}) / ${R} = ${phi} W.`
+            };
+        }
+        if (kind === 'charge_dalle') {
+            const surf = [20, 30, 40, 50][Math.floor(rng() * 4)]; // m²
+            const qKn = [2, 3, 4][Math.floor(rng() * 3)]; // kN/m²
+            const force = surf * qKn;
+            const wrongs = uniqueWrongs(force, [surf + qKn, force * 2, Math.round(force / 2), force + 30], false).map(n => `${n} kN`);
+            const { opts, correct } = shuffleOptions([`${force} kN`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `En structure du bâtiment, un plancher de ${surf} m² supporte une charge d'exploitation uniforme de ${qKn} kN/m². Quelle est la charge totale F = q × S reprise par le plancher ?`,
+                opts,
+                correct,
+                exp: `F = ${qKn} kN/m² × ${surf} m² = ${force} kN.`
+            };
+        }
+        const notions = [
+            { nom: "le BIM (Building Information Modeling)", def: "la maquette numérique 3D collaborative centralisant toutes les données techniques d'un ouvrage" },
+            { nom: "la réglementation environnementale RE2020", def: "la norme française exigeant la sobriété énergétique, le confort d'été et la réduction de l'empreinte carbone ACV des bâtiments neufs" },
+            { nom: "un pont thermique", def: "une zone de discontinuité d'isolation (jonction dalle-façade) provoquant d'importantes pertes de chaleur et de la condensation" },
+            { nom: "la conception bioclimatique", def: "orienter le bâtiment (vitrages au sud, espaces tampons au nord, protections solaires) pour tirer parti du climat naturel" },
+        ];
+        const pick = notions[subIdx % notions.length];
+        const others = notions.filter(n => n.nom !== pick.nom).map(n => n.nom);
+        const wrongs = uniqueStringWrongs(pick.nom, others);
+        const { opts, correct } = shuffleOptions([pick.nom, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `En Architecture & Habitat Durable (STI2D AC / STD2A / MELEC), que désigne ${pick.def} ?`,
+            opts,
+            correct,
+            exp: `Cette définition correspond ${auNom(pick.nom)}.`
+        };
+    }
+
+    /** Générateur procédural pour Langues, Littératures & Cultures Étrangères (LLCE) */
+    function generateLlceLesson(index, norm, variant, rng) {
+        const items = [
+            { q: "En littérature anglophone (LLCE), quel dramaturge élisabéthain est l'auteur de « Hamlet », « Macbeth » et « Romeo and Juliet » ?", ans: "William Shakespeare", wrongs: ["Charles Dickens", "Oscar Wilde", "John Steinbeck"], exp: "William Shakespeare (1564-1616) est la figure tutélaire du théâtre anglais au Globe Theatre." },
+            { q: "Quel roman dystopique de George Orwell (1949) met en scène Big Brother, la Police de la Pensée et le Newspeak (novlangue) ?", ans: "1984 (Nineteen Eighty-Four)", wrongs: ["Brave New World", "Fahrenheit 451", "The Great Gatsby"], exp: "Dans 1984, George Orwell dénonce les dérives totalitaires et la manipulation du langage." },
+            { q: "Quelle romancière britannique de l'époque géorgienne a publié « Pride and Prejudice » (Orgueil et Préjugés) en 1813 ?", ans: "Jane Austen", wrongs: ["Mary Shelley", "Virginia Woolf", "Charlotte Brontë"], exp: "Jane Austen peint avec ironie la gentry anglaise et la condition féminine au tournant du XIXe siècle." },
+            { q: "En culture hispanique (LLCE Espagnol), quel écrivain colombien, prix Nobel 1982, incarne le « réalisme magique » avec « Cien años de soledad » ?", ans: "Gabriel García Márquez", wrongs: ["Miguel de Cervantes", "Mario Vargas Llosa", "Carlos Ruiz Zafón"], exp: "Cent ans de solitude (1967) raconte l'épopée mythique de la famille Buendía à Macondo." },
+            { q: "Quelle artiste peintre mexicaine engagée est célèbre pour ses autoportraits explorant l'identité, la douleur et la culture précolombienne ?", ans: "Frida Kahlo", wrongs: ["Tamara de Lempicka", "Georgia O'Keeffe", "Camille Claudel"], exp: "Frida Kahlo (1907-1954), installée à la Casa Azul de Coyoacán, est une icône majeure de l'art mexicain." },
+            { q: "En histoire américaine (LLCE), quel pasteur baptiste a prononcé le discours « I Have a Dream » à Washington le 28 août 1963 pour les droits civiques ?", ans: "Martin Luther King Jr.", wrongs: ["Abraham Lincoln", "Franklin D. Roosevelt", "John F. Kennedy"], exp: "Son combat non-violent a conduit au Civil Rights Act de 1964 et au Voting Rights Act de 1965." },
+            { q: "Quel poète et dramaturge espagnol de la « Génération de 27 » a écrit « La casa de Bernarda Alba » et « Romancero gitano » ?", ans: "Federico García Lorca", wrongs: ["Antonio Machado", "Pedro Calderón de la Barca", "Lope de Vega"], exp: "Federico García Lorca (1898-1936) allie tradition andalouse et avant-garde poétique." },
+            { q: "Quel terme désigne l'organisation intergouvernementale regroupant 56 États majoritairement issus de l'ancien Empire britannique ?", ans: "le Commonwealth of Nations", wrongs: ["l'Union européenne", "l'ALENA / ACEUM", "le Mercosur"], exp: "Le Commonwealth rassemble plus de 2,5 milliards de citoyens autour de liens historiques et linguistiques." },
+            { q: "En littérature gothique anglaise (1818), quelle autrice a créé le personnage de Victor Frankenstein et de sa créature ?", ans: "Mary Shelley", wrongs: ["Emily Brontë", "Agatha Christie", "Doris Lessing"], exp: "Frankenstein; or, The Modern Prometheus interroge la démesure scientifique (hubris)." },
+            { q: "En civilisation espagnole, comment appelle-t-on le retour pacifique à la démocratie après la mort de Franco en 1975 et la Constitution de 1978 ?", ans: "la Transición española (Transition démocratique)", wrongs: ["la Reconquista", "la Movida seule", "le Siècle d'Or"], exp: "La Transition démocratique (1975-1982) rétablit les libertés publiques et une monarchie parlementaire." },
+        ];
+        const deck = seededShuffle(items, 'llce-proc:' + norm + ':v' + variant);
+        const pick = deck[(Math.floor(index / 2) + variant * 3) % deck.length];
+        const wrongs = uniqueStringWrongs(pick.ans, pick.wrongs);
+        const { opts, correct } = shuffleOptions([pick.ans, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: pick.q,
+            opts,
+            correct,
+            exp: pick.exp
+        };
+    }
+
+    /** Générateur procédural pour Prévention, Santé & Environnement (PSE — Bac Pro / STHR / STAV / CIEL) */
+    function generatePseLesson(index, norm, variant, rng) {
+        const kinds = ['bruit_db', 'sst_etape', 'risque_pro', 'eau_conso'];
+        const pIdx = procIdx(index, variant);
+        const subIdx = Math.floor(pIdx / kinds.length);
+        const kind = kinds[pIdx % kinds.length];
+
+        if (kind === 'bruit_db') {
+            const baseDb = [80, 83, 85, 90][Math.floor(rng() * 4)];
+            const totalDb = baseDb + 3; // Doubler la source sonore ajoute +3 dB
+            const wrongs = uniqueWrongs(totalDb, [baseDb * 2, baseDb + 10, baseDb, baseDb + 6], false).map(n => `${n} dB(A)`);
+            const { opts, correct } = shuffleOptions([`${totalDb} dB(A)`, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `En acoustique et prévention du bruit (PSE), une machine d'atelier émet ${baseDb} dB(A). Sachant que doubler l'intensité sonore ajoute +3 dB(A) (échelle logarithmique), quel est le niveau sonore de deux machines identiques côte à côte ?`,
+                opts,
+                correct,
+                exp: `Les décibels ne s'additionnent pas arithmétiquement : doubler la source sonore ajoute +3 dB, soit ${baseDb} + 3 = ${totalDb} dB(A).`
+            };
+        }
+        if (kind === 'sst_etape') {
+            const etapes = [
+                { rang: "1ère action (Protéger)", action: "analyser les dangers persistants et supprimer ou isoler le risque sans s'exposer soi-même" },
+                { rang: "2ème action (Examiner)", action: "observer la victime (saignement abondant, étouffement, conscience, respiration) pour repérer les signes vitaux" },
+                { rang: "3ème action (Faire alerter / Alerter)", action: "transmettre aux secours (15 SAMU, 18 Pompiers, 112) un message précis (lieu, nature de l'accident, état de la victime)" },
+                { rang: "4ème action (Secourir)", action: "pratiquer les gestes de premiers secours adaptés (compression directe, PLS, RCP + défibrillateur DAE)" },
+            ];
+            const pick = etapes[subIdx % etapes.length];
+            const others = etapes.filter(e => e.rang !== pick.rang).map(e => e.rang);
+            const wrongs = uniqueStringWrongs(pick.rang, others);
+            const { opts, correct } = shuffleOptions([pick.rang, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `En secourisme au travail (SST / PSE), à quelle étape de l'intervention correspond le fait ${deInf(pick.action)} ?`,
+                opts,
+                correct,
+                exp: `L'ordre impératif SST est : 1. Protéger → 2. Examiner → 3. Faire alerter → 4. Secourir (${pick.rang}).`
+            };
+        }
+        if (kind === 'risque_pro') {
+            const principes = [
+                { mesure: "remplacer un solvant toxique par un produit à base d'eau non dangereux", type: "la suppression ou substitution du risque à la source (prévention intrinsèque)" },
+                { mesure: "installer une hotte d'aspiration ou un carter de sécurité sur une machine pour protéger tous les opérateurs", type: "la protection collective (prioritaire sur l'EPI)" },
+                { mesure: "porter des gants isolants, des chaussures de sécurité S3 et des bouchons d'oreilles moulés", type: "la protection individuelle (EPI)" },
+                { mesure: "afficher les consignes de sécurité et former les salariés aux gestes et postures (PRAP)", type: "l'information et la formation des opérateurs" },
+            ];
+            const pick = principes[subIdx % principes.length];
+            const others = principes.filter(p => p.type !== pick.type).map(p => p.type);
+            const wrongs = uniqueStringWrongs(pick.type, others);
+            const { opts, correct } = shuffleOptions([pick.type, ...wrongs], 0, rng);
+            return {
+                type: 'qcm',
+                title: 'Niveau ' + (index + 1),
+                q: `En prévention des risques professionnels (Code du travail, article L4121-2), à quel niveau de prévention correspond le fait de ${pick.mesure} ?`,
+                opts,
+                correct,
+                exp: `Cette mesure relève de ${pick.type}.`
+            };
+        }
+        const debitLMin = [6, 8, 10, 12][Math.floor(rng() * 4)];
+        const min = [5, 10][Math.floor(rng() * 2)];
+        const totalL = debitLMin * min;
+        const wrongs = uniqueWrongs(totalL, [debitLMin + min, totalL * 2, Math.round(totalL / 2), totalL + 25], false).map(n => `${n} L`);
+        const { opts, correct } = shuffleOptions([`${totalL} L`, ...wrongs], 0, rng);
+        return {
+            type: 'qcm',
+            title: 'Niveau ' + (index + 1),
+            q: `En gestion durable de la ressource en eau (PSE), une douche équipée d'un mousseur économe a un débit de ${debitLMin} L/min. Quel volume d'eau potable consomme une douche de ${min} minutes ?`,
+            opts,
+            correct,
+            exp: `Volume = Débit × Durée = ${debitLMin} L/min × ${min} min = ${totalL} L.`
+        };
+    }
+
     /* ================= 2. Banques de questions étendues ================= */
 
     const FACT_BANKS = {
         francais: [
             // 6ème
             { q: "Quelle est la classe grammaticale du mot « gentiment » ?", correct: "adverbe", wrongs: ["adjectif", "nom", "verbe"], levels: ['6eme', '5eme'], exp: "Les mots terminés en -ment sont très généralement des adverbes de manière." },
-            { q: "Quel est le pluriel du mot « cheval » ?", correct: "chevaux", wrongs: ["chevals", "chevaus", "chevauxs"], levels: ['6eme'], exp: "La plupart des noms en -al font leur pluriel en -aux." },
+            { q: "Quel est le pluriel du mot « cheval » ?", correct: "chevaux", wrongs: ["chevals", "chevaus", "chevales"], levels: ['6eme'], exp: "La plupart des noms en -al font leur pluriel en -aux." },
             { q: "Dans « Le chat noir dort », quelle est la fonction du mot « noir » ?", correct: "épithète", wrongs: ["attribut", "sujet", "complément d'objet"], levels: ['6eme', '5eme'], exp: "« Noir » est directement rattaché au nom qu'il qualifie, c'est une épithète." },
             { q: "Quel est l'antonyme de « généreux » ?", correct: "avare", wrongs: ["joyeux", "courageux", "loyal"], levels: ['6eme'], exp: "Un avare refuse de dépenser ou de partager." },
             { q: "Conjugue « chanter » à la 1ère personne du pluriel au présent de l'indicatif.", correct: "nous chantons", wrongs: ["nous chantions", "nous chanterons", "nous chantez"], levels: ['6eme'], exp: "La terminaison du présent avec 'nous' pour le 1er groupe est -ons." },
@@ -2850,7 +3461,13 @@ const QuestionBank = (() => {
             { q: "Comment nomme-t-on l'enveloppe rigide externe de la Terre fragmentée en plaques tectoniques ?", correct: "la lithosphère", wrongs: ["l'asthénosphère", "le noyau interne", "la troposphère"], levels: ['4eme', '1ere'], exp: "La lithosphère (croûte + manteau supérieur rigide) repose sur l'asthénosphère ductile." },
             { q: "Quelle hormone sécrétée par le pancréas fait baisser le taux de glucose dans le sang (glycémie) ?", correct: "l'insuline", wrongs: ["le glucagon", "l'adrénaline", "la testostérone"], levels: ['2nde', '1ere', 'terminale'], exp: "L'insuline est une hormone hypoglycémiante ; le glucagon est hyperglycémiant." },
             { q: "Quelle technique médicale stimule la mémoire immunitaire pour prévenir une infection grave ?", correct: "la vaccination", wrongs: ["l'antibiothérapie", "la transfusion", "l'anesthésie"], levels: ['3eme', '1ere', 'terminale'], exp: "Le vaccin induit la formation de lymphocytes mémoires spécifiques." },
-            { q: "Quel gaz à effet de serre est majoritairement rejeté par la combustion des énergies fossiles ?", correct: "le dioxyde de carbone (CO₂)", wrongs: ["le diazote (N₂)", "le dioxygène (O₂)", "l'hélium (He)"], levels: ['5eme', '2nde', 'terminale'], exp: "L'augmentation du CO₂ atmosphérique renforce l'effet de serre additionnel." }
+            { q: "Quel gaz à effet de serre est majoritairement rejeté par la combustion des énergies fossiles ?", correct: "le dioxyde de carbone (CO₂)", wrongs: ["le diazote (N₂)", "le dioxygène (O₂)", "l'hélium (He)"], levels: ['5eme', '2nde', 'terminale'], exp: "L'augmentation du CO₂ atmosphérique renforce l'effet de serre additionnel." },
+            { q: "Quel organite cellulaire produit l'ATP grâce à la respiration cellulaire aérobie ?", correct: "la mitochondrie", wrongs: ["le ribosome", "l'appareil de Golgi", "le lysosome"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "La mitochondrie oxyde le glucose en présence d'O₂ pour synthétiser l'ATP." },
+            { q: "Quelle étape de l'expression génétique synthétise un ARN messager à partir d'un brin d'ADN dans le noyau ?", correct: "la transcription", wrongs: ["la traduction", "la réplication", "la mitose"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "L'ARN polymérase transcrit l'ADN en pré-ARNm, puis la traduction produit la protéine." },
+            { q: "Lors de la traduction génétique dans le cytoplasme, quel triplet de nucléotides de l'ARNm code un acide aminé ?", correct: "un codon", wrongs: ["un intron", "un centromère", "un télomère"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le ribosome lit l'ARNm codon par codon (3 nucléotides = 1 acide aminé)." },
+            { q: "En géologie (SVT Lycée), comment appelle-t-on l'enfoncement d'une plaque lithosphérique océanique dense sous une autre plaque ?", correct: "la subduction", wrongs: ["l'accrétion océanique", "l'érosion karstique", "la sédimentation"], levels: ['1ere', 'terminale'], exp: "La subduction est associée aux fosses océaniques, séismes profonds et volcanisme explosif." },
+            { q: "Quelle molécule énergétique universelle est hydrolysée par les cellules musculaires lors de la contraction ?", correct: "l'ATP (Adénosine Triphosphate)", wrongs: ["la cellulose", "le cholestérol", "la kératine"], levels: ['terminale', 'bts1', 'bts2'], exp: "L'hydrolyse de l'ATP en ADP + Pi fournit l'énergie nécessaire au pivotement des têtes de myosine." },
+            { q: "Quel mécanisme évolutif théorisé par Charles Darwin favorise la survie et la reproduction des individus les mieux adaptés ?", correct: "la sélection naturelle", wrongs: ["la génération spontanée", "le fixisme", "la dérive magmatique"], levels: ['3eme', '2nde', 'terminale', 'bts1'], exp: "La sélection naturelle trie les phénotypes avantageux dans un environnement donné." }
         ],
 
         physique: [
@@ -2885,7 +3502,14 @@ const QuestionBank = (() => {
             { q: "Quelle est la vitesse approximative du son dans l'air à 20 °C ?", correct: "340 m/s", wrongs: ["300 000 km/s", "34 m/s", "1 500 m/s"], levels: ['4eme', '3eme', '2nde'], exp: "Le son se propage à environ 340 m/s dans l'air (et ~1 500 m/s dans l'eau)." },
             { q: "Dans quel milieu le son ne peut-il PAS se propager ?", correct: "le vide spatial", wrongs: ["l'eau liquide", "l'acier solide", "l'air sec"], levels: ['6eme', '5eme', '2nde'], exp: "Le son est une onde mécanique qui nécessite un milieu matériel pour se propager." },
             { q: "Quelle unité mesure la fréquence d'un signal périodique (nombre de cycles par seconde) ?", correct: "le hertz (Hz)", wrongs: ["le joule (J)", "le pascal (Pa)", "le tesla (T)"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "f = 1 / T, exprimée en hertz (Hz = s⁻¹)." },
-            { q: "Quelle grandeur physique exprimée en joules (J) mesure le transfert thermique ou le travail d'une force ?", correct: "l'énergie", wrongs: ["la puissance", "la pression", "l'intensité"], levels: ['3eme', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Le joule (J) est l'unité SI d'énergie ; le watt (W = J/s) est l'unité de puissance." }
+            { q: "Quelle grandeur physique exprimée en joules (J) mesure le transfert thermique ou le travail d'une force ?", correct: "l'énergie", wrongs: ["la puissance", "la pression", "l'intensité"], levels: ['3eme', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Le joule (J) est l'unité SI d'énergie ; le watt (W = J/s) est l'unité de puissance." },
+            { q: "Quel phénomène physique décompose la lumière blanche en spectre arc-en-ciel à travers un prisme ?", correct: "la dispersion de la lumière", wrongs: ["la fusion nucléaire", "la conduction thermique", "la diffraction sonore"], levels: ['4eme', '2nde', '1ere', 'bts1'], exp: "L'indice de réfraction du verre dépend de la longueur d'onde, ce qui sépare les couleurs." },
+            { q: "Quelle est la relation reliant le poids P d'un corps, sa masse m et l'intensité de la pesanteur g ?", correct: "P = m × g", wrongs: ["P = m / g", "P = m + g", "P = g / m"], levels: ['3eme', '2nde', '1ere'], exp: "Le poids P est en newtons (N), la masse m en kilogrammes (kg) et g en N/kg." },
+            { q: "Dans un circuit RC série soumis à un échelon de tension, comment s'exprime la constante de temps τ ?", correct: "τ = R × C", wrongs: ["τ = R / C", "τ = R + C", "τ = 1 / (R × C)"], levels: ['terminale', 'bts1', 'bts2'], exp: "La constante de temps τ = R × C (en secondes) caractérise la durée de charge du condensateur." },
+            { q: "Selon la relation de Planck-Einstein, comment s'exprime l'énergie E d'un photon de fréquence ν ?", correct: "E = h × ν", wrongs: ["E = m × v", "E = R × I²", "E = h / ν"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Avec h ≈ 6,63 × 10⁻³⁴ J·s la constante de Planck." },
+            { q: "En thermodynamique (Lycée / BTS), quel mode de transfert thermique s'effectue sans déplacement macroscopique de matière à travers une paroi solide ?", correct: "la conduction thermique", wrongs: ["la convection forcée", "la vaporisation", "la sublimation"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Les trois modes de transfert thermique sont la conduction, la convection et le rayonnement." },
+            { q: "Quelle est l'unité du Système International du champ magnétique B ?", correct: "le tesla (T)", wrongs: ["le volt (V)", "le farad (F)", "le lumen (lm)"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le tesla (T) mesure l'intensité du champ magnétique." },
+            { q: "En optique géométrique, quelle est la relation entre la vergence C (en dioptries δ) et la distance focale f' (en mètres) d'une lentille ?", correct: "C = 1 / f'", wrongs: ["C = f'²", "C = 2 × f'", "C = f' + 1"], levels: ['2nde', '1ere', 'bts1', 'bts2'], exp: "La vergence est l'inverse de la distance focale exprimée en mètres (en dioptries δ)." }
         ],
 
         chimie: [
@@ -2917,7 +3541,19 @@ const QuestionBank = (() => {
             { q: "Quelle technique sépare les constituants d'un mélange hétérogène solide-liquide grâce à un papier poreux ?", correct: "la filtration", wrongs: ["la distillation", "la sublimation", "la fusion"], levels: ['6eme', '5eme'], exp: "Le filtre retient le résidu solide et laisse passer le filtrat liquide." },
             { q: "Quel gaz, représentant environ 21 % de l'air, est indispensable à la respiration et aux combustions ?", correct: "le dioxygène (O₂)", wrongs: ["le diazote (N₂)", "le dioxyde de carbone (CO₂)", "l'argon (Ar)"], levels: ['5eme', '4eme'], exp: "Le dioxygène est le comburant naturel présent dans l'atmosphère." },
             { q: "Quel est le nom de la liaison chimique formée par la mise en commun d'une paire d'électrons entre deux atomes ?", correct: "une liaison covalente", wrongs: ["une liaison gravitationnelle", "une liaison nucléaire", "une liaison thermique"], levels: ['2nde', '1ere', 'terminale'], exp: "Les atomes partagent des électrons de valence pour atteindre une configuration stable." },
-            { q: "Quelle famille organique possède le groupe caractéristique hydroxyle (-OH) ?", correct: "les alcools", wrongs: ["les alcanes", "les aldéhydes", "les cétones"], levels: ['1ere', 'terminale'], exp: "Exemples : méthanol (CH₃OH), éthanol (CH₃CH₂OH)." }
+            { q: "Quelle famille organique possède le groupe caractéristique hydroxyle (-OH) ?", correct: "les alcools", wrongs: ["les alcanes", "les aldéhydes", "les cétones"], levels: ['1ere', 'terminale'], exp: "Exemples : méthanol (CH₃OH), éthanol (CH₃CH₂OH)." },
+            { q: "Comment appelle-t-on le passage de l'eau de l'état liquide à l'état gazeux (vapeur) ?", correct: "la vaporisation (ébullition / évaporation)", wrongs: ["la fusion", "la solidification", "la liquéfaction"], levels: ['6eme', '5eme'], exp: "La vaporisation se fait par évaporation ou par ébullition (à 100 °C pour l'eau pure)." },
+            { q: "Quel réactif chimique donne un précipité blanc qui noircit à la lumière en présence d'ions chlorure Cl⁻ ?", correct: "le nitrate d'argent", wrongs: ["la soude", "l'eau de chaux", "le sulfate de cuivre"], levels: ['4eme', '3eme'], exp: "Ag⁺ + Cl⁻ → AgCl(s) (précipité blanc de chlorure d'argent)." },
+            { q: "Quel réactif permet d'identifier les ions cuivre II (Cu²⁺) en formant un précipité bleu ?", correct: "la soude (hydroxyde de sodium)", wrongs: ["l'acide chlorhydrique", "l'eau distillée", "le diazote"], levels: ['3eme', '4eme'], exp: "Les ions Cu²⁺ forment avec HO⁻ un précipité bleu d'hydroxyde de cuivre II." },
+            { q: "Comment appelle-t-on des atomes ayant le même numéro atomique Z (même nombre de protons) mais un nombre de neutrons différent ?", correct: "des isotopes", wrongs: ["des isomères", "des polymères", "des allotropes"], levels: ['3eme', '2nde', '1ere'], exp: "Exemples : le carbone 12 et le carbone 14 sont deux isotopes de l'élément carbone (Z = 6)." },
+            { q: "Quelle est la relation reliant la quantité de matière n (en mol), la masse m (en g) et la masse molaire M (en g/mol) ?", correct: "n = m / M", wrongs: ["n = m × M", "n = M / m", "n = m + M"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "n (mol) = m (g) / M (g·mol⁻¹)." },
+            { q: "En chimie des solutions, quelle relation définit le pH à partir de la concentration en ions oxonium [H₃O⁺] ?", correct: "pH = −log([H₃O⁺])", wrongs: ["pH = [H₃O⁺]²", "pH = 14 + [H₃O⁺]", "pH = 1 / [H₃O⁺]"], levels: ['terminale', 'bts1', 'bts2'], exp: "Inversement, [H₃O⁺] = 10^(−pH) mol/L." },
+            { q: "En chimie organique, comment appelle-t-on des molécules ayant la même formule brute mais des formules semi-développées différentes ?", correct: "des isomères", wrongs: ["des isotopes", "des ions", "des radicaux"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Les isomères diffèrent par l'enchaînement des atomes ou leur disposition spatiale." },
+            { q: "Lors d'une réaction d'estérification, quels réactifs réagissent ensemble pour former un ester et de l'eau ?", correct: "un acide carboxylique et un alcool", wrongs: ["un alcane et du dioxygène", "deux métaux alcalins", "un sel et un gaz rare"], levels: ['terminale', 'bts1', 'bts2'], exp: "Acide carboxylique + Alcool ⇌ Ester + Eau (réaction équilibrée, catalysée par H⁺)." },
+            { q: "Dans une pile électrochimique en fonctionnement, à quelle électrode se produit l'oxydation (perte d'électrons) ?", correct: "à l'anode (pôle négatif de la pile)", wrongs: ["à la cathode (pôle positif)", "dans le pont salin", "dans le voltmètre"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Anode = Oxydation (voyelles A-O) ; Cathode = Réduction (consonnes C-R)." },
+            { q: "En synthèse chimique au laboratoire, quel montage permet de chauffer un mélange réactionnel sans perte de matière par évaporation ?", correct: "le chauffage à reflux", wrongs: ["la filtration simple", "la décantation ouverte", "le bain de glace"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Le réfrigérant à boules condense les vapeurs qui retombent dans le ballon." },
+            { q: "Quelle verrerie de précision, munie d'un trait de jauge unique, utilise-t-on pour préparer une solution par dissolution ou dilution ?", correct: "une fiole jaugée", wrongs: ["un bécher", "un erlenmeyer", "un verre à pied"], levels: ['4eme', '3eme', '2nde', '1ere', 'bts1'], exp: "La fiole jaugée garantit un volume final très précis (ex : 100,0 mL)." },
+            { q: "Lorsqu'on dilue une solution acide avec de l'eau pure, comment évolue son pH ?", correct: "son pH augmente et se rapproche de 7", wrongs: ["son pH diminue vers 0", "son pH dépasse 14", "son pH reste toujours nul"], levels: ['3eme', '2nde'], exp: "La dilution diminue la concentration en ions H⁺, donc le pH remonte vers la neutralité (7)." }
         ],
 
         techno: [
@@ -2940,7 +3576,10 @@ const QuestionBank = (() => {
             { q: "Dans un réseau local, quel équipement achemine les trames de données entre machines connectées ?", correct: "le switch (commutateur)", wrongs: ["la carte son", "l'onduleur", "l'écran"], levels: ['3eme'], exp: "Le switch (couche 2) filtre et distribue les trames vers le bon port Ethernet." },
             { q: "Dans un logiciel de programmation par blocs (Scratch), quelle structure permet de répéter une série d'instructions ?", correct: "une boucle", wrongs: ["une variable globale", "un capteur ultrason", "une constante"], levels: ['6eme', '5eme', '4eme', '3eme'], exp: "Les boucles évitent de dupliquer des instructions répétitives." },
             { q: "Combien de bits contient exactement un octet ?", correct: "8 bits", wrongs: ["4 bits", "16 bits", "10 bits"], levels: ['4eme', '3eme'], exp: "Un octet est composé de 8 bits prenant chacun la valeur 0 ou 1." },
-            { q: "Quelle étape de conception consiste à fabriquer un premier exemplaire fonctionnel pour tester un objet ?", correct: "le prototypage", wrongs: ["le recyclage", "la commercialisation", "l'archivage"], levels: ['3eme', '4eme'], exp: "Le prototype permet de valider les choix techniques avant la production en série." }
+            { q: "Quelle étape de conception consiste à fabriquer un premier exemplaire fonctionnel pour tester un objet ?", correct: "le prototypage", wrongs: ["le recyclage", "la commercialisation", "l'archivage"], levels: ['3eme', '4eme'], exp: "Le prototype permet de valider les choix techniques avant la production en série." },
+            { q: "Quel logiciel de CAO (Conception Assistée par Ordinateur) permet de modéliser un objet technique en 3 dimensions avant impression 3D ?", correct: "un modeleur 3D (ex : SolidWorks, Tinkercad, FreeCAD)", wrongs: ["un tableur comptable", "un lecteur audio MP3", "un antivirus"], levels: ['6eme', '5eme', '4eme', '3eme'], exp: "Le modèle 3D est ensuite exporté en fichier STL pour l'imprimante 3D." },
+            { q: "Dans un objet technique automatisé (ex : portail automatique), quel organe exécute l'ordre pour agir sur le monde réel ?", correct: "un actionneur (moteur, vérin, voyant)", wrongs: ["un capteur de lumière", "un bouton poussoir", "un câble réseau"], levels: ['5eme', '4eme', '3eme'], exp: "Le capteur acquiert l'info, la carte programmable traite, et l'actionneur agit." },
+            { q: "Pourquoi utilise-t-on le cuivre à l'intérieur des câbles électriques et le plastique (PVC) autour ?", correct: "le cuivre est conducteur électrique et le plastique est isolant", wrongs: ["le plastique conduit mieux le courant que le cuivre", "le cuivre est un isolant thermique", "c'est uniquement décoratif"], levels: ['6eme', '5eme'], exp: "Les métaux conduisent le courant électrique ; les plastiques isolent et protègent l'utilisateur." }
         ],
 
         anglais: [
@@ -2979,7 +3618,14 @@ const QuestionBank = (() => {
             { q: "What does the expression 'to give up' mean ?", correct: "abandonner", wrongs: ["donner un cadeau", "se lever tôt", "grandir"], levels: ['4eme', '3eme', '2nde'], exp: "Never give up = n'abandonne jamais !" },
             { q: "Choose the passive voice : 'The email ___ sent yesterday.'", correct: "was", wrongs: ["is", "were", "has"], levels: ['2nde', '1ere', 'bts1'], exp: "Past simple passive singular: was + past participle." },
             { q: "In business/technical English, what does 'deadline' mean ?", correct: "date limite / échéance", wrongs: ["ligne électrique coupée", "titre d'un article", "fichier supprimé"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "To meet a deadline = respecter une échéance." },
-            { q: "In IT & technical English (BTS/NSI/CIEL), what does 'troubleshooting' mean ?", correct: "dépannage / résolution de panne", wrongs: ["mise à jour matérielle", "création de sauvegarde", "chiffrement de disque"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Troubleshooting is the systematic process of locating and fixing technical issues." }
+            { q: "In IT & technical English (BTS/NSI/CIEL), what does 'troubleshooting' mean ?", correct: "dépannage / résolution de panne", wrongs: ["mise à jour matérielle", "création de sauvegarde", "chiffrement de disque"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Troubleshooting is the systematic process of locating and fixing technical issues." },
+            { q: "Choose the second conditional : 'If I ___ rich, I would travel around the world.'", correct: "were", wrongs: ["am", "will be", "have been"], levels: ['2nde', '1ere', 'terminale'], exp: "Second conditional (unreal present): If + past simple (were), would + base verb." },
+            { q: "In professional English, what does the false friend 'to attend (a meeting)' mean ?", correct: "assister à (une réunion)", wrongs: ["attendre quelqu'un", "annuler une réunion", "entendre un bruit"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "To attend = assister à ; attendre = to wait for." },
+            { q: "What does the linking word 'although' express in an argumentative essay ?", correct: "la concession (bien que)", wrongs: ["la cause (parce que)", "le but (afin de)", "la condition (à moins que)"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Although / even though = bien que." },
+            { q: "In business English (STMG / BTS MCO / CG), what does 'turnover' (or 'revenue') refer to ?", correct: "le chiffre d'affaires (ou la rotation du personnel)", wrongs: ["la faillite bancaire", "le remboursement d'impôt", "le congé maternité"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Annual turnover = chiffre d'affaires annuel ; staff turnover = rotation du personnel." },
+            { q: "Complete the reported speech : 'She said she ___ call me the next day.'", correct: "would", wrongs: ["will", "can", "shall"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "In reported speech after a past reporting verb, 'will' shifts to 'would'." },
+            { q: "What does the adjective 'sustainable' mean in 'sustainable development' ?", correct: "durable / respectueux de l'environnement", wrongs: ["temporaire", "excessivement coûteux", "automatisé"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Sustainable development = développement durable." },
+            { q: "Choose the correct structure : 'I look forward to ___ from you soon.'", correct: "hearing", wrongs: ["hear", "heard", "hears"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "In 'to look forward to', 'to' is a preposition followed by V-ing (gerund)." }
         ],
 
         emc: [
@@ -3012,7 +3658,17 @@ const QuestionBank = (() => {
             { q: "Qui préside le conseil municipal et administre une commune en France ?", correct: "le maire", wrongs: ["le préfet", "le député", "le procureur"], levels: ['6eme', '5eme', '4eme'], exp: "Le maire est élu par le conseil municipal issu du suffrage universel direct." },
             { q: "Comment appelle-t-on le texte fondamental qui organise les pouvoirs publics en France ?", correct: "la Constitution", wrongs: ["le règlement intérieur", "le décret préfectoral", "le code de commerce"], levels: ['4eme', '3eme', '2nde'], exp: "La France vit sous la Constitution de la Ve République (4 octobre 1958)." },
             { q: "Quel principe de la justice signifie qu'une personne accusée est présumée non coupable jusqu'au jugement définitif ?", correct: "la présomption d'innocence", wrongs: ["le double degré de juridiction", "le secret bancaire", "la grâce présidentielle"], levels: ['4eme', '3eme', '2nde', '1ere'], exp: "Inscrit à l'article 9 de la DDHC de 1789." },
-            { q: "Quelle autorité protège les données personnelles des citoyens en France ?", correct: "la CNIL", wrongs: ["l'INSEE", "la Banque de France", "l'ADEME"], levels: ['2nde', '1ere', 'terminale'], exp: "La CNIL veille à l'application de la loi Informatique et Libertés et du RGPD." }
+            { q: "Quelle autorité protège les données personnelles des citoyens en France ?", correct: "la CNIL", wrongs: ["l'INSEE", "la Banque de France", "l'ADEME"], levels: ['2nde', '1ere', 'terminale'], exp: "La CNIL veille à l'application de la loi Informatique et Libertés et du RGPD." },
+            { q: "Quelles sont les trois couleurs du drapeau national de la République française ?", correct: "bleu, blanc, rouge", wrongs: ["bleu, jaune, rouge", "vert, blanc, rouge", "noir, jaune, rouge"], levels: ['6eme', '5eme'], exp: "Le drapeau tricolore bleu, blanc, rouge est l'emblème national (article 2 de la Constitution)." },
+            { q: "En France, quel numéro d'appel d'urgence unique fonctionne gratuitement dans toute l'Union européenne ?", correct: "le 112", wrongs: ["le 911", "le 3615", "le 118"], levels: ['6eme', '5eme', '4eme'], exp: "Le 112 est le numéro d'urgence européen, aux côtés du 15 (SAMU), 17 (Police) et 18 (Pompiers)." },
+            { q: "Quel parcours citoyen obligatoire pour les jeunes Français comprend le recensement à 16 ans puis la JDC ?", correct: "le parcours de citoyenneté (Recensement et Journée Défense et Citoyenneté)", wrongs: ["le service militaire de 3 ans", "le concours de la magistrature", "l'inscription au registre du commerce"], levels: ['3eme', '2nde', '1ere'], exp: "L'attestation de recensement (16 ans) et le certificat JDC sont requis pour passer le bac ou le permis." },
+            { q: "Selon l'article 1er de la Constitution de 1958, comment est définie la République française ?", correct: "indivisible, laïque, démocratique et sociale", wrongs: ["fédérale, confessionnelle et monarchique", "censitaire et corporatiste", "autocratique et héréditaire"], levels: ['3eme', '2nde', '1ere', 'terminale'], exp: "Article 1er : « La France est une République indivisible, laïque, démocratique et sociale. »" },
+            { q: "Quelle autorité constitutionnelle indépendante peut être saisie gratuitement par tout citoyen victime de discrimination ?", correct: "le Défenseur des droits", wrongs: ["la Cour des comptes", "le Conseil économique", "la Banque centrale"], levels: ['2nde', '1ere', 'terminale'], exp: "Le Défenseur des droits protège les droits des usagers, des enfants et lutte contre les discriminations." },
+            { q: "Qu'est-ce que la « QPC » (Question Prioritaire de Constitutionnalité) instaurée en 2008 ?", correct: "le droit pour tout justiciable de contester devant un juge une loi portant atteinte aux droits constitutionnels", wrongs: ["un référendum municipal annuel", "une taxe sur les sociétés", "un vote de confiance du Sénat"], levels: ['2nde', '1ere', 'terminale'], exp: "La QPC permet aux citoyens de faire contrôler a posteriori une loi par le Conseil constitutionnel." },
+            { q: "En démocratie représentative et délibérative, qu'est-ce qu'un référendum ?", correct: "un vote direct par lequel les citoyens répondent par « oui » ou par « non » à un projet de texte", wrongs: ["la nomination d'un préfet par décret", "une décision de justice pénale", "un sondage d'opinion privé"], levels: ['3eme', '2nde', '1ere', 'terminale'], exp: "Prévu aux articles 3 et 11 de la Constitution : la souveraineté nationale s'exerce par les représentants et par référendum." },
+            { q: "Quel texte de 2004 à valeur constitutionnelle consacre le principe de précaution et le droit de vivre dans un environnement équilibré ?", correct: "la Charte de l'environnement", wrongs: ["le Code de la route", "l'ordonnance de Villers-Cotterêts", "le traité de Verdun"], levels: ['2nde', '1ere', 'terminale'], exp: "La Charte de l'environnement de 2004 fait partie intégrante du bloc de constitutionnalité." },
+            { q: "En éthique et bioéthique (EMC Terminale), quel principe médical fondamental exige d'informer le patient avant tout acte ?", correct: "le consentement libre et éclairé", wrongs: ["l'obligation de soin secret", "la commercialisation des organes", "le brevetage du génome humain"], levels: ['1ere', 'terminale'], exp: "Les lois de bioéthique garantissent la dignité humaine, la gratuité du don et le consentement libre et éclairé." },
+            { q: "Que désigne le « pluralisme des médias » dans un État de droit démocratique ?", correct: "la diversité et l'indépendance des sources d'information permettant aux citoyens de se forger une opinion libre", wrongs: ["l'existence d'une seule chaîne officielle d'État", "l'interdiction de tout débat contradictoire", "la censure préalable des journaux"], levels: ['2nde', '1ere', 'terminale'], exp: "Le pluralisme de la presse et de l'audiovisuel est une condition essentielle de la démocratie." }
         ],
 
         philo: [
@@ -3076,11 +3732,15 @@ const QuestionBank = (() => {
             { q: "Selon David Ricardo, quel principe explique l'intérêt pour chaque pays de se spécialiser là où sa productivité relative est la meilleure ?", correct: "la théorie des avantages comparatifs", wrongs: ["le mercantilisme", "le protectionnisme éducateur", "la théorie des débouchés"], levels: ['terminale'], exp: "Ricardo démontre que le commerce international peut bénéficier à tous via les avantages comparatifs." },
             { q: "Quel coefficient compris entre 0 (égalité parfaite) et 1 (inégalité totale) mesure les inégalités de revenus d'une population ?", correct: "le coefficient de Gini", wrongs: ["l'indice de Herfindahl", "le PIB par habitant", "le ratio de Sharpe"], levels: ['terminale'], exp: "L'indice de Gini synthétise la courbe de Lorenz des revenus ou patrimoines." },
             { q: "Pour Karl Marx, sur quelle contradiction fondamentale repose le système capitaliste ?", correct: "la lutte des classes entre bourgeois (possesseurs du capital) et prolétaires", wrongs: ["l'absence de libre-échange", "la surabondance des monnaies", "le manque de formation ouvrière"], levels: ['terminale'], exp: "Pour Marx, l'histoire humaine est structurée par la lutte des classes." },
-            { q: "Comment appelle-t-on le paradoxe selon lequel l'amélioration de l'efficacité énergétique peut accroître la consommation totale de ressources ?", correct: "l'effet rebond (paradoxe de Jevons)", wrongs: ["l'effet Veblen", "la tragédie des biens communs", "l'aléa moral"], levels: ['terminale'], exp: "Les gains d'efficacité abaissent le coût d'usage, incitant à consommer davantage." }
+            { q: "Comment appelle-t-on le paradoxe selon lequel l'amélioration de l'efficacité énergétique peut accroître la consommation totale de ressources ?", correct: "l'effet rebond (paradoxe de Jevons)", wrongs: ["l'effet Veblen", "la tragédie des biens communs", "l'aléa moral"], levels: ['terminale'], exp: "Les gains d'efficacité abaissent le coût d'usage, incitant à consommer davantage." },
+            { q: "En sociologie (Pierre Bourdieu), quelles sont les trois grandes formes de capital détenues par les individus ?", correct: "le capital économique, le capital culturel et le capital social", wrongs: ["le capital fixe, le capital solaire et le capital minier", "le capital bancaire, le capital fiscal et le capital postal", "le capital primaire, secondaire et tertiaire"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Bourdieu ajoute également le capital symbolique (prestige, reconnaissance)." },
+            { q: "En économie, que mesure l'élasticité-prix de la demande d'un bien ?", correct: "la sensibilité (variation en %) de la quantité demandée suite à une variation de 1 % de son prix", wrongs: ["la durée de vie physique du produit", "le poids du produit en kilogrammes", "le taux d'imposition de l'entreprise"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Pour un bien normal, l'élasticité-prix de la demande est généralement négative." },
+            { q: "Comment appelle-t-on un marché dominé par un petit nombre de grandes entreprises (ex : téléphonie mobile, aéronautique) ?", correct: "un oligopole", wrongs: ["un monopole pur", "une concurrence atomistique", "un monopsone"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "En oligopole, quelques offreurs font face à une multitude de demandeurs." },
+            { q: "En sociologie, comment appelle-t-on le changement de position sociale d'un individu par rapport à celle de ses parents ?", correct: "la mobilité sociale intergénérationnelle", wrongs: ["la socialisation primaire", "la déviance anomique", "l'intégration monétaire"], levels: ['terminale', 'bts1'], exp: "On l'étudie à l'aide des tables de mobilité (destinée et recrutement) basées sur les PCS." }
         ],
 
         espagnol: [
-            // 5ème → Terminale (LV2 programme officiel)
+            // 5ème → BTS 2 (LV2 programme officiel)
             { q: "En espagnol, comment dit-on « Bonjour » le matin ?", correct: "Buenos días", wrongs: ["Buenas noches", "Hasta luego", "Buenas tardes"], levels: ['5eme', '4eme'], exp: "Buenos días (matin), Buenas tardes (après-midi), Buenas noches (soir/nuit)." },
             { q: "Quel verbe utilise-t-on en espagnol pour indiquer une localisation géographique (ex : Madrid ___ en España) ?", correct: "está (verbe estar)", wrongs: ["es (verbe ser)", "tiene (verbe tener)", "hace (verbe hacer)"], levels: ['5eme', '4eme', '3eme'], exp: "Pour situer un lieu dans l'espace, on emploie toujours ESTAR." },
             { q: "Quel verbe utilise-t-on pour indiquer la nationalité ou la profession (ex : Ella ___ médica) ?", correct: "es (verbe ser)", wrongs: ["está (verbe estar)", "hay (verbe haber)", "va (verbe ir)"], levels: ['5eme', '4eme', '3eme'], exp: "SER exprime une caractéristique essentielle (identité, origine, métier)." },
@@ -3096,11 +3756,22 @@ const QuestionBank = (() => {
             { q: "Quelle est la capitale du Mexique, premier pays hispanophone par la population ?", correct: "Ciudad de México (Mexico)", wrongs: ["Guadalajara", "Buenos Aires", "Bogotá"], levels: ['4eme', '3eme', '2nde'], exp: "Le Mexique compte plus de 125 millions d'habitants hispanophones." },
             { q: "Quel écrivain espagnol du Siècle d'Or est l'auteur de « Don Quichotte » ?", correct: "Miguel de Cervantes", wrongs: ["Federico García Lorca", "Gabriel García Márquez", "Pablo Neruda"], levels: ['2nde', '1ere', 'terminale'], exp: "Publié en 1605 et 1615, Don Quichotte est le roman fondateur de la littérature moderne." },
             { q: "Quel poète et diplomate chilien a reçu le prix Nobel de littérature en 1971 ?", correct: "Pablo Neruda", wrongs: ["Jorge Luis Borges", "Octavio Paz", "Lope de Vega"], levels: ['1ere', 'terminale'], exp: "Pablo Neruda est célèbre pour ses poèmes engagés et lyriques (Canto General)." },
-            { q: "Quelle préposition emploie-t-on pour exprimer un but (« pour réussir » : ___ aprobar) ?", correct: "para", wrongs: ["por", "desde", "hacia"], levels: ['3eme', '2nde', '1ere', 'terminale'], exp: "PARA indique le but ou la destination ; POR indique la cause ou le moyen." }
+            { q: "Quelle préposition emploie-t-on pour exprimer un but (« pour réussir » : ___ aprobar) ?", correct: "para", wrongs: ["por", "desde", "hacia"], levels: ['3eme', '2nde', '1ere', 'terminale'], exp: "PARA indique le but ou la destination ; POR indique la cause ou le moyen." },
+            { q: "Comment exprime-t-on une action en train de se dérouler (« Je suis en train de parler ») en espagnol ?", correct: "Estoy hablando (estar + gérondif)", wrongs: ["Soy hablando", "He hablado", "Voy hablar"], levels: ['5eme', '4eme', '3eme'], exp: "La périphrase progressive se construit avec ESTAR + gérondif (-ando / -iendo)." },
+            { q: "Comment traduit-on « Nous devons travailler » (obligation personnelle avec tener que) ?", correct: "Tenemos que trabajar", wrongs: ["Hay que trabajar", "Somos que trabajar", "Estamos trabajar"], levels: ['5eme', '4eme', '3eme'], exp: "Tener que + infinitif exprime l'obligation personnelle ; Hay que + infinitif exprime l'obligation impersonnelle." },
+            { q: "Quel verbe à diphtongue (e → ie) signifie « penser » au présent : « Yo ___ (pensar) » ?", correct: "pienso", wrongs: ["penso", "piensa", "pensamos"], levels: ['5eme', '4eme', '3eme'], exp: "Pensar diphtongue aux personnes du singulier et à la 3e du pluriel : pienso, piensas, piensa, pensamos, pensáis, piensan." },
+            { q: "En espagnol, comment dit-on « tous les jours » ?", correct: "todos los días", wrongs: ["todas las días", "todo el día", "cada noches"], levels: ['5eme', '4eme'], exp: "El día est un nom masculin en espagnol : todos los días." },
+            { q: "Quelle est la traduction du faux-ami espagnol « embarazada » ?", correct: "enceinte", wrongs: ["embarrassée", "fatiguée", "en retard"], levels: ['4eme', '3eme', '2nde'], exp: "Attention au faux-ami : « embarazada » signifie enceinte (« embarrassée » se dit avergonzada)." },
+            { q: "Comment forme-t-on l'hypothèse au présent/irréel : « Si tuviera dinero, ___ (viajar) por el mundo » ?", correct: "viajaría (conditionnel)", wrongs: ["viajo", "viajé", "viajaré"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Concordance : Si + subjonctif imparfait (tuviera), conditionnel simple (viajaría)." },
+            { q: "En espagnol professionnel et commercial (BTS / STMG / STHR), que signifie « la empresa » et « el presupuesto » ?", correct: "l'entreprise et le budget (ou devis)", wrongs: ["l'imprimante et le salaire", "la presse et l'impôt", "l'emprunt et la facture"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "La empresa = l'entreprise ; el presupuesto = le budget / le devis." },
+            { q: "Quel connecteur logique espagnol signifie « par conséquent / c'est pourquoi » ?", correct: "por lo tanto (ou por consiguiente)", wrongs: ["aunque", "a pesar de", "mientras que"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Por lo tanto / por eso introduisent la conséquence logique." },
+            { q: "Quelle tournure espagnole traduit la continuité d'une action (« Il continue de travailler ») ?", correct: "Sigue trabajando (seguir + gérondif)", wrongs: ["Para de trabajar", "Acaba de trabajar", "Vuelve a trabajar"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Seguir / continuar + gérondif = continuer de ; acabar de + inf = venir de ; volver a + inf = recommencer à." },
+            { q: "En civilisation hispanique, combien de pays dans le monde ont l'espagnol comme langue officielle ?", correct: "21 pays (Espagne, 19 pays d'Amérique latine et la Guinée équatoriale)", wrongs: ["5 pays uniquement", "uniquement l'Espagne et le Mexique", "50 pays"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "L'espagnol est parlé par plus de 500 millions de locuteurs natifs sur 3 continents." },
+            { q: "Complète au subjonctif après « cuando » à valeur future : « Te llamaré cuando ___ (llegar, yo) » :", correct: "llegue", wrongs: ["llego", "llegaré", "llegaba"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "En espagnol, « cuando » renvoyant au futur est obligatoirement suivi du subjonctif présent (cuando llegue)." }
         ],
 
         arts: [
-            // Collège (6e-3e) & Lycée Général
+            // Collège (6e-3e) & Lycée / STD2A / S2TMD / HLP
             { q: "Quelles sont les trois couleurs primaires en peinture (synthèse soustractive) ?", correct: "magenta (rouge), cyan (bleu) et jaune", wrongs: ["vert, orange et violet", "noir, blanc et gris", "rouge, vert et marron"], levels: ['6eme', '5eme'], exp: "Le mélange de ces primaires permet d'obtenir les couleurs secondaires." },
             { q: "Quelle technique de la Renaissance donne l'illusion de la profondeur grâce à un point de fuite ?", correct: "la perspective linéaire (conique)", wrongs: ["le pointillisme", "le collage", "le clair-obscur seul"], levels: ['5eme', '4eme'], exp: "Théorisée à Florence par Brunelleschi et Alberti au XVe siècle." },
             { q: "Quel courant architectural du Moyen Âge se caractérise par l'arc brisé, la croisée d'ogives et les grands vitraux ?", correct: "l'art gothique", wrongs: ["l'art roman", "le néoclassicisme", "le brutalisme"], levels: ['5eme', '6eme'], exp: "Notre-Dame de Paris et la cathédrale de Chartres sont des chefs-d'œuvre gothiques." },
@@ -3114,7 +3785,17 @@ const QuestionBank = (() => {
             { q: "Quel architecte moderne a conçu la Villa Savoye et la Cité radieuse de Marseille ?", correct: "Le Corbusier", wrongs: ["Gustave Eiffel", "Baron Haussmann", "Antoni Gaudí"], levels: ['3eme', '2nde', 'terminale'], exp: "Le Corbusier énonce les cinq points de l'architecture moderne (pilotis, toit-terrasse...)." },
             { q: "En photographie et cinéma, quel plan cadre de très près le visage d'un personnage pour souligner l'émotion ?", correct: "le gros plan", wrongs: ["le plan d'ensemble", "le plan général", "le plan américain"], levels: ['4eme', '3eme', '2nde'], exp: "Le gros plan isole le visage ou un détail pour intensifier l'expressivité." },
             { q: "Quel compositeur baroque allemand a écrit les « Concertos brandebourgeois » et la « Toccata et fugue en ré mineur » ?", correct: "Jean-Sébastien Bach", wrongs: ["Wolfgang Amadeus Mozart", "Claude Debussy", "Igor Stravinsky"], levels: ['5eme', '4eme', '1ere'], exp: "Bach (1685-1750) est un maître absolu du contrepoint et de la musique baroque." },
-            { q: "Quelle célèbre pyramide de verre inaugurée en 1989 sert d'entrée au musée du Louvre ?", correct: "la Pyramide du Louvre (Ieoh Ming Pei)", wrongs: ["la Pyramide de Khéops", "la Nef du Grand Palais", "le Centre Pompidou"], levels: ['6eme', '3eme', 'terminale'], exp: "Conçue par l'architecte sino-américain I. M. Pei." }
+            { q: "Quelle célèbre pyramide de verre inaugurée en 1989 sert d'entrée au musée du Louvre ?", correct: "la Pyramide du Louvre (Ieoh Ming Pei)", wrongs: ["la Pyramide de Khéops", "la Nef du Grand Palais", "le Centre Pompidou"], levels: ['6eme', '3eme', 'terminale'], exp: "Conçue par l'architecte sino-américain I. M. Pei." },
+            { q: "En peinture de la Renaissance, quelle technique inventée par Léonard de Vinci adoucit les contours par un léger voile vaporeux (ex : La Joconde) ?", correct: "le sfumato", wrongs: ["le dripping", "la gravure sur bois", "la mosaïque"], levels: ['5eme', '4eme', '2nde', '1ere'], exp: "Du mot italien fumo (fumée), le sfumato supprime les lignes de contour rigides." },
+            { q: "Quel effet pictural baroque (Caravage, Georges de La Tour, Rembrandt) oppose violemment les zones d'ombre profonde et une lumière vive ?", correct: "le clair-obscur (tenebrisme)", wrongs: ["l'aplat monochrome", "le pastel sec", "l'aquarelle"], levels: ['5eme', '4eme', '2nde', '1ere'], exp: "Le clair-obscur dramatise la scène et sculpte les volumes par la lumière." },
+            { q: "En art contemporain (1917), comment Marcel Duchamp appelle-t-il un objet manufacturé ordinaire élevé au rang d'œuvre d'art (ex : Fontaine) ?", correct: "un ready-made", wrongs: ["un triptyque gothique", "une fresque antique", "un bas-relief"], levels: ['3eme', '2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Le ready-made déplace la valeur artistique de l'habileté manuelle vers le choix conceptuel de l'artiste." },
+            { q: "Quel mouvement artistique américain des années 1960 (Andy Warhol, Roy Lichtenstein) détourne la publicité, les comics et la société de consommation ?", correct: "le Pop Art", wrongs: ["l'Art roman", "le Romantisme", "le Néo-classicisme"], levels: ['3eme', '2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Andy Warhol utilise la sérigraphie en série (Marilyn, soupes Campbell) pour interroger la culture de masse." },
+            { q: "Quel peintre russe est considéré comme le pionnier de l'art abstrait au début du XXe siècle et l'auteur de « Du spirituel dans l'art » ?", correct: "Vassily Kandinsky", wrongs: ["Eugène Delacroix", "Gustave Courbet", "Jacques-Louis David"], levels: ['3eme', '2nde', '1ere', 'terminale', 'bts1'], exp: "Kandinsky, Mondrian et Malevitch libèrent la peinture de la figuration mimétique." },
+            { q: "En musique classique et romantique, quel compositeur allemand devenu sourd a composé 9 symphonies dont l'« Ode à la joie » ?", correct: "Ludwig van Beethoven", wrongs: ["Antonio Vivaldi", "Frédéric Chopin", "Maurice Ravel"], levels: ['6eme', '5eme', '4eme', '2nde', '1ere'], exp: "Le final de la 9e Symphonie de Beethoven est devenu l'hymne de l'Union européenne." },
+            { q: "En photographie et cinéma, comment appelle-t-on une prise de vue réalisée d'en haut vers le bas (qui écrase le sujet) ?", correct: "la plongée", wrongs: ["la contre-plongée", "le travelling", "le panoramique"], levels: ['6eme', '5eme', '4eme', '2nde'], exp: "Plongée = vue de haut en bas ; Contre-plongée = vue de bas en haut (magnifie ou rend dominant le sujet)." },
+            { q: "Quel sculpteur français de la fin du XIXe siècle a créé « Le Penseur », « Le Baiser » et « Les Bourgeois de Calais » ?", correct: "Auguste Rodin", wrongs: ["Constantin Brâncuși", "Alberto Giacometti", "Alexandre Calder"], levels: ['4eme', '3eme', '2nde', '1ere', 'terminale'], exp: "Rodin inaugure la sculpture moderne par l'expressivité des surfaces et du mouvement." },
+            { q: "En architecture et urbanisme de la fin du XIXe siècle, quel style décoratif aux lignes courbes végétales a illustré Hector Guimard (entrées du métro parisien) ?", correct: "l'Art nouveau", wrongs: ["le Brutalisme", "le Bauhaus", "le Classicisme"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "L'Art nouveau (1890-1910) valorise la fonte, le verre et les formes organiques inspirées de la nature." },
+            { q: "Quelle peintre impressionniste française du XIXe siècle, membre fondatrice du mouvement, a peint « Le Berceau » (1872) ?", correct: "Berthe Morisot", wrongs: ["Sonia Delaunay", "Niki de Saint Phalle", "Louise Bourgeois"], levels: ['4eme', '3eme', '2nde', '1ere', 'terminale'], exp: "Berthe Morisot a exposé dès la première exposition impressionniste de 1874 aux côtés de Monet et Degas." }
         ],
 
         hggsp: [
@@ -3591,6 +4272,138 @@ const QuestionBank = (() => {
             { q: "À quoi sert un « parafoudre » installé dans un tableau électrique (TGBT) ?", correct: "écouler vers la terre les surtensions transitoires dues à la foudre ou aux manœuvres réseau pour protéger les appareils", wrongs: ["attirer la foudre sur la maison", "produire de l'électricité solaire", "couper le chauffage la nuit"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Le parafoudre est obligatoire dans certaines zones à fort niveau kéraunique (orages fréquents)." },
             { q: "Quelle est la formule de la puissance active P en régime triphasé équilibré ?", correct: "P = √3 × U × I × cos φ", wrongs: ["P = U + I", "P = U / (I × √3)", "P = 3 × R × U"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Avec U la tension composée entre phases (400 V), I le courant de ligne et cos φ le facteur de puissance." },
             { q: "En sécurité électrique domestique (salle d'eau, NF C 15-100), que désigne le « volume 0 » ?", correct: "l'intérieur même de la baignoire ou du receveur de douche (aucun appareil 230 V autorisé)", wrongs: ["le couloir devant la porte", "le grenier au-dessus de la salle de bain", "la zone située à 3 mètres de la douche"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Dans le volume 0, seuls des équipements TBTS 12 V max IPX7 conçus pour immersion sont admis." }
+        ],
+
+        biopathologie: [
+            // ST2S, Bac Pro ASSP, STL & Spé Sciences : Biologie & Physiopathologie Humaines (BPH) et Soins
+            { q: "En anatomie cardiovasculaire (BPH), quelle cavité du cœur éjecte le sang oxygéné dans l'artère aorte vers tout l'organisme ?", correct: "le ventricule gauche", wrongs: ["l'oreillette droite", "le ventricule droit", "la veine cave inférieure"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Le ventricule gauche, à la paroi myocardique épaisse, propulse le sang oxygéné dans la grande circulation." },
+            { q: "En imagerie médicale, quelle technique utilise un champ magnétique puissant et des ondes radio sans aucun rayonnement ionisant (rayons X) ?", correct: "l'IRM (Imagerie par Résonance Magnétique)", wrongs: ["la tomodensitométrie (scanner)", "la radiographie pulmonaire", "la scintigraphie osseuse"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "L'IRM et l'échographie sont non irradiantes, contrairement à la radiographie et au scanner (rayons X)." },
+            { q: "En terminologie médicale, que signifie le suffixe « -ite » (ex : bronchite, gastrite, appendicite) ?", correct: "une inflammation de l'organe ou du tissu", wrongs: ["une ablation chirurgicale", "un examen endoscopique", "une baisse de la tension"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "-ite = inflammation ; -ectomie = ablation ; -scopie = examen visuel ; -algie = douleur." },
+            { q: "Où s'effectuent les échanges gazeux respiratoires (passage d'O₂ vers le sang et de CO₂ vers l'air) dans les poumons ?", correct: "au niveau des alvéoles pulmonaires", wrongs: ["dans la trachée uniquement", "dans le larynx", "dans le diaphragme"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "La paroi alvéolo-capillaire très fine et vaste (~100 m²) favorise la diffusion passive des gaz." },
+            { q: "Quelle pathologie endocrinienne se caractérise par une hyperglycémie chronique due à une résistance des cellules à l'insuline ?", correct: "le diabète de type 2", wrongs: ["le diabète de type 1 auto-immun", "l'hypothyroïdie", "l'anémie ferriprive"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le diabète de type 2 associe insulinorésistance et déficit progressif de sécrétion d'insuline." },
+            { q: "Quel examen d'exploration fonctionnelle enregistre l'activité électrique du cœur à l'aide d'électrodes cutanées ?", correct: "l'électrocardiogramme (ECG)", wrongs: ["l'électroencéphalogramme (EEG)", "la fibroscopie", "la spirométrie"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "L'ECG trace l'onde P (dépolarisation auriculaire), le complexe QRS (ventriculaire) et l'onde T." },
+            { q: "En physiopathologie vasculaire, qu'est-ce que l'« athérosclérose » ?", correct: "le dépôt d'une plaque lipidique (athérome) dans la paroi des artères pouvant provoquer une sténose ou une thrombose", wrongs: ["une dilatation normale des bronches", "une infection virale de la peau", "une carence en calcium osseux"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La rupture d'une plaque d'athérome dans une artère coronaire provoque l'infarctus du myocarde." },
+            { q: "Dans le tube digestif, quel est le rôle des enzymes digestives (amylase, pepsine, lipase) ?", correct: "catalyser l'hydrolyse des macromolécules alimentaires en nutriments simples absorbables", wrongs: ["transporter l'oxygène dans les artères", "contracter les muscles squelettiques", "filtrer l'urine dans la vessie"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Glucides → glucose ; protéines → acides aminés ; lipides → acides gras et glycérol." },
+            { q: "Dans le rein, quelle est l'unité fonctionnelle microscopique qui filtre le sang pour former l'urine primitive ?", correct: "le néphron (glomérule + tubule rénal)", wrongs: ["le neurone", "le lobule hépatique", "le sarcomère"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Chaque rein humain contient environ un million de néphrons assurant filtration et réabsorption." },
+            { q: "En soins et accompagnement (ASSP / ST2S), qu'est-ce qu'une « escarre » chez un patient alité ?", correct: "une lésion cutanée d'origine ischémique liée à une compression prolongée des tissus mous contre un plan osseux", wrongs: ["une allergie saisonnière au pollen", "une entorse de la cheville", "une fracture ouverte"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "On prévient les escarres par les changements de position toutes les 2-3 h, un matelas anti-escarre et l'effleurage." },
+            { q: "En immunologie (BPH Terminale), quelles cellules immunitaires sont la cible principale du virus du VIH ?", correct: "les lymphocytes T4 (CD4+)", wrongs: ["les globules rouges (hématies)", "les plaquettes sanguines", "les ostéoblastes"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Les LT4 sont le pivot de la réponse immunitaire adaptative ; leur chute entraîne le stade SIDA." },
+            { q: "En terminologie médicale, que désigne une « hémiplégie » ?", correct: "une paralysie complète ou partielle d'une moitié (droite ou gauche) du corps, souvent après un AVC", wrongs: ["une paralysie uniquement des deux jambes", "une douleur à l'estomac", "une perte de l'audition"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Hémi = moitié, -plégie = paralysie (à distinguer de la paraplégie : membres inférieurs)." },
+            { q: "Quelle protéine contenue dans les hématies (globules rouges) fixe et transporte le dioxygène dans le sang ?", correct: "l'hémoglobine", wrongs: ["la kératine", "le collagène", "la fibrine"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Chaque molécule d'hémoglobine contient 4 atomes de fer (Fe²⁺) capables de fixer 4 molécules d'O₂." },
+            { q: "Comment définit-on une « infection nosocomiale » (infection associée aux soins) ?", correct: "une infection contractée dans un établissement de santé, absente à l'admission (apparaissant après ≥ 48 h)", wrongs: ["une maladie héréditaire présente dès la naissance", "un rhume attrapé à domicile", "une fracture sportive"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "L'hygiène des mains par friction hydro-alcoolique (SHA) est la mesure clé de prévention." },
+            { q: "Quelle est la formule de l'Indice de Masse Corporelle (IMC) utilisé en nutrition clinique ?", correct: "IMC = Masse (en kg) / Taille² (en m²)", wrongs: ["IMC = Taille (en cm) − Masse (en kg)", "IMC = Masse × Taille", "IMC = Masse² / Taille"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Chez l'adulte, une corpulence normale correspond à un IMC compris entre 18,5 et 25 kg/m²." },
+            { q: "En ergonomie des soins (ASSP), quelle règle posturale protège la colonne vertébrale lors de la manutention d'une personne ?", correct: "garder le dos droit, fléchir les genoux, se placer au plus près et utiliser la poussée des cuisses", wrongs: ["garder les jambes raides et courber le dos en torsion", "soulever à bout de bras loin du corps", "tirer brusquement par les poignets"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "La méthode PRAP2S préserve les disques intervertébraux et sollicite l'autonomie résiduelle du patient." },
+            { q: "Quel organe produit la bile (stockée ensuite dans la vésicule biliaire) pour émulsionner les lipides ?", correct: "le foie", wrongs: ["la rate", "l'appendice", "le poumon"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Le foie assure aussi la régulation de la glycémie (glycogénogenèse) et la détoxification." },
+            { q: "En génétique médicale, comment appelle-t-on une maladie liée à la présence de 3 exemplaires du chromosome 21 ?", correct: "la trisomie 21 (syndrome de Down)", wrongs: ["la mucoviscidose", "la drépanocytose", "l'hémophilie A"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Il s'agit d'une anomalie chromosomique de nombre (47 chromosomes au caryotype au lieu de 46)." }
+        ],
+
+        spcl: [
+            // STL, Spé Sciences, ST2S, STAV & STI2D : Sciences Physiques et Chimiques en Laboratoire (SPCL)
+            { q: "En chimie analytique (SPCL), comment repère-t-on le volume à l'équivalence V_E lors d'un titrage pH-métrique ?", correct: "au point d'inflexion du saut de pH (maximum de la courbe dérivée dpH/dV)", wrongs: ["au tout premier millilitre versé", "lorsque le pH vaut toujours 0", "quand la température atteint 100 °C"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La méthode des tangentes parallèles ou le pic de la dérivée dpH/dV donne précisément V_E." },
+            { q: "À quoi sert une « chromatographie sur couche mince » (CCM) au laboratoire de chimie ?", correct: "séparer et identifier les espèces chimiques d'un mélange par comparaison avec des témoins", wrongs: ["mesurer la tension électrique d'une pile", "peser un solide au milligramme près", "chauffer un liquide à 200 °C"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Les espèces migrent par capillarité selon leur affinité entre la phase fixe (silice) et l'éluant." },
+            { q: "Lors d'une extraction liquide-liquide dans une ampoule à décanter, où se place la phase la moins dense ?", correct: "au-dessus (phase supérieure)", wrongs: ["en dessous (phase inférieure)", "au milieu sous forme solide", "dans le bouchon"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Le liquide de plus faible densité flotte toujours au-dessus du liquide le plus dense." },
+            { q: "En optique géométrique (SPCL), où se forme l'image d'un objet situé à l'infini à travers une lentille convergente ?", correct: "dans le plan focal image (à la distance focale f' du centre optique)", wrongs: ["exactement sur la lentille", "à une distance infinie", "devant l'objet"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Les rayons incidents parallèles à l'axe optique convergent au foyer principal image F'." },
+            { q: "En spectrophotométrie UV-Visible, à quelle longueur d'onde règle-t-on l'appareil pour doser une espèce colorée avec un maximum de sensibilité ?", correct: "à la longueur d'onde du maximum d'absorption λ_max", wrongs: ["à la longueur d'onde où l'absorbance est nulle", "toujours à 1000 nm", "à la couleur de la solution elle-même"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "À λ_max (couleur complémentaire de la couleur perçue), la sensibilité du dosage Beer-Lambert est maximale." },
+            { q: "En synthèse organique (SPCL), quel dispositif accélère considérablement la filtration d'un solide sous pression réduite ?", correct: "la filtration sous vide sur entonnoir Büchner", wrongs: ["la décantation à l'air libre", "l'évaporation lente", "le bain-marie"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La trompe à eau ou pompe à vide aspire le filtrat dans la fiole à vide pour isoler et sécher les cristaux." },
+            { q: "Comment calcule-t-on le rendement η d'une synthèse chimique au laboratoire ?", correct: "η = (quantité de produit réellement obtenue / quantité maximale théorique) × 100", wrongs: ["η = masse des réactifs × 100", "η = volume de solvant / température", "η = pH × concentration"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le rendement η est compris entre 0 % et 100 % (pertes lors des transferts, réactions incomplètes)." },
+            { q: "En métrologie de laboratoire (SPCL), quelle est la différence entre la « fidélité » et la « justesse » d'un instrument de mesure ?", correct: "la fidélité traduit la faible dispersion des mesures répétées ; la justesse traduit la proximité de la moyenne avec la valeur vraie", wrongs: ["les deux termes désignent le prix de l'appareil", "la justesse mesure uniquement la température", "la fidélité ne s'applique qu'aux chronomètres"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Fidélité + Justesse = Exactitude de la mesure." },
+            { q: "Quel appareil optique de laboratoire permet de déterminer la pureté ou la concentration en sucre (degré Brix) d'une solution en mesurant son indice de réfraction ?", correct: "un réfractomètre", wrongs: ["un manomètre", "un baromètre", "un ohmmètre"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Le réfractomètre d'Abbe exploite l'angle limite de réfraction (loi de Snell-Descartes)." },
+            { q: "Lors d'un titrage conductimétrique, pourquoi trace-t-on la conductivité σ en fonction du volume de titrant versé ?", correct: "la rupture de pente entre deux segments de droite indique le volume à l'équivalence V_E", wrongs: ["la conductivité reste toujours nulle", "la courbe forme un cercle parfait", "pour mesurer la masse du bécher"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le remplacement d'ions très conducteurs (H₃O⁺ ou HO⁻) modifie brusquement la pente à l'équivalence." },
+            { q: "Quelle technique de purification permet de séparer deux liquides miscibles ayant des températures d'ébullition différentes ?", correct: "la distillation fractionnée", wrongs: ["la filtration sur papier", "la centrifugation simple", "la pesée directe"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Le composé le plus volatil (température d'ébullition la plus basse) passe en tête de colonne de Vigreux." },
+            { q: "En sécurité chimique au laboratoire (règlement CLP/SGH), que signifie le pictogramme représentant une flamme au-dessus d'un cercle ?", correct: "produit comburant (qui peut provoquer ou aggraver un incendie)", wrongs: ["produit radioactif", "produit écologique biodégradable", "produit sous haute pression froide"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Flamme simple = inflammable ; flamme sur un cercle = comburant (oxydant puissant)." },
+            { q: "Pourquoi ajoute-t-on quelques grains de pierre ponce au fond du ballon lors d'un chauffage à reflux ou d'une distillation ?", correct: "pour régulariser l'ébullition et éviter les soubresauts brusques du liquide", wrongs: ["pour colorer la solution en bleu", "pour abaisser le pH à 1", "pour dissoudre le verre"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Les pores de la pierre ponce servent de sites de nucléation pour les bulles de vapeur." },
+            { q: "En spectroscopie infrarouge (IR) d'une molécule organique, que permet d'identifier la position des bandes d'absorption (en cm⁻¹) ?", correct: "les groupes caractéristiques (liaisons O-H, C=O, C-H...) présents dans la molécule", wrongs: ["la masse totale de l'échantillon", "la couleur visible à l'œil nu", "la pression atmosphérique"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Exemples : bande fine intense vers 1700 cm⁻¹ pour C=O ; bande large vers 3200-3600 cm⁻¹ pour O-H lié." },
+            { q: "Quelle verrerie de laboratoire utilise-t-on pour prélever avec une grande précision un volume fixe (ex : 10,0 mL) d'une solution mère ?", correct: "une pipette jaugée munie d'une propipette", wrongs: ["un bécher gradué", "un erlenmeyer", "un tube à essai"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Pipette jaugée pour prélever ; fiole jaugée pour ajuster le volume final ; burette graduée pour titrer." },
+            { q: "En physique des ondes (SPCL), quel phénomène prouve le caractère ondulatoire de la lumière lorsqu'un faisceau laser traverse une fente très fine ?", correct: "la diffraction de la lumière", wrongs: ["la réflexion totale", "la convection thermique", "l'électrolyse"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "L'écart angulaire de diffraction vaut θ = λ / a (d'autant plus grand que la fente a est étroite)." },
+            { q: "Lors de la préparation d'une solution d'acide fort concentré, quelle règle de sécurité fondamentale faut-il toujours respecter ?", correct: "verser lentement l'acide dans l'eau (« jamais d'eau dans l'acide ») pour éviter les projections exothermiques", wrongs: ["verser l'eau d'un coup dans l'acide pur", "chauffer l'acide au bec Bunsen fermé", "pipeter à la bouche sans gants"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "La dilution d'un acide concentré étant très exothermique, on verse toujours l'acide dans un grand volume d'eau." },
+            { q: "Comment détermine-t-on la température de fusion d'un solide organique purifié au laboratoire pour contrôler sa pureté ?", correct: "à l'aide d'un banc Kofler (ou appareil à point de fusion)", wrongs: ["avec un pH-mètre", "avec un luxmètre", "avec une ampoule à décanter"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Un solide pur fond à une température nette qui correspond à la valeur tabulée." }
+        ],
+
+        rh_comm: [
+            // STMG (Spécialité RHC), BTS MCO, BTS CG, STHR & BTS SIO : Ressources Humaines & Communication
+            { q: "En gestion des ressources humaines (RHC), quelle est la différence entre le recrutement interne et le recrutement externe ?", correct: "l'interne promeut ou mute un salarié déjà présent ; l'externe embauche un nouveau candidat sur le marché du travail", wrongs: ["l'interne est interdit par le Code du travail", "l'externe ne nécessite aucun contrat", "les deux sont réservés aux stagiaires"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Le recrutement interne réduit les coûts d'intégration et valorise la carrière des salariés." },
+            { q: "Selon la théorie bi-factorielle de Frederick Herzberg, quels facteurs génèrent réellement de la motivation durable au travail ?", correct: "les facteurs moteurs intrinsèques (intérêt du travail, autonomie, responsabilités, reconnaissance)", wrongs: ["uniquement la surveillance stricte", "la suppression des pauses", "l'isolement des salariés"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Herzberg distingue les facteurs d'hygiène (qui évitent l'insatisfaction) et les facteurs moteurs (qui motivent)." },
+            { q: "En droit social français, quel entretien obligatoire a lieu tous les 2 ans pour examiner les perspectives d'évolution professionnelle et de formation du salarié ?", correct: "l'entretien professionnel", wrongs: ["l'entretien d'embauche initial", "la visite médicale d'urgence", "l'audit comptable"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Distinct de l'entretien annuel d'évaluation des performances, l'entretien professionnel porte sur le parcours et la GEPP." },
+            { q: "Que signifie l'acronyme QVCT en management des ressources humaines ?", correct: "Qualité de Vie et des Conditions de Travail", wrongs: ["Quantité de Ventes et Chiffre Total", "Questionnaire de Validation Comptable Trimestriel", "Quotas de Ventes Commerciales"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La QVCT articule bien-être des salariés, prévention des RPS, équilibre des temps de vie et performance." },
+            { q: "En communication des organisations, comment appelle-t-on l'ensemble des processus permettant d'accueillir et d'intégrer efficacement un nouveau collaborateur ?", correct: "le parcours d'intégration (onboarding)", wrongs: ["l'externalisation (outsourcing)", "le licenciement économique", "le bilan de liquidation"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Un onboarding réussi (livret d'accueil, tutorat, formation sécurité) fidélise le salarié dès son arrivée." },
+            { q: "Quels sont les éléments qui composent la « rémunération globale » (package de rémunération) d'un salarié ?", correct: "le salaire fixe, la part variable (primes), les périphériques légaux (intéressement, participation) et avantages en nature", wrongs: ["uniquement les remboursements d'impôts", "uniquement les pourboires en espèces", "le chiffre d'affaires total du magasin"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La rémunération globale combine reconnaissance individuelle et partage collectif de la performance." },
+            { q: "En gestion des conflits dans un groupe de travail, quelle modalité consiste à faire appel à un tiers neutre qui aide les parties à trouver elles-mêmes un accord ?", correct: "la médiation (ou conciliation)", wrongs: ["l'arbitrage imposé sans écoute", "l'évitement définitif", "la sanction disciplinaire immédiate"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Dans la médiation, le médiateur facilite le dialogue sans imposer la solution, contrairement à l'arbitre." },
+            { q: "Qu'appelle-t-on les « RPS » que l'employeur a l'obligation légale de prévenir en entreprise ?", correct: "les Risques Psychosociaux (stress chronique, burn-out, harcèlement, violences au travail)", wrongs: ["les Réseaux Privés Sécurisés", "les Remises Promotionnelles Saisonnières", "les Règlements de Paie Simplifiés"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Les RPS portent atteinte à la santé mentale et physique des travailleurs." },
+            { q: "Quelle instance représentative unique du personnel fusionne depuis 2017 les délégués du personnel, le CE et le CHSCT dans les entreprises d'au moins 11 salariés ?", correct: "le CSE (Comité Social et Économique)", wrongs: ["le Conseil de prud'hommes", "l'URSSAF", "le Tribunal de commerce"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le CSE porte les réclamations des salariés et est consulté sur la marche générale et la sécurité de l'entreprise." },
+            { q: "En communication interpersonnelle, qu'est-ce que la « communication non verbale » (kinésique et proxémique) ?", correct: "les gestes, postures, expressions du visage, regard et distance physique entre interlocuteurs", wrongs: ["les courriers recommandés écrits", "les e-mails professionnels", "les rapports financiers"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Le non-verbal et le paraverbal (ton, débit de voix) jouent un rôle majeur dans la perception du message." },
+            { q: "Dans la dynamique d'un groupe restreint (Kurt Lewin), quel style de leadership favorise à la fois la cohésion durable et l'implication des membres ?", correct: "le leadership démocratique", wrongs: ["le leadership autoritaire", "le laisser-faire total", "l'isolement hiérarchique"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Les expériences de Lewin montrent que le style démocratique produit une meilleure qualité de travail et d'autonomie." },
+            { q: "Quel document annuel obligatoire dans les entreprises d'au moins 50 salariés regroupe les indicateurs clés sur l'emploi, les rémunérations, la santé-sécurité et la formation ?", correct: "la BDESE (Base de Données Économiques, Sociales et Environnementales, ex-Bilan social)", wrongs: ["le catalogue commercial", "le livre-journal comptable", "le plan d'évacuation incendie"], levels: ['terminale', 'bts1', 'bts2'], exp: "La BDESE sert de support au dialogue social avec le CSE." },
+            { q: "En recrutement, quelle obligation légale absolue s'impose à l'employeur lors de la rédaction d'une offre d'emploi et de la sélection des candidats ?", correct: "le principe de non-discrimination (interdiction d'écarter un candidat selon son sexe, âge, origine, handicap, opinion...)", wrongs: ["l'obligation d'embaucher le candidat le plus âgé", "l'interdiction de demander les diplômes", "l'obligation de publier le salaire de tous les clients"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Le Code du travail et le Code pénal sanctionnent sévèrement plus de 25 critères de discrimination prohibés." },
+            { q: "Qu'est-ce que la « marque employeur » en communication RH ?", correct: "l'image et la réputation d'une organisation auprès de ses salariés et des candidats potentiels pour attirer et fidéliser les talents", wrongs: ["le logo imprimé sur les cartons d'emballage", "le brevet industriel d'une machine", "le taux de TVA de l'entreprise"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La marque employeur combine communication interne (fidélisation) et communication externe de recrutement." },
+            { q: "Quelle est la différence entre l'« intéressement » et la « participation » en épargne salariale ?", correct: "l'intéressement est facultatif et lié à des objectifs de performance ; la participation est obligatoire dès 50 salariés pour redistribuer une part des bénéfices", wrongs: ["les deux sont interdits en France", "la participation est une amende payée par le salarié", "l'intéressement remplace le SMIC"], levels: ['terminale', 'bts1', 'bts2'], exp: "Ces deux dispositifs collectifs associent financièrement les salariés à la réussite de l'entreprise." },
+            { q: "En communication numérique interne, quel est l'intérêt d'un Réseau Social d'Entreprise (RSE) ou d'une plateforme collaborative (Teams, Slack, Intranet) ?", correct: "fluidifier le partage d'informations, la coopération transversale et la gestion documentaire des projets", wrongs: ["supprimer tous les contrats de travail", "remplacer la comptabilité légale", "bloquer la communication entre services"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Les outils collaboratifs favorisent l'intelligence collective et le travail hybride/télétravail." },
+            { q: "Que désigne la distinction entre « compétence technique » (hard skill) et « compétence comportementale » (soft skill) ?", correct: "hard skill = savoir-faire métier mesurable ; soft skill = savoir-être relationnel (écoute, adaptabilité, esprit d'équipe)", wrongs: ["hard skill = travail physique uniquement", "soft skill = maîtrise des logiciels lourds", "les soft skills ne sont jamais utiles au travail"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Les recruteurs évaluent conjointement les savoirs techniques et les compétences humaines et relationnelles." },
+            { q: "Qu'est-ce que le « télétravail » au sens du Code du travail ?", correct: "toute forme d'organisation dans laquelle un travail qui aurait pu être exécuté dans les locaux est effectué hors de ces locaux grâce aux TIC", wrongs: ["un travail consistant à réparer des téléviseurs", "un congé sans solde", "une formation universitaire initiale"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Il est mis en place par accord collectif, charte ou accord individuel, avec maintien des droits (droit à la déconnexion)." }
+        ],
+
+        architecture_habitat: [
+            // STI2D (Spé AC), STD2A (Design d'espace), Bac Pro MELEC & STAV : Architecture, Habitat Durable & Construction
+            { q: "En construction durable (STI2D AC), quel est l'objectif principal de la réglementation environnementale RE2020 en France ?", correct: "réduire l'empreinte carbone sur tout le cycle de vie du bâtiment, garantir la sobriété énergétique et le confort d'été", wrongs: ["obliger à chauffer les bâtiments au charbon", "interdire l'usage du bois de construction", "supprimer toute isolation thermique"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "La RE2020 succède à la RT2012 en intégrant l'Analyse du Cycle de Vie (ACV) carbone et les matériaux biosourcés." },
+            { q: "En architecture bioclimatique (dans l'hémisphère Nord), quelle orientation privilégie-t-on pour les grandes baies vitrées des pièces de vie ?", correct: "l'orientation Sud (apports solaires gratuits en hiver, faciles à protéger par une casquette solaire en été)", wrongs: ["l'orientation plein Nord sans soleil", "sous terre sans fenêtre", "uniquement face aux vents dominants froids"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Au Sud, le soleil bas d'hiver chauffe la pièce tandis qu'un brise-soleil bloque le soleil haut d'été." },
+            { q: "En thermique du bâtiment, quel est l'avantage d'une « isolation thermique par l'extérieur » (ITE) par rapport à une isolation par l'intérieur (ITI) ?", correct: "elle traite efficacement les ponts thermiques des dalles/refends et conserve l'inertie thermique des murs à l'intérieur", wrongs: ["elle augmente volontairement les fuites de chaleur", "elle réduit de moitié la surface habitable intérieure", "elle supprime la portance des fondations"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "L'ITE enveloppe le bâti d'un manteau continu sans pont thermique aux jonctions plancher/façade." },
+            { q: "En ingénierie de la construction, que signifie l'acronyme BIM (Building Information Modeling) ?", correct: "la modélisation des informations du bâtiment autour d'une maquette numérique 3D partagée par tous les corps d'état", wrongs: ["Béton Industriel Moulé", "Basse Intensité Magnétique", "Bureau International des Matériaux"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le BIM permet de détecter les collisions entre réseaux (électricité, plomberie, structure) avant le chantier." },
+            { q: "Pourquoi associe-t-on des armatures en acier au béton pour réaliser des poutres en « béton armé » ?", correct: "le béton résiste très bien à la compression mais mal à la traction, tandis que l'acier reprend efficacement les efforts de traction", wrongs: ["l'acier sert uniquement à alléger le béton", "le béton est un isolant électrique parfait", "l'acier empêche le béton de durcir"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Dans une poutre fléchie en béton armé, les aciers longitudinaux sont placés dans la zone tendue (en partie basse à mi-travée)." },
+            { q: "En design d'espace et architecture (STD2A / AC), que garantissent les normes d'accessibilité « PMR » dans les Établissements Recevant du Public (ERP) ?", correct: "l'accès et l'usage autonome des locaux par les Personnes à Mobilité Réduite (rampes ≤ 5 %, portes ≥ 90 cm, ascenseurs, contrastes)", wrongs: ["l'interdiction d'entrer aux visiteurs", "la suppression des éclairages de sécurité", "l'augmentation de la hauteur des marches à 40 cm"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "La loi de 2005 impose la continuité de la chaîne du déplacement pour tous les handicaps (moteur, visuel, auditif, cognitif)." },
+            { q: "En équipement technique de l'habitat (MELEC / AC), quel est le principe d'une VMC (Ventilation Mécanique Contrôlée) double flux ?", correct: "renouveler l'air intérieur en récupérant via un échangeur thermique les calories de l'air vicié extrait pour préchauffer l'air neuf entrant", wrongs: ["bloquer toute entrée d'air frais dans le logement", "rejeter toute la chaleur dehors sans échangeur", "remplacer le disjoncteur électrique"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Une VMC double flux récupère 75 % à 90 % de l'énergie thermique de l'air extrait." },
+            { q: "Qu'appelle-t-on un « matériau biosourcé » dans l'éco-construction ?", correct: "un matériau issu de la biomasse renouvelable végétale ou animale (bois, chanvre, paille, ouate de cellulose, liège)", wrongs: ["un matériau dérivé du pétrole brut (polystyrène)", "un alliage de plomb et de mercure", "un béton de ciment pur"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Les matériaux biosourcés stockent du carbone biogénique pendant toute la durée de vie de l'ouvrage." },
+            { q: "En acoustique du bâtiment, quelle est la différence entre la « correction acoustique » d'une salle et l'« isolation acoustique » ?", correct: "la correction acoustique réduit la réverbération (écho) à l'intérieur du local ; l'isolation acoustique empêche la transmission du bruit vers les locaux voisins", wrongs: ["les deux termes signifient amplifier le son avec des haut-parleurs", "l'isolation acoustique augmente le temps de réverbération", "la correction acoustique dépend uniquement de l'épaisseur des fondations"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "On utilise des matériaux poreux absorbants pour la correction (temps de réverbération Tr) et le principe masse-ressort-masse pour l'isolation." },
+            { q: "Dans la structure d'un bâtiment, quel est le rôle des « fondations » (semelles filantes, radier, pieux) ?", correct: "transmettre et répartir en sécurité toutes les charges du bâtiment vers le sol porteur sans tassement excessif", wrongs: ["capter l'énergie solaire sur le toit", "ventiler les combles", "éclairer les pièces de vie"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Le choix entre fondations superficielles et profondes dépend de l'étude géotechnique du sol." },
+            { q: "Quel système de chauffage thermodynamique capte les calories gratuites de l'air extérieur ou du sol pour restituer 3 à 4 fois plus d'énergie thermique qu'il ne consomme d'électricité (COP = 3 à 4) ?", correct: "une pompe à chaleur (PAC)", wrongs: ["un convecteur électrique à effet Joule (COP = 1)", "une chaudière au fioul lourd", "un groupe électrogène diesel"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Le Coefficient de Performance (COP = P_chauffage / P_élec) d'une PAC dépasse généralement 3." },
+            { q: "En topographie et implantation sur chantier, quel instrument optique ou laser permet de mesurer des différences de hauteur (dénivelées) par rapport à un plan horizontal ?", correct: "un niveau de chantier (ou théodolite / station totale)", wrongs: ["un multimètre numérique", "un anémomètre", "un hygromètre"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Le nivellement géométrique détermine les altitudes à partir de lectures sur une mire graduée." },
+            { q: "En gestion des eaux pluviales urbaines (AC / STAV), pourquoi privilégie-t-on les revêtements perméables et les noues végétalisées ?", correct: "favoriser l'infiltration naturelle des eaux de pluie à la parcelle et limiter le risque d'inondation par ruissellement", wrongs: ["imperméabiliser 100 % des sols", "rejeter les eaux de pluie dans les circuits électriques", "assécher les nappes phréatiques"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "La désimperméabilisation lutte aussi contre les îlots de chaleur urbains." },
+            { q: "En dessin technique d'architecture, comment appelle-t-on la vue obtenue en coupant verticalement un bâtiment pour montrer les hauteurs sous plafond, dalles et escaliers ?", correct: "une coupe verticale", wrongs: ["un plan de masse", "une vue de dessus uniquement", "un schéma unifilaire"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Plan = coupe horizontale à 1 m du sol ; Coupe = section verticale ; Façade = vue extérieure en élévation." },
+            { q: "En éclairage architectural et tertiaire (MELEC / STD2A), quelle grandeur exprimée en « lux » (lx = lm/m²) mesure l'éclairement reçu par un plan de travail ?", correct: "l'éclairement lumineux (en lux)", wrongs: ["la puissance électrique (en watts)", "la résistance thermique", "la pression acoustique"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Un bureau ou une salle de classe nécessite réglementairement un éclairement moyen d'au moins 300 à 500 lux." },
+            { q: "Qu'est-ce qu'un bâtiment « BEPOS » (Bâtiment à Énergie Positive) ?", correct: "un bâtiment très sobre qui produit sur l'année plus d'énergie renouvelable (ex : photovoltaïque) qu'il n'en consomme", wrongs: ["un bâtiment sans aucune fenêtre ni isolation", "un bâtiment consommant deux fois plus de gaz", "un entrepôt non raccordé à la terre"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le BEPOS combine enveloppe passive, équipements à haut rendement et production solaire locale." },
+            { q: "Dans un mur porteur, comment appelle-t-on la poutre horizontale placée au-dessus d'une ouverture (porte ou fenêtre) pour soutenir la maçonnerie supérieure ?", correct: "un linteau", wrongs: ["une plinthe", "un soubassement", "un liteau de toiture"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Le linteau reporte les charges situées au-dessus de la baie vers les jambages latéraux." },
+            { q: "Que mesure le coefficient d'étanchéité à l'air d'une enveloppe de bâtiment lors du test de la « porte soufflante » (Blower Door Test) ?", correct: "les fuites d'air parasites de l'enveloppe afin d'éviter les déperditions thermiques non maîtrisées", wrongs: ["la résistance mécanique du béton à la compression", "la dureté de l'eau potable", "la puissance du réseau Wi-Fi"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Une bonne étanchéité à l'air (membrane pare-vapeur continue) est indispensable pour la performance RE2020." }
+        ],
+
+        llce: [
+            // HLP/LLCE, Voie Générale, S2TMD, STD2A, STHR & BTS MCO : Langues, Littératures & Cultures Étrangères
+            { q: "En littérature britannique (LLCE Anglais), dans quelle tragédie de Shakespeare le prince du Danemark prononce-t-il le célèbre monologue « To be, or not to be, that is the question » ?", correct: "Hamlet", wrongs: ["Othello", "The Tempest", "A Midsummer Night's Dream"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Dans l'acte III scène 1 d'Hamlet (~1600), le héros médite sur l'existence, l'action et la mort." },
+            { q: "Quel roman satirique de George Orwell (1945) utilise la révolte des animaux d'une ferme pour critiquer la dérive stalinienne de la révolution russe ?", correct: "Animal Farm (La Ferme des animaux)", wrongs: ["Oliver Twist", "Robinson Crusoe", "Lord of the Flies"], exp: "« All animals are equal, but some animals are more equal than others » résume la trahison de l'idéal révolutionnaire.", levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'] },
+            { q: "En civilisation américaine (LLCE), quel document fondateur rédigé principalement par Thomas Jefferson et adopté le 4 juillet 1776 proclame le droit à « la Vie, la Liberté et la recherche du Bonheur » ?", correct: "the United States Declaration of Independence", wrongs: ["the Magna Carta (1215)", "the Treaty of Versailles", "the Monroe Doctrine"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Le 4 juillet (Independence Day) commémore l'adoption de la Déclaration d'indépendance des 13 colonies." },
+            { q: "En littérature hispanique (LLCE Espagnol), comment s'appellent le chevalier idéaliste et son fidèle écuyer pragmatique créés par Miguel de Cervantes en 1605 ?", correct: "Don Quijote de la Mancha et Sancho Panza", wrongs: ["Lazarillo de Tormes et Don Juan", "El Cid et Segismundo", "Aureliano Buendía et Pedro Páramo"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Le duo incarne le dialogue universel entre l'idéal chevaleresque et le bon sens populaire." },
+            { q: "Quel mouvement culturel et artistique afro-américain des années 1920 à New York (Langston Hughes, Zora Neale Hurston, Duke Ellington) a affirmé la fierté et la créativité noires ?", correct: "the Harlem Renaissance", wrongs: ["the Beat Generation", "the British Invasion", "the Victorian Era"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La Harlem Renaissance a fait rayonner la poésie, le jazz, le blues et la littérature afro-américaine." },
+            { q: "En littérature gothique victorienne (1886), quel écrivain écossais explore la dualité du bien et du mal dans « Strange Case of Dr Jekyll and Mr Hyde » ?", correct: "Robert Louis Stevenson", wrongs: ["Arthur Conan Doyle", "H. G. Wells", "Bram Stoker"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Le récit met en scène le dédoublement moral derrière la respectabilité victorienne." },
+            { q: "En culture et histoire de l'Espagne, comment appelle-t-on les XVIe et XVIIe siècles, période d'apogée artistique et littéraire (Cervantes, Velázquez, Lope de Vega, Calderón) ?", correct: "el Siglo de Oro (le Siècle d'Or espagnol)", wrongs: ["la Belle Époque", "el Quattrocento", "la Ilustración seule"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Le Siècle d'Or couvre la Renaissance espagnole et l'âge baroque." },
+            { q: "Quelle militante afro-américaine a refusé de céder son siège dans un bus ségrégué à Montgomery (Alabama) en décembre 1955, déclenchant le boycott des bus ?", correct: "Rosa Parks", wrongs: ["Harriet Tubman", "Emmeline Pankhurst", "Eleanor Roosevelt"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Son geste courageux a catalysé le mouvement des droits civiques aux États-Unis." },
+            { q: "Quel réalisateur espagnol contemporain est célèbre pour ses films « Todo sobre mi madre », « Volver » et « Mujeres al borde de un ataque de nervios » ?", correct: "Pedro Almodóvar", wrongs: ["Luis Buñuel", "Guillermo del Toro", "Alfonso Cuarón"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Figure phare de la Movida madrilène post-franquiste, Almodóvar renouvelle le cinéma européen." },
+            { q: "En littérature américaine des années 1920 (Jazz Age), quel roman de F. Scott Fitzgerald interroge l'illusion du Rêve américain à travers un mystérieux millionnaire ?", correct: "The Great Gatsby (Gatsby le Magnifique)", wrongs: ["Moby-Dick", "Of Mice and Men", "The Grapes of Wrath"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Publié en 1925, The Great Gatsby dévoile le revers désenchanté des Roaring Twenties." },
+            { q: "Comment appelait-on les militantes britanniques (menées par Emmeline Pankhurst au début du XXe siècle) qui luttaient pour le droit de vote des femmes au Royaume-Uni ?", correct: "the Suffragettes", wrongs: ["the Puritans", "the Cavaliers", "the Chartists"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Leur devise était « Deeds, not words » ; les femmes britanniques obtiennent le droit de vote en 1918 (30 ans) puis 1928 (21 ans)." },
+            { q: "En littérature latino-américaine, quel écrivain argentin est célèbre pour ses nouvelles labyrinthiques et philosophiques réunies dans « Ficciones » (1944) ?", correct: "Jorge Luis Borges", wrongs: ["Julio Cortázar", "Pablo Neruda", "Rubén Darío"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Borges explore l'infini, les bibliothèques universelles, les miroirs et le temps." },
+            { q: "En analyse littéraire anglophone (LLCE), qu'est-ce qu'un « unreliable narrator » (narrateur non fiable) ?", correct: "un narrateur à la 1ère personne dont la crédibilité est biaisée, trompeuse ou subjective, obligeant le lecteur à lire entre les lignes", wrongs: ["un narrateur omniscient objectif", "un auteur anonyme", "un personnage secondaire muet"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Procédé fréquent chez Edgar Allan Poe, Kazuo Ishiguro ou F. Scott Fitzgerald." },
+            { q: "Quel grand peintre espagnol des XVIIIe-XIXe siècles a peint « El tres de mayo de 1808 » dénonçant les exécutions de civils madrilènes ?", correct: "Francisco de Goya", wrongs: ["Diego Velázquez", "El Greco", "Joan Miró"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "El tres de mayo (1814) de Goya a directement inspiré Guernica de Picasso." },
+            { q: "Quelles sont les quatre nations constitutives qui forment aujourd'hui le Royaume-Uni (United Kingdom) ?", correct: "England, Scotland, Wales and Northern Ireland", wrongs: ["England, Ireland, Canada and Australia", "England, Scotland, Cornwall and Dublin", "Great Britain, USA, Wales and Gibraltar"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Great Britain regroupe Angleterre, Écosse et Pays de Galles ; le Royaume-Uni y associe l'Irlande du Nord." },
+            { q: "En littérature anglophone contemporaine, quelle romancière canadienne a écrit la dystopie féministe « The Handmaid's Tale » (La Servante écarlate, 1985) ?", correct: "Margaret Atwood", wrongs: ["Toni Morrison", "J. K. Rowling", "Chimamanda Ngozi Adichie"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "The Handmaid's Tale décrit la république théocratique de Gilead où les droits des femmes sont confisqués." },
+            { q: "En civilisation latino-américaine, quelle fête traditionnelle mexicaine des 1er et 2 novembre, classée à l'UNESCO, honore joyeusement la mémoire des défunts avec des autels (ofrendas) et des fleurs de cempasúchil ?", correct: "el Día de Muertos", wrongs: ["la Tomatina", "las Fallas de Valencia", "el Carnaval de Cádiz"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "El Día de Muertos mêle traditions préhispaniques et héritage hispanique dans une célébration mémorielle et familiale." },
+            { q: "Quel dramaturge irlandais, maître du paradoxe et du dandysme, a écrit le roman « The Picture of Dorian Gray » (1890) et la pièce « The Importance of Being Earnest » ?", correct: "Oscar Wilde", wrongs: ["George Bernard Shaw", "Samuel Beckett", "James Joyce"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Le Portrait de Dorian Gray interroge l'esthétisme (« l'art pour l'art »), la jeunesse éternelle et la conscience morale." }
+        ],
+
+        pse: [
+            // Bac Pro (MELEC, ASSP, CIEL), STHR, STAV, ST2S & STL : Prévention, Santé & Environnement (PSE)
+            { q: "En prévention des risques professionnels (PSE), comment s'appelle le document obligatoire dans lequel tout employeur répertorie et évalue les risques de chaque unité de travail ?", correct: "le DUERP (Document Unique d'Évaluation des Risques Professionnels)", wrongs: ["le livret scolaire", "le bilan comptable annuel", "la facture d'électricité"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Le DUERP est mis à jour au moins chaque année et sert de base au plan d'actions de prévention." },
+            { q: "En secourisme au travail (SST), quelles sont les 4 étapes ordonnées de l'intervention d'un sauveteur face à un accident ?", correct: "1. Protéger → 2. Examiner → 3. Faire alerter (ou Alerter) → 4. Secourir", wrongs: ["1. Courir → 2. Déplacer la victime → 3. Donner à boire → 4. Partir", "1. Secourir → 2. Ignorer le danger → 3. Attendre → 4. Téléphoner", "1. Alerter → 2. Partir → 3. Revenir → 4. Protéger"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Protéger d'abord évite le sur-accident ; Examiner permet d'adapter le message d'alerte et le geste de secours." },
+            { q: "En secourisme (SST), quel geste effectue-t-on sur une victime qui ne répond pas mais qui RESPIRE normalement ?", correct: "la placer en Position Latérale de Sécurité (PLS) et faire alerter les secours", wrongs: ["pratiquer immédiatement un massage cardiaque", "lui donner un verre d'eau sucrée", "la mettre debout de force"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "La PLS maintient les voies aériennes libres et évite l'étouffement par chute de la langue ou régurgitation." },
+            { q: "Quel geste d'urgence réalise-t-on sur une victime inconsciente qui NE RESPIRE PLUS (ou présente des gasps) ?", correct: "alerter le 15/112, débuter immédiatement la réanimation cardio-pulmonaire (compressions thoraciques) et poser un DAE", wrongs: ["la mettre simplement en PLS et attendre", "lui jeter de l'eau froide au visage", "lui surélever uniquement les jambes"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Chaque minute sans massage cardiaque ni défibrillateur (DAE) réduit de 10 % les chances de survie." },
+            { q: "En analyse d'un accident du travail (méthode de l'arbre des causes ou approche par le risque), quelle est la différence entre un « danger » et un « risque » ?", correct: "le danger est la propriété intrinsèque d'un équipement ou produit pouvant causer un dommage ; le risque est l'exposition d'un opérateur à ce danger", wrongs: ["les deux mots veulent dire absence totale d'accident", "le danger n'existe jamais en entreprise", "le risque désigne uniquement la météo"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Danger (ex : courant 230 V, lame tranchante) + Situation exposante (opérateur) + Événement déclencheur → Dommage." },
+            { q: "Dans la hiérarchie des mesures de prévention, pourquoi la « protection collective » (EPC) est-elle toujours prioritaire sur la « protection individuelle » (EPI) ?", correct: "l'EPC protège simultanément tous les opérateurs à la source sans dépendre du comportement individuel", wrongs: ["les EPI sont interdits en France", "l'EPC coûte toujours zéro euro", "les EPI protègent tout l'atelier à distance"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Priorité : 1. Supprimer/substituer le risque → 2. Protection collective (carter, aspiration) → 3. EPI (gants, casque) → 4. Consignes." },
+            { q: "En prévention du risque bruit au travail, à partir de quel seuil d'exposition quotidienne (8 h) le port de protecteurs individuels contre le bruit (PICB) devient-il obligatoire ?", correct: "85 dB(A) (mise à disposition dès 80 dB(A))", wrongs: ["30 dB(A)", "50 dB(A)", "140 dB(A) seulement"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Une exposition prolongée au-delà de 85 dB(A) détruit irréversiblement les cellules ciliées de l'oreille interne (surdité)." },
+            { q: "Qu'appelle-t-on les « TMS » qui représentent la première cause de maladies professionnelles reconnues en France (> 85 %) ?", correct: "les Troubles Musculo-Squelettiques (affections des articulations, tendons, muscles et nerfs liées aux gestes répétitifs et postures)", wrongs: ["les Transports Maritimes Sécurisés", "les Taux Mensuels de Salaire", "les Traitements Médicaux Saisonnier"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Tendinites, syndrome du canal carpien et lombalgies sont prévenus par l'ergonomie du poste et la formation PRAP." },
+            { q: "En physiologie du sommeil (PSE), quel est le rôle du « sommeil lent profond » et quelle hormone synchronise notre horloge biologique avec l'obscurité ?", correct: "le sommeil lent profond assure la récupération physique ; la mélatonine favorise l'endormissement à l'obscurité", wrongs: ["la lumière bleue des écrans stimule la mélatonine", "le sommeil ne sert qu'à fatiguer les muscles", "l'adrénaline est l'hormone du sommeil profond"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "La lumière bleue des écrans le soir bloque la sécrétion de mélatonine et retarde l'endormissement." },
+            { q: "Quelle est la différence juridique entre un « accident du travail » (AT) et un « accident de trajet » ?", correct: "l'AT survient par le fait ou à l'occasion du travail sur le lieu d'activité ; l'accident de trajet survient sur l'itinéraire normal domicile ↔ travail", wrongs: ["l'accident de trajet n'est jamais couvert par la Sécurité sociale", "l'AT ne concerne que les vacances", "les deux impliquent une faute grave du salarié"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Tous deux ouvrent droit à la prise en charge à 100 % des soins et à des indemnités journalières majorées." },
+            { q: "Face à un saignement abondant (hémorragie externe sans corps étranger), quel est le premier geste de secours immédiat (SST) ?", correct: "appuyer fermement et directement sur la plaie qui saigne (compression manuelle directe protégée) et allonger la victime", wrongs: ["faire marcher la victime rapidement", "appliquer du beurre sur la plaie", "attendre 30 minutes sans toucher"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "La compression directe arrête immédiatement la perte de sang en attendant le relais par un pansement compressif." },
+            { q: "Face à un adulte conscient victime d'un étouffement total (obstruction complète des voies aériennes : ne peut ni parler, ni tousser, ni respirer), quels gestes effectue-t-on ?", correct: "donner de 1 à 5 claques vigoureuses dans le dos entre les omoplates, puis en cas d'échec 1 à 5 compressions abdominales (méthode de Heimlich)", wrongs: ["l'allonger sur le dos et lui donner à boire", "lui boucher le nez", "attendre sans intervenir"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "On alterne 1 à 5 claques dans le dos et 1 à 5 compressions abdominales jusqu'à désobstruction." },
+            { q: "En environnement et gestion des déchets (PSE), quel est l'ordre de priorité de la hiérarchie européenne de traitement des déchets ?", correct: "1. Prévention (réduction à la source) → 2. Réemploi → 3. Recyclage → 4. Valorisation énergétique → 5. Élimination (enfouissement)", wrongs: ["1. Enfouissement → 2. Incinération → 3. Gaspillage", "tout jeter dans la nature", "brûler les plastiques à l'air libre"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Le meilleur déchet est celui qu'on ne produit pas (écoconception, lutte contre l'obsolescence et le gaspillage)." },
+            { q: "En sécurité incendie sur le lieu de travail, quel type d'extincteur est adapté et sûr pour éteindre un début de feu d'origine électrique (armoire électrique, serveur) ?", correct: "un extincteur au dioxyde de carbone (CO₂)", wrongs: ["un seau d'eau pure", "un jet d'eau sous pression", "une couverture imbibée d'essence"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Le CO₂ étouffe le feu sans conduire l'électricité ni endommager les composants électroniques." },
+            { q: "Que désigne l'« empreinte écologique » ou l'« empreinte carbone » d'un individu ou d'une activité ?", correct: "la pression exercée sur les ressources naturelles ou la quantité totale de gaz à effet de serre (en équivalent CO₂) émise", wrongs: ["la pointure des chaussures de sécurité", "la surface du bureau en mètres carrés", "le salaire net annuel"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Réduire l'empreinte carbone passe par la sobriété énergétique, les mobilités douces et une alimentation durable." },
+            { q: "En nutrition et santé au travail (PSE), pourquoi le travail posté ou de nuit (3×8) nécessite-t-il une vigilance particulière ?", correct: "il perturbe les rythmes circadiens (horloge biologique), augmentant la fatigue, les troubles du sommeil et le risque d'accident", wrongs: ["il supprime tout besoin de dormir", "il double la vitesse de digestion", "il immunise contre toutes les maladies"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Un suivi médical renforcé, des pauses adaptées et une hygiène alimentaire structurée limitent ces effets." },
+            { q: "En droit du travail (PSE), dans quelle situation un salarié peut-il légitimement exercer son « droit de retrait » ?", correct: "lorsqu'il a un motif raisonnable de penser que sa situation de travail présente un danger grave et imminent pour sa vie ou sa santé", wrongs: ["dès qu'il pleut dehors", "pour partir en week-end plus tôt", "pour refuser une tâche administrative courante sans danger"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le salarié alerte immédiatement l'employeur et se retire sans pouvoir être sanctionné ni subir de retenue de salaire." },
+            { q: "Quels sont les trois éléments du « triangle du feu » nécessaires simultanément pour qu'une combustion se déclenche ?", correct: "un combustible (matière qui brûle), un comburant (dioxygène O₂) et une énergie d'activation (chaleur, étincelle)", wrongs: ["de l'eau, du sable et du vent", "du diazote, du gaz carbonique et du froid", "du bois, de la pierre et de l'ombre"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Supprimer l'un des trois côtés du triangle du feu (refroidir, étouffer ou isoler le combustible) éteint l'incendie." }
         ]
     };
 
@@ -3598,10 +4411,12 @@ const QuestionBank = (() => {
     const LYCEE_LEVEL_SET = new Set(['2nde', '1ere', 'terminale', 'bts1', 'bts2']);
     const HAS_PROCEDURAL_SET = new Set([
         'francais', 'anglais', 'espagnol', 'arts', 'histoire', 'geo', 'svt',
-        'physique', 'chimie', 'techno', 'emc', 'philo', 'nsi', 'ses', 'si',
-        'msgn', 'mercatique', 'i2d', 'sin', 'cybersecurite', 'reseaux',
-        'electronique', 'biotech', 'design', 'hotellerie', 'agronomie',
-        'spectacle', 'hlp', 'dev_bdd', 'commerce', 'comptabilite', 'electrotech',
+        'physique', 'chimie', 'techno', 'emc', 'philo', 'nsi', 'ses', 'hggsp',
+        'si', 'msgn', 'droit_eco', 'mercatique', 'i2d', 'sin', 'cybersecurite',
+        'reseaux', 'electronique', 'stss', 'biotech', 'design', 'hotellerie',
+        'agronomie', 'spectacle', 'hlp', 'dev_bdd', 'commerce', 'comptabilite',
+        'electrotech', 'biopathologie', 'spcl', 'rh_comm', 'architecture_habitat',
+        'llce', 'pse',
     ]);
     const _niveauBankCache = new Map();
     const _shuffledDeckCache = new Map();
@@ -3712,6 +4527,15 @@ const QuestionBank = (() => {
             if (canonId === 'commerce') return generateCommerceLesson(safeIndex, norm, safeVariant, rng);
             if (canonId === 'comptabilite') return generateComptabiliteLesson(safeIndex, norm, safeVariant, rng);
             if (canonId === 'electrotech') return generateElectrotechLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'hggsp') return generateHggspLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'droit_eco') return generateDroitEcoLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'stss') return generateStssLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'biopathologie') return generateBiopathologieLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'spcl') return generateSpclLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'rh_comm') return generateRhCommLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'architecture_habitat') return generateArchitectureHabitatLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'llce') return generateLlceLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'pse') return generatePseLesson(safeIndex, norm, safeVariant, rng);
         }
 
         const bank = getQuestionsForNiveau(canonId, norm);

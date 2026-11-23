@@ -1225,7 +1225,7 @@
                 assert.strictEqual(AdminStore.isSubjectAllowedForNiveau({ id: 'electrotech' }, 'terminale', 'bac_pro_melec'), true);
             });
 
-            it('QuestionBank génère sans doublon d\'options pour les 23 matières de filières', function () {
+            it('QuestionBank génère sans doublon d\'options pour les 29 matières de filières', function () {
                 const newSubs = [
                     ['espagnol', '4eme'], ['arts', '5eme'], ['hggsp', '1ere'], ['si', '1ere'],
                     ['msgn', '1ere'], ['droit_eco', 'terminale'], ['mercatique', 'terminale'],
@@ -1234,7 +1234,9 @@
                     ['biotech', 'terminale'], ['design', '1ere'], ['hotellerie', 'terminale'],
                     ['agronomie', '1ere'], ['spectacle', 'terminale'], ['hlp', 'terminale'],
                     ['dev_bdd', 'bts1'], ['commerce', 'bts2'], ['comptabilite', 'bts1'],
-                    ['electrotech', 'terminale'],
+                    ['electrotech', 'terminale'], ['biopathologie', '1ere'], ['spcl', 'terminale'],
+                    ['rh_comm', 'terminale'], ['architecture_habitat', '1ere'], ['llce', '1ere'],
+                    ['pse', 'terminale'],
                 ];
                 newSubs.forEach(([id, niv]) => {
                     const q = QuestionBank.generateOne(id, 0, niv, 0);
