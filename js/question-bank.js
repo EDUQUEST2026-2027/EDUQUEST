@@ -1,5 +1,5 @@
 /* =============================================================================
-   QUESTION-BANK.JS — EDUQUEST v1.29.1
+   QUESTION-BANK.JS — EDUQUEST v1.30.0
    Banque de questions et générateur procédural pour les 36 matières officielles
    et les 9 niveaux scolaires (18 filières au lycée & BTS) :
    - 6ème, 5ème, 4ème, 3ème (Collège)
@@ -76,13 +76,17 @@ const QuestionBank = (() => {
         };
     }
 
-    /** Ré-ordonne de façon déterministe les options des leçons écrites en dur. */
+    /** Ré-ordonne de façon déterministe les options des leçons écrites en dur (clone défensif). */
     function reshuffleHandWritten(lesson, subjectId, index) {
-        if (lesson.type !== 'qcm' && lesson.type) return lesson;
-        if (!lesson.opts) return lesson;
+        if (!lesson || typeof lesson !== 'object') return lesson;
+        const copy = { ...lesson };
+        if (copy.type && copy.type !== 'qcm') return copy;
+        if (!Array.isArray(copy.opts) || copy.opts.length === 0) return copy;
+        const safeCorrect = (Number.isInteger(copy.correct) && copy.correct >= 0 && copy.correct < copy.opts.length)
+            ? copy.correct : 0;
         const rng = seededRng(hashSeed(subjectId + ':fixed:' + index));
-        const { opts, correct } = shuffleOptions(lesson.opts, lesson.correct, rng);
-        return { ...lesson, opts, correct };
+        const { opts, correct } = shuffleOptions(copy.opts, safeCorrect, rng);
+        return { ...copy, opts, correct };
     }
 
     function uniqueWrongs(correct, candidates, allowNegative) {
@@ -134,6 +138,43 @@ const QuestionBank = (() => {
             [out[i], out[j]] = [out[j], out[i]];
         }
         return out;
+    }
+
+    /** Indice séquentiel pour les générateurs procéduraux (évite la collision de parité quand (index+variant)%2===1). */
+    function procIdx(index, variant) {
+        return Math.floor((index + variant) / 2) + variant;
+    }
+
+    /** Helpers d'accords et contractions typographiques françaises. */
+    const VOWEL_OR_H_MUET_RE = /^[aàâäeéèêëiîïoôöuùûüyœæ]|^h(?!(aut|ar|ér|ou|ib|ol|ur|uit))/i;
+    function deNom(s) {
+        const str = String(s || '');
+        if (/^le\s+/i.test(str)) return 'du ' + str.slice(3);
+        if (/^les\s+/i.test(str)) return 'des ' + str.slice(4);
+        if (/^(la\s+|l['’])/i.test(str)) return 'de ' + str;
+        return VOWEL_OR_H_MUET_RE.test(str) ? "d'" + str : 'de ' + str;
+    }
+    function deInf(s) {
+        const str = String(s || '');
+        return VOWEL_OR_H_MUET_RE.test(str) ? "d'" + str : 'de ' + str;
+    }
+    function queClause(s) {
+        const str = String(s || '');
+        return /^[aàâäeéèêëiîïoôöuùûüyœæ]/i.test(str) ? "qu'" + str : 'que ' + str;
+    }
+    function auNom(s) {
+        const str = String(s || '');
+        return VOWEL_OR_H_MUET_RE.test(str) ? "à l'" + str : 'au ' + str;
+    }
+    function auTemps(tense) {
+        return tense === 'imparfait' ? "à l'imparfait" : 'au ' + tense;
+    }
+    function auTempsCap(tense) {
+        return tense === 'imparfait' ? "À l'imparfait" : 'Au ' + tense;
+    }
+    function jeForm(person, form) {
+        if (person === 'je' && /^[aàâäeéèêëiîïoôöuùûüyœæ]/i.test(form)) return "j'" + form;
+        return person + ' ' + form;
     }
 
     /* ================= 1. Générateurs procéduraux ================= */
@@ -251,7 +292,7 @@ const QuestionBank = (() => {
                     correct = a + b;
                     q = `Calcule le numérateur de : ${a}/${denom} + ${b}/${denom} = ?/${denom}`;
                     wrongCandidates = [a * b, correct + 1, correct - 1, denom];
-                    exp = `Même dénominateur : on additionne les numérateurs ${a} + ${b} = ${correct}/${denom}.`;
+                    exp = `Même dénominateur : on additionne les numérateurs : ${a} + ${b} = ${correct} (soit ${correct}/${denom}).`;
                     break;
                 }
                 case 'aire_triangle': {
@@ -369,7 +410,7 @@ const QuestionBank = (() => {
                             { ang: 0, val: '1', wrongs: [30, 45, 60] },
                             { ang: 90, val: '0', wrongs: [30, 45, 60] },
                         ];
-                        const pick = angles[(index + variant) % angles.length];
+                        const pick = angles[Math.floor((index + variant) / 3) % angles.length];
                         correct = pick.ang;
                         q = `Quel angle (en degrés) a pour cosinus exactement ${pick.val} ?`;
                         wrongCandidates = pick.wrongs;
@@ -393,9 +434,9 @@ const QuestionBank = (() => {
                     break;
                 }
                 case 'pourcentage': {
-                    const prix = (4 + Math.floor(rng() * 14)) * 10;
+                    const prix = [40, 60, 80, 100, 120, 140, 160, 180, 200][Math.floor(rng() * 9)];
                     const remisePct = [10, 20, 25, 30, 50][Math.floor(rng() * 5)];
-                    const remise = Math.round(prix * remisePct / 100);
+                    const remise = (prix * remisePct) / 100;
                     correct = prix - remise;
                     q = `Un article coûte ${prix} €. Avec une remise de ${remisePct} %, quel est son nouveau prix ?`;
                     wrongCandidates = [prix - remisePct, correct + 10, correct - 10, remise];
@@ -651,12 +692,13 @@ const QuestionBank = (() => {
                     break;
                 }
                 case 'esperance_bin': {
-                    const n = [20, 40, 50, 80, 100][Math.floor(rng() * 5)];
+                    const n = [20, 40, 60, 80, 100][Math.floor(rng() * 5)];
                     const pPct = [10, 20, 25, 40, 50][Math.floor(rng() * 5)];
-                    correct = Math.round((n * pPct) / 100);
-                    q = `Une variable X suit une loi binomiale B(n = ${n} ; p = ${(pPct / 100).toFixed(2).replace('.', ',')}). Quelle est son espérance E(X) = n × p ?`;
+                    correct = (n * pPct) / 100;
+                    const pFr = (pPct / 100).toFixed(2).replace('.', ',');
+                    q = `Une variable X suit une loi binomiale B(n = ${n} ; p = ${pFr}). Quelle est son espérance E(X) = n × p ?`;
                     wrongCandidates = [correct + 5, Math.max(1, correct - 5), n - correct, pPct];
-                    exp = `E(X) = n × p = ${n} × ${(pPct / 100).toFixed(2)} = ${correct}.`;
+                    exp = `E(X) = n × p = ${n} × ${pFr} = ${correct}.`;
                     break;
                 }
                 case 'derivee_poly_bts': {
@@ -740,13 +782,15 @@ const QuestionBank = (() => {
                     break;
                 }
                 case 'proba_cond': {
-                    const pA = [20, 40, 50, 80][Math.floor(rng() * 4)];
+                    const pA = [20, 40, 60, 80][Math.floor(rng() * 4)];
                     const ratioPct = [25, 50, 75][Math.floor(rng() * 3)];
                     const pInter = (pA * ratioPct) / 10000;
+                    const pAFr = (pA / 100).toFixed(2).replace('.', ',');
+                    const pInterFr = pInter.toFixed(2).replace('.', ',');
                     correct = ratioPct;
-                    q = `Si P(A) = ${(pA / 100).toFixed(2).replace('.', ',')} et P(A ∩ B) = ${pInter.toFixed(2).replace('.', ',')}, que vaut P_A(B) en pourcentage ?`;
+                    q = `Si P(A) = ${pAFr} et P(A ∩ B) = ${pInterFr}, que vaut P_A(B) en pourcentage ?`;
                     wrongCandidates = [100 - ratioPct, pA, Math.round(pInter * 100), 10];
-                    exp = `P_A(B) = P(A ∩ B) / P(A) = ${pInter.toFixed(2)} / ${(pA / 100).toFixed(2)} = ${ratioPct} %.`;
+                    exp = `P_A(B) = P(A ∩ B) / P(A) = ${pInterFr} / ${pAFr} = ${ratioPct} %.`;
                     break;
                 }
                 case 'loi_binomiale': {
@@ -816,10 +860,10 @@ const QuestionBank = (() => {
         return {
             type: 'qcm',
             title: 'Niveau ' + (index + 1),
-            q: `Conjugue le verbe « ${vObj.inf} » au ${tense} avec le pronom « ${persons[pIndex]} » :`,
+            q: `Conjugue le verbe « ${vObj.inf} » ${auTemps(tense)} avec le pronom « ${persons[pIndex]} » :`,
             opts,
             correct: correctIdx,
-            exp: `Au ${tense}, on écrit : ${persons[pIndex]} ${correct}.`
+            exp: `${auTempsCap(tense)}, on écrit : ${jeForm(persons[pIndex], correct)}.`
         };
     }
 
@@ -850,7 +894,7 @@ const QuestionBank = (() => {
         const deck = seededShuffle(irregulars, 'en-deck:' + norm + ':v' + variant);
         const slot = Math.floor(index / 2) + variant * 3;
         const item = deck[slot % deck.length];
-        const askPastParticiple = (Math.floor(slot / deck.length) + index + variant) % 2 === 1;
+        const askPastParticiple = (Math.floor(slot / deck.length) + procIdx(index, variant)) % 2 === 1;
         const baseVerb = item.inf.replace('to ', '');
         const otherForms = irregulars.filter(x => x.inf !== item.inf);
         const randomOther1 = otherForms[Math.floor(rng() * otherForms.length)];
@@ -924,17 +968,17 @@ const QuestionBank = (() => {
         return {
             type: 'qcm',
             title: 'Niveau ' + (index + 1),
-            q: `Quelle est la capitale de ${item.country} ?`,
+            q: `Quelle est la capitale ${deNom(item.country)} ?`,
             opts,
             correct,
-            exp: `La capitale de ${item.country} est bien ${item.cap}.`
+            exp: `La capitale ${deNom(item.country)} est bien ${item.cap}.`
         };
     }
 
     /** Générateur procédural pour la physique (sans doublons d'options) */
     function generatePhysicsLesson(index, norm, variant, rng) {
         const kinds = ['ohm', 'puissance', 'cinetique', 'poids'];
-        const kind = kinds[(index + variant) % kinds.length];
+        const kind = kinds[procIdx(index, variant) % kinds.length];
 
         if (kind === 'ohm') {
             const r = 10 * (1 + Math.floor(rng() * 9)); // 10 à 90 ohms
@@ -1022,7 +1066,7 @@ const QuestionBank = (() => {
         const deck = seededShuffle(elements, 'chem-deck:' + norm + ':v' + variant);
         const slot = Math.floor(index / 2) + variant * 5;
         const el = deck[slot % deck.length];
-        const askSymbol = (Math.floor(slot / deck.length) + index + variant) % 2 === 0;
+        const askSymbol = (Math.floor(slot / deck.length) + procIdx(index, variant)) % 2 === 0;
 
         if (askSymbol) {
             const others = seededShuffle(elements.filter(x => x.sym !== el.sym).map(x => x.sym), 'chem:' + index + ':' + variant);
@@ -1031,10 +1075,10 @@ const QuestionBank = (() => {
             return {
                 type: 'qcm',
                 title: 'Niveau ' + (index + 1),
-                q: `Quel est le symbole chimique de ${el.name} ?`,
+                q: `Quel est le symbole chimique ${deNom(el.name)} ?`,
                 opts,
                 correct,
-                exp: `Le symbole de ${el.name} est ${el.sym}.`
+                exp: `Le symbole ${deNom(el.name)} est ${el.sym}.`
             };
         } else {
             const wrongs = uniqueWrongs(el.z, [el.z + 1, el.z + 2, el.z - 1, el.z + 4], false).filter(n => n > 0);
@@ -1043,10 +1087,10 @@ const QuestionBank = (() => {
             return {
                 type: 'qcm',
                 title: 'Niveau ' + (index + 1),
-                q: `Quel est le numéro atomique Z (nombre de protons) de ${el.name} ?`,
+                q: `Quel est le numéro atomique Z (nombre de protons) ${deNom(el.name)} ?`,
                 opts,
                 correct,
-                exp: `Le numéro atomique Z de ${el.name} est ${el.z}.`
+                exp: `Le numéro atomique Z ${deNom(el.name)} est ${el.z}.`
             };
         }
     }
@@ -1054,7 +1098,7 @@ const QuestionBank = (() => {
     /** Générateur procédural enrichi pour la technologie (binaire, octets, échelles, énergie) */
     function generateTechnoLesson(index, norm, variant, rng) {
         const kinds = ['bin4', 'octets_bits', 'echelle', 'energie_temps'];
-        const kind = kinds[(index + variant) % kinds.length];
+        const kind = kinds[procIdx(index, variant) % kinds.length];
 
         if (kind === 'bin4') {
             const val = 1 + ((index * 5 + variant * 3 + Math.floor(rng() * 15)) % 15);
@@ -1254,7 +1298,7 @@ const QuestionBank = (() => {
     /** Générateur procédural pour SES (Lycée) */
     function generateSesLesson(index, norm, variant, rng) {
         const kinds = ['ca', 'va', 'taux_var', 'part_marche'];
-        const kind = kinds[(index + variant) % kinds.length];
+        const kind = kinds[procIdx(index, variant) % kinds.length];
 
         if (kind === 'ca') {
             const prix = (2 + Math.floor(rng() * 8)) * 5; // 10..45 €
@@ -1287,7 +1331,7 @@ const QuestionBank = (() => {
             };
         }
         if (kind === 'taux_var') {
-            const vd = [50, 100, 200, 250, 400][Math.floor(rng() * 5)];
+            const vd = [40, 80, 100, 200, 400][Math.floor(rng() * 5)];
             const pct = [10, 20, 25, 40, 50][Math.floor(rng() * 5)];
             const va = vd + (vd * pct) / 100;
             const wrongs = uniqueWrongs(pct, [pct + 10, Math.max(5, pct - 10), va - vd, pct * 2], false).map(n => `+${n} %`);
@@ -1339,10 +1383,10 @@ const QuestionBank = (() => {
         return {
             type: 'qcm',
             title: 'Niveau ' + (index + 1),
-            q: `Dans le corps humain, quel est le rôle principal de ${item.organ} (${item.system}) ?`,
+            q: `Dans le corps humain, quel est le rôle principal ${deNom(item.organ)} (${item.system}) ?`,
             opts,
             correct,
-            exp: `Le rôle principal de ${item.organ} est de ${item.role}.`
+            exp: `Le rôle principal ${deNom(item.organ)} est ${deInf(item.role)}.`
         };
     }
 
@@ -1385,7 +1429,7 @@ const QuestionBank = (() => {
             { quote: "« Le cœur a ses raisons que la raison ne connaît point. »", author: "Blaise Pascal", wrongs: ["René Descartes", "Baruch Spinoza", "Michel de Montaigne"] },
             { quote: "« Deviens ce que tu es. »", author: "Friedrich Nietzsche", wrongs: ["Arthur Schopenhauer", "Jean-Paul Sartre", "Gilles Deleuze"] },
             { quote: "« L'existence précède l'essence. »", author: "Jean-Paul Sartre", wrongs: ["Albert Camus", "Michel Foucault", "Simone de Beauvoir"] },
-            { quote: "« La liberté des uns s'arrête là où commence celle des autres. »", author: "John Stuart Mill", wrongs: ["Thomas More", "Machiavel", "Hegel"] },
+            { quote: "« Mieux vaut être un Socrate insatisfait qu'un porc satisfait. »", author: "John Stuart Mill", wrongs: ["Thomas More", "Nicolas Machiavel", "Hegel"] },
             { quote: "« Sapere aude ! Aie le courage de te servir de ton propre entendement ! »", author: "Emmanuel Kant", wrongs: ["Baruch Spinoza", "Gottfried Leibniz", "Christian Wolff"] },
             { quote: "« L'homme est un animal politique. »", author: "Aristote", wrongs: ["Platon", "Épicure", "Sénèque"] },
             { quote: "« On ne naît pas femme : on le devient. »", author: "Simone de Beauvoir", wrongs: ["Hannah Arendt", "Simone Weil", "Judith Butler"] },
@@ -1405,13 +1449,13 @@ const QuestionBank = (() => {
             q: `À quel grand philosophe attribue-t-on la célèbre formule suivante : ${item.quote} ?`,
             opts,
             correct,
-            exp: `Cette citation est de ${item.author}.`
+            exp: `Cette citation est ${deNom(item.author)}.`
         };
     }
 
     /** Générateur procédural pour l'Espagnol (LV2 : conjugaison + vocabulaire) */
     function generateEspagnolLesson(index, norm, variant, rng) {
-        if ((index + variant) % 2 === 0) {
+        if (procIdx(index, variant) % 2 === 0) {
             const verbs = [
                 { inf: "hablar", fr: "parler", pres: ["hablo", "hablas", "habla", "hablamos", "habláis", "hablan"] },
                 { inf: "comer", fr: "manger", pres: ["como", "comes", "come", "comemos", "coméis", "comen"] },
@@ -1497,14 +1541,14 @@ const QuestionBank = (() => {
             q: `Quel artiste célèbre est l'auteur de l'œuvre « ${item.work} » ?`,
             opts,
             correct,
-            exp: `« ${item.work} » est une œuvre majeure de ${item.artist}.`
+            exp: `« ${item.work} » est une œuvre majeure ${deNom(item.artist)}.`
         };
     }
 
     /** Générateur procédural pour Sciences de l'Ingénieur (SI) */
     function generateSiLesson(index, norm, variant, rng) {
         const kinds = ['rapport_engrenage', 'puissance_meca', 'rendement', 'energie_meca'];
-        const kind = kinds[(index + variant) % kinds.length];
+        const kind = kinds[procIdx(index, variant) % kinds.length];
 
         if (kind === 'rapport_engrenage') {
             const z1 = [12, 15, 20, 24, 30][Math.floor(rng() * 5)];
@@ -1612,10 +1656,10 @@ const QuestionBank = (() => {
             return {
                 type: 'qcm',
                 title: 'Niveau ' + (index + 1),
-                q: `Les charges fixes sont de ${cf} € et la marge sur coût variable unitaire est de ${mcv} €. Combien d'unités faut-il vendre pour atteindre le point mort (seuil de rentabilité) ?`,
+                q: `Les charges fixes sont de ${cf} € et la marge sur coût variable unitaire est de ${mcv} €. Combien d'unités faut-il vendre pour atteindre le seuil de rentabilité en volume ?`,
                 opts,
                 correct,
-                exp: `Point mort en volume = Charges fixes / MCV unitaire = ${cf} / ${mcv} = ${qte} unités.`
+                exp: `Seuil de rentabilité en volume = Charges fixes / MCV unitaire = ${cf} / ${mcv} = ${qte} unités (le point mort désigne la date d'atteinte).`
             };
         }
         if (kind === 'taux_marque') {
@@ -1651,7 +1695,7 @@ const QuestionBank = (() => {
     /** Générateur procédural pour I2D (STI2D : énergie, CO2, thermique, rendement) */
     function generateI2dLesson(index, norm, variant, rng) {
         const kinds = ['energie_kwh', 'rendement_pv', 'r_thermique', 'bilan_co2'];
-        const kind = kinds[(index + variant) % kinds.length];
+        const kind = kinds[procIdx(index, variant) % kinds.length];
 
         if (kind === 'energie_kwh') {
             const pKw = [2, 3, 4, 5, 6][Math.floor(rng() * 5)];
@@ -1717,7 +1761,8 @@ const QuestionBank = (() => {
     /** Générateur procédural pour SIN (STI2D : CAN, débit, PWM, binaire/logique) */
     function generateSinLesson(index, norm, variant, rng) {
         const kinds = ['can_niveaux', 'pwm_moy', 'debit_temps', 'porte_logique'];
-        const kind = kinds[(index + variant) % kinds.length];
+        const pIdx = procIdx(index, variant);
+        const kind = kinds[pIdx % kinds.length];
 
         if (kind === 'can_niveaux') {
             const bits = [4, 6, 8, 10, 12][Math.floor(rng() * 5)];
@@ -1775,7 +1820,7 @@ const QuestionBank = (() => {
             { expr: "NON(1)", res: "0", exp: "L'inverseur (NOT) inverse l'état logique : NON(1) = 0." },
             { expr: "NON(1 ET 1) (porte NAND)", res: "0", exp: "1 ET 1 = 1, puis NON(1) = 0." },
         ];
-        const pick = gates[(index + variant * 3) % gates.length];
+        const pick = gates[Math.floor(pIdx / kinds.length) % gates.length];
         const shuffled = shuffleOptions([pick.res, pick.res === '1' ? '0' : '1', 'Indéterminé', '2'], 0, rng);
         return {
             type: 'qcm',
@@ -1820,7 +1865,9 @@ const QuestionBank = (() => {
     /** Générateur procédural pour Réseaux & Systèmes (CIEL / NSI / BTS : ports, CIDR, OSI, Linux) */
     function generateReseauxLesson(index, norm, variant, rng) {
         const kinds = ['ports', 'cidr_hosts', 'osi_layers', 'linux_cmd'];
-        const kind = kinds[(index + variant) % kinds.length];
+        const pIdx = procIdx(index, variant);
+        const subIdx = Math.floor(pIdx / kinds.length);
+        const kind = kinds[pIdx % kinds.length];
 
         if (kind === 'ports') {
             const ports = [
@@ -1846,7 +1893,7 @@ const QuestionBank = (() => {
                 q: `Quel est le numéro de port TCP/UDP standard utilisé par le protocole ${item.proto} ?`,
                 opts,
                 correct,
-                exp: `Le port standard de ${item.proto} est le port ${item.port}.`
+                exp: `Le port standard du protocole ${item.proto} est le port ${item.port}.`
             };
         }
         if (kind === 'cidr_hosts') {
@@ -1859,8 +1906,8 @@ const QuestionBank = (() => {
                 { cidr: "/29", mask: "255.255.255.248", hosts: 6 },
                 { cidr: "/30", mask: "255.255.255.252", hosts: 2 },
             ];
-            const item = masks[(index + variant * 2) % masks.length];
-            if ((index + variant) % 2 === 0) {
+            const item = masks[subIdx % masks.length];
+            if (subIdx % 2 === 0) {
                 const wrongs = uniqueWrongs(item.hosts, [item.hosts + 2, Math.max(1, item.hosts - 2), item.hosts * 2, Math.max(1, Math.floor(item.hosts / 2))], false);
                 const { opts, correct } = shuffleOptions([String(item.hosts), ...wrongs.map(String)], 0, rng);
                 return {
@@ -1894,7 +1941,7 @@ const QuestionBank = (() => {
                 { num: 6, name: "Présentation (encodage, chiffrement, compression)" },
                 { num: 7, name: "Application (HTTP, DNS, SMTP, SSH)" },
             ];
-            const item = layers[(index + variant * 2) % layers.length];
+            const item = layers[subIdx % layers.length];
             const others = layers.filter(l => l.num !== item.num).map(l => l.name);
             const wrongs = uniqueStringWrongs(item.name, seededShuffle(others, 'osi:' + index + ':' + variant));
             const { opts, correct } = shuffleOptions([item.name, ...wrongs], 0, rng);
@@ -1917,14 +1964,14 @@ const QuestionBank = (() => {
             { cmd: "sudo", desc: "exécuter une commande avec les privilèges administrateur (root)" },
             { cmd: "ssh", desc: "ouvrir un terminal distant chiffré sur un serveur" },
         ];
-        const pick = cmds[(index + variant * 3) % cmds.length];
+        const pick = cmds[subIdx % cmds.length];
         const otherCmds = cmds.filter(c => c.cmd !== pick.cmd).map(c => c.cmd);
         const wrongs = uniqueStringWrongs(pick.cmd, seededShuffle(otherCmds, 'cmd:' + index + ':' + variant));
         const { opts, correct } = shuffleOptions([pick.cmd, ...wrongs], 0, rng);
         return {
             type: 'qcm',
             title: 'Niveau ' + (index + 1),
-            q: `En administration système/réseau Linux, quelle commande permet de ${pick.desc} ?`,
+            q: `En administration système/réseau Linux, quelle commande permet ${deInf(pick.desc)} ?`,
             opts,
             correct,
             exp: `La commande « ${pick.cmd} » sert à ${pick.desc}.`
@@ -1934,7 +1981,7 @@ const QuestionBank = (() => {
     /** Générateur procédural pour Électronique & Systèmes Embarqués (CIEL / STI2D / BTS) */
     function generateElectroniqueLesson(index, norm, variant, rng) {
         const kinds = ['res_serie', 'res_parallele', 'led_res', 'pont_diviseur'];
-        const kind = kinds[(index + variant) % kinds.length];
+        const kind = kinds[procIdx(index, variant) % kinds.length];
 
         if (kind === 'res_serie') {
             const r1 = [100, 150, 220, 330, 470][Math.floor(rng() * 5)];
@@ -1998,10 +2045,10 @@ const QuestionBank = (() => {
     /** Générateur procédural pour Biotechnologies & Labo (STL / ASSP) */
     function generateBiotechLesson(index, norm, variant, rng) {
         const kinds = ['dilution', 'microscope', 'pcr_cycles', 'concentration'];
-        const kind = kinds[(index + variant) % kinds.length];
+        const kind = kinds[procIdx(index, variant) % kinds.length];
 
         if (kind === 'dilution') {
-            const c1 = [20, 40, 50, 80, 100][Math.floor(rng() * 5)];
+            const c1 = [20, 40, 60, 80, 100][Math.floor(rng() * 5)];
             const f = [2, 4, 5, 10][Math.floor(rng() * 4)];
             const c2 = c1 / f;
             const wrongs = uniqueWrongs(c2, [c1 * f, c2 + 5, Math.max(1, c2 - 2), c1 - f], false).map(n => `${n} g/L`);
@@ -2062,7 +2109,9 @@ const QuestionBank = (() => {
     /** Générateur procédural pour Design & Arts Appliqués (STD2A) */
     function generateDesignLesson(index, norm, variant, rng) {
         const kinds = ['echelle', 'complementaire', 'format_a', 'ergonomie'];
-        const kind = kinds[(index + variant) % kinds.length];
+        const pIdx = procIdx(index, variant);
+        const subIdx = Math.floor(pIdx / kinds.length);
+        const kind = kinds[pIdx % kinds.length];
 
         if (kind === 'echelle') {
             const realCm = [100, 200, 250, 400, 500][Math.floor(rng() * 5)];
@@ -2085,10 +2134,11 @@ const QuestionBank = (() => {
                 { a: 'Rouge', b: 'Vert' },
                 { a: 'Bleu', b: 'Orange' },
                 { a: 'Jaune', b: 'Violet' },
-                { a: 'Cyan', b: 'Rouge orangé' },
-                { a: 'Magenta', b: 'Vert pomme' },
+                { a: 'Rouge-orangé', b: 'Bleu-vert' },
+                { a: 'Jaune-orangé', b: 'Bleu-violet' },
+                { a: 'Rouge-violet', b: 'Jaune-vert' },
             ];
-            const item = pairs[(index + variant) % pairs.length];
+            const item = pairs[subIdx % pairs.length];
             const others = pairs.filter(p => p.a !== item.a).map(p => p.b);
             const wrongs = uniqueStringWrongs(item.b, others);
             const { opts, correct } = shuffleOptions([item.b, ...wrongs], 0, rng);
@@ -2109,7 +2159,7 @@ const QuestionBank = (() => {
                 { name: 'A2', dim: '420 × 594 mm' },
                 { name: 'A1', dim: '594 × 841 mm' },
             ];
-            const item = formats[(index + variant) % formats.length];
+            const item = formats[subIdx % formats.length];
             const others = formats.filter(f => f.name !== item.name).map(f => f.dim);
             const wrongs = uniqueStringWrongs(item.dim, others);
             const { opts, correct } = shuffleOptions([item.dim, ...wrongs], 0, rng);
@@ -2140,12 +2190,12 @@ const QuestionBank = (() => {
     /** Générateur procédural pour Hôtellerie & Gastronomie (STHR) */
     function generateHotellerieLesson(index, norm, variant, rng) {
         const kinds = ['taux_occ', 'cout_matiere', 'revpar', 'tva_restau'];
-        const kind = kinds[(index + variant) % kinds.length];
+        const kind = kinds[procIdx(index, variant) % kinds.length];
 
         if (kind === 'taux_occ') {
-            const cap = [40, 50, 80, 100, 120][Math.floor(rng() * 5)];
+            const cap = [40, 60, 80, 100, 120][Math.floor(rng() * 5)];
             const pct = [50, 60, 75, 80, 90][Math.floor(rng() * 5)];
-            const occ = Math.round((cap * pct) / 100);
+            const occ = (cap * pct) / 100;
             const wrongs = uniqueWrongs(pct, [pct + 10, Math.max(10, pct - 10), 100 - pct, Math.min(95, pct + 15)], false).map(n => `${n} %`);
             const { opts, correct } = shuffleOptions([`${pct} %`, ...wrongs], 0, rng);
             return {
@@ -2189,8 +2239,8 @@ const QuestionBank = (() => {
             };
         }
         const ht = [20, 30, 40, 50, 80, 100][Math.floor(rng() * 6)];
-        const ttc = ht * 1.1; // TVA 10% restauration sur place
-        const wrongs = uniqueWrongs(ttc, [ht * 1.2, ht + 5, ht * 1.05, ttc + 4], false).map(n => `${n} €`);
+        const ttc = Math.round(ht * 110) / 100; // TVA 10% restauration sur place (sans erreur flottante IEEE-754)
+        const wrongs = uniqueWrongs(ttc, [Math.round(ht * 120) / 100, ht + 5, Math.round(ht * 105) / 100, ttc + 4], false).map(n => `${n} €`);
         const { opts, correct } = shuffleOptions([`${ttc} €`, ...wrongs], 0, rng);
         return {
             type: 'qcm',
@@ -2205,13 +2255,14 @@ const QuestionBank = (() => {
     /** Générateur procédural pour Agronomie & Écologie (STAV) */
     function generateAgronomieLesson(index, norm, variant, rng) {
         const kinds = ['rendement', 'surface_ha', 'eau_irrigation', 'ph_sol'];
-        const kind = kinds[(index + variant) % kinds.length];
+        const pIdx = procIdx(index, variant);
+        const kind = kinds[pIdx % kinds.length];
 
         if (kind === 'rendement') {
-            const surf = [4, 5, 8, 10, 12][Math.floor(rng() * 5)];
+            const surf = [4, 6, 8, 10, 12][Math.floor(rng() * 5)];
             const rdt = [60, 70, 75, 80, 90][Math.floor(rng() * 5)]; // q/ha
             const totalQ = surf * rdt;
-            const totalT = totalQ / 10; // 1 tonne = 10 quintaux
+            const totalT = totalQ / 10; // 1 tonne = 10 quintaux (toujours entier)
             const wrongs = uniqueWrongs(totalT, [totalQ, totalT + 10, Math.max(5, totalT - 10), surf + rdt], false).map(n => `${n} tonnes`);
             const { opts, correct } = shuffleOptions([`${totalT} tonnes`, ...wrongs], 0, rng);
             return {
@@ -2257,7 +2308,7 @@ const QuestionBank = (() => {
             { ph: '8,1', type: 'basique (calcaire)', exp: 'Un sol de pH > 7,5 est basique / alcalin, souvent riche en calcaire.' },
             { ph: '4,8', type: 'très acide', exp: 'À pH 4,8, le sol est très acide, ce qui bloque l\'assimilation de certains nutriments.' },
         ];
-        const pick = cases[(index + variant) % cases.length];
+        const pick = cases[Math.floor(pIdx / kinds.length) % cases.length];
         const wrongs = uniqueStringWrongs(pick.type, ['acide', 'neutre', 'basique (calcaire)', 'salin saturé', 'très acide']);
         const { opts, correct } = shuffleOptions([pick.type, ...wrongs], 0, rng);
         return {
@@ -2329,7 +2380,9 @@ const QuestionBank = (() => {
     /** Générateur procédural pour Développement & BDD (BTS SIO) */
     function generateDevBddLesson(index, norm, variant, rng) {
         const kinds = ['sql_clause', 'http_code', 'git_cmd', 'oop_concept'];
-        const kind = kinds[(index + variant) % kinds.length];
+        const pIdx = procIdx(index, variant);
+        const subIdx = Math.floor(pIdx / kinds.length);
+        const kind = kinds[pIdx % kinds.length];
 
         if (kind === 'sql_clause') {
             const clauses = [
@@ -2340,14 +2393,14 @@ const QuestionBank = (() => {
                 { clause: 'DISTINCT', desc: 'éliminer les doublons dans les résultats d\'une requête SELECT' },
                 { clause: 'HAVING', desc: 'filtrer des groupes après un GROUP BY (ex : HAVING COUNT(*) > 5)' },
             ];
-            const pick = clauses[(index + variant * 2) % clauses.length];
+            const pick = clauses[subIdx % clauses.length];
             const others = clauses.filter(c => c.clause !== pick.clause).map(c => c.clause);
             const wrongs = uniqueStringWrongs(pick.clause, seededShuffle(others, 'sql:' + index + ':' + variant));
             const { opts, correct } = shuffleOptions([pick.clause, ...wrongs], 0, rng);
             return {
                 type: 'qcm',
                 title: 'Niveau ' + (index + 1),
-                q: `En SQL (BTS SIO), quelle clause permet de ${pick.desc} ?`,
+                q: `En SQL (BTS SIO), quelle clause permet ${deInf(pick.desc)} ?`,
                 opts,
                 correct,
                 exp: `La clause SQL « ${pick.clause} » sert à ${pick.desc}.`
@@ -2362,17 +2415,17 @@ const QuestionBank = (() => {
                 { code: '404 Not Found', desc: 'la ressource demandée est introuvable sur le serveur' },
                 { code: '500 Internal Server Error', desc: 'une erreur interne inattendue est survenue côté serveur' },
             ];
-            const pick = codes[(index + variant * 2) % codes.length];
+            const pick = codes[subIdx % codes.length];
             const others = codes.filter(c => c.code !== pick.code).map(c => c.code);
             const wrongs = uniqueStringWrongs(pick.code, seededShuffle(others, 'http:' + index + ':' + variant));
             const { opts, correct } = shuffleOptions([pick.code, ...wrongs], 0, rng);
             return {
                 type: 'qcm',
                 title: 'Niveau ' + (index + 1),
-                q: `Dans une API Web REST, quel code de statut HTTP indique que ${pick.desc} ?`,
+                q: `Dans une API Web REST, quel code de statut HTTP indique ${queClause(pick.desc)} ?`,
                 opts,
                 correct,
-                exp: `Le code HTTP ${pick.code} signifie que ${pick.desc}.`
+                exp: `Le code HTTP ${pick.code} signifie ${queClause(pick.desc)}.`
             };
         }
         if (kind === 'git_cmd') {
@@ -2384,14 +2437,14 @@ const QuestionBank = (() => {
                 { cmd: 'git merge', desc: 'fusionner l\'historique d\'une branche dans la branche courante' },
                 { cmd: 'git status', desc: 'afficher l\'état des fichiers modifiés, indexés ou non suivis' },
             ];
-            const pick = cmds[(index + variant * 2) % cmds.length];
+            const pick = cmds[subIdx % cmds.length];
             const others = cmds.filter(c => c.cmd !== pick.cmd).map(c => c.cmd);
             const wrongs = uniqueStringWrongs(pick.cmd, seededShuffle(others, 'git:' + index + ':' + variant));
             const { opts, correct } = shuffleOptions([pick.cmd, ...wrongs], 0, rng);
             return {
                 type: 'qcm',
                 title: 'Niveau ' + (index + 1),
-                q: `Avec Git, quelle commande permet de ${pick.desc} ?`,
+                q: `Avec Git, quelle commande permet ${deInf(pick.desc)} ?`,
                 opts,
                 correct,
                 exp: `« ${pick.cmd} » sert à ${pick.desc}.`
@@ -2403,7 +2456,7 @@ const QuestionBank = (() => {
             { name: "le polymorphisme", desc: "permettre à une même méthode d'avoir des comportements différents selon la classe de l'objet" },
             { name: "le motif MVC", desc: "séparer l'application en Modèle (données), Vue (affichage) et Contrôleur (logique)" },
         ];
-        const pick = concepts[(index + variant) % concepts.length];
+        const pick = concepts[subIdx % concepts.length];
         const others = concepts.filter(c => c.name !== pick.name).map(c => c.name);
         const wrongs = uniqueStringWrongs(pick.name, others);
         const { opts, correct } = shuffleOptions([pick.name, ...wrongs], 0, rng);
@@ -2413,14 +2466,14 @@ const QuestionBank = (() => {
             q: `En programmation orientée objet / architecture logicielle, quel principe consiste à ${pick.desc} ?`,
             opts,
             correct,
-            exp: `C'est le principe de ${pick.name}.`
+            exp: `C'est le principe ${deNom(pick.name)}.`
         };
     }
 
     /** Générateur procédural pour Relation Client & Commerce (BTS MCO) */
     function generateCommerceLesson(index, norm, variant, rng) {
         const kinds = ['panier_moyen', 'taux_transfo', 'marge_comm', 'indice_vente'];
-        const kind = kinds[(index + variant) % kinds.length];
+        const kind = kinds[procIdx(index, variant) % kinds.length];
 
         if (kind === 'panier_moyen') {
             const clients = [20, 40, 50, 100][Math.floor(rng() * 4)];
@@ -2485,7 +2538,7 @@ const QuestionBank = (() => {
     /** Générateur procédural pour Comptabilité & Finance (BTS CG) */
     function generateComptabiliteLesson(index, norm, variant, rng) {
         const kinds = ['tva_20', 'tva_due', 'amortissement', 'resultat_net'];
-        const kind = kinds[(index + variant) % kinds.length];
+        const kind = kinds[procIdx(index, variant) % kinds.length];
 
         if (kind === 'tva_20') {
             const ht = [50, 100, 150, 200, 300, 500][Math.floor(rng() * 6)];
@@ -2551,7 +2604,8 @@ const QuestionBank = (() => {
     /** Générateur procédural pour Électrotechnique & Énergie (Bac Pro MELEC) */
     function generateElectrotechLesson(index, norm, variant, rng) {
         const kinds = ['puissance_mono', 'courant_disj', 'energie_kwh', 'triphase_u'];
-        const kind = kinds[(index + variant) % kinds.length];
+        const pIdx = procIdx(index, variant);
+        const kind = kinds[pIdx % kinds.length];
 
         if (kind === 'puissance_mono') {
             const i = [4, 5, 8, 10, 16][Math.floor(rng() * 5)];
@@ -2604,7 +2658,7 @@ const QuestionBank = (() => {
             { code: 'BC', desc: 'chargé de consignation en basse tension (mise hors tension et VAT)' },
             { code: 'BS', desc: 'chargé d\'interventions élémentaires (remplacement de prise, lampe, fusible)' },
         ];
-        const pick = habilitations[(index + variant * 2) % habilitations.length];
+        const pick = habilitations[Math.floor(pIdx / kinds.length) % habilitations.length];
         const others = habilitations.filter(h => h.code !== pick.code).map(h => h.code);
         const wrongs = uniqueStringWrongs(pick.code, seededShuffle(others, 'hab:' + index + ':' + variant));
         const { opts, correct } = shuffleOptions([pick.code, ...wrongs], 0, rng);
@@ -2614,7 +2668,7 @@ const QuestionBank = (() => {
             q: `Selon la norme NF C 18-510 d'habilitation électrique (MELEC), quel symbole désigne un ${pick.desc} ?`,
             opts,
             correct,
-            exp: `L'habilitation ${pick.code} correspond au ${pick.desc}.`
+            exp: `L'habilitation ${pick.code} correspond ${auNom(pick.desc)}.`
         };
     }
 
@@ -2624,7 +2678,7 @@ const QuestionBank = (() => {
         francais: [
             // 6ème
             { q: "Quelle est la classe grammaticale du mot « gentiment » ?", correct: "adverbe", wrongs: ["adjectif", "nom", "verbe"], levels: ['6eme', '5eme'], exp: "Les mots terminés en -ment sont très généralement des adverbes de manière." },
-            { q: "Quel est le pluriel du mot « cheval » ?", correct: "chevaux", wrongs: ["chevals", "chevaus", "chevaux s"], levels: ['6eme'], exp: "La plupart des noms en -al font leur pluriel en -aux." },
+            { q: "Quel est le pluriel du mot « cheval » ?", correct: "chevaux", wrongs: ["chevals", "chevaus", "chevauxs"], levels: ['6eme'], exp: "La plupart des noms en -al font leur pluriel en -aux." },
             { q: "Dans « Le chat noir dort », quelle est la fonction du mot « noir » ?", correct: "épithète", wrongs: ["attribut", "sujet", "complément d'objet"], levels: ['6eme', '5eme'], exp: "« Noir » est directement rattaché au nom qu'il qualifie, c'est une épithète." },
             { q: "Quel est l'antonyme de « généreux » ?", correct: "avare", wrongs: ["joyeux", "courageux", "loyal"], levels: ['6eme'], exp: "Un avare refuse de dépenser ou de partager." },
             { q: "Conjugue « chanter » à la 1ère personne du pluriel au présent de l'indicatif.", correct: "nous chantons", wrongs: ["nous chantions", "nous chanterons", "nous chantez"], levels: ['6eme'], exp: "La terminaison du présent avec 'nous' pour le 1er groupe est -ons." },
@@ -2636,7 +2690,7 @@ const QuestionBank = (() => {
             { q: "À quel temps est conjugué le verbe dans « Il courut vers le château » ?", correct: "au passé simple", wrongs: ["à l'imparfait", "au présent", "au plus-que-parfait"], levels: ['5eme', '4eme'], exp: "« Courut » est la 3e personne du passé simple du verbe courir." },
             { q: "Comment accorde-t-on : « Les fillettes sont ___ » ?", correct: "parties", wrongs: ["parti", "partie", "partis"], levels: ['5eme', '6eme'], exp: "Avec l'auxiliaire être, accord en genre et en nombre avec le sujet féminin pluriel." },
             { q: "Quel mot désigne le compagnon d'armes d'un chevalier au Moyen Âge ?", correct: "un écuyer", wrongs: ["un troubadour", "un serf", "un bailli"], levels: ['5eme'], exp: "L'écuyer portait le bouclier (écu) et assistait le chevalier." },
-            { q: "Quelle proposition contient un homophone correctement orthographié ?", correct: "Où vas-tu ?", wrongs: ["Ou vas-tu ?", "Tu prends du café où du thé ?", "Ou bien où ?"], levels: ['5eme', '6eme'], exp: "« Où » avec accent indique le lieu ; « ou » sans accent exprime le choix." },
+            { q: "Quelle proposition contient un homophone correctement orthographié ?", correct: "Où vas-tu ?", wrongs: ["Ou vas-tu ?", "Tu prends du café où du thé ?", "La ville ou je vis."], levels: ['5eme', '6eme'], exp: "« Où » avec accent indique le lieu ; « ou » sans accent exprime le choix." },
             { type: 'vrai_faux', q: "Dans un conte médiéval, un troubadour est un poète et musicien itinérant.", correct: true, levels: ['5eme'], exp: "Vrai : les troubadours composaient des chansons d'amour courtois." },
             // 4ème
             { q: "Dans « La femme qui porte un manteau », quel mot est le pronom relatif ?", correct: "qui", wrongs: ["la", "porte", "un"], levels: ['4eme', '3eme'], exp: "« Qui » introduit la proposition subordonnée relative." },
@@ -2678,14 +2732,14 @@ const QuestionBank = (() => {
 
         histoire: [
             // 6ème
-            { q: "En quelle année l'écriture apparaît-elle en Mésopotamie (environ) ?", correct: "-3300 av. J.-C.", wrongs: ["-1000 av. J.-C.", "an 0", "-10000 av. J.-C."], levels: ['6eme'], exp: "L'écriture cunéiforme naît en Mésopotamie vers 3300 avant notre ère." },
+            { q: "En quelle année l'écriture apparaît-elle en Mésopotamie (environ) ?", correct: "3300 av. J.-C.", wrongs: ["1000 av. J.-C.", "an 0", "10000 av. J.-C."], levels: ['6eme'], exp: "L'écriture cunéiforme naît en Mésopotamie vers 3300 avant notre ère." },
             { q: "Dans la Grèce antique, quelle cité est considérée comme le berceau de la démocratie ?", correct: "Athènes", wrongs: ["Sparte", "Mycènes", "Troie"], levels: ['6eme'], exp: "Athènes a instauré l'Ecclésia et l'isonomie au Ve siècle av. J.-C." },
             { q: "Quel homme politique athénien a dirigé la cité lors de son apogée au Ve siècle av. J.-C. ?", correct: "Périclès", wrongs: ["Alexandre le Grand", "Homère", "Solon"], levels: ['6eme'], exp: "Le 'siècle de Périclès' correspond à l'apogée démocratique et artistique d'Athènes." },
             { q: "Qui fut le premier empereur romain ?", correct: "Auguste", wrongs: ["Jules César", "Néron", "Marc Aurèle"], levels: ['6eme'], exp: "Octave prend le titre d'Auguste en 27 avant J.-C." },
             { q: "Quel fleuve traverse l'Égypte antique et permettait l'agriculture grâce à ses crues fertilisantes ?", correct: "le Nil", wrongs: ["l'Euphrate", "le Tigre", "le Jourdain"], levels: ['6eme'], exp: "Hérodote disait que 'l'Égypte est un don du Nil'." },
             // 5ème
             { q: "Qui a été sacré empereur à Rome le jour de Noël en l'an 800 ?", correct: "Charlemagne", wrongs: ["Clovis", "Hugues Capet", "Saint Louis"], levels: ['5eme'], exp: "Le pape Léon III a couronné Charlemagne empereur d'Occident." },
-            { q: "Quelle ville était la prestigieuse capitale de l'Empire byzantin ?", correct: "Constantinople", wrongs: ["Rome", "Alexandrie", "Antioche"], levels: ['5eme'], exp: "Anciennement Byzance, elle est devenue Istanbul en 1453." },
+            { q: "Quelle ville était la prestigieuse capitale de l'Empire byzantin ?", correct: "Constantinople", wrongs: ["Rome", "Alexandrie", "Antioche"], levels: ['5eme'], exp: "Anciennement Byzance, conquise par les Ottomans en 1453, elle est officiellement rebaptisée Istanbul en 1930." },
             { q: "Quel roi de France a remporté la bataille de Bouvines en 1214 ?", correct: "Philippe Auguste", wrongs: ["Louis XIV", "François Ier", "Henri IV"], levels: ['5eme'], exp: "Cette victoire a puissamment consolidé l'autorité royale capétienne." },
             { q: "Quelle héroïne a délivré Orléans en 1429 pendant la guerre de Cent Ans ?", correct: "Jeanne d'Arc", wrongs: ["Aliénor d'Aquitaine", "Catherine de Médicis", "Blanche de Castille"], levels: ['5eme'], exp: "Jeanne d'Arc a conduit le dauphin Charles VII à être sacré à Reims." },
             // 4ème
@@ -2696,16 +2750,16 @@ const QuestionBank = (() => {
             { q: "En quelle année la France abolit-elle définitivement l'esclavage grâce à Victor Schœlcher ?", correct: "1848", wrongs: ["1789", "1804", "1871"], levels: ['4eme', '2nde'], exp: "Le décret du gouvernement provisoire de la IIe République date d'avril 1848." },
             // 3ème (Brevet)
             { q: "En quelle année la Première Guerre mondiale a-t-elle débuté ?", correct: "1914", wrongs: ["1916", "1918", "1912"], levels: ['3eme'], exp: "L'attentat de Sarajevo en juin 1914 déclenche l'engrenage des alliances." },
-            { q: "Quelle célèbre bataille de 1916 a opposé Français et Allemands dans l'enfer des tranchées ?", correct: "la bataille de Verdun", wrongs: ["la bataille de la Somme", "la bataille de la Marne", "la bataille d'Austerlitz"], levels: ['3eme'], exp: "Verdun a fait plus de 300 000 morts et disparus en 10 mois." },
+            { q: "Quelle célèbre bataille de 1916 dans la Meuse a symbolisé la résistance française dans l'enfer des tranchées ?", correct: "la bataille de Verdun", wrongs: ["la bataille de la Marne (1914)", "la bataille de Valmy", "la bataille d'Austerlitz"], levels: ['3eme'], exp: "Verdun (février-décembre 1916) a fait plus de 300 000 morts et disparus en 10 mois." },
             { q: "Quel général a lancé l'appel à la résistance depuis Londres le 18 juin 1940 ?", correct: "Charles de Gaulle", wrongs: ["Philippe Pétain", "Jean Moulin", "Gaston Doumergue"], levels: ['3eme'], exp: "Cet appel radio fonde la France libre contre l'armistice de Pétain." },
             { q: "En quelle année le mur de Berlin est-il tombé, annonçant la fin de la guerre froide ?", correct: "1989", wrongs: ["1991", "1975", "1985"], levels: ['3eme', 'terminale'], exp: "Le mur s'ouvre dans la nuit du 9 novembre 1989." },
-            { q: "En quelle année la Ve République française a-t-elle été instaurée par De Gaulle ?", correct: "1958", wrongs: ["1944", "1968", "1946"], levels: ['3eme', '1ere'], exp: "La Constitution de 1958 renforce considérablement le pouvoir exécutif." },
+            { q: "En quelle année la Ve République française a-t-elle été instaurée par le général de Gaulle ?", correct: "1958", wrongs: ["1944", "1968", "1946"], levels: ['3eme', '1ere'], exp: "La Constitution de 1958 renforce considérablement le pouvoir exécutif." },
             // 2nde
             { q: "Quel navigateur a atteint les îles des Caraïbes en octobre 1492 ?", correct: "Christophe Colomb", wrongs: ["Vasco de Gama", "Fernand de Magellan", "Jacques Cartier"], levels: ['2nde'], exp: "Financé par les rois catholiques d'Espagne, il cherchait la route des Indes." },
             { q: "Quel réformateur allemand a placardé ses 95 thèses à Wittenberg en 1517 ?", correct: "Martin Luther", wrongs: ["Jean Calvin", "Érasme", "Thomas More"], levels: ['2nde'], exp: "Cet événement marque la naissance de la Réforme protestante." },
             { q: "Quel roi français a signé l'Édit de Nantes en 1598 pour clore les guerres de religion ?", correct: "Henri IV", wrongs: ["François Ier", "Louis XIV", "Charles IX"], levels: ['2nde'], exp: "L'édit reconnaissait la liberté de culte aux protestants." },
             // 1ère
-            { q: "Quelle loi fondamentale de 1905 institue la séparation des Églises et de l'État en France ?", correct: "la loi de 1905", wrongs: ["le décret d'Allarde", "la loi Jules Ferry", "la constitution de 1875"], levels: ['1ere'], exp: "La République assure la liberté de conscience et ne salarie aucun culte." },
+            { q: "Quelle loi fondamentale de la IIIe République institue la séparation des Églises et de l'État en France ?", correct: "la loi de 1905", wrongs: ["le décret d'Allarde", "la loi Jules Ferry", "la constitution de 1875"], levels: ['1ere'], exp: "La loi du 9 décembre 1905 assure la liberté de conscience et ne salarie aucun culte." },
             { q: "Quel événement révolutionnaire parisien de 1871 s'est achevé lors de la 'Semaine sanglante' ?", correct: "la Commune de Paris", wrongs: ["la Fronde", "les Trois Glorieuses", "la Terreur"], levels: ['1ere'], exp: "L'insurrection a été violemment réprimée par le gouvernement de Thiers." },
             { q: "Quel officier juif français a été victime d'une célèbre erreur judiciaire antisémite en 1894 ?", correct: "Alfred Dreyfus", wrongs: ["Jean Jaurès", "Georges Clemenceau", "Émile Zola"], levels: ['1ere'], exp: "Zola a publié 'J'accuse... !' en 1898 pour dénoncer sa condamnation." },
             // Terminale
@@ -2719,7 +2773,7 @@ const QuestionBank = (() => {
             { q: "Quel texte fondateur adopté le 26 août 1789 proclame que « les hommes naissent et demeurent libres et égaux en droits » ?", correct: "la Déclaration des droits de l'homme et du citoyen (DDHC)", wrongs: ["le Code civil", "l'Édit de Nantes", "la Constitution de 1958"], levels: ['4eme', '1ere'], exp: "La DDHC est le socle juridique des libertés fondamentales en France." },
             { q: "En quelle année les femmes obtiennent-elles le droit de vote en France ?", correct: "1944", wrongs: ["1918", "1958", "1936"], levels: ['3eme', '1ere', 'terminale'], exp: "L'ordonnance du 21 avril 1944 (CFLN d'Alger) accorde le droit de vote aux femmes." },
             { q: "Quelle loi de 1881-1882 rend l'école primaire gratuite, laïque et obligatoire en France ?", correct: "les lois Jules Ferry", wrongs: ["les accords de Matignon", "la loi Veil", "le décret Crémieux"], levels: ['4eme', '1ere'], exp: "Jules Ferry instaure l'école républicaine gratuite, laïque et obligatoire." },
-            { q: "En quelle année le traité de Maastricht a-t-il créé officiellement l'Union européenne ?", correct: "1992", wrongs: ["1957", "1979", "2002"], levels: ['3eme', 'terminale'], exp: "Signé en février 1992, le traité de Maastricht fonde l'UE et prépare l'euro." },
+            { q: "En quelle année le traité de Maastricht, fondateur de l'Union européenne, a-t-il été signé ?", correct: "1992", wrongs: ["1957", "1979", "2002"], levels: ['3eme', 'terminale'], exp: "Signé en février 1992 (entré en vigueur en novembre 1993), le traité de Maastricht fonde l'UE et prépare l'euro." },
             { q: "Quel événement d'octobre 1929 à New York a déclenché la Grande Dépression mondiale ?", correct: "le krach boursier de Wall Street", wrongs: ["la révolution russe", "la crise de Suez", "le choc pétrolier"], levels: ['3eme', 'terminale'], exp: "Le « Jeudi noir » (24 octobre 1929) précipite une crise économique mondiale." }
         ],
 
@@ -2728,7 +2782,7 @@ const QuestionBank = (() => {
             { q: "Combien d'océans principaux compte la planète Terre ?", correct: "5", wrongs: ["3", "7", "4"], levels: ['6eme'], exp: "Pacifique, Atlantique, Indien, Arctique et Austral." },
             { q: "Quelle est la capitale de l'Espagne ?", correct: "Madrid", wrongs: ["Barcelone", "Séville", "Valence"], levels: ['6eme'], exp: "Madrid est la capitale et la plus grande ville d'Espagne." },
             { q: "Quel est le plus grand continent par la superficie et la population ?", correct: "l'Asie", wrongs: ["l'Afrique", "l'Amérique", "l'Europe"], levels: ['6eme'], exp: "L'Asie abrite plus de 4,5 milliards d'habitants." },
-            { q: "Quelle chaîne de montagnes abrite le Mont Blanc ?", correct: "les Alpes", wrongs: ["les Pyrénées", "les Vosges", "le Massif central"], levels: ['6eme', '5eme'], exp: "Le Mont Blanc culmine à 4 808 mètres dans les Alpes." },
+            { q: "Quelle chaîne de montagnes abrite le Mont Blanc ?", correct: "les Alpes", wrongs: ["les Pyrénées", "les Vosges", "le Massif central"], levels: ['6eme', '5eme'], exp: "Le Mont Blanc culmine à 4 805,59 m (mesure IGN 2023) dans les Alpes." },
             { q: "Quel est le plus grand désert chaud de la planète ?", correct: "le Sahara", wrongs: ["le désert de Gobi", "le désert d'Atacama", "le Kalahari"], levels: ['6eme'], exp: "Le Sahara s'étend sur plus de 9 millions de km² en Afrique du Nord." },
             // 5ème
             { q: "Comment appelle-t-on la baisse de la fécondité accompagnée d'une baisse de la mortalité ?", correct: "la transition démographique", wrongs: ["l'exode rural", "la métropolisation", "l'étalement urbain"], levels: ['5eme', '2nde'], exp: "Elle fait passer une population d'un régime démographique traditionnel à moderne." },
@@ -2771,7 +2825,7 @@ const QuestionBank = (() => {
             // 5ème
             { q: "Quel organe permet aux poissons d'extraire le dioxygène dissous dans l'eau ?", correct: "les branchies", wrongs: ["les poumons", "les trachées", "les opercules"], levels: ['5eme'], exp: "Les lamelles branchiales très vascularisées permettent les échanges gazeux dans l'eau." },
             { q: "Où s'effectue principalement l'absorption des nutriments vers le sang chez l'humain ?", correct: "dans l'intestin grêle", wrongs: ["dans l'estomac", "dans le côlon", "dans le foie"], levels: ['5eme'], exp: "Les villosités de l'intestin grêle offrent une surface d'échange gigantesque." },
-            { q: "Quel type de volcanisme émet des coulées de lave fluide sans explosion dévastatrice ?", correct: "le volcanisme effusif", wrongs: ["le volcanisme explosif", "le volcanisme fissural", "le point chaud"], levels: ['5eme'], exp: "Les volcans rouges (comme à Hawaï ou à La Réunion) sont effusifs." },
+            { q: "Quel type de volcanisme émet des coulées de lave fluide sans explosion dévastatrice ?", correct: "le volcanisme effusif", wrongs: ["le volcanisme explosif", "le volcanisme phréatique", "le volcanisme péléen"], levels: ['5eme'], exp: "Les volcans rouges (comme à Hawaï ou à La Réunion) sont effusifs." },
             // 4ème
             { q: "Quelle cellule spécialisée conduit l'influx nerveux dans l'organisme ?", correct: "le neurone", wrongs: ["l'hématie", "l'adipocyte", "le lymphocyte"], levels: ['4eme'], exp: "Le neurone transmet des signaux électriques le long de son axone." },
             { q: "Comment nomme-t-on la zone de jonction chimique entre deux neurones ?", correct: "la synapse", wrongs: ["l'axone", "la dendrite", "la gaine de myéline"], levels: ['4eme', 'terminale'], exp: "Les neurotransmetteurs franchissent la fente synaptique." },
@@ -2840,7 +2894,7 @@ const QuestionBank = (() => {
             { q: "Quel composé blanc bleuit en présence d'eau ?", correct: "le sulfate de cuivre anhydre", wrongs: ["l'eau de chaux", "le papier pH", "le sel fin"], levels: ['6eme'], exp: "C'est le test chimique caractéristique de présence d'eau." },
             // 5ème
             { q: "Quel gaz trouble l'eau de chaux incolore ?", correct: "le dioxyde de carbone (CO₂)", wrongs: ["le dioxygène", "le diazote", "le méthane"], levels: ['5eme'], exp: "Le CO₂ réagit avec l'hydroxyde de calcium pour former un précipité blanc de calcaire." },
-            { q: "Quel pourcentage volumique de diazote (N₂) l'air contient-il environ ?", correct: "environ 78 %", wrongs: ["environ 21 %", "environ 50 %", "environ 1 %"], levels: ['5eme'], exp: "L'air est composé d'environ 78% de N₂, 21% de O₂ et 1% d'autres gaz." },
+            { q: "Quel pourcentage volumique de diazote (N₂) l'air contient-il environ ?", correct: "environ 78 %", wrongs: ["environ 21 %", "environ 50 %", "environ 1 %"], levels: ['5eme'], exp: "L'air est composé d'environ 78 % de N₂, 21 % d'O₂ et 1 % d'autres gaz." },
             // 4ème
             { q: "Combien d'atomes d'hydrogène y a-t-il dans une molécule de méthane (CH₄) ?", correct: "4", wrongs: ["1", "2", "5"], levels: ['4eme'], exp: "1 atome de carbone central lié à 4 atomes d'hydrogène." },
             { q: "Lors de la combustion complète du carbone dans le dioxygène, quel gaz est formé ?", correct: "le dioxyde de carbone (CO₂)", wrongs: ["le monoxyde de carbone (CO)", "le dihydrogène (H₂)", "l'ozone (O₃)"], levels: ['4eme'], exp: "C + O₂ → CO₂." },
@@ -2883,7 +2937,7 @@ const QuestionBank = (() => {
             // 3ème (Brevet)
             { q: "Quelle suite finie et ordonnée d'instructions résout un problème pas à pas ?", correct: "un algorithme", wrongs: ["un processeur", "une base de données", "un compilateur"], levels: ['3eme'], exp: "L'algorithme est transcrit dans un langage de programmation." },
             { q: "Quelle technologie sans fil à courte portée connecte clavier, souris ou écouteurs ?", correct: "le Bluetooth", wrongs: ["la 5G", "la fibre optique", "le câble coaxial"], levels: ['3eme'], exp: "Le Bluetooth opère par ondes radio UHF sur la bande 2,4 GHz." },
-            { q: "Dans un réseau local, quel équipement achemine les trames de données entre machines connectées ?", correct: "le switch (commutateur)", wrongs: ["la carte son", "l'onduleur", "l'écran"], levels: ['3eme'], exp: "Le switch filtre et distribue les paquets vers le bon port Ethernet." },
+            { q: "Dans un réseau local, quel équipement achemine les trames de données entre machines connectées ?", correct: "le switch (commutateur)", wrongs: ["la carte son", "l'onduleur", "l'écran"], levels: ['3eme'], exp: "Le switch (couche 2) filtre et distribue les trames vers le bon port Ethernet." },
             { q: "Dans un logiciel de programmation par blocs (Scratch), quelle structure permet de répéter une série d'instructions ?", correct: "une boucle", wrongs: ["une variable globale", "un capteur ultrason", "une constante"], levels: ['6eme', '5eme', '4eme', '3eme'], exp: "Les boucles évitent de dupliquer des instructions répétitives." },
             { q: "Combien de bits contient exactement un octet ?", correct: "8 bits", wrongs: ["4 bits", "16 bits", "10 bits"], levels: ['4eme', '3eme'], exp: "Un octet est composé de 8 bits prenant chacun la valeur 0 ou 1." },
             { q: "Quelle étape de conception consiste à fabriquer un premier exemplaire fonctionnel pour tester un objet ?", correct: "le prototypage", wrongs: ["le recyclage", "la commercialisation", "l'archivage"], levels: ['3eme', '4eme'], exp: "Le prototype permet de valider les choix techniques avant la production en série." }
@@ -2911,7 +2965,7 @@ const QuestionBank = (() => {
             { q: "Complete : 'If it rains tomorrow, we ___ stay inside.'", correct: "will", wrongs: ["would", "were", "did"], levels: ['2nde'], exp: "First conditional : If + present, will + infinitive." },
             { q: "What does the false friend 'actually' mean in French ?", correct: "en réalité / en fait", wrongs: ["actuellement", "en action", "efficacement"], levels: ['2nde'], exp: "'Currently' means actuellement ; 'actually' means en fait." },
             // 1ère
-            { q: "Which modal expresses logical certainty : 'He worked 14 hours, he ___ be exhausted.'", correct: "must", wrongs: ["might", "should", "could"], levels: ['1ere'], exp: "Must express high deduction/probability." },
+            { q: "Which modal expresses logical certainty : 'He worked 14 hours, he ___ be exhausted.'", correct: "must", wrongs: ["might", "should", "could"], levels: ['1ere'], exp: "'Must' expresses high deduction/probability." },
             { q: "What does the linker 'nevertheless' mean ?", correct: "néanmoins / toutefois", wrongs: ["en conséquence", "de plus", "par conséquent"], levels: ['1ere'], exp: "It introduces a contrast or concession." },
             // Terminale
             { q: "Complete third conditional : 'If you had revised, you ___ passed.'", correct: "would have", wrongs: ["will have", "would", "had"], levels: ['terminale'], exp: "Third conditional : If + had + past participle, would have + past participle." },
@@ -3041,7 +3095,7 @@ const QuestionBank = (() => {
             { q: "Quel connecteur espagnol signifie « cependant / néanmoins » ?", correct: "sin embargo", wrongs: ["por eso", "además", "porque"], levels: ['2nde', '1ere', 'terminale'], exp: "Sin embargo / no obstante introduisent une opposition." },
             { q: "Quelle est la capitale du Mexique, premier pays hispanophone par la population ?", correct: "Ciudad de México (Mexico)", wrongs: ["Guadalajara", "Buenos Aires", "Bogotá"], levels: ['4eme', '3eme', '2nde'], exp: "Le Mexique compte plus de 125 millions d'habitants hispanophones." },
             { q: "Quel écrivain espagnol du Siècle d'Or est l'auteur de « Don Quichotte » ?", correct: "Miguel de Cervantes", wrongs: ["Federico García Lorca", "Gabriel García Márquez", "Pablo Neruda"], levels: ['2nde', '1ere', 'terminale'], exp: "Publié en 1605 et 1615, Don Quichotte est le roman fondateur de la littérature moderne." },
-            { q: "Quel poète et dramaturge chilien a reçu le prix Nobel de littérature en 1971 ?", correct: "Pablo Neruda", wrongs: ["Jorge Luis Borges", "Octavio Paz", "Lope de Vega"], levels: ['1ere', 'terminale'], exp: "Pablo Neruda est célèbre pour ses poèmes engagés et lyriques (Canto General)." },
+            { q: "Quel poète et diplomate chilien a reçu le prix Nobel de littérature en 1971 ?", correct: "Pablo Neruda", wrongs: ["Jorge Luis Borges", "Octavio Paz", "Lope de Vega"], levels: ['1ere', 'terminale'], exp: "Pablo Neruda est célèbre pour ses poèmes engagés et lyriques (Canto General)." },
             { q: "Quelle préposition emploie-t-on pour exprimer un but (« pour réussir » : ___ aprobar) ?", correct: "para", wrongs: ["por", "desde", "hacia"], levels: ['3eme', '2nde', '1ere', 'terminale'], exp: "PARA indique le but ou la destination ; POR indique la cause ou le moyen." }
         ],
 
@@ -3049,7 +3103,7 @@ const QuestionBank = (() => {
             // Collège (6e-3e) & Lycée Général
             { q: "Quelles sont les trois couleurs primaires en peinture (synthèse soustractive) ?", correct: "magenta (rouge), cyan (bleu) et jaune", wrongs: ["vert, orange et violet", "noir, blanc et gris", "rouge, vert et marron"], levels: ['6eme', '5eme'], exp: "Le mélange de ces primaires permet d'obtenir les couleurs secondaires." },
             { q: "Quelle technique de la Renaissance donne l'illusion de la profondeur grâce à un point de fuite ?", correct: "la perspective linéaire (conique)", wrongs: ["le pointillisme", "le collage", "le clair-obscur seul"], levels: ['5eme', '4eme'], exp: "Théorisée à Florence par Brunelleschi et Alberti au XVe siècle." },
-            { q: "Quel courant architectural du Moyen Âge se caractérise par l'arc brisé, la croisée d'ogives et les grands vitraux ?", correct: "l'art gothique", wrongs: ["l'art roman", "le néoclassicisme", "le brutaliste"], levels: ['5eme', '6eme'], exp: "Notre-Dame de Paris et la cathédrale de Chartres sont des chefs-d'œuvre gothiques." },
+            { q: "Quel courant architectural du Moyen Âge se caractérise par l'arc brisé, la croisée d'ogives et les grands vitraux ?", correct: "l'art gothique", wrongs: ["l'art roman", "le néoclassicisme", "le brutalisme"], levels: ['5eme', '6eme'], exp: "Notre-Dame de Paris et la cathédrale de Chartres sont des chefs-d'œuvre gothiques." },
             { q: "Quel style architectural antérieur au gothique se reconnaît à ses murs épais et ses arcs en plein cintre ?", correct: "l'art roman", wrongs: ["le rococo", "l'Art nouveau", "le cubisme"], levels: ['5eme'], exp: "L'architecture romane domine en Europe aux XIe et XIIe siècles." },
             { q: "En musique, combien de lignes comporte une portée standard ?", correct: "5 lignes", wrongs: ["4 lignes", "6 lignes", "7 lignes"], levels: ['6eme', '5eme'], exp: "Une portée musicale comporte 5 lignes horizontales et 4 interlignes." },
             { q: "Quel mouvement pictural de la fin du XIXe siècle cherche à capter la lumière fugitive en plein air (Monet, Renoir) ?", correct: "l'impressionnisme", wrongs: ["le cubisme", "le surréalisme", "le réalisme socialiste"], levels: ['4eme', '3eme'], exp: "Le nom vient du tableau 'Impression, soleil levant' de Claude Monet (1872)." },
@@ -3058,7 +3112,7 @@ const QuestionBank = (() => {
             { q: "Quel mouvement artistique inspiré des rêves et de l'inconscient a été illustré par Salvador Dalí et René Magritte ?", correct: "le surréalisme", wrongs: ["le classicisme", "le pointillisme", "l'impressionnisme"], levels: ['3eme', '2nde', '1ere'], exp: "André Breton publie le Manifeste du surréalisme en 1924." },
             { q: "Quel réalisateur pionnier a réalisé « Le Voyage dans la Lune » en 1902 ?", correct: "Georges Méliès", wrongs: ["Charlie Chaplin", "Alfred Hitchcock", "Jean-Luc Godard"], levels: ['4eme', '3eme', '2nde'], exp: "Méliès est l'inventeur des premiers effets spéciaux cinématographiques." },
             { q: "Quel architecte moderne a conçu la Villa Savoye et la Cité radieuse de Marseille ?", correct: "Le Corbusier", wrongs: ["Gustave Eiffel", "Baron Haussmann", "Antoni Gaudí"], levels: ['3eme', '2nde', 'terminale'], exp: "Le Corbusier énonce les cinq points de l'architecture moderne (pilotis, toit-terrasse...)." },
-            { q: "En photographie et cinéma, quel plan cadre un personnage des épaules jusqu'au sommet du crâne pour souligner l'émotion ?", correct: "le gros plan", wrongs: ["le plan d'ensemble", "le plan général", "le plan américain"], levels: ['4eme', '3eme', '2nde'], exp: "Le gros plan isole un visage ou un détail pour intensifier l'expressivité." },
+            { q: "En photographie et cinéma, quel plan cadre de très près le visage d'un personnage pour souligner l'émotion ?", correct: "le gros plan", wrongs: ["le plan d'ensemble", "le plan général", "le plan américain"], levels: ['4eme', '3eme', '2nde'], exp: "Le gros plan isole le visage ou un détail pour intensifier l'expressivité." },
             { q: "Quel compositeur baroque allemand a écrit les « Concertos brandebourgeois » et la « Toccata et fugue en ré mineur » ?", correct: "Jean-Sébastien Bach", wrongs: ["Wolfgang Amadeus Mozart", "Claude Debussy", "Igor Stravinsky"], levels: ['5eme', '4eme', '1ere'], exp: "Bach (1685-1750) est un maître absolu du contrepoint et de la musique baroque." },
             { q: "Quelle célèbre pyramide de verre inaugurée en 1989 sert d'entrée au musée du Louvre ?", correct: "la Pyramide du Louvre (Ieoh Ming Pei)", wrongs: ["la Pyramide de Khéops", "la Nef du Grand Palais", "le Centre Pompidou"], levels: ['6eme', '3eme', 'terminale'], exp: "Conçue par l'architecte sino-américain I. M. Pei." }
         ],
@@ -3077,7 +3131,7 @@ const QuestionBank = (() => {
             { q: "Dans la théorie de Carl von Clausewitz, quelle formule célèbre définit la nature politique de la guerre ?", correct: "« La guerre est la continuation de la politique par d'autres moyens »", wrongs: ["« La guerre est un état naturel perpétuel sans but »", "« Seul le commerce met fin aux conflits »", "« Les traités abolissent toute rivalité »"], levels: ['terminale'], exp: "Clausewitz analyse la guerre comme un instrument au service d'objectifs politiques." },
             { q: "Quels traités de 1648 mettent fin à la guerre de Trente Ans et fondent le principe de souveraineté des États ?", correct: "les traités de Westphalie", wrongs: ["les traités de Rome", "les accords d'Oslo", "le congrès de Vienne"], levels: ['terminale'], exp: "L'ordre westphalien reconnaît l'égalité souveraine et la non-ingérence entre États." },
             { q: "Quel organisme de l'ONU établit depuis 1972 la liste du patrimoine mondial culturel et naturel de l'humanité ?", correct: "l'UNESCO", wrongs: ["l'OMS", "l'OMC", "le FMI"], levels: ['terminale'], exp: "L'UNESCO protège et valorise les biens reconnus de valeur universelle exceptionnelle." },
-            { q: "Quelle notion désigne l'époque géologique actuelle marquée par l'impact majeur des activités humaines sur le climat et la biosphère ?", correct: "l'Anthropocène", wrongs: ["le Jurassique", "le Paléolithique", "la Glaciation"], levels: ['terminale'], exp: "Popularisée par Paul Crutzen, elle souligne la transformation humaine du système Terre." },
+            { q: "Quel concept désigne l'époque proposée par certains scientifiques pour marquer l'impact majeur des activités humaines sur le climat et la biosphère ?", correct: "l'Anthropocène", wrongs: ["le Jurassique", "le Paléolithique", "la Glaciation"], levels: ['terminale'], exp: "Popularisée par Paul Crutzen, cette notion souligne la transformation humaine du système Terre." },
             { q: "En quelle année l'Accord de Paris sur le climat (COP21) a-t-il été adopté pour limiter le réchauffement bien en dessous de 2 °C ?", correct: "2015", wrongs: ["1997", "2005", "2020"], levels: ['terminale'], exp: "Adopté par 196 parties lors de la COP21 à Paris en décembre 2015." },
             { q: "Quelle est la spécificité de la « guerre asymétrique » contemporaine ?", correct: "elle oppose une armée étatique régulière à des acteurs non étatiques (guérilla, terrorisme)", wrongs: ["elle se déroule uniquement sur mer", "elle engage deux armées de puissance strictement égale", "elle exclut tout usage de l'information"], levels: ['terminale'], exp: "Les conflits asymétriques échappent au cadre classique clausewitzien de guerre interétatique." },
             { q: "Quel espace numérique immatériel constitue aujourd'hui un cinquième domaine de conflictualité (cyberattaques, désinformation) ?", correct: "le cyberespace", wrongs: ["la stratosphère", "la haute mer", "l'espace Schengen"], levels: ['1ere', 'terminale'], exp: "Le cyberespace est un enjeu majeur de souveraineté, de défense et d'information." },
@@ -3088,7 +3142,7 @@ const QuestionBank = (() => {
             { q: "En géopolitique, que désigne la « liberté de la presse » mesurée chaque année par Reporters sans frontières (RSF) ?", correct: "l'indépendance des journalistes vis-à-vis des pouvoirs politiques et économiques", wrongs: ["la gratuité obligatoire de tous les journaux", "l'interdiction de la presse numérique", "le contrôle étatique des médias"], levels: ['1ere', 'terminale'], exp: "Une presse libre et pluraliste est considérée comme un pilier essentiel de la démocratie." },
             { q: "Quel grand projet chinois d'infrastructures terrestres et maritimes vise à relier la Chine à l'Europe et à l'Afrique depuis 2013 ?", correct: "les Nouvelles Routes de la soie (Belt and Road Initiative)", wrongs: ["le Plan Marshall", "l'espace Schengen", "l'Alliance atlantique"], levels: ['1ere', 'terminale'], exp: "Lancé par Xi Jinping, ce projet combine ports, voies ferrées et influence diplomatique." },
             { q: "Qu'appelle-t-on le « patrimoine immatériel » reconnu par l'UNESCO depuis 2003 ?", correct: "les traditions orales, savoir-faire artisanaux, rituels, musiques et gastronomies", wrongs: ["les immeubles en ruine uniquement", "les réserves d'or des banques centrales", "les satellites en orbite"], levels: ['terminale'], exp: "Exemples en France : le repas gastronomique des Français, les savoir-faire de la baguette." },
-            { q: "Quelle loi française de 1905 établit la séparation des Églises et de l'État et garantit la liberté de conscience ?", correct: "la loi de 1905 sur la laïcité", wrongs: ["l'édit de Nantes", "le Concordat de 1801", "le Code civil de 1804"], levels: ['1ere', 'terminale'], exp: "La République assure la liberté de conscience et ne reconnaît, ne salarie ni ne subventionne aucun culte." }
+            { q: "Quelle loi française de la IIIe République établit la séparation des Églises et de l'État et garantit la liberté de conscience ?", correct: "la loi de 1905 sur la laïcité", wrongs: ["l'édit de Nantes", "le Concordat de 1801", "le Code civil de 1804"], levels: ['1ere', 'terminale'], exp: "La République assure la liberté de conscience et ne reconnaît, ne salarie ni ne subventionne aucun culte." }
         ],
 
         si: [
@@ -3176,7 +3230,7 @@ const QuestionBank = (() => {
             { q: "En analyse financière, comment calcule-t-on le taux de rentabilité économique ou financière ?", correct: "en rapportant un résultat (bénéfice ou EBE) aux capitaux engagés", wrongs: ["en additionnant toutes les factures impayées", "en divisant le nombre de salariés par le prix unitaire", "en soustrayant la TVA du loyer"], levels: ['terminale', 'bts1', 'bts2'], exp: "La rentabilité mesure la capacité des capitaux investis à générer un profit." },
             { q: "Qu'est-ce que l'« amortissement comptable » d'une immobilisation (ex : machine, ordinateur) ?", correct: "la constatation comptable de la perte de valeur irréversible liée à l'usage ou au temps", wrongs: ["le remboursement immédiat d'un client mécontent", "une prime de fin d'année", "le montant d'une amende fiscale"], levels: ['terminale', 'bts1', 'bts2'], exp: "L'amortissement étale le coût d'un bien durable sur sa durée d'utilisation." },
             { q: "En marketing digital, que signifie l'acronyme SEO (Search Engine Optimization) ?", correct: "le référencement naturel d'un site web pour apparaître en tête des résultats de recherche sans payer d'annonces", wrongs: ["l'achat obligatoire d'encarts publicitaires papier", "la suppression des réseaux sociaux", "un logiciel de paie"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le SEO optimise le contenu, la technique et la popularité (backlinks) ; le SEA désigne les annonces payantes." },
-            { q: "En gestion-finance, qu'est-ce que le « seuil de rentabilité » (point mort en valeur) d'une entreprise ?", correct: "le chiffre d'affaires à partir duquel les recettes couvrent exactement toutes les charges (résultat = 0)", wrongs: ["le montant maximum du capital social", "la limite de découvert autorisé par la banque", "le prix de vente le plus élevé du marché"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Au-delà du seuil de rentabilité (Charges fixes / Taux de marge sur coût variable), l'entreprise dégage un bénéfice." },
+            { q: "En gestion-finance, qu'est-ce que le « seuil de rentabilité » d'une entreprise ?", correct: "le chiffre d'affaires à partir duquel les recettes couvrent exactement toutes les charges (résultat = 0)", wrongs: ["le montant maximum du capital social", "la limite de découvert autorisé par la banque", "le prix de vente le plus élevé du marché"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Au-delà du seuil de rentabilité (Charges fixes / Taux de marge sur coût variable), l'entreprise dégage un bénéfice ; la date d'atteinte est appelée point mort." },
             { q: "En mercatique, que mesure le « taux de conversion » d'un site e-commerce ?", correct: "le pourcentage de visiteurs qui réalisent l'action attendue (achat, inscription, devis)", wrongs: ["le taux de change entre l'euro et le dollar", "la vitesse de chargement du serveur", "le nombre d'articles retournés par la poste"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Taux de conversion = (Nombre de commandes / Nombre de visiteurs) × 100." },
             { q: "En comptabilité, quel document de synthèse récapitule les produits et les charges d'un exercice pour déterminer le bénéfice ou la perte ?", correct: "le compte de résultat", wrongs: ["la fiche de paie", "le bon de livraison", "l'organigramme RH"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Résultat net = Total des produits − Total des charges de l'exercice." },
             { q: "Quelle est la différence entre une stratégie « Push » et une stratégie « Pull » en mercatique ?", correct: "Push pousse le produit vers le distributeur (promotions, force de vente) ; Pull attire le client final par la publicité et la marque", wrongs: ["Push est réservée au web et Pull aux magasins", "Pull consiste à arrêter toute publicité", "les deux stratégies interdisent les remises"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Push = pression commerciale sur le réseau de distribution ; Pull = attraction de la demande finale." },
@@ -3213,7 +3267,7 @@ const QuestionBank = (() => {
             { q: "Dans un système IoT (Internet des Objets), quel protocole léger à publication/abonnement (Publish/Subscribe) est le plus répandu ?", correct: "MQTT", wrongs: ["FTP", "POP3", "Telnet"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "MQTT utilise un broker central et consomme très peu de bande passante et d'énergie." },
             { q: "Quelle technologie radio longue portée et très basse consommation (LPWAN) est utilisée pour les capteurs IoT de villes intelligentes ?", correct: "LoRa / LoRaWAN", wrongs: ["Bluetooth audio classique", "HDMI", "Ethernet 10G"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "LoRa atteint plusieurs kilomètres de portée avec plusieurs années d'autonomie sur pile." },
             { q: "Quelle est la taille en bits d'une adresse MAC (couche liaison Ethernet / Wi-Fi) ?", correct: "48 bits (6 octets en hexadécimal)", wrongs: ["32 bits", "128 bits", "16 bits"], levels: ['1ere', 'terminale', 'bts1'], exp: "Exemple d'adresse MAC : 00:1A:2B:3C:4D:5E (6 octets = 48 bits)." },
-            { q: "En logique combinatoire, quel théorème permet de simplifier NON(A ET B) en (NON A) OU (NON B) ?", correct: "le théorème de De Morgan", wrongs: ["le théorème de Thalès", "la loi de Kirchoff", "le théorème de Pythagore"], levels: ['1ere', 'terminale', 'bts1'], exp: "Lois de De Morgan : !(A·B) = !A + !B et !(A+B) = !A · !B." },
+            { q: "En logique combinatoire, quel théorème permet de simplifier NON(A ET B) en (NON A) OU (NON B) ?", correct: "le théorème de De Morgan", wrongs: ["le théorème de Thalès", "la loi de Kirchhoff", "le théorème de Pythagore"], levels: ['1ere', 'terminale', 'bts1'], exp: "Lois de De Morgan : !(A·B) = !A + !B et !(A+B) = !A · !B." },
             { q: "Sur un microcontrôleur (ex : Arduino / ESP32), quelle fonction s'exécute UNE seule fois au démarrage pour configurer les broches ?", correct: "setup()", wrongs: ["loop()", "delay()", "analogRead()"], levels: ['2nde', '1ere', 'terminale'], exp: "setup() initialise les entrées/sorties et communications ; loop() tourne en boucle infinie." },
             { q: "Quel bus de communication série à 2 fils (SDA et SCL) permet de relier plusieurs capteurs à un microcontrôleur ?", correct: "le bus I2C", wrongs: ["le câble VGA", "le bus PCIe x16", "le port Jack 3,5 mm"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "I2C utilise une ligne de données (SDA) et une ligne d'horloge (SCL) avec adressage de chaque esclave." },
             { q: "Comment s'appelle le temps nécessaire à un signal numérique pour passer d'un échantillon au suivant (T_e = 1 / f_e) ?", correct: "la période d'échantillonnage", wrongs: ["la bande passante", "l'impédance caractéristique", "le quantum"], levels: ['1ere', 'terminale', 'bts1'], exp: "T_e est l'inverse de la fréquence d'échantillonnage f_e." },
@@ -3310,7 +3364,7 @@ const QuestionBank = (() => {
             { q: "Quel service départemental assure le suivi médical gratuit des femmes enceintes et des enfants de moins de 6 ans ?", correct: "la PMI (Protection Maternelle et Infantile)", wrongs: ["la CPAM seule", "la Haute Autorité de Santé", "l'EHPAD"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "La PMI réalise consultations prénatales, bilans en école maternelle et agrément des assistantes maternelles." },
             { q: "Quel organisme communal accompagne les habitants en difficulté sociale (aides d'urgence, domiciliation, soutien aux seniors) ?", correct: "le CCAS (Centre Communal d'Action Sociale)", wrongs: ["l'OMS", "la Cour de cassation", "l'ANSSI"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Présidé par le maire, le CCAS est l'acteur de proximité de l'action sociale communale." },
             { q: "Quelle est la mission principale de la Haute Autorité de Santé (HAS) en France ?", correct: "évaluer scientifiquement les médicaments/actes médicaux, certifier les hôpitaux et publier des recommandations de bonnes pratiques", wrongs: ["verser les allocations familiales", "construire les autoroutes", "recruter les enseignants du lycée"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La HAS est une autorité publique indépendante garante de la qualité des soins." },
-            { q: "Qu'appelle-t-on le « reste à charge » (ticket modérateur) pour un assuré social lors d'une consultation médicale ?", correct: "la part des frais de santé non remboursée par l'Assurance maladie obligatoire (souvent prise en charge par la mutuelle)", wrongs: ["le salaire mensuel du médecin", "le coût d'une ambulance privée uniquement", "une amende en cas d'oubli de carte Vitale"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La complémentaire santé (mutuelle) ou la C2S couvre tout ou partie du ticket modérateur." },
+            { q: "Qu'appelle-t-on le « ticket modérateur » pour un assuré social lors d'une consultation médicale au tarif conventionné ?", correct: "la part du tarif de base non remboursée par l'Assurance maladie obligatoire (souvent couverte par la mutuelle)", wrongs: ["le salaire mensuel du médecin", "le coût d'une ambulance privée uniquement", "une amende en cas d'oubli de carte Vitale"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le ticket modérateur (hors dépassements d'honoraires et franchises) est pris en charge en tout ou partie par la complémentaire santé (mutuelle) ou la C2S." },
             { q: "Quelle agence nationale assure la veille sanitaire, la surveillance épidémiologique et les campagnes de prévention (tabac, alcool) ?", correct: "Santé publique France", wrongs: ["la Banque de France", "l'ARCOM", "l'ADEME"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Santé publique France pilote la surveillance des épidémies et la promotion de la santé." },
             { q: "Que signifie la « veille sanitaire » dans la gestion d'une crise épidémique ?", correct: "le recueil continu et l'analyse de signaux pour détecter précocement toute menace pour la santé de la population", wrongs: ["la fermeture nocturne des pharmacies", "le nettoyage des salles d'attente", "le stockage des dossiers papier"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La veille sanitaire permet d'alerter et de déclencher rapidement des mesures de protection." },
             { q: "Quel guichet unique départemental évalue les besoins et attribue les droits (AAH, PCH, RQTH) aux personnes en situation de handicap ?", correct: "la MDPH (Maison Départementale des Personnes Handicapées)", wrongs: ["la CAF seule", "la CNIL", "le Conseil d'État"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Créée par la loi handicap du 11 février 2005, la MDPH accompagne les personnes handicapées et leurs familles." },
@@ -3377,7 +3431,7 @@ const QuestionBank = (() => {
             { q: "En hôtellerie, quelle pratique consiste à ajuster dynamiquement le prix des chambres selon la demande, la saison et l'anticipation ?", correct: "le Yield Management (Revenue Management)", wrongs: ["le dumping comptable", "la tarification fixe annuelle", "le troc hôtelier"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Le Yield Management maximise le RevPAR en vendant la bonne chambre au bon client au bon moment." },
             { q: "En France, combien d'étoiles compte le classement hôtelier officiel d'Atout France (hors distinction Palace) ?", correct: "de 1 à 5 étoiles", wrongs: ["de 1 à 3 étoiles", "de 1 à 7 étoiles", "de 1 à 10 étoiles"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Les hôtels sont classés de 1 à 5 étoiles ; les établissements d'exception 5* peuvent obtenir la distinction « Palace »." },
             { q: "En cuisine, quelle opération rapide consiste à abaisser la température d'un plat cuisiné de +63 °C à moins de +10 °C en moins de 2 heures ?", correct: "le refroidissement rapide (en cellule de refroidissement)", wrongs: ["le flambage", "le braisage", "la décongélation ambiante"], levels: ['2nde', '1ere', 'terminale', 'bts1', 'bts2'], exp: "Un refroidissement rapide limite le temps passé dans la zone critique de prolifération microbienne." },
-            { q: "Quel terme hôtelier désigne une clientèle qui réserve une chambre sans se présenter ni annuler (no-show) ?", correct: "un no-show (dédit)", wrongs: ["un walk-in", "un check-out tardif", "un surclassement"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "À l'inverse, un « walk-in » est un client arrivant directement à la réception sans réservation." },
+            { q: "Quel terme hôtelier désigne une clientèle qui réserve une chambre sans se présenter ni annuler ?", correct: "un no-show (dédit)", wrongs: ["un walk-in", "un check-out tardif", "un surclassement"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "À l'inverse, un « walk-in » est un client arrivant directement à la réception sans réservation." },
             { q: "En gastronomie et œnologie, que garantit le label européen AOP (Appellation d'Origine Protégée) ?", correct: "toutes les étapes de production, transformation et élaboration ont lieu dans une aire géographique délimitée selon un savoir-faire reconnu", wrongs: ["uniquement un prix inférieur à 5 €", "une fabrication industrielle hors Europe", "un emballage en plastique vert"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Exemples célèbres : Comté AOP, Champagne AOC/AOP, Roquefort AOP." },
             { q: "Quel est le rôle du « garde-manger » au sein d'une brigade de cuisine ?", correct: "préparer les entrées froides, salades, terrines et découpes préliminaires de viandes et poissons", wrongs: ["encaisser l'addition en salle", "nettoyer les chambres de l'hôtel", "assurer uniquement le service des vins"], levels: ['2nde', '1ere', 'terminale'], exp: "Chaque chef de partie (saucier, rôtisseur, entremetier, garde-manger, pâtissier) a une spécialité précise." },
             { q: "Combien d'allergènes alimentaires majeurs à déclaration obligatoire la réglementation européenne INCO impose-t-elle d'indiquer aux clients ?", correct: "14 allergènes majeurs", wrongs: ["3 allergènes", "6 allergènes", "40 allergènes"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Gluten, crustacés, œufs, poissons, arachides, soja, lait, fruits à coque, céleri, moutarde, sésame, sulfites, lupin, mollusques." },
@@ -3446,7 +3500,7 @@ const QuestionBank = (() => {
             { q: "Quelle femme de lettres des Lumières a rédigé en 1791 la « Déclaration des droits de la femme et de la citoyenne » ?", correct: "Olympe de Gouges", wrongs: ["Madame de La Fayette", "Colette", "Marguerite Duras"], levels: ['1ere', 'terminale'], exp: "Elle affirme l'égalité politique et civile des femmes face à la Déclaration de 1789." },
             { q: "Selon Sigmund Freud (HLP Terminale — « Les métamorphoses du moi »), quelle blessure narcissique la psychanalyse inflige-t-elle à l'humanité ?", correct: "« le Moi n'est pas maître dans sa propre maison » (existence de l'inconscient)", wrongs: ["la Terre est plate", "l'homme descend des minéraux", "le langage n'existe pas"], levels: ['terminale'], exp: "Après Copernic (astronomie) et Darwin (biologie), Freud évoque la 3e blessure narcissique (psychologie)." },
             { q: "Dans l'Antiquité, quelle école philosophique (Épictète, Marc Aurèle, Sénèque) enseigne de distinguer ce qui dépend de nous de ce qui n'en dépend pas ?", correct: "le stoïcisme", wrongs: ["le nihilisme", "le positivisme", "le mercantilisme"], levels: ['1ere', 'terminale'], exp: "Le stoïcisme recherche la sérénité (ataraxie) par la maîtrise de ses jugements et l'accord avec la raison." },
-            { q: "Dans « Gargantua » (1534), quelle vision humaniste de l'éducation François Rabelais promeut-il face à la scolastique figée ?", correct: "une éducation complète formant le corps, l'esprit critique, les langues et les sciences (« Science sans conscience n'est que ruine de l'âme »)", wrongs: ["l'apprentissage par cœur sans jamais comprendre", "l'interdiction de lire des auteurs grecs", "l'éducation réservée uniquement à l'escrime"], levels: ['1ere', 'terminale'], exp: "Rabelais célèbre la soif de savoir humaniste associée à la responsabilité morale." },
+            { q: "Dans « Pantagruel » (1532), quelle vision humaniste de l'éducation François Rabelais promeut-il face à la scolastique figée ?", correct: "une éducation complète formant le corps, l'esprit critique, les langues et les sciences (« Science sans conscience n'est que ruine de l'âme »)", wrongs: ["l'apprentissage par cœur sans jamais comprendre", "l'interdiction de lire des auteurs grecs", "l'éducation réservée uniquement à l'escrime"], levels: ['1ere', 'terminale'], exp: "Dans la lettre de Gargantua à son fils Pantagruel, Rabelais célèbre la soif de savoir humaniste associée à la responsabilité morale." },
             { q: "Quel poète français du XIXe siècle a inauguré la modernité poétique avec « Les Fleurs du mal » (1857), tirant la beauté du « spleen » et de la ville ?", correct: "Charles Baudelaire", wrongs: ["Jean de La Fontaine", "Pierre de Ronsard", "Joachim du Bellay"], levels: ['1ere', 'terminale'], exp: "Baudelaire explore les correspondances sensibles et la tension entre Spleen et Idéal." },
             { q: "Quelle œuvre d'Aimé Césaire (1939) est un texte fondateur du mouvement de la « négritude » et de la critique anticoloniale ?", correct: "Cahier d'un retour au pays natal", wrongs: ["Le Rouge et le Noir", "Bel-Ami", "L'Assommoir"], levels: ['1ere', 'terminale'], exp: "Césaire y fait de la parole poétique un outil de dignité, de mémoire et d'émancipation." }
         ],
@@ -3490,7 +3544,7 @@ const QuestionBank = (() => {
             { q: "En management d'équipe commerciale (BTS MCO), que signifie un objectif « SMART » ?", correct: "Spécifique, Mesurable, Atteignable, Réaliste, Temporellement défini", wrongs: ["Simple, Manuel, Automatique, Rapide, Total", "Secret, Minimal, Aléatoire, Rare, Tardif", "Saisonnier, Mensuel, Annuel, Régional, Technique"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Fixer des objectifs SMART clarifie les attentes et motive efficacement l'équipe de vente." },
             { q: "Que désigne le « facing » (frontale) en gestion de linéaire ?", correct: "le nombre d'exemplaires d'un même produit visibles directement en façade sur la première rangée d'une étagère", wrongs: ["la vitrine extérieure donnant sur la rue", "le badge nominatif du vendeur", "la caméra de vidéosurveillance"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Un minimum de 2 à 3 facings (environ 30-50 cm) est souvent nécessaire pour être bien perçu par le client." },
             { q: "En relation client, quelle est la différence entre prospection et fidélisation ?", correct: "la prospection vise à conquérir de nouveaux clients ; la fidélisation vise à retenir et développer les clients existants", wrongs: ["la fidélisation consiste à augmenter les prix pour les anciens clients", "la prospection s'adresse uniquement aux fournisseurs", "il est toujours moins cher de conquérir que de fidéliser"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Fidéliser un client existant coûte généralement 5 à 7 fois moins cher que d'en acquérir un nouveau." },
-            { q: "Dans la loi française, qu'est-ce que le « prix psychologique » (ou prix d'acceptabilité) ?", correct: "le prix jugé acceptable par le plus grand nombre de consommateurs (ni trop cher, ni trop bas pour la qualité perçue)", wrongs: ["un prix fixé arbitrairement par l'État", "le prix minimum égal à zéro", "un prix qui change toutes les secondes"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Il s'estime par enquête auprès d'un échantillon de clients (seuil de qualité minimale et seuil de prix maximal)." },
+            { q: "En mercatique, qu'est-ce que le « prix psychologique » (ou prix d'acceptabilité) ?", correct: "le prix jugé acceptable par le plus grand nombre de consommateurs (ni trop cher, ni trop bas pour la qualité perçue)", wrongs: ["un prix fixé arbitrairement par l'État", "le prix minimum égal à zéro", "un prix qui change toutes les secondes"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "Il s'estime par enquête auprès d'un échantillon de clients (seuil de qualité minimale et seuil de prix maximal)." },
             { q: "En droit commercial (BTS MCO), qu'est-ce que la garantie légale de conformité dont bénéficie le consommateur sur un bien neuf ?", correct: "une garantie obligatoire de 2 ans permettant réparation, remplacement ou remboursement si le produit présente un défaut", wrongs: ["une assurance payante facultative de 3 mois", "une remise de 10 % sur le prochain achat", "uniquement valable pour les entreprises B2B"], levels: ['1ere', 'terminale', 'bts1', 'bts2'], exp: "La garantie légale de conformité (Code de la consommation) protège gratuitement le consommateur pendant 2 ans." },
             { q: "Que signifie le modèle commercial « Click & Collect » ?", correct: "le client commande et paie en ligne puis retire rapidement son achat en point de vente", wrongs: ["le client paie uniquement par chèque postal", "le magasin livre uniquement par avion", "le vendeur démarche en porte-à-porte"], levels: ['2nde', '1ere', 'terminale', 'bts1'], exp: "Le Click & Collect génère du trafic additionnel en magasin et évite les frais de livraison." }
         ],
@@ -3540,6 +3594,22 @@ const QuestionBank = (() => {
         ]
     };
 
+    const COLLEGE_LEVEL_SET = new Set(['6eme', '5eme', '4eme', '3eme']);
+    const LYCEE_LEVEL_SET = new Set(['2nde', '1ere', 'terminale', 'bts1', 'bts2']);
+    const HAS_PROCEDURAL_SET = new Set([
+        'francais', 'anglais', 'espagnol', 'arts', 'histoire', 'geo', 'svt',
+        'physique', 'chimie', 'techno', 'emc', 'philo', 'nsi', 'ses', 'si',
+        'msgn', 'mercatique', 'i2d', 'sin', 'cybersecurite', 'reseaux',
+        'electronique', 'biotech', 'design', 'hotellerie', 'agronomie',
+        'spectacle', 'hlp', 'dev_bdd', 'commerce', 'comptabilite', 'electrotech',
+    ]);
+    const _niveauBankCache = new Map();
+    const _shuffledDeckCache = new Map();
+
+    function canonicalSubjectId(subjectId) {
+        return subjectId === 'technologie' ? 'techno' : String(subjectId || '');
+    }
+
     /**
      * Filtre la banque de questions pour un niveau scolaire donné.
      * Garantit un vivier riche (≥ 18 questions quand disponible) en priorisant
@@ -3547,12 +3617,13 @@ const QuestionBank = (() => {
      * d'éliminer les répétitions rapides sans jamais mélanger collège et lycée.
      */
     function getQuestionsForNiveau(subjectId, niveau) {
+        const canonId = canonicalSubjectId(subjectId);
         const norm = normalizeNiveau(niveau);
-        const cacheKey = subjectId + '::' + norm;
+        const cacheKey = canonId + '::' + norm;
         const cached = _niveauBankCache.get(cacheKey);
         if (cached) return cached;
 
-        const fullBank = FACT_BANKS[subjectId] || [];
+        const fullBank = FACT_BANKS[canonId] || [];
         const band = bandForNiveau(norm);
         const sameCycleSet = band === 'lycee' ? LYCEE_LEVEL_SET : COLLEGE_LEVEL_SET;
 
@@ -3574,16 +3645,11 @@ const QuestionBank = (() => {
             const sameCycleExtras = fullBank.filter(q => !hasLevel(q, norm) && inSameCycle(q));
             const combined = exact.concat(sameCycleExtras);
             // 3. Repli si la matière n'a pas de découpage fin pour ce cycle
-            res = combined.length >= 4 ? combined : (combined.length > 0 ? combined : fullBank);
+            res = combined.length > 0 ? combined : fullBank;
         }
         _niveauBankCache.set(cacheKey, res);
         return res;
     }
-
-    const COLLEGE_LEVEL_SET = new Set(['6eme', '5eme', '4eme', '3eme']);
-    const LYCEE_LEVEL_SET = new Set(['2nde', '1ere', 'terminale', 'bts1', 'bts2']);
-    const _niveauBankCache = new Map();
-    const _shuffledDeckCache = new Map();
 
     /** Calcule une signature normalisée unique d'une question pour éviter les répétitions. */
     function questionSignature(lesson) {
@@ -3602,54 +3668,58 @@ const QuestionBank = (() => {
 
     /** Générateur unifié avec alternance procédurale / questions de cours sans répétition */
     function generateBankLesson(subjectId, index, niveau, variant = 0) {
+        const canonId = canonicalSubjectId(subjectId);
         const norm = normalizeNiveau(niveau);
-        const rng = seededRng(hashSeed(subjectId + ':' + norm + ':' + index + ':v' + variant));
+        const safeIndex = Math.max(0, Number(index) || 0);
+        const safeVariant = Math.max(0, Number(variant) || 0);
+        const rng = seededRng(hashSeed(canonId + ':' + norm + ':' + safeIndex + ':v' + safeVariant));
 
         // Pour les matières qui ont un générateur procédural, on alterne intelligemment
         // pour offrir une variété élevée sans répétition de questions fixes.
-        const useProcedural = (index + variant) % 2 === 1;
+        const hasProcedural = HAS_PROCEDURAL_SET.has(canonId);
+        const useProcedural = hasProcedural && ((safeIndex + safeVariant) % 2 === 1);
 
         if (useProcedural) {
-            if (subjectId === 'francais') return generateFrenchLesson(index, norm, variant, rng);
-            if (subjectId === 'anglais') return generateEnglishLesson(index, norm, variant, rng);
-            if (subjectId === 'espagnol') return generateEspagnolLesson(index, norm, variant, rng);
-            if (subjectId === 'arts') return generateArtsLesson(index, norm, variant, rng);
-            if (subjectId === 'histoire') return generateHistoryLesson(index, norm, variant, rng);
-            if (subjectId === 'geo') return generateGeoLesson(index, norm, variant, rng);
-            if (subjectId === 'svt') return generateSvtLesson(index, norm, variant, rng);
-            if (subjectId === 'physique') return generatePhysicsLesson(index, norm, variant, rng);
-            if (subjectId === 'chimie') return generateChemistryLesson(index, norm, variant, rng);
-            if (subjectId === 'techno' || subjectId === 'technologie') return generateTechnoLesson(index, norm, variant, rng);
-            if (subjectId === 'emc') return generateEmcLesson(index, norm, variant, rng);
-            if (subjectId === 'philo') return generatePhiloLesson(index, norm, variant, rng);
-            if (subjectId === 'nsi') return generateNsiLesson(index, norm, variant, rng);
-            if (subjectId === 'ses') return generateSesLesson(index, norm, variant, rng);
-            if (subjectId === 'si') return generateSiLesson(index, norm, variant, rng);
-            if (subjectId === 'msgn') return generateStmgCalcLesson(index, norm, variant, rng, 'msgn');
-            if (subjectId === 'mercatique') return generateStmgCalcLesson(index, norm, variant, rng, 'mercatique');
-            if (subjectId === 'i2d') return generateI2dLesson(index, norm, variant, rng);
-            if (subjectId === 'sin') return generateSinLesson(index, norm, variant, rng);
-            if (subjectId === 'cybersecurite') return generateCyberLesson(index, norm, variant, rng);
-            if (subjectId === 'reseaux') return generateReseauxLesson(index, norm, variant, rng);
-            if (subjectId === 'electronique') return generateElectroniqueLesson(index, norm, variant, rng);
-            if (subjectId === 'biotech') return generateBiotechLesson(index, norm, variant, rng);
-            if (subjectId === 'design') return generateDesignLesson(index, norm, variant, rng);
-            if (subjectId === 'hotellerie') return generateHotellerieLesson(index, norm, variant, rng);
-            if (subjectId === 'agronomie') return generateAgronomieLesson(index, norm, variant, rng);
-            if (subjectId === 'spectacle') return generateSpectacleLesson(index, norm, variant, rng);
-            if (subjectId === 'hlp') return generateHlpLesson(index, norm, variant, rng);
-            if (subjectId === 'dev_bdd') return generateDevBddLesson(index, norm, variant, rng);
-            if (subjectId === 'commerce') return generateCommerceLesson(index, norm, variant, rng);
-            if (subjectId === 'comptabilite') return generateComptabiliteLesson(index, norm, variant, rng);
-            if (subjectId === 'electrotech') return generateElectrotechLesson(index, norm, variant, rng);
+            if (canonId === 'francais') return generateFrenchLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'anglais') return generateEnglishLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'espagnol') return generateEspagnolLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'arts') return generateArtsLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'histoire') return generateHistoryLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'geo') return generateGeoLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'svt') return generateSvtLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'physique') return generatePhysicsLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'chimie') return generateChemistryLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'techno') return generateTechnoLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'emc') return generateEmcLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'philo') return generatePhiloLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'nsi') return generateNsiLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'ses') return generateSesLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'si') return generateSiLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'msgn') return generateStmgCalcLesson(safeIndex, norm, safeVariant, rng, 'msgn');
+            if (canonId === 'mercatique') return generateStmgCalcLesson(safeIndex, norm, safeVariant, rng, 'mercatique');
+            if (canonId === 'i2d') return generateI2dLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'sin') return generateSinLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'cybersecurite') return generateCyberLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'reseaux') return generateReseauxLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'electronique') return generateElectroniqueLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'biotech') return generateBiotechLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'design') return generateDesignLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'hotellerie') return generateHotellerieLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'agronomie') return generateAgronomieLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'spectacle') return generateSpectacleLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'hlp') return generateHlpLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'dev_bdd') return generateDevBddLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'commerce') return generateCommerceLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'comptabilite') return generateComptabiliteLesson(safeIndex, norm, safeVariant, rng);
+            if (canonId === 'electrotech') return generateElectrotechLesson(safeIndex, norm, safeVariant, rng);
         }
 
-        const bank = getQuestionsForNiveau(subjectId, norm);
+        const bank = getQuestionsForNiveau(canonId, norm);
 
         if (!bank || bank.length === 0) {
             return {
                 type: 'qcm',
-                title: 'Niveau ' + (index + 1),
+                title: 'Niveau ' + (safeIndex + 1),
                 q: 'Question de révision générale',
                 opts: ['A', 'B', 'C', 'D'],
                 correct: 0,
@@ -3658,15 +3728,20 @@ const QuestionBank = (() => {
         }
 
         // Deck déterministe stable par passe : parcourt TOUTE la banque avant toute répétition,
-        // et décale proprement par variante (sans re-mélanger de façon aléatoire qui cause des collisions entre v0/v1/v2)
+        // et décale proprement par variante (pour les matières purement factuelles sans générateur
+        // procédural comme hggsp/droit_eco/stss, chaque index consomme un slot distinct).
         const stride = bank.length > 5 ? 5 : 1;
-        const slot = Math.floor(index / 2) + variant * stride;
+        const baseSlot = hasProcedural ? Math.floor(safeIndex / 2) : safeIndex;
+        const slot = baseSlot + safeVariant * stride;
         const pass = Math.floor(slot / bank.length);
-        const deckSeed = `${subjectId}:${norm}:bankdeck:${pass}`;
+        const deckSeed = `${canonId}:${norm}:bankdeck:${pass}`;
         let deck = _shuffledDeckCache.get(deckSeed);
         if (!deck) {
             deck = seededShuffle(bank, deckSeed);
-            if (_shuffledDeckCache.size >= 500) _shuffledDeckCache.clear();
+            if (_shuffledDeckCache.size >= 500) {
+                const oldestKey = _shuffledDeckCache.keys().next().value;
+                if (oldestKey !== undefined) _shuffledDeckCache.delete(oldestKey);
+            }
             _shuffledDeckCache.set(deckSeed, deck);
         }
         const fact = deck[slot % deck.length];
@@ -3675,7 +3750,7 @@ const QuestionBank = (() => {
             const isTrue = fact.correct === true || String(fact.correct).toLowerCase() === 'vrai';
             return {
                 type: 'vrai_faux',
-                title: 'Niveau ' + (index + 1),
+                title: 'Niveau ' + (safeIndex + 1),
                 q: fact.q,
                 correct: isTrue,
                 hint: fact.hint || '',
@@ -3686,7 +3761,7 @@ const QuestionBank = (() => {
         if (fact.type === 'reponse_courte') {
             return {
                 type: 'reponse_courte',
-                title: 'Niveau ' + (index + 1),
+                title: 'Niveau ' + (safeIndex + 1),
                 q: fact.q,
                 accepted: fact.accepted || [String(fact.correct).toLowerCase().trim()],
                 hint: fact.hint || '',
@@ -3701,7 +3776,7 @@ const QuestionBank = (() => {
 
         return {
             type: 'qcm',
-            title: 'Niveau ' + (index + 1),
+            title: 'Niveau ' + (safeIndex + 1),
             q: fact.q,
             opts,
             correct,
@@ -3764,9 +3839,11 @@ const QuestionBank = (() => {
          */
         generateOne(subjectId, index, niveau, variant = 0) {
             const norm = normalizeNiveau(niveau);
+            const safeIndex = Math.max(0, Number(index) || 0);
+            const safeVariant = Math.max(0, Number(variant) || 0);
             return subjectId === 'maths'
-                ? generateMathLesson(index, norm, variant)
-                : generateBankLesson(subjectId, index, norm, variant);
+                ? generateMathLesson(safeIndex, norm, safeVariant)
+                : generateBankLesson(subjectId, safeIndex, norm, safeVariant);
         },
 
         /**
@@ -3801,18 +3878,20 @@ const QuestionBank = (() => {
          */
         getLesson(subjectOrId, index, niveau, variant = 0) {
             const norm = normalizeNiveau(niveau);
+            const safeIndex = Math.max(0, Number(index) || 0);
+            const safeVariant = Math.max(0, Number(variant) || 0);
             const subjectId = (typeof subjectOrId === 'string') ? subjectOrId : (subjectOrId ? subjectOrId.id : '');
             const subjectObj = (typeof subjectOrId === 'object' && subjectOrId !== null) ? subjectOrId : null;
 
-            if (subjectObj && subjectObj.lessons && subjectObj.lessons[index]) {
-                const lesson = subjectObj.lessons[index];
-                if (lesson.variants && Array.isArray(lesson.variants) && lesson.variants.length > 0 && variant >= 0 && variant < lesson.variants.length) {
-                    return lesson.variants[variant];
+            if (subjectObj && subjectObj.lessons && subjectObj.lessons[safeIndex]) {
+                const lesson = subjectObj.lessons[safeIndex];
+                if (lesson.variants && Array.isArray(lesson.variants) && lesson.variants.length > 0 && safeVariant >= 0 && safeVariant < lesson.variants.length) {
+                    return lesson.variants[safeVariant];
                 }
-                if (variant === 0) return lesson;
+                if (safeVariant === 0) return lesson;
             }
 
-            return QuestionBank.generateOne(subjectId, index, norm, variant);
+            return QuestionBank.generateOne(subjectId, safeIndex, norm, safeVariant);
         },
     };
 })();

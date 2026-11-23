@@ -1,51 +1,100 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
-  <!-- ILOT ARTS DE LA SCENE & CULTURE (S2TMD) - EDUQUEST -->
   <defs>
-    <linearGradient id="spRockDeep" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#450a1e"/>
-      <stop offset="0.6" stop-color="#280612"/>
-      <stop offset="1" stop-color="#120208"/>
-    </linearGradient>
-    <linearGradient id="spRockTop" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#881337"/>
-      <stop offset="0.6" stop-color="#5a0c25"/>
-      <stop offset="1" stop-color="#310614"/>
-    </linearGradient>
-    <linearGradient id="spGold" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#fde047"/>
-      <stop offset="1" stop-color="#f59e0b"/>
-    </linearGradient>
-    <radialGradient id="spHalo" cx="0.5" cy="0.4" r="0.6">
-      <stop offset="0" stop-color="#c084fc" stop-opacity="0.38"/>
-      <stop offset="0.6" stop-color="#fb7185" stop-opacity="0.18"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    <radialGradient id="ispectacleHalo" cx="0.5" cy="0.44" r="0.52">
+      <stop offset="0" stop-color="#f43f5e" stop-opacity="0.34"/>
+      <stop offset="0.58" stop-color="#c8a84b" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#070b1a" stop-opacity="0"/>
     </radialGradient>
-    <filter id="spShadow" x="-25%" y="-25%" width="150%" height="150%">
-      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.55"/>
+    <linearGradient id="ispectacleRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c3e68"/>
+      <stop offset="0.55" stop-color="#192544"/>
+      <stop offset="1" stop-color="#0d1428"/>
+    </linearGradient>
+    <linearGradient id="ispectacleRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#18223d"/>
+      <stop offset="1" stop-color="#080d1b"/>
+    </linearGradient>
+    <linearGradient id="ispectaclePlateau" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#59152c"/>
+      <stop offset="1" stop-color="#2e0916"/>
+    </linearGradient>
+    <linearGradient id="ispectacleGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7e29c"/>
+      <stop offset="0.5" stop-color="#c8a84b"/>
+      <stop offset="1" stop-color="#8b661d"/>
+    </linearGradient>
+    <linearGradient id="ispectacleAccent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fda4af"/>
+      <stop offset="1" stop-color="#f43f5e"/>
+    </linearGradient>
+    <linearGradient id="ispectacleBanner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c2a4f"/>
+      <stop offset="1" stop-color="#0c1328"/>
+    </linearGradient>
+    <filter id="ispectacleShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="9" stdDeviation="7" flood-color="#000000" flood-opacity="0.52"/>
     </filter>
   </defs>
-  <circle cx="210" cy="182" r="148" fill="url(#spHalo)"/>
-  <g filter="url(#spShadow)">
-    <path d="M 74 250 Q 210 276 346 250 Q 372 294 318 345 Q 210 398 102 345 Q 48 294 74 250 Z" fill="url(#spRockDeep)"/>
-    <path d="M 86 244 Q 210 268 334 244 Q 356 278 318 314 Q 210 366 102 314 Q 64 278 86 244 Z" fill="url(#spRockTop)"/>
-    <ellipse cx="210" cy="244" rx="138" ry="40" fill="#3a0819"/>
-    <ellipse cx="210" cy="240" rx="126" ry="32" fill="none" stroke="#fde047" stroke-width="2.2"/>
+
+  <!-- Halo astral unifié -->
+  <circle cx="210" cy="195" r="185" fill="url(#ispectacleHalo)"/>
+
+  <!-- Étoiles astrales dorées (grille signature EDUQUEST) -->
+  <g fill="#f2dc96">
+    <path d="M52 94 l2.6 6 6 2.6 -6 2.6 -2.6 6 -2.6 -6 -6 -2.6 6 -2.6 Z" opacity="0.88"/>
+    <path d="M368 72 l2.2 5 5 2.2 -5 2.2 -2.2 5 -2.2 -5 -5 -2.2 5 -2.2 Z" opacity="0.72"/>
+    <path d="M382 174 l1.8 4 4 1.8 -4 1.8 -1.8 4 -1.8 -4 -4 -1.8 4 -1.8 Z" opacity="0.55"/>
+    <circle cx="64" cy="210" r="2.4" fill="#fda4af" opacity="0.65"/>
+    <circle cx="352" cy="264" r="2.6" opacity="0.5"/>
+    <circle cx="320" cy="44" r="2" fill="#fda4af" opacity="0.6"/>
   </g>
-  <!-- Masques Comédie & Tragédie + Note de musique -->
-  <g filter="url(#spShadow)">
-    <!-- Masque doré Comédie -->
-    <path d="M 122 126 Q 168 108 206 130 L 198 196 Q 164 234 126 196 Z" fill="url(#spGold)" stroke="#fef9c3" stroke-width="3"/>
-    <path d="M 142 154 Q 150 144 158 154" fill="none" stroke="#3b0717" stroke-width="4" stroke-linecap="round"/>
-    <path d="M 172 154 Q 180 144 188 154" fill="none" stroke="#3b0717" stroke-width="4" stroke-linecap="round"/>
-    <path d="M 146 182 Q 164 202 184 182" fill="none" stroke="#3b0717" stroke-width="4.5" stroke-linecap="round"/>
-    <!-- Masque violet Tragédie -->
-    <path d="M 212 142 Q 254 122 296 144 L 288 210 Q 252 246 216 208 Z" fill="#9333ea" stroke="#e9d5ff" stroke-width="3"/>
-    <circle cx="238" cy="170" r="6" fill="#1e0a36"/>
-    <circle cx="270" cy="170" r="6" fill="#1e0a36"/>
-    <path d="M 238 206 Q 254 190 270 206" fill="none" stroke="#1e0a36" stroke-width="4.5" stroke-linecap="round"/>
-    <!-- Double croche lumineuse -->
-    <path d="M 224 90 L 224 122 M 252 84 L 252 116 M 224 90 L 252 84" stroke="#f472b6" stroke-width="5" stroke-linecap="round"/>
-    <circle cx="216" cy="124" r="8" fill="#f472b6"/>
-    <circle cx="244" cy="118" r="8" fill="#f472b6"/>
+
+  <g filter="url(#ispectacleShadow)">
+    <!-- Socle rocheux flottant unifié -->
+    <path d="M34 232 L210 264 L386 232 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 L68 284 Z" fill="url(#ispectacleRockTop)" stroke="#080e1d" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M68 284 L132 300 L210 308 L288 300 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 Z" fill="url(#ispectacleRockDeep)" opacity="0.85"/>
+    <!-- Veines cristallines de la matière -->
+    <path d="M120 296 L142 324 M296 296 L278 326 M192 318 L210 356 L228 318" stroke="#fda4af" stroke-width="2.4" stroke-linecap="round" opacity="0.5" fill="none"/>
+    <!-- Galets flottants sous l'île -->
+    <polygon points="164,376 175,382 169,394 157,388" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <polygon points="256,374 268,382 260,393 249,386" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <circle cx="210" cy="400" r="4" fill="#fda4af" opacity="0.75"/>
+
+    <!-- Plateau insulaire cerclé d'or -->
+    <ellipse cx="210" cy="236" rx="176" ry="54" fill="url(#ispectaclePlateau)" stroke="url(#ispectacleGold)" stroke-width="3.5"/>
+    <ellipse cx="210" cy="232" rx="158" ry="43" fill="none" stroke="#fda4af" stroke-width="1.5" stroke-opacity="0.45"/>
+
+    <!-- Scène dédiée à la matière -->
+    
+      <!-- Masques Comédie & Tragédie dorés/rubis + Lyre -->
+      <g transform="translate(210 148)">
+        <ellipse cx="0" cy="80" rx="80" ry="14" fill="#091326" opacity="0.45"/>
+        <!-- Masque Tragédie (gauche) -->
+        <g transform="translate(-34 -2) rotate(-12)">
+          <path d="M-34 -34 Q0 -44 34 -34 V10 C34 40 16 54 0 58 C-16 54 -34 40 -34 10 Z" fill="#1e293b" stroke="url(#ispectacleGold)" stroke-width="3.5"/>
+          <path d="M-18 -6 Q-12 -14 -6 -6 M6 -6 Q12 -14 18 -6" stroke="#fda4af" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+          <path d="M-14 28 Q0 16 14 28" stroke="#fda4af" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+        </g>
+        <!-- Masque Comédie (droite) -->
+        <g transform="translate(34 6) rotate(12)">
+          <path d="M-34 -34 Q0 -44 34 -34 V10 C34 40 16 54 0 58 C-16 54 -34 40 -34 10 Z" fill="url(#ispectacleGold)" stroke="#0c1830" stroke-width="3.5"/>
+          <path d="M-18 -8 Q-12 -16 -6 -8 M6 -8 Q12 -16 18 -8" stroke="#2e0916" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+          <path d="M-16 18 Q0 36 16 18 Z" fill="#2e0916"/>
+        </g>
+      </g>
+
+    <!-- Bannière astrale dorée unifiée -->
+    <g transform="translate(210 336)">
+      <path d="M-90 -19 L90 -19 L78 19 L-78 19 Z"
+            fill="url(#ispectacleBanner)" stroke="url(#ispectacleGold)" stroke-width="3" stroke-linejoin="round"/>
+      <g fill="#f5de8a">
+        <circle cx="-74" cy="-9" r="2.4"/>
+        <circle cx="74" cy="-9" r="2.4"/>
+        <circle cx="-68" cy="10" r="2.4"/>
+        <circle cx="68" cy="10" r="2.4"/>
+      </g>
+      <text x="0" y="7" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="20" font-weight="700"
+            fill="#f4de94" letter-spacing="2">SPECTACLE</text>
+    </g>
   </g>
 </svg>

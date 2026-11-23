@@ -87,10 +87,11 @@ test('QuizTimer - Chronomètre unifié sur tous les exercices et réessais', asy
         assert.ok(ticks >= 1, 'onTick doit être appelé au moins une fois');
     });
 
-    await t.test('renderBarHtml génère un composant lisible avec le temps initial', () => {
+    await t.test('renderBarHtml génère un composant lisible avec icône SVG et temps initial', () => {
         const html = QuizTimer.renderBarHtml('chrono-bar-container', 45);
         assert.ok(html.includes('id="chrono-bar-container"'));
-        assert.ok(html.includes('⏱ 45s'));
+        assert.ok(html.includes('<svg'));
+        assert.ok(html.includes('45s'));
         assert.ok(html.includes('quiz-chrono-track'));
     });
 });

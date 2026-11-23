@@ -1,5 +1,5 @@
 /* ==========================================================================
-   STYLE.CSS — EDUQUEST v1.29.1
+   STYLE.CSS — EDUQUEST v1.30.0
    Design system des pages, modales, animations et composants interactifs.
 
    DÉPENDANCE :
@@ -8,19 +8,9 @@
    ========================================================================== */
 
 /* ==========================================================================
-   POLICES PIXEL — v2.5, inspiré de la direction artistique de Codédex
-   (codedex.io) : une police "display" très blocky pour les gros titres,
-   une police pixel plus lisible pour les libellés/HUD/boutons, le tout
-   hébergé localement (fichiers .ttf dans /fonts) pour rester 100% hors-ligne.
+   POLICES PIXEL — Silkscreen hébergée localement dans /fonts (100% hors-ligne).
    Polices sous licence SIL Open Font License — voir fonts/OFL-*.txt.
    ========================================================================== */
-@font-face {
-    font-family: 'Press Start 2P';
-    src: url('../fonts/PressStart2P-Regular.woff2') format('woff2'),
-         url('../fonts/PressStart2P-Regular.ttf')   format('truetype');
-    font-weight: 400;
-    font-display: swap;
-}
 @font-face {
     font-family: 'Silkscreen';
     src: url('../fonts/Silkscreen-Regular.woff2') format('woff2'),
@@ -36,11 +26,7 @@
     font-display: swap;
 }
 :root {
-    /* Réservée aux très gros titres ponctuels (très large, à utiliser avec
-       parcimonie — jamais sur une phrase entière, seulement 2-3 mots). */
-    --font-pixel-display: 'Press Start 2P', var(--font-display, 'Cinzel', serif);
-    /* Pour les boutons, onglets, libellés de HUD, nombres (XP/pièces/niveaux)
-       — plus compacte et lisible que Press Start 2P à petite taille. */
+    /* Pour les boutons, onglets, libellés de HUD, nombres (XP/pièces/niveaux). */
     --font-pixel-ui: 'Silkscreen', var(--font-mono, monospace);
 }
 
@@ -80,9 +66,7 @@
     animation: logoEntrance 1s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Logo officiel (Image/logo.webp) — affiché dans .logo sur index.html.
-   Le halo doré est simulé avec drop-shadow (contrairement à text-shadow, ça
-   respecte la transparence du PNG au lieu de dessiner un rectangle). */
+/* Logo officiel vectoriel (Image/logo.svg) — affiché dans .logo sur index.html. */
 .logo-image {
     display: block;
     width: clamp(200px, 34vw, 320px);
@@ -314,6 +298,7 @@
     position: relative;
     /* Pour les petits écrans : ajoute un scroll interne au lieu de déborder sous le footer */
     max-height: 85vh;
+    max-height: 85dvh;
     overflow-y: auto;
     overflow-x: hidden;
 }
@@ -581,6 +566,7 @@
     position: relative;
     /* Évite le débordement sur les petits écrans */
     max-height: 85vh;
+    max-height: 85dvh;
     overflow-y: auto;
     overflow-x: hidden;
 }
@@ -788,7 +774,7 @@
     top: 18px;
     left: 18px;
     right: 18px;
-    z-index: 10;
+    z-index: 30;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -801,6 +787,18 @@
     align-items: center;
     gap: 14px;
     pointer-events: auto; /* Rétablit le clic sur l'en-tête */
+}
+.map-header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+.map-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    pointer-events: auto;
 }
 
 .subject-icon {
@@ -974,7 +972,7 @@
     position: fixed;
     top: 76px;
     right: 20px;
-    z-index: 95;
+    z-index: 10020;
     width: min(350px, calc(100vw - 24px));
     max-height: min(74vh, 480px);
     display: flex;
@@ -2039,12 +2037,13 @@
 .modal-overlay {
     position: fixed;
     inset: 0;
-    z-index: 100;
+    z-index: 10050;
     display: flex;
     align-items: center;
     justify-content: center;
     background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     animation: fade-in 0.3s ease;
 }
 
@@ -2515,7 +2514,7 @@
     object-fit: contain;
     filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.5));
     animation: islandFloat 3.8s ease-in-out infinite alternate;
-    transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94), filter 0.35s ease;
+    transition: scale 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94), filter 0.35s ease;
 }
 
 .dash-subject-card:hover .dash-subject-island {
@@ -2647,7 +2646,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 50;
+    z-index: 10050;
     padding: 16px;
     animation: fade-in 0.3s ease;
 }
@@ -2663,6 +2662,7 @@
     max-width: 480px;
     width: 100%;
     max-height: 88vh;
+    max-height: 88dvh;
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;
@@ -2906,8 +2906,8 @@
     margin: 0 auto 12px;
     box-shadow:
         0 0 0 2px rgba(255, 255, 255, 0.08),
-        0 0 22px 4px var(--sc);
-    background: radial-gradient(circle at 35% 30%, var(--sc), #0a1628 75%);
+        0 0 22px 4px var(--sc, #c8a84b);
+    background: radial-gradient(circle at 35% 30%, var(--sc, #c8a84b), #0a1628 75%);
 }
 
 .dash-skin-name {
@@ -3395,7 +3395,8 @@
     image-rendering: pixelated;
 }
 
-/* Les portraits vectoriels SVG gardent un rendu vectoriel lisse */
+/* Les illustrations vectorielles SVG (logo & portraits) gardent un rendu vectoriel lisse */
+.logo-image[src$=".svg"],
 .dash-skin-orb img[src$=".svg"],
 .dash-avatar img[src$=".svg"],
 .map-skin-btn img[src$=".svg"],
@@ -3927,6 +3928,9 @@ body.no-animations *::after {
 /* --- Modale de confirmation Quitter (#modalQuitConfirm) --- */
 .quit-modal-card {
     width: min(440px, calc(100vw - 32px));
+    max-height: 90vh;
+    max-height: 90dvh;
+    overflow-y: auto;
     background: rgba(8, 14, 26, 0.94);
     backdrop-filter: blur(28px);
     -webkit-backdrop-filter: blur(28px);
@@ -4005,6 +4009,9 @@ body.no-animations *::after {
 }
 .map-expel-card {
     width: min(460px, calc(100vw - 32px));
+    max-height: 90vh;
+    max-height: 90dvh;
+    overflow-y: auto;
     padding: 28px 26px;
     border-radius: 22px;
     background: rgba(12, 20, 38, 0.95);
@@ -4899,6 +4906,10 @@ body.no-animations *::after {
         width: 66px;
         height: 66px;
     }
+    .dash-subject-island {
+        max-width: 100%;
+        max-height: 100%;
+    }
     .dash-skin-card {
         padding: 14px 10px;
     }
@@ -5307,13 +5318,16 @@ body.no-animations *::after {
     }
 }
 
+@media (max-width: 400px) {
+    .dash-pill-label {
+        display: none !important;
+    }
+}
+
 @media (max-width: 350px) {
     .dash-subjects-grid,
     .dash-skins-grid {
         grid-template-columns: 1fr;
-    }
-    .dash-pill-label {
-        display: none !important;
     }
 }
 

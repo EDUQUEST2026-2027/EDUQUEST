@@ -1,50 +1,101 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
-  <!-- ILOT DEVELOPPEMENT & BASES DE DONNEES (BTS SIO) - EDUQUEST -->
   <defs>
-    <linearGradient id="dbRockDeep" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#0c2642"/>
-      <stop offset="0.6" stop-color="#071628"/>
-      <stop offset="1" stop-color="#030a14"/>
-    </linearGradient>
-    <linearGradient id="dbRockTop" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#164e63"/>
-      <stop offset="0.6" stop-color="#0e3447"/>
-      <stop offset="1" stop-color="#081e2c"/>
-    </linearGradient>
-    <linearGradient id="dbCyl" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#0284c7"/>
-      <stop offset="0.5" stop-color="#38bdf8"/>
-      <stop offset="1" stop-color="#0369a1"/>
-    </linearGradient>
-    <radialGradient id="dbHalo" cx="0.5" cy="0.4" r="0.6">
-      <stop offset="0" stop-color="#22d3ee" stop-opacity="0.38"/>
-      <stop offset="0.6" stop-color="#3b82f6" stop-opacity="0.16"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    <radialGradient id="idevbddHalo" cx="0.5" cy="0.44" r="0.52">
+      <stop offset="0" stop-color="#0ea5e9" stop-opacity="0.34"/>
+      <stop offset="0.58" stop-color="#c8a84b" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#070b1a" stop-opacity="0"/>
     </radialGradient>
-    <filter id="dbShadow" x="-25%" y="-25%" width="150%" height="150%">
-      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.55"/>
+    <linearGradient id="idevbddRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c3e68"/>
+      <stop offset="0.55" stop-color="#192544"/>
+      <stop offset="1" stop-color="#0d1428"/>
+    </linearGradient>
+    <linearGradient id="idevbddRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#18223d"/>
+      <stop offset="1" stop-color="#080d1b"/>
+    </linearGradient>
+    <linearGradient id="idevbddPlateau" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#133554"/>
+      <stop offset="1" stop-color="#091b2e"/>
+    </linearGradient>
+    <linearGradient id="idevbddGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7e29c"/>
+      <stop offset="0.5" stop-color="#c8a84b"/>
+      <stop offset="1" stop-color="#8b661d"/>
+    </linearGradient>
+    <linearGradient id="idevbddAccent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7dd3fc"/>
+      <stop offset="1" stop-color="#0ea5e9"/>
+    </linearGradient>
+    <linearGradient id="idevbddBanner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c2a4f"/>
+      <stop offset="1" stop-color="#0c1328"/>
+    </linearGradient>
+    <filter id="idevbddShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="9" stdDeviation="7" flood-color="#000000" flood-opacity="0.52"/>
     </filter>
   </defs>
-  <circle cx="210" cy="182" r="148" fill="url(#dbHalo)"/>
-  <g filter="url(#dbShadow)">
-    <path d="M 74 250 Q 210 276 346 250 Q 372 294 318 345 Q 210 398 102 345 Q 48 294 74 250 Z" fill="url(#dbRockDeep)"/>
-    <path d="M 86 244 Q 210 268 334 244 Q 356 278 318 314 Q 210 366 102 314 Q 64 278 86 244 Z" fill="url(#dbRockTop)"/>
-    <ellipse cx="210" cy="244" rx="138" ry="40" fill="#082032"/>
-    <ellipse cx="210" cy="240" rx="126" ry="32" fill="none" stroke="#22d3ee" stroke-width="2.2"/>
+
+  <!-- Halo astral unifié -->
+  <circle cx="210" cy="195" r="185" fill="url(#idevbddHalo)"/>
+
+  <!-- Étoiles astrales dorées (grille signature EDUQUEST) -->
+  <g fill="#f2dc96">
+    <path d="M52 94 l2.6 6 6 2.6 -6 2.6 -2.6 6 -2.6 -6 -6 -2.6 6 -2.6 Z" opacity="0.88"/>
+    <path d="M368 72 l2.2 5 5 2.2 -5 2.2 -2.2 5 -2.2 -5 -5 -2.2 5 -2.2 Z" opacity="0.72"/>
+    <path d="M382 174 l1.8 4 4 1.8 -4 1.8 -1.8 4 -1.8 -4 -4 -1.8 4 -1.8 Z" opacity="0.55"/>
+    <circle cx="64" cy="210" r="2.4" fill="#7dd3fc" opacity="0.65"/>
+    <circle cx="352" cy="264" r="2.6" opacity="0.5"/>
+    <circle cx="320" cy="44" r="2" fill="#7dd3fc" opacity="0.6"/>
   </g>
-  <!-- Cylindre Base de Données SQL + Fenêtre de Code -->
-  <g filter="url(#dbShadow)">
-    <path d="M 122 140 L 122 218 A 48 16 0 0 0 218 218 L 218 140 Z" fill="url(#dbCyl)" stroke="#bae6fd" stroke-width="2.5"/>
-    <ellipse cx="170" cy="140" rx="48" ry="16" fill="#7dd3fc" stroke="#e0f2fe" stroke-width="2.5"/>
-    <path d="M 122 168 A 48 16 0 0 0 218 168" fill="none" stroke="#e0f2fe" stroke-width="2"/>
-    <path d="M 122 194 A 48 16 0 0 0 218 194" fill="none" stroke="#e0f2fe" stroke-width="2"/>
-    <!-- Écran code API -->
-    <rect x="206" y="116" width="110" height="100" rx="12" fill="#0f172a" stroke="#38bdf8" stroke-width="3"/>
-    <circle cx="222" cy="130" r="4" fill="#f43f5e"/>
-    <circle cx="235" cy="130" r="4" fill="#facc15"/>
-    <circle cx="248" cy="130" r="4" fill="#4ade80"/>
-    <text x="220" y="160" fill="#22d3ee" font-family="monospace" font-size="14" font-weight="bold">SELECT *</text>
-    <text x="220" y="180" fill="#a78bfa" font-family="monospace" font-size="13" font-weight="bold">&lt;API/&gt;</text>
-    <text x="220" y="200" fill="#4ade80" font-family="monospace" font-size="13" font-weight="bold">{ 200 OK }</text>
+
+  <g filter="url(#idevbddShadow)">
+    <!-- Socle rocheux flottant unifié -->
+    <path d="M34 232 L210 264 L386 232 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 L68 284 Z" fill="url(#idevbddRockTop)" stroke="#080e1d" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M68 284 L132 300 L210 308 L288 300 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 Z" fill="url(#idevbddRockDeep)" opacity="0.85"/>
+    <!-- Veines cristallines de la matière -->
+    <path d="M120 296 L142 324 M296 296 L278 326 M192 318 L210 356 L228 318" stroke="#7dd3fc" stroke-width="2.4" stroke-linecap="round" opacity="0.5" fill="none"/>
+    <!-- Galets flottants sous l'île -->
+    <polygon points="164,376 175,382 169,394 157,388" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <polygon points="256,374 268,382 260,393 249,386" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <circle cx="210" cy="400" r="4" fill="#7dd3fc" opacity="0.75"/>
+
+    <!-- Plateau insulaire cerclé d'or -->
+    <ellipse cx="210" cy="236" rx="176" ry="54" fill="url(#idevbddPlateau)" stroke="url(#idevbddGold)" stroke-width="3.5"/>
+    <ellipse cx="210" cy="232" rx="158" ry="43" fill="none" stroke="#7dd3fc" stroke-width="1.5" stroke-opacity="0.45"/>
+
+    <!-- Scène dédiée à la matière -->
+    
+      <!-- Cylindres Base de Données SQL + Accolades de code {} -->
+      <g transform="translate(210 148)">
+        <ellipse cx="0" cy="80" rx="80" ry="14" fill="#091326" opacity="0.45"/>
+        <!-- Base de données empilée -->
+        <g transform="translate(-28 8)">
+          <path d="M-46 24 V52 A46 16 0 0 0 46 52 V24 Z" fill="#0369a1" stroke="url(#idevbddGold)" stroke-width="2.5"/>
+          <path d="M-46 -6 V24 A46 16 0 0 0 46 24 V-6 Z" fill="#0284c7" stroke="url(#idevbddGold)" stroke-width="2.5"/>
+          <path d="M-46 -36 V-6 A46 16 0 0 0 46 -6 V-36 Z" fill="#0ea5e9" stroke="url(#idevbddGold)" stroke-width="2.5"/>
+          <ellipse cx="0" cy="-36" rx="46" ry="16" fill="#7dd3fc" stroke="url(#idevbddGold)" stroke-width="2.5"/>
+          <text x="0" y="-31" text-anchor="middle" font-family="monospace" font-size="14" font-weight="900" fill="#082f49">SQL</text>
+        </g>
+        <!-- Badge code { } -->
+        <g transform="translate(52 -10)">
+          <rect x="-34" y="-32" width="68" height="68" rx="14" fill="#0f172a" stroke="url(#idevbddAccent)" stroke-width="3"/>
+          <text x="0" y="14" text-anchor="middle" font-family="monospace" font-size="34" font-weight="900" fill="#f5de8a">{ }</text>
+        </g>
+      </g>
+
+    <!-- Bannière astrale dorée unifiée -->
+    <g transform="translate(210 336)">
+      <path d="M-116 -19 L116 -19 L104 19 L-104 19 Z"
+            fill="url(#idevbddBanner)" stroke="url(#idevbddGold)" stroke-width="3" stroke-linejoin="round"/>
+      <g fill="#f5de8a">
+        <circle cx="-100" cy="-9" r="2.4"/>
+        <circle cx="100" cy="-9" r="2.4"/>
+        <circle cx="-94" cy="10" r="2.4"/>
+        <circle cx="94" cy="10" r="2.4"/>
+      </g>
+      <text x="0" y="7" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="21" font-weight="700"
+            fill="#f4de94" letter-spacing="2">DÉV &amp; BDD</text>
+    </g>
   </g>
 </svg>

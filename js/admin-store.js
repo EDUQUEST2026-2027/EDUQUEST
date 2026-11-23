@@ -1,5 +1,5 @@
 /* =============================================================================
-   ADMIN-STORE.JS — EDUQUEST v1.29.1
+   ADMIN-STORE.JS — EDUQUEST v1.30.0
    Couche de configuration centrale du panneau d'administration (admin.html).
 
    RÔLE :
@@ -12,7 +12,7 @@
                             feature flags, maintenance et sons.
      - Configuration IA   → Pool multi-IA (Make, OpenAI-compatible, Gemini), mode
                             adaptatif et webhooks de génération/validation.
-     - Boutique, Succès & Quêtes → 97 articles, 78 succès filtrés par filière et 9 quêtes.
+     - Boutique, Succès & Quêtes → 98 articles, 78 succès filtrés par filière et 9 quêtes.
 
    PERSISTANCE :
    Tout est unifié sous la clé localStorage 'eduquest_admin_data' et synchronisable
@@ -120,7 +120,7 @@ const AdminStore = (() => {
     // Types de leçons pris en charge par quiz-engine.js
     const LESSON_TYPES = ['qcm', 'vrai_faux', 'reponse_courte', 'texte_a_trous', 'texte_a_choix', 'drag_and_drop'];
 
-    // Catalogue des articles par défaut de la boutique (97 articles : 24 Halos, 27 Personnages, 26 Titres, 15 Thèmes, 5 Boosters)
+    // Catalogue des articles par défaut de la boutique (98 articles : 24 Halos, 27 Personnages SVG, 26 Titres, 16 Thèmes, 5 Boosters)
     const DEFAULT_SHOP_ITEMS = [
         // --- HALOS & AURAS (24) ---
         { id: 'aurore', name: 'Aurore Boréale', category: 'aura', color: '#4fd8c4', cost: 0, desc: 'Lueur polaire chatoyante offerte à tous les élèves.' },
@@ -148,8 +148,8 @@ const AdminStore = (() => {
         { id: 'aura-galaxie', name: 'Anneau de Saturne', category: 'aura', color: '#c084fc', cost: 500, desc: 'Orbite cosmique de poussières d\'étoiles violettes.' },
         { id: 'aura-celeste', name: 'Couronne Astrale', category: 'aura', color: '#fde047', cost: 750, desc: 'Halo légendaire des plus grands champions d\'EDUQUEST.' },
 
-        // --- PERSONNAGES & AVATARS (27) ---
-        { id: 'robot', name: 'Robot Assistant', category: 'avatar', color: '#8fb8c9', img: 'Image/personnages/robot.webp', cost: 0, desc: 'Le fidèle compagnon d\'aventure mécanique.' },
+        // --- PERSONNAGES & AVATARS (27 — 100 % SVG) ---
+        { id: 'robot', name: 'Robot Assistant', category: 'avatar', color: '#8fb8c9', img: 'Image/personnages/robot.svg', cost: 0, desc: 'Le fidèle compagnon d\'aventure mécanique.' },
         { id: 'david-martinez', name: 'David Martinez', category: 'avatar', color: '#ffea00', img: 'Image/personnages/david-martinez.svg', cost: 0, desc: 'Légende de Night City équipée de la veste d\'Edgerunner et du Sandevistan.' },
         { id: 'fall-guys', name: 'Champion Fall Guys', category: 'avatar', color: '#ff3e9d', img: 'Image/personnages/fall-guys.svg', cost: 150, desc: 'Haricot rose bondissant coiffé de la couronne de la victoire.' },
         { id: 'hope-fortnite', name: 'Hope (Fortnite)', category: 'avatar', color: '#2563eb', img: 'Image/personnages/hope-fortnite.svg', cost: 200, desc: 'Rebelle de l\'Ordre munie de son bonnet à oreilles de chat et de ses lunettes roses.' },
@@ -157,15 +157,15 @@ const AdminStore = (() => {
         { id: 'helldiver', name: 'Helldiver', category: 'avatar', color: '#ffd60a', img: 'Image/personnages/helldiver.svg', cost: 300, desc: 'Soldat d\'élite de la Super-Terre répandant la Démocratie Gérée !' },
         { id: 'space-marine', name: 'Space Marine', category: 'avatar', color: '#1d4ed8', img: 'Image/personnages/space-marine.svg', cost: 350, desc: 'Ange de la Mort Astartes en armure énergétique Ultramarine.' },
         { id: 'doom-guy', name: 'Doom Slayer', category: 'avatar', color: '#4f772d', img: 'Image/personnages/doom-guy.svg', cost: 400, desc: 'Guerrier implacable en armure Praetor. Rip and Tear !' },
-        { id: 'einstein', name: 'Albert Einstein', category: 'avatar', color: '#7fb3d5', img: 'Image/personnages/einstein.webp', cost: 150, desc: 'Le génie de la physique et de la relativité.' },
-        { id: 'marie-curie', name: 'Marie Curie', category: 'avatar', color: '#6bca82', img: 'Image/personnages/marie-curie.webp', cost: 150, desc: 'Pionnière de la radioactivité et double Prix Nobel.' },
-        { id: 'christophe-colomb', name: 'Christophe Colomb', category: 'avatar', color: '#c8a84b', img: 'Image/personnages/christophe-colomb.webp', cost: 200, desc: 'Grand navigateur et explorateur des océans.' },
-        { id: 'lovelace', name: 'Ada Lovelace', category: 'avatar', color: '#ff66b2', img: 'Image/personnages/lovelace.webp', cost: 250, desc: 'Première programmeuse informatique de l\'Histoire.' },
-        { id: 'pythagore', name: 'Pythagore', category: 'avatar', color: '#ffd166', img: 'Image/personnages/pythagore.webp', cost: 300, desc: 'Maître des triangles, des nombres et de l\'harmonie.' },
-        { id: 'davinci', name: 'Léonard de Vinci', category: 'avatar', color: '#a8dadc', img: 'Image/personnages/davinci.webp', cost: 350, desc: 'Polymathe universel, artiste et inventeur de génie.' },
-        { id: 'hugo', name: 'Victor Hugo', category: 'avatar', color: '#457b9d', img: 'Image/personnages/hugo.webp', cost: 350, desc: 'Géant de la littérature française et de la poésie.' },
-        { id: 'astronaute', name: 'Astronaute Céleste', category: 'avatar', color: '#f1faee', img: 'Image/personnages/astronaute.webp', cost: 400, desc: 'Pionnier du cosmos bravant le vide interstellaire.' },
-        { id: 'mage', name: 'Archimage du Savoir', category: 'avatar', color: '#9d4edd', img: 'Image/personnages/mage.webp', cost: 500, desc: 'Gardien des grimoires anciens et des secrets du monde.' },
+        { id: 'einstein', name: 'Albert Einstein', category: 'avatar', color: '#7fb3d5', img: 'Image/personnages/einstein.svg', cost: 150, desc: 'Le génie de la physique et de la relativité.' },
+        { id: 'marie-curie', name: 'Marie Curie', category: 'avatar', color: '#6bca82', img: 'Image/personnages/marie-curie.svg', cost: 150, desc: 'Pionnière de la radioactivité et double Prix Nobel.' },
+        { id: 'christophe-colomb', name: 'Christophe Colomb', category: 'avatar', color: '#c8a84b', img: 'Image/personnages/christophe-colomb.svg', cost: 200, desc: 'Grand navigateur et explorateur des océans.' },
+        { id: 'lovelace', name: 'Ada Lovelace', category: 'avatar', color: '#ff66b2', img: 'Image/personnages/lovelace.svg', cost: 250, desc: 'Première programmeuse informatique de l\'Histoire.' },
+        { id: 'pythagore', name: 'Pythagore', category: 'avatar', color: '#ffd166', img: 'Image/personnages/pythagore.svg', cost: 300, desc: 'Maître des triangles, des nombres et de l\'harmonie.' },
+        { id: 'davinci', name: 'Léonard de Vinci', category: 'avatar', color: '#a8dadc', img: 'Image/personnages/davinci.svg', cost: 350, desc: 'Polymathe universel, artiste et inventeur de génie.' },
+        { id: 'hugo', name: 'Victor Hugo', category: 'avatar', color: '#457b9d', img: 'Image/personnages/hugo.svg', cost: 350, desc: 'Géant de la littérature française et de la poésie.' },
+        { id: 'astronaute', name: 'Astronaute Céleste', category: 'avatar', color: '#f1faee', img: 'Image/personnages/astronaute.svg', cost: 400, desc: 'Pionnier du cosmos bravant le vide interstellaire.' },
+        { id: 'mage', name: 'Archimage du Savoir', category: 'avatar', color: '#9d4edd', img: 'Image/personnages/mage.svg', cost: 500, desc: 'Gardien des grimoires anciens et des secrets du monde.' },
         { id: 'nikola-tesla', name: 'Nikola Tesla', category: 'avatar', color: '#38bdf8', img: 'Image/personnages/nikola-tesla.svg', cost: 220, desc: 'Inventeur visionnaire du courant alternatif et des éclairs électriques.' },
         { id: 'pasteur', name: 'Louis Pasteur', category: 'avatar', color: '#4ade80', img: 'Image/personnages/pasteur.svg', cost: 220, desc: 'Fondateur de la microbiologie moderne et pionnier de la vaccination.' },
         { id: 'rosalind-franklin', name: 'Rosalind Franklin', category: 'avatar', color: '#34d399', img: 'Image/personnages/rosalind-franklin.svg', cost: 240, desc: 'Biophysicienne clé de la découverte de la double hélice d\'ADN.' },
@@ -487,6 +487,55 @@ const AdminStore = (() => {
        ----------------------------------------------------------------------- */
 
     /** Échappe une chaîne pour insertion HTML sécurisée. */
+    /** Valide une couleur hexadécimale #rrggbb. */
+    function _safeHex(val, fallback) {
+        const s = typeof val === 'string' ? val.trim() : '';
+        return /^#[0-9a-f]{6}$/i.test(s) ? s : fallback;
+    }
+
+    /** Valide un chemin/URL d'image sûr (rejette javascript:, vbscript:, data:text/html, //). */
+    function _safeMediaUrl(val) {
+        const s = typeof val === 'string' ? val.trim() : '';
+        if (!s) return '';
+        if (/^(javascript|vbscript|file):/i.test(s) || s.startsWith('//')) return '';
+        if (/^data:/i.test(s)) {
+            return /^data:image\/(png|webp|jpeg|jpg|gif|svg\+xml);base64,[a-z0-9+/=\s]+$/i.test(s) ? s : '';
+        }
+        return s;
+    }
+
+    /** Parse un entier en préservant 0 (contrairement à `parseInt(v) || def`). */
+    function _parseIntPreserveZero(val, fallback, min, max) {
+        if (val === '' || val === null || val === undefined) return fallback;
+        const n = parseInt(val, 10);
+        if (!Number.isFinite(n)) return fallback;
+        let out = n;
+        if (typeof min === 'number') out = Math.max(min, out);
+        if (typeof max === 'number') out = Math.min(max, out);
+        return out;
+    }
+
+    /** Parse un flottant en préservant 0. */
+    function _parseFloatPreserveZero(val, fallback, min, max) {
+        if (val === '' || val === null || val === undefined) return fallback;
+        const n = parseFloat(val);
+        if (!Number.isFinite(n)) return fallback;
+        let out = n;
+        if (typeof min === 'number') out = Math.max(min, out);
+        if (typeof max === 'number') out = Math.min(max, out);
+        return out;
+    }
+
+    /** Valide une URL de site web ou dépôt (accepte https://, http://, ou domaine nu). */
+    function _isSafeWebUrl(val) {
+        const s = String(val || '').trim();
+        if (!s) return true;
+        if (/^(javascript|vbscript|data|file):/i.test(s) || s.startsWith('//')) return false;
+        if (/^https?:\/\/[^\s]+$/i.test(s)) return true;
+        // Autorise un domaine nu du type "mon-site.fr" ou "eduquest.fr/aide" sans schéma dangereux
+        return !s.includes(':') && /^[a-z0-9.-]+\.[a-z]{2,}(\/[^\s]*)?$/i.test(s);
+    }
+
     function esc(s) {
         return String(s ?? '')
             .replace(/&/g, '&amp;')
@@ -553,7 +602,15 @@ const AdminStore = (() => {
             const count = (lesson.textWithBlanks.match(/_{3,}|\[_{3,}\]/g) || []).length;
             if (count === 0) return 'La phrase doit contenir au moins un trou (___).';
             if (type === 'texte_a_choix') {
-                if (Array.isArray(lesson.choices) && lesson.choices.length > 0) return null;
+                if (Array.isArray(lesson.choices) && lesson.choices.length > 0) {
+                    if (lesson.choices.length !== count) {
+                        return 'Il faut exactement ' + count + ' liste(s) de choix (une par trou ___ ).';
+                    }
+                    if (lesson.choices.some(c => !Array.isArray(c) || c.length === 0 || c.some(opt => !nonEmpty(opt)))) {
+                        return 'Chaque menu déroulant doit contenir au moins un choix non vide.';
+                    }
+                    return null;
+                }
             }
             if (!Array.isArray(lesson.blanks) || lesson.blanks.length !== count)
                 return 'Il faut exactement ' + count + ' groupe(s) de réponses (un par trou ___ ).';
@@ -569,8 +626,8 @@ const AdminStore = (() => {
             return 'Les éléments et cibles ne peuvent pas être vides.';
         if (lesson.items.length !== lesson.targets.length)
             return 'Le nombre d’éléments doit être égal au nombre de cibles (association par position).';
-        if (new Set(lesson.items).size !== lesson.items.length) return 'Deux éléments sont identiques.';
-        if (new Set(lesson.targets).size !== lesson.targets.length) return 'Deux cibles sont identiques.';
+        if (new Set(lesson.items.map(i => i.trim())).size !== lesson.items.length) return 'Deux éléments sont identiques.';
+        if (new Set(lesson.targets.map(t => t.trim())).size !== lesson.targets.length) return 'Deux cibles sont identiques.';
         return null;
     }
 
@@ -600,7 +657,13 @@ const AdminStore = (() => {
         } else if (l.type === 'drag_and_drop') {
             l.items = (l.items || []).map(i => String(i).trim());
             l.targets = (l.targets || []).map(t => String(t).trim());
-            l.pairs = l.pairs || {};
+            if (!l.pairs || typeof l.pairs !== 'object' || Object.keys(l.pairs).length === 0) {
+                const rebuilt = {};
+                l.items.forEach((it, idx) => {
+                    if (it && l.targets[idx]) rebuilt[it] = l.targets[idx];
+                });
+                l.pairs = rebuilt;
+            }
         }
         return l;
     }
@@ -644,20 +707,28 @@ const AdminStore = (() => {
     }
 
     /** Valide et enregistre la liste des niveaux scolaires. */
-    function saveLevels(list) {
+    function _validateLevels(list) {
         if (!Array.isArray(list) || list.length === 0) return { ok: false, error: 'Il faut au moins un niveau scolaire.' };
         const ids = new Set();
-        const labels = new Set();
+        const clean = [];
         for (const l of list) {
-            if (!l || typeof l.id !== 'string' || !l.id.trim() || !/^[a-z0-9_-]+$/i.test(l.id))
+            const rawId = (l && typeof l.id === 'string') ? l.id.trim() : '';
+            if (!rawId || !/^[a-z0-9_-]+$/i.test(rawId))
                 return { ok: false, error: 'Identifiant de niveau invalide (lettres, chiffres, tirets uniquement).' };
-            if (ids.has(l.id)) return { ok: false, error: 'Identifiant en double : ' + l.id };
-            ids.add(l.id);
+            const normId = rawId.toLowerCase();
+            if (ids.has(normId)) return { ok: false, error: 'Identifiant en double : ' + rawId };
+            ids.add(normId);
             if (typeof l.label !== 'string' || !l.label.trim()) return { ok: false, error: 'Libellé de niveau vide.' };
-            labels.add(l.label.trim());
-            if (l.band !== 'college' && l.band !== 'lycee') return { ok: false, error: 'Bande invalide pour ' + l.id + '.' };
+            if (l.band !== 'college' && l.band !== 'lycee') return { ok: false, error: 'Bande invalide pour ' + rawId + '.' };
+            clean.push({ id: rawId, label: l.label.trim(), band: l.band });
         }
-        _data().levels = list.map(l => ({ id: l.id.trim(), label: l.label.trim(), band: l.band }));
+        return { ok: true, clean };
+    }
+
+    function saveLevels(list) {
+        const res = _validateLevels(list);
+        if (!res.ok) return res;
+        _data().levels = res.clean;
         _save();
         return { ok: true };
     }
@@ -704,19 +775,28 @@ const AdminStore = (() => {
 
     /**
      * Valide et enregistre les crédits. Les champs inconnus sont ignorés,
-     * les champs connus sont trimés ; '' remet un champ à sa valeur par défaut.
+     * les champs omis conservent leur valeur existante et les URLs dangereuses sont rejetées.
      */
-    function saveCredits(values) {
+    function _validateCredits(values, baseCredits) {
         if (!values || typeof values !== 'object') return { ok: false, error: 'Donn\u00e9es de cr\u00e9dits invalides.' };
-        const clean = {};
+        const clean = Object.assign({}, baseCredits || {});
         for (const key of CREDIT_TEXT_FIELDS) {
             if (Object.prototype.hasOwnProperty.call(values, key)) {
                 const v = String(values[key] == null ? '' : values[key]).trim();
                 if (v.length > 300) return { ok: false, error: 'Le champ « ' + key + ' » ne peut pas d\u00e9passer 300 caract\u00e8res.' };
+                if ((key === 'website' || key === 'githubUrl') && !_isSafeWebUrl(v)) {
+                    return { ok: false, error: 'URL invalide ou non sécurisée pour « ' + key + ' ».' };
+                }
                 clean[key] = v;
             }
         }
-        _data().credits = clean;
+        return { ok: true, clean };
+    }
+
+    function saveCredits(values) {
+        const res = _validateCredits(values, _data().credits);
+        if (!res.ok) return res;
+        _data().credits = res.clean;
         _save();
         return { ok: true, credits: getCredits() };
     }
@@ -898,7 +978,12 @@ const AdminStore = (() => {
             : String(niveauId || '6eme').toLowerCase().trim();
         const storedSiteCfg = _data().siteConfig;
         const strictCollege = !storedSiteCfg || storedSiteCfg.strictCollegeSubjects !== false;
-        if (strictCollege && COLLEGE_LEVEL_IDS.includes(norm) && _isStrictLyceeSubject(subject)) {
+        const isCollegeLevel = COLLEGE_LEVEL_IDS.includes(norm) || levelBand(norm) === 'college';
+        if (strictCollege && isCollegeLevel && _isStrictLyceeSubject(subject)) {
+            return false;
+        }
+        // Respecte un choix explicite vide (ex: « Tout décocher » dans l'admin)
+        if (subject._allowedNiveauxExplicit && Array.isArray(subject.allowedNiveaux) && subject.allowedNiveaux.length === 0) {
             return false;
         }
         const allowed = Array.isArray(subject.allowedNiveaux) && subject.allowedNiveaux.length > 0
@@ -1027,13 +1112,18 @@ const AdminStore = (() => {
             if (!ov) return enforceStrictCollege(out);
             if (typeof ov.name === 'string' && ov.name.trim()) out.name = ov.name.trim();
             if (typeof ov.icon === 'string' && ov.icon.trim()) {
-                out.icon = ov.icon.trim();
-                out.island = '';
-                out._iconOverridden = true;
+                const cleanIcon = ov.icon.trim();
+                const rawIsland = typeof raw.island === 'string' ? raw.island.trim() : '';
+                out.icon = cleanIcon;
+                if (cleanIcon !== rawIsland) {
+                    out.island = '';
+                    out._iconOverridden = true;
+                }
             }
             if (ov.band) out.band = ov.band;
-            if (Array.isArray(ov.allowedNiveaux) && ov.allowedNiveaux.length > 0) {
+            if (Array.isArray(ov.allowedNiveaux)) {
                 out.allowedNiveaux = _clone(ov.allowedNiveaux);
+                out._allowedNiveauxExplicit = true;
             }
             if (Array.isArray(ov.allowedFilieres) && ov.allowedFilieres.length > 0) {
                 out.allowedFilieres = _clone(ov.allowedFilieres);
@@ -1081,7 +1171,7 @@ const AdminStore = (() => {
             const defAllowed = (Array.isArray(raw.allowedNiveaux) && raw.allowedNiveaux.length > 0)
                 ? _clone(raw.allowedNiveaux)
                 : (rule ? _clone(rule.allowedNiveaux) : []);
-            const effectiveAllowed = (ov && Array.isArray(ov.allowedNiveaux) && ov.allowedNiveaux.length > 0)
+            const effectiveAllowed = (ov && Array.isArray(ov.allowedNiveaux))
                 ? _clone(ov.allowedNiveaux)
                 : defAllowed;
             const effectiveSpec = (ov && Array.isArray(ov.specialtyFilieres))
@@ -1089,13 +1179,16 @@ const AdminStore = (() => {
                 : (Array.isArray(raw.specialtyFilieres) && raw.specialtyFilieres.length > 0
                     ? _clone(raw.specialtyFilieres)
                     : (rule && Array.isArray(rule.specialtyFilieres) ? _clone(rule.specialtyFilieres) : []));
+            const rawIsland = typeof raw.island === 'string' ? raw.island.trim() : '';
+            const ovIcon = (ov && typeof ov.icon === 'string') ? ov.icon.trim() : '';
             return {
                 id: raw.id,
                 name: ov && ov.name ? ov.name : raw.name,
-                icon: ov && ov.icon ? ov.icon : raw.icon,
-                island: ov && ov.icon ? '' : (raw.island || ''),
+                icon: ovIcon || raw.icon,
+                island: (ovIcon && ovIcon !== rawIsland) ? '' : rawIsland,
                 band: ov && ov.band ? ov.band : defBand,
                 allowedNiveaux: effectiveAllowed,
+                _allowedNiveauxExplicit: Boolean(ov && Array.isArray(ov.allowedNiveaux)),
                 allowedFilieres: (ov && Array.isArray(ov.allowedFilieres) && ov.allowedFilieres.length > 0)
                     ? _clone(ov.allowedFilieres)
                     : (Array.isArray(raw.allowedFilieres) && raw.allowedFilieres.length > 0
@@ -1300,13 +1393,16 @@ const AdminStore = (() => {
         const id = String(item.id || '').trim();
         const name = String(item.name || '').trim();
         const category = ['aura', 'avatar', 'title', 'theme', 'booster'].includes(item.category) ? item.category : 'aura';
-        const cost = Math.max(0, parseInt(item.cost || 0, 10) || 0);
-        const color = String(item.color || '#c8a84b').trim();
-        const img = item.img ? String(item.img).trim() : '';
+        const cost = _parseIntPreserveZero(item.cost, 0, 0, 999999);
+        const color = _safeHex(item.color, '#c8a84b');
+        const img = _safeMediaUrl(item.img);
         const desc = item.desc ? String(item.desc).trim() : '';
         const disabled = Boolean(item.disabled);
 
         if (!name) return { ok: false, error: 'Le nom de l\'article est obligatoire.' };
+        if (id && !/^[a-z0-9_-]+$/i.test(id)) {
+            return { ok: false, error: 'Identifiant d\'article invalide (lettres, chiffres, tirets uniquement).' };
+        }
 
         const data = _data();
         if (!data.shop) data.shop = { overrides: {}, customs: [] };
@@ -1316,7 +1412,11 @@ const AdminStore = (() => {
         if (isDefault) {
             data.shop.overrides[id] = { id, name, category, cost, color, img, desc, disabled, deleted: false };
         } else {
-            const cleanId = id || slug(name);
+            let cleanId = id || slug(name);
+            if (!id && DEFAULT_SHOP_ITEMS.some(d => d.id === cleanId)) {
+                const taken = DEFAULT_SHOP_ITEMS.map(d => d.id).concat(data.shop.customs.map(c => c.id));
+                cleanId = suggestSubjectId(cleanId, taken);
+            }
             savedId = cleanId;
             const idx = data.shop.customs.findIndex(c => c.id === cleanId);
             const entry = { id: cleanId, name, category, cost, color, img, desc, disabled, deleted: false, _custom: true };
@@ -1364,16 +1464,16 @@ const AdminStore = (() => {
         return Object.assign({}, DEFAULT_REWARDS, data.rewards || {});
     }
 
-    /** Sauvegarde la configuration des récompenses. */
+    /** Sauvegarde la configuration des récompenses (préserve les valeurs 0 légitimes). */
     function saveRewardsConfig(values) {
         if (!values || typeof values !== 'object') return { ok: false, error: 'Configuration invalide.' };
         const clean = {
-            xpBase: Math.max(1, parseInt(values.xpBase, 10) || DEFAULT_REWARDS.xpBase),
-            coinsBase: Math.max(0, parseInt(values.coinsBase, 10) || DEFAULT_REWARDS.coinsBase),
-            chronoBonusMaxXp: Math.max(0, parseInt(values.chronoBonusMaxXp, 10) || DEFAULT_REWARDS.chronoBonusMaxXp),
-            dailyChestCoins: Math.max(0, parseInt(values.dailyChestCoins, 10) || DEFAULT_REWARDS.dailyChestCoins),
-            firstTryBonusXp: Math.max(0, parseInt(values.firstTryBonusXp, 10) || DEFAULT_REWARDS.firstTryBonusXp),
-            questRewardMultiplier: Math.max(0.1, parseFloat(values.questRewardMultiplier) || 1),
+            xpBase: _parseIntPreserveZero(values.xpBase, DEFAULT_REWARDS.xpBase, 1, 5000),
+            coinsBase: _parseIntPreserveZero(values.coinsBase, DEFAULT_REWARDS.coinsBase, 0, 5000),
+            chronoBonusMaxXp: _parseIntPreserveZero(values.chronoBonusMaxXp, DEFAULT_REWARDS.chronoBonusMaxXp, 0, 5000),
+            dailyChestCoins: _parseIntPreserveZero(values.dailyChestCoins, DEFAULT_REWARDS.dailyChestCoins, 0, 10000),
+            firstTryBonusXp: _parseIntPreserveZero(values.firstTryBonusXp, DEFAULT_REWARDS.firstTryBonusXp, 0, 5000),
+            questRewardMultiplier: _parseFloatPreserveZero(values.questRewardMultiplier, 1, 0.1, 20),
         };
         const data = _data();
         data.rewards = clean;
@@ -1626,16 +1726,29 @@ const AdminStore = (() => {
         const dashboardFooterNote = (typeof values.dashboardFooterNote === 'string') ? values.dashboardFooterNote.trim() : (cur.dashboardFooterNote || DEFAULT_SITE_CONFIG.dashboardFooterNote);
         const defaultNiveau = (typeof values.defaultNiveau === 'string' && values.defaultNiveau.trim()) ? values.defaultNiveau.trim() : (cur.defaultNiveau || '6eme');
         const defaultFiliere = (typeof values.defaultFiliere === 'string' && values.defaultFiliere.trim()) ? values.defaultFiliere.trim().toLowerCase() : (cur.defaultFiliere || 'generale');
-        const timerSec = values.quizTimerSeconds != null ? Math.max(0, parseInt(values.quizTimerSeconds, 10) || 0) : cur.quizTimerSeconds;
-        const xpMult = values.xpMultiplier != null ? Math.max(0.1, parseFloat(values.xpMultiplier) || 1.0) : cur.xpMultiplier;
-        const coinMult = values.coinMultiplier != null ? Math.max(0.1, parseFloat(values.coinMultiplier) || 1.0)
-            : values.coinsMultiplier != null ? Math.max(0.1, parseFloat(values.coinsMultiplier) || 1.0) : cur.coinMultiplier;
-        const sfx = values.sfxVolume != null ? Math.min(1, Math.max(0, parseFloat(values.sfxVolume) || 0))
-            : values.defaultSfxVolume != null ? (parseInt(values.defaultSfxVolume, 10) || 60) / 100 : cur.sfxVolume;
-        const mus = values.musicVolume != null ? Math.min(1, Math.max(0, parseFloat(values.musicVolume) || 0))
-            : values.defaultBgmVolume != null ? (parseInt(values.defaultBgmVolume, 10) || 35) / 100 : cur.musicVolume;
+        const timerSec = values.quizTimerSeconds != null
+            ? _parseIntPreserveZero(values.quizTimerSeconds, cur.quizTimerSeconds, 0, 600)
+            : cur.quizTimerSeconds;
+        const xpMult = values.xpMultiplier != null
+            ? _parseFloatPreserveZero(values.xpMultiplier, cur.xpMultiplier, 0.1, 20)
+            : cur.xpMultiplier;
+        const coinMult = values.coinMultiplier != null
+            ? _parseFloatPreserveZero(values.coinMultiplier, cur.coinMultiplier, 0.1, 20)
+            : values.coinsMultiplier != null
+                ? _parseFloatPreserveZero(values.coinsMultiplier, cur.coinMultiplier, 0.1, 20)
+                : cur.coinMultiplier;
+        const sfx = values.sfxVolume != null
+            ? _parseFloatPreserveZero(values.sfxVolume, cur.sfxVolume, 0, 1)
+            : values.defaultSfxVolume != null
+                ? _parseIntPreserveZero(values.defaultSfxVolume, 60, 0, 100) / 100
+                : cur.sfxVolume;
+        const mus = values.musicVolume != null
+            ? _parseFloatPreserveZero(values.musicVolume, cur.musicVolume, 0, 1)
+            : values.defaultBgmVolume != null
+                ? _parseIntPreserveZero(values.defaultBgmVolume, 35, 0, 100) / 100
+                : cur.musicVolume;
         const defaultBtnBrightness = values.defaultBtnBrightness != null
-            ? Math.min(110, Math.max(45, parseInt(values.defaultBtnBrightness, 10) || 80))
+            ? _parseIntPreserveZero(values.defaultBtnBrightness, 80, 45, 110)
             : (cur.defaultBtnBrightness != null ? cur.defaultBtnBrightness : 80);
         const defaultTheme = (typeof values.defaultTheme === 'string' && values.defaultTheme.trim()) ? values.defaultTheme.trim() : (cur.defaultTheme || 'default');
         const defaultUiPreset = (typeof values.defaultUiPreset === 'string' && values.defaultUiPreset.trim()) ? values.defaultUiPreset.trim() : (cur.defaultUiPreset || 'default');
@@ -1726,7 +1839,7 @@ const AdminStore = (() => {
         const icon = String(p.icon || '🤖').trim() || '🤖';
         const color = (typeof p.color === 'string' && /^#[0-9a-f]{6}$/i.test(p.color.trim())) ? p.color.trim() : '#4cc9f0';
         const hintPrefix = typeof p.hintPrefix === 'string' ? p.hintPrefix : '';
-        const variantOffset = Math.max(0, parseInt(p.variantOffset, 10) || idx);
+        const variantOffset = _parseIntPreserveZero(p.variantOffset, idx, 0, 999);
         const enabled = p.enabled !== false;
         return { id, name, role, icon, color, hintPrefix, variantOffset, enabled };
     }
@@ -1770,9 +1883,12 @@ const AdminStore = (() => {
         const showAiBadgeInQuiz = typeof values.showAiBadgeInQuiz === 'boolean'
             ? values.showAiBadgeInQuiz
             : (cur.showAiBadgeInQuiz !== false);
+        const storedRawPersonas = (_data().aiConfig && Object.prototype.hasOwnProperty.call(_data().aiConfig, 'localPersonas'))
+            ? _data().aiConfig.localPersonas
+            : null;
         const localPersonas = Array.isArray(values.localPersonas)
             ? values.localPersonas.map((p, i) => _normalizeLocalPersona(p, i)).filter(Boolean)
-            : (values.localPersonas === null ? null : cur.localPersonas);
+            : (values.localPersonas === null ? null : storedRawPersonas);
 
         const clean = {
             generateWebhookUrl: (typeof values.generateWebhookUrl === 'string') ? values.generateWebhookUrl.trim() : (cur.generateWebhookUrl || ''),
@@ -1828,25 +1944,47 @@ const AdminStore = (() => {
        EXPORT / IMPORT / RÉINITIALISATION
        ----------------------------------------------------------------------- */
 
-    /** Exporte la configuration administrateur complète (niveaux + matières + crédits + boutique + récompenses). */
-    function exportJson() {
-        return JSON.stringify(_data(), null, 2);
+    /**
+     * Exporte la configuration administrateur complète.
+     * Par sécurité, les clés API (providers[].apiKey) sont masquées par défaut
+     * sauf si { includeSecrets: true } est explicitement demandé.
+     */
+    function exportJson(options) {
+        const includeSecrets = Boolean(options && options.includeSecrets === true);
+        const snapshot = _clone(_data());
+        if (!includeSecrets && snapshot && snapshot.aiConfig && Array.isArray(snapshot.aiConfig.providers)) {
+            snapshot.aiConfig.providers = snapshot.aiConfig.providers.map(p => (
+                p && typeof p === 'object' ? { ...p, apiKey: '' } : p
+            ));
+        }
+        return JSON.stringify(snapshot, null, 2);
     }
 
-    /** Importe une configuration exportée (valide la structure avant remplacement). */
+    /** Importe une configuration exportée de manière atomique (validation complète AVANT toute écriture). */
     function importJson(text) {
         let parsed;
         try { parsed = JSON.parse(text); }
         catch { return { ok: false, error: 'JSON invalide.' }; }
-        if (!parsed || parsed.v !== 1 || !parsed.subjects) return { ok: false, error: 'Fichier de configuration non reconnu.' };
-        if (parsed.levels !== null && !Array.isArray(parsed.levels)) return { ok: false, error: 'Structure « levels » invalide.' };
-        if (parsed.levels) {
-            const r = saveLevels(parsed.levels);
-            if (!r.ok) return r;
-        } else {
-            _data().levels = null;
+        if (!parsed || parsed.v !== 1 || !parsed.subjects || typeof parsed.subjects !== 'object') {
+            return { ok: false, error: 'Fichier de configuration non reconnu.' };
         }
-        const overrides = (parsed.subjects.overrides && typeof parsed.subjects.overrides === 'object') ? parsed.subjects.overrides : {};
+        if (parsed.levels !== null && parsed.levels !== undefined && !Array.isArray(parsed.levels)) {
+            return { ok: false, error: 'Structure « levels » invalide.' };
+        }
+
+        // 1) Préparer un candidat atomique sans muter l'état courant
+        const candidate = _clone(_data());
+
+        if (Array.isArray(parsed.levels)) {
+            const r = _validateLevels(parsed.levels);
+            if (!r.ok) return r;
+            candidate.levels = r.clean;
+        } else if (parsed.levels === null) {
+            candidate.levels = null;
+        }
+
+        const overrides = (parsed.subjects.overrides && typeof parsed.subjects.overrides === 'object' && !Array.isArray(parsed.subjects.overrides))
+            ? parsed.subjects.overrides : {};
         const customs = Array.isArray(parsed.subjects.customs) ? parsed.subjects.customs : [];
         for (const c of customs) {
             if (!c || !c.id || !c.name || !Array.isArray(c.lessons) || c.lessons.length === 0)
@@ -1866,41 +2004,110 @@ const AdminStore = (() => {
                 }
             }
         }
-        _data().subjects = { overrides: _clone(overrides), customs: _clone(customs) };
+        candidate.subjects = { overrides: _clone(overrides), customs: _clone(customs) };
+
         if (parsed.filieres !== undefined) {
             if (Array.isArray(parsed.filieres)) {
-                const r = saveFilieres(parsed.filieres);
-                if (!r.ok) return r;
+                if (parsed.filieres.length === 0) return { ok: false, error: 'Il faut au moins une filière.' };
+                const fIds = new Set();
+                const fClean = [];
+                for (const f of parsed.filieres) {
+                    const fid = String(f && f.id || '').trim().toLowerCase();
+                    if (!fid || !/^[a-z0-9_-]+$/i.test(fid) || fid === 'all') {
+                        return { ok: false, error: 'Identifiant de filière invalide dans l\'import : ' + fid };
+                    }
+                    if (fIds.has(fid)) return { ok: false, error: 'Identifiant de filière en double : ' + fid };
+                    fIds.add(fid);
+                    const lbl = String(f.label || '').trim();
+                    if (!lbl) return { ok: false, error: 'Libellé de filière vide pour ' + fid + '.' };
+                    fClean.push({
+                        id: fid,
+                        label: lbl,
+                        shortLabel: String(f.shortLabel || lbl).trim() || lbl,
+                        icon: String(f.icon || '🧭').trim() || '🧭',
+                        enabled: f.enabled !== false,
+                        desc: String(f.desc || '').trim(),
+                    });
+                }
+                if (!fClean.some(f => f.enabled !== false)) {
+                    return { ok: false, error: 'Au moins une filière doit rester active.' };
+                }
+                candidate.filieres = fClean;
             } else {
-                _data().filieres = null;
+                candidate.filieres = null;
             }
         }
+
         if (parsed.quests !== undefined) {
             if (Array.isArray(parsed.quests)) {
-                const r = saveQuestPool(parsed.quests);
-                if (!r.ok) return r;
+                if (parsed.quests.length === 0) return { ok: false, error: 'Le pool doit contenir au moins une quête.' };
+                const qClean = [];
+                for (const q of parsed.quests) {
+                    const title = String(q && q.title || '').trim();
+                    if (!title) return { ok: false, error: 'Chaque quête doit avoir un titre.' };
+                    qClean.push({
+                        type: VALID_QUEST_TYPES.includes(q.type) ? q.type : 'levels',
+                        icon: String(q.icon || '🎯').trim() || '🎯',
+                        title,
+                        target: _parseIntPreserveZero(q.target, 1, 1, 10000),
+                        xp: _parseIntPreserveZero(q.xp, 0, 0, 10000),
+                        coins: _parseIntPreserveZero(q.coins, 0, 0, 10000),
+                        color: _safeHex(q.color, '#4cc9f0'),
+                        enabled: q.enabled !== false,
+                    });
+                }
+                if (!qClean.some(q => q.enabled !== false)) {
+                    return { ok: false, error: 'Au moins une quête doit rester active.' };
+                }
+                candidate.quests = qClean;
             } else {
-                _data().quests = null;
+                candidate.quests = null;
             }
         }
-        if (parsed.badges && typeof parsed.badges === 'object') {
-            _data().badges = _clone(parsed.badges);
-        }
+
         if (parsed.credits && typeof parsed.credits === 'object') {
-            const r = saveCredits(parsed.credits);
-            if (!r.ok) return r;
+            const cr = _validateCredits(parsed.credits, {});
+            if (!cr.ok) return cr;
+            candidate.credits = cr.clean;
+        }
+
+        if (parsed.badges && typeof parsed.badges === 'object') {
+            candidate.badges = {
+                overrides: (parsed.badges.overrides && typeof parsed.badges.overrides === 'object') ? _clone(parsed.badges.overrides) : {},
+                customs: Array.isArray(parsed.badges.customs) ? _clone(parsed.badges.customs) : [],
+            };
         }
         if (parsed.shop && typeof parsed.shop === 'object') {
-            _data().shop = _clone(parsed.shop);
+            const shopOv = (parsed.shop.overrides && typeof parsed.shop.overrides === 'object') ? _clone(parsed.shop.overrides) : {};
+            Object.keys(shopOv).forEach(k => {
+                if (shopOv[k] && typeof shopOv[k] === 'object') {
+                    if (shopOv[k].color) shopOv[k].color = _safeHex(shopOv[k].color, '#c8a84b');
+                    if (shopOv[k].img) shopOv[k].img = _safeMediaUrl(shopOv[k].img);
+                }
+            });
+            const shopCust = Array.isArray(parsed.shop.customs)
+                ? parsed.shop.customs.map(c => (c && typeof c === 'object' ? { ...c, color: _safeHex(c.color, '#c8a84b'), img: _safeMediaUrl(c.img) } : null)).filter(Boolean)
+                : [];
+            candidate.shop = { overrides: shopOv, customs: shopCust };
         }
         if (parsed.rewards && typeof parsed.rewards === 'object') {
-            _data().rewards = _clone(parsed.rewards);
+            candidate.rewards = {
+                xpBase: _parseIntPreserveZero(parsed.rewards.xpBase, DEFAULT_REWARDS.xpBase, 1, 5000),
+                coinsBase: _parseIntPreserveZero(parsed.rewards.coinsBase, DEFAULT_REWARDS.coinsBase, 0, 5000),
+                chronoBonusMaxXp: _parseIntPreserveZero(parsed.rewards.chronoBonusMaxXp, DEFAULT_REWARDS.chronoBonusMaxXp, 0, 5000),
+                dailyChestCoins: _parseIntPreserveZero(parsed.rewards.dailyChestCoins, DEFAULT_REWARDS.dailyChestCoins, 0, 10000),
+                firstTryBonusXp: _parseIntPreserveZero(parsed.rewards.firstTryBonusXp, DEFAULT_REWARDS.firstTryBonusXp, 0, 5000),
+                questRewardMultiplier: _parseFloatPreserveZero(parsed.rewards.questRewardMultiplier, 1, 0.1, 20),
+            };
         }
+
+        // 2) Validation réussie à 100 % → commit atomique
+        cache = candidate;
         if (parsed.siteConfig && typeof parsed.siteConfig === 'object') {
-            _data().siteConfig = _clone(parsed.siteConfig);
+            saveSiteConfig(parsed.siteConfig);
         }
         if (parsed.aiConfig && typeof parsed.aiConfig === 'object') {
-            _data().aiConfig = _clone(parsed.aiConfig);
+            saveAiConfig(parsed.aiConfig);
         }
         _save();
         return { ok: true };
@@ -1927,6 +2134,7 @@ const AdminStore = (() => {
                 if (
                     key === 'eduquest_options' || key === 'eduquest_niveau' || key === 'eduquest_filiere' || key === 'eduquest_daily_quests' ||
                     key === 'eduquest_audio_manual_mute' || key === 'eduquest_audio_state' ||
+                    key === 'eduquest_current_track' || key === 'eduquest_music_time' ||
                     key.startsWith('eduquest_opts_') || key.startsWith('eduquest_prog_') ||
                     key.startsWith('eduquest_niveau_') || key.startsWith('eduquest_filiere_') || key.startsWith('eduquest_quests_') ||
                     key.startsWith('eduquest_boosters_') || key.startsWith('eduquest_streak_') ||
@@ -2036,7 +2244,7 @@ const AdminStore = (() => {
         resetAiConfig,
 
         // Succès / Badges (avec filtrage par filière)
-        DEFAULT_BADGES,
+        DEFAULT_BADGES: _clone(DEFAULT_BADGES),
         getBadges,
         getBadge,
         isBadgeRelevantFor,

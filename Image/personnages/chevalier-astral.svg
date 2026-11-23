@@ -1,25 +1,40 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
   <defs>
-    <radialGradient id="caBg" cx="50%" cy="30%" r="75%">
-      <stop offset="0%" stop-color="#facc15"/>
-      <stop offset="100%" stop-color="#0f172a"/>
+    <radialGradient id="avchevalierastralBg" cx="50%" cy="34%" r="72%">
+      <stop offset="0%" stop-color="#fef08a" stop-opacity="0.92"/>
+      <stop offset="48%" stop-color="#eab308" stop-opacity="0.72"/>
+      <stop offset="100%" stop-color="#091126"/>
     </radialGradient>
-    <linearGradient id="caGold" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#fef08a"/>
-      <stop offset="0.5" stop-color="#f59e0b"/>
-      <stop offset="100%" stop-color="#b45309"/>
+    <linearGradient id="avchevalierastralGold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fce9a6"/>
+      <stop offset="100%" stop-color="#b88d32"/>
     </linearGradient>
+    <clipPath id="avchevalierastralClip"><circle cx="60" cy="60" r="56"/></clipPath>
   </defs>
-  <rect width="120" height="120" fill="url(#caBg)"/>
-  <!-- Plastron & épaulettes dorées -->
-  <path d="M18 120 L26 82 Q60 72 94 82 L102 120 Z" fill="url(#caGold)" stroke="#78350f" stroke-width="2.2"/>
-  <polygon points="60,86 68,98 60,110 52,98" fill="#38bdf8" stroke="#fef9c3" stroke-width="1.8"/>
-  <!-- Cimier / panache céleste -->
-  <path d="M60 12 C74 12 80 24 72 34 L48 34 C40 24 46 12 60 12 Z" fill="#38bdf8" stroke="#e0f2fe" stroke-width="2"/>
-  <!-- Heaume de chevalier astral -->
-  <path d="M36 44 Q36 26 60 26 Q84 26 84 44 L80 76 Q60 86 40 76 Z" fill="url(#caGold)" stroke="#78350f" stroke-width="2.5"/>
-  <!-- Visière en T lumineuse -->
-  <path d="M44 50 L76 50 L74 58 L64 58 L64 74 L56 74 L56 58 L46 58 Z" fill="#0f172a"/>
-  <rect x="48" y="52" width="10" height="4" rx="2" fill="#38bdf8"/>
-  <rect x="62" y="52" width="10" height="4" rx="2" fill="#38bdf8"/>
+  <rect width="120" height="120" fill="#091126"/>
+  <g clip-path="url(#avchevalierastralClip)">
+    <rect width="120" height="120" fill="url(#avchevalierastralBg)"/>
+    <!-- Constellation astrale de fond -->
+    <circle cx="60" cy="60" r="49" fill="none" stroke="url(#avchevalierastralGold)" stroke-width="1" stroke-dasharray="4 5" opacity="0.35"/>
+    <g fill="#f7e7ae" opacity="0.8">
+      <path d="M22 26 l1.4 3.2 3.2 1.4 -3.2 1.4 -1.4 3.2 -1.4 -3.2 -3.2 -1.4 3.2 -1.4 Z"/>
+      <circle cx="98" cy="28" r="1.8"/>
+      <circle cx="18" cy="64" r="1.4" opacity="0.6"/>
+      <circle cx="102" cy="58" r="1.6" opacity="0.7"/>
+    </g>
+    
+    <!-- Armure paladin dorée & azur -->
+    <path d="M16 118 L26 78 Q60 70 94 78 L104 118 Z" fill="#1e3a8a" stroke="url(#avchevalierastralGold)" stroke-width="3"/>
+    <polygon points="60,82 68,98 60,110 52,98" fill="url(#avchevalierastralGold)"/>
+    <!-- Panache astral -->
+    <path d="M60 10 Q74 14 70 28 H50 Q46 14 60 10 Z" fill="#38bdf8" stroke="url(#avchevalierastralGold)" stroke-width="1.8"/>
+    <!-- Heaume chevalier -->
+    <path d="M36 52 Q36 24 60 24 Q84 24 84 52 L78 76 Q60 86 42 76 Z" fill="#e2e8f0" stroke="url(#avchevalierastralGold)" stroke-width="2.8"/>
+    <!-- Visière croisée lumineuse -->
+    <path d="M42 52 H78 M60 40 V72" stroke="#0f172a" stroke-width="6" stroke-linecap="round"/>
+    <path d="M44 52 H76" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+  
+  </g>
+  <!-- Cadre médaillon doré unifié -->
+  <circle cx="60" cy="60" r="56" fill="none" stroke="url(#avchevalierastralGold)" stroke-width="3.2"/>
 </svg>

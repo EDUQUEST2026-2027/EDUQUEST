@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <!--
-  INDEX.HTML — EDUQUEST v1.29.1
+  INDEX.HTML — EDUQUEST v1.30.0
   Page d'accueil : navigation principale, modales Options (classe, 18 filières, apparence), Connexion & Quitter.
 -->
 
@@ -17,10 +17,10 @@
     <meta property="og:site_name" content="EDUQUEST">
     <meta property="og:title" content="EDUQUEST — Le jeu de révision Collège, Lycée & BTS">
     <meta property="og:description"
-        content="Gravis les 36 îles du savoir (18 filières) : 100 niveaux par matière, XP, 78 succès et boutique de 97 articles. Gratuit et sans publicité.">
-    <meta property="og:image" content="Image/logo.webp">
+        content="Gravis les 36 îles du savoir (18 filières) : 100 niveaux par matière, XP, 78 succès et boutique de 98 articles. Gratuit et sans publicité.">
+    <meta property="og:image" content="Image/logo.svg">
     <meta name="twitter:card" content="summary_large_image">
-    <link rel="icon" type="image/webp" href="Image/logo.webp">
+    <link rel="icon" type="image/svg+xml" href="Image/logo.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet"
@@ -50,231 +50,162 @@
         <!-- Annonce globale configurable depuis admin.html -->
         <div id="siteAnnouncement" class="site-announcement-banner" hidden></div>
 
-        <!-- Logo animé du jeu -->
-        <!-- Image officielle du logo (Image/logo.webp), avec halo animé en CSS (.logo-image, keyframe logoImagePulse) -->
+        <!-- Logo animé du jeu (SVG vectoriel unifié Astral & Or) -->
         <div class="logo">
-            <img src="Image/logo.webp" alt="EDUQUEST" class="logo-image" decoding="async" fetchpriority="high">
+            <img src="Image/logo.svg" alt="EDUQUEST" class="logo-image" decoding="async" fetchpriority="high">
         </div>
 
         <!-- Menu de navigation principal -->
-        <!-- Les classes 'primary', 'secondary', 'danger' définissent la couleur du bouton -->
-        <!-- Voir global.css → .menu-button et ses variantes -->
         <nav class="menu" aria-label="Menu principal">
-            <!-- Lien vers le tableau de bord (matières, quiz, boutique) -->
             <a class="menu-button primary" href="dashboard.html"><span class="menu-btn-icon"
-                    aria-hidden="true">⚔</span><span class="menu-btn-text">JOUER</span></a>
+                    aria-hidden="true"><svg class="eq-icon eq-icon--gold" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5L3 6V3h3l11.5 11.5" fill="currentColor" fill-opacity="0.15"/><path d="M13 19l6-6M16 16l4 4M19 21l2-2"/><path d="M14.5 6.5L18 3h3v3l-3.5 3.5"/><path d="M5 14l4 4M7 17l-3 3M3 19l2 2"/></svg></span><span class="menu-btn-text">JOUER</span></a>
 
-            <!-- Lien vers les préférences du jeu -->
             <button type="button" class="menu-button" id="openOptionsBtn"
                 onclick="window._openOptionsModal ? window._openOptionsModal() : (document.getElementById('modalOptions').hidden = false);"><span
-                    class="menu-btn-icon" aria-hidden="true">⚙</span><span class="menu-btn-text">OPTIONS</span></button>
+                    class="menu-btn-icon" aria-hidden="true"><svg class="eq-icon eq-icon--gold" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" fill="currentColor" fill-opacity="0.22"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="menu-btn-text">OPTIONS</span></button>
 
-            <!-- Lien vers la page de connexion/inscription -->
             <button type="button" class="menu-button secondary" id="openLoginBtn"
                 onclick="window._openLoginModal ? window._openLoginModal() : (document.getElementById('modalLogin').hidden = false);"><span
-                    class="menu-btn-icon" aria-hidden="true">👤</span><span class="menu-btn-text">SE
+                    class="menu-btn-icon" aria-hidden="true"><svg class="eq-icon eq-icon--cyan" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4" fill="currentColor" fill-opacity="0.2"/><path d="M5 20a7 7 0 0 1 14 0" fill="currentColor" fill-opacity="0.12"/></svg></span><span class="menu-btn-text">SE
                     CONNECTER</span></button>
 
-            <!-- Bouton Quitter : géré par JS (initAccueil → #quitButton) -->
             <button type="button" class="menu-button danger" id="quitButton"><span class="menu-btn-icon"
-                    aria-hidden="true">✕</span><span class="menu-btn-text">QUITTER</span></button>
+                    aria-hidden="true"><svg class="eq-icon eq-icon--danger" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span><span class="menu-btn-text">QUITTER</span></button>
         </nav>
 
     </main>
 
-    <!-- ================================================================
-         PAGE DE SORTIE (#exitPage)
-         Affichée temporairement lors du clic sur Quitter.
-         Initialement cachée (classe CSS 'hidden' = display:none).
-         Révélée par JS (initAccueil) après confirmation de sortie.
-    ================================================================ -->
     <section class="container hidden" id="exitPage">
         <div class="exit-message">
-            <div class="exit-title">✨ Merci d'avoir joué à notre jeu ! ✨</div>
-            <!-- Ce texte peut être remplacé par JS si l'onglet ne peut pas être fermé -->
+            <div class="exit-title">Merci d'avoir joué à EDUQUEST !</div>
             <div class="exit-subtitle">À bientôt pour de nouvelles aventures !</div>
         </div>
     </section>
 
     <footer>
-        <div class="footer">Version 1.29.1</div>
+        <div class="footer">Version 1.30.0</div>
         <div class="legal-links"><a href="legal.html">Mentions légales</a> · <a href="legal.html#cookies"
                 onclick="window.dispatchEvent(new Event('eduquest:cookie-reopen'))">Cookies</a></div>
     </footer>
 
     <!-- Accès discret au panneau d'administration -->
     <a class="admin-panel-link" href="admin.html"
-        title="Panneau d'administration : gérer les membres, les niveaux et les contenus">🔐 Administration</a>
+        title="Panneau d'administration : gérer les membres, les niveaux et les contenus"><svg class="eq-icon eq-icon--gold" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6l7-3z" fill="currentColor" fill-opacity="0.18"/><path d="M9.5 12l1.8 1.8 3.5-3.8"/></svg> Administration</a>
 
     <!-- MODALS -->
     <div id="modalOptions" class="modal-overlay" hidden>
         <section class="options-container" role="dialog" aria-modal="true" aria-labelledby="optionsModalTitle">
             <button type="button" class="modal-top-close" id="closeOptionsX" aria-label="Fermer les options"
-                title="Fermer">✕</button>
-            <h1 class="options-header" id="optionsModalTitle">⚙ OPTIONS</h1>
+                title="Fermer"><svg class="eq-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+            <h1 class="options-header" id="optionsModalTitle"><svg class="eq-icon eq-icon--gold" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="currentColor" fill-opacity="0.22"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> OPTIONS</h1>
 
-            <!-- ============================================================
-                 STRUCTURE D'UNE OPTION CHECKBOX :
-                 Chaque option cochable suit ce modèle :
-                   <div class="option-group">
-                     <label class="checkbox-container">
-                       <span class="checkbox">
-                         <input type="checkbox" id="nomOption" checked>
-                         <span class="checkbox-mark">✓</span>
-                       </span>
-                       <span class="option-label">Libellé de l'option</span>
-                     </label>
-                   </div>
-
-                 Le <label> englobe tout pour que le clic sur le texte active la case.
-                 La classe .disabled peut être ajoutée par JS sur .checkbox-container
-                 pour griser visuellement une option désactivée.
-                 Le .checkbox-mark (✓) est le visuel personnalisé de la case à cocher.
-            ============================================================ -->
-
-            <!-- Option 1 : Son global (maître)
-                 Contrôle si TOUS les sons sont actifs.
-                 Si décoché : musiqueActive et effetsActifs sont grisées et désactivées.
-                 Géré dans app.js → updateSoundControlsState()
-            -->
+            <!-- Option 1 : Son global (maître) -->
             <div class="option-group">
                 <label class="checkbox-container">
                     <span class="checkbox">
                         <input type="checkbox" id="sonsActifs" checked>
                         <span class="checkbox-mark">✓</span>
                     </span>
-                    <span class="option-label">🔊 Sons globaux (musique et bruitages)</span>
+                    <span class="option-label"><svg class="eq-icon eq-icon--gold" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4V5z" fill="currentColor" fill-opacity="0.22"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg> Sons globaux (musique et bruitages)</span>
                 </label>
             </div>
 
-            <!-- Option 2 : Musique de fond
-                 Désactivée et grisée si sonsActifs est décoché.
-                 Géré dans app.js → toggleMusique() / updateSoundControlsState()
-            -->
+            <!-- Option 2 : Musique de fond -->
             <div class="option-group">
                 <label class="checkbox-container">
                     <span class="checkbox">
                         <input type="checkbox" id="musiqueActive" checked>
                         <span class="checkbox-mark">✓</span>
                     </span>
-                    <span class="option-label">🎵 Musique de fond</span>
+                    <span class="option-label"><svg class="eq-icon eq-icon--cyan" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.5" fill="currentColor" fill-opacity="0.22"/><circle cx="17.5" cy="16" r="2.5" fill="currentColor" fill-opacity="0.22"/></svg> Musique de fond</span>
                 </label>
             </div>
 
-            <!-- Option 3 : Effets sonores (SFX)
-                 TODO : les effets sonores ne sont pas encore implémentés.
-                 Ce contrôle est prévu pour une version future du jeu.
-                 La valeur est sauvegardée mais n'a aucun effet actuel sur le son.
-            -->
+            <!-- Option 3 : Effets sonores (SFX Web Audio — AudioManager) -->
             <div class="option-group">
                 <label class="checkbox-container">
                     <span class="checkbox">
                         <input type="checkbox" id="effetsActifs" checked>
                         <span class="checkbox-mark">✓</span>
                     </span>
-                    <span class="option-label">🔔 Bruitages et effets sonores</span>
+                    <span class="option-label"><svg class="eq-icon eq-icon--gold" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8.5-3 8.5h18s-3-1.5-3-8.5z" fill="currentColor" fill-opacity="0.18"/><path d="M10 20a2 2 0 0 0 4 0"/></svg> Bruitages et effets sonores</span>
                 </label>
             </div>
 
-            <!-- Option 4 : Volume de la musique
-                 Slider de 0 à 100 (valeur par défaut : 75).
-                 Modifie music.volume en temps réel (0.0 à 1.0).
-                 L'affichage du pourcentage (#valueMusiqueDisplay) est mis à jour
-                 en temps réel par updateVolumeMusique() dans app.js.
-            -->
+            <!-- Option 4 : Volume de la musique -->
             <div class="option-group">
-                <label class="option-label" for="volumeMusique">🔊 Volume Musique</label>
+                <label class="option-label" for="volumeMusique"><svg class="eq-icon eq-icon--gold" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4V5z" fill="currentColor" fill-opacity="0.22"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg> Volume Musique</label>
                 <div class="slider-container">
-                    <!-- min/max/value : valeurs HTML par défaut (écrasées par JS au chargement) -->
                     <input type="range" min="0" max="100" value="75" class="slider" id="volumeMusique">
-                    <!-- Ce span affiche le pourcentage en temps réel (ex: "75%") -->
                     <span class="volume-value" id="valueMusiqueDisplay">75%</span>
                 </div>
             </div>
 
-            <!-- Option 5 : Volume des effets sonores
-                 Slider de 0 à 100 (valeur par défaut : 80).
-                 TODO : brancher ce volume aux sons SFX quand ils seront implémentés.
-                 Pour l'instant, seul l'affichage est fonctionnel.
-            -->
+            <!-- Option 5 : Volume des effets sonores (Web Audio SFX) -->
             <div class="option-group">
-                <label class="option-label" for="volumeEffets">🔉 Volume Effets Sonores</label>
+                <label class="option-label" for="volumeEffets"><svg class="eq-icon eq-icon--cyan" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4V5z" fill="currentColor" fill-opacity="0.22"/><path d="M15.5 9a4.5 4.5 0 0 1 0 6"/></svg> Volume Effets Sonores</label>
                 <div class="slider-container">
                     <input type="range" min="0" max="100" value="80" class="slider" id="volumeEffets">
                     <span class="volume-value" id="valueEffetsDisplay">80%</span>
                 </div>
             </div>
 
-            <!-- Option 6 : Plein écran
-                 Appelle l'API Fullscreen du navigateur via requestFullscreen().
-                 Compatible avec Chrome, Firefox, Edge, Safari (via préfixes webkit/ms).
-                 La case est mise à jour automatiquement si l'utilisateur quitte
-                 le plein écran en appuyant sur Échap (écouteur fullscreenchange dans app.js).
-                 Note : par défaut non coché (le jeu ne démarre pas en plein écran).
-            -->
+            <!-- Option 6 : Plein écran -->
             <div class="option-group">
                 <label class="checkbox-container">
                     <span class="checkbox">
-                        <!-- Pas de 'checked' → décoché par défaut -->
                         <input type="checkbox" id="pleinEcran">
                         <span class="checkbox-mark">✓</span>
                     </span>
-                    <span class="option-label">🖥 Plein écran</span>
+                    <span class="option-label"><svg class="eq-icon eq-icon--cyan" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg> Plein écran</span>
                 </label>
             </div>
 
-            <!-- Option 6.5 : Mode Défi Chronométré (état par défaut piloté par AdminStore) -->
+            <!-- Option 6.5 : Mode Défi Chronométré -->
             <div class="option-group" id="optionsChronoGroup">
                 <label class="checkbox-container">
                     <span class="checkbox">
                         <input type="checkbox" id="modeChrono" checked>
                         <span class="checkbox-mark">✓</span>
                     </span>
-                    <span class="option-label">⏱ Mode Défi Chronométré (<span
+                    <span class="option-label"><svg class="eq-icon eq-icon--gold" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8" fill="currentColor" fill-opacity="0.18"/><path d="M12 9v4l2.5 2M9 3h6M12 3v2"/></svg> Mode Défi Chronométré (<span
                             id="chronoDurationLabel">45s</span>)</span>
                 </label>
             </div>
 
-            <!-- Option 7 : Particules (nuages flottants)
-                 Contrôle l'affichage des <div class="cloud"> générés par createEnvironment().
-                 La modification est appliquée en temps réel (applyParticulesSetting dans app.js).
-                 Peut être désactivé pour améliorer les performances sur les appareils lents.
-            -->
+            <!-- Option 7 : Particules -->
             <div class="option-group">
                 <label class="checkbox-container">
                     <span class="checkbox">
                         <input type="checkbox" id="particules" checked>
                         <span class="checkbox-mark">✓</span>
                     </span>
-                    <span class="option-label">✨ Effets de particules</span>
+                    <span class="option-label"><svg class="eq-icon eq-icon--gold" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2.1 6.9L21 11l-6.9 2.1L12 20l-2.1-6.9L3 11l6.9-2.1L12 2z" fill="currentColor" fill-opacity="0.24"/></svg> Effets de particules</span>
                 </label>
             </div>
 
-            <!-- Option 7.5 : Animations esthétiques de l'interface (Étape 10) -->
+            <!-- Option 7.5 : Animations esthétiques de l'interface -->
             <div class="option-group">
                 <label class="checkbox-container">
                     <span class="checkbox">
                         <input type="checkbox" id="animationsActives" checked>
                         <span class="checkbox-mark">✓</span>
                     </span>
-                    <span class="option-label">🎨 Animations esthétiques de l'interface</span>
+                    <span class="option-label"><svg class="eq-icon eq-icon--violet" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 0 0 0 18h1.5a2.5 2.5 0 0 0 0-5H13a1.5 1.5 0 0 1 0-3h3.5A4.5 4.5 0 0 0 21 8.5 5.5 5.5 0 0 0 12 3z" fill="currentColor" fill-opacity="0.18"/><circle cx="7.5" cy="11" r="1" fill="currentColor"/><circle cx="10" cy="7.5" r="1" fill="currentColor"/></svg> Animations esthétiques de l'interface</span>
                 </label>
                 <p class="adm-hint" style="margin-top: 4px; padding-left: 36px;">
                     Désactive les ondulations, flottements d'îles et pulsations décoratives.
                 </p>
             </div>
 
-            <!-- Option 8 : Mode Économie d'énergie (Remplace l'ancienne V-Sync)
-                 Désactive les animations CSS gourmandes (particules, dégradés animés)
-                 pour préserver la batterie des appareils mobiles.
-            -->
+            <!-- Option 8 : Mode Économie d'énergie -->
             <div class="option-group">
                 <label class="checkbox-container">
                     <span class="checkbox">
                         <input type="checkbox" id="ecoMode">
                         <span class="checkbox-mark">✓</span>
                     </span>
-                    <span class="option-label">🔋 Économie d'énergie</span>
+                    <span class="option-label"><svg class="eq-icon eq-icon--emerald" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2" fill="currentColor" fill-opacity="0.16"/><path d="M21 10v4M7 10v4M11 10v4"/></svg> Économie d'énergie</span>
                 </label>
                 <p class="adm-hint" style="margin-top: 4px; padding-left: 36px;">
                     Désactive les animations d'arrière-plan pour économiser la batterie.
@@ -283,7 +214,7 @@
 
             <!-- Option 9 : Niveau scolaire / Classe -->
             <div class="option-group">
-                <label class="option-label" for="optionsNiveauSelect">🎓 Classe / Niveau scolaire</label>
+                <label class="option-label" for="optionsNiveauSelect"><svg class="eq-icon eq-icon--gold" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5L2 9z" fill="currentColor" fill-opacity="0.22"/><path d="M6 11.5v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5M21 9.5V16"/></svg> Classe / Niveau scolaire</label>
                 <div style="margin-top: 8px;">
                     <select class="dash-grade-select" id="optionsNiveauSelect" style="width: 100%; max-width: 100%;">
                         <option value="6eme">🎓 6ème (Collège)</option>
@@ -304,7 +235,7 @@
 
             <!-- Option 9.5 : Filière / Voie d'études (Lycée & BTS) -->
             <div class="option-group" id="optionsFiliereGroup">
-                <label class="option-label" for="optionsFiliereSelect">🧭 Filière / Spécialité (Lycée &amp; BTS)</label>
+                <label class="option-label" for="optionsFiliereSelect"><svg class="eq-icon eq-icon--cyan" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity="0.14"/><polygon points="15.5,8.5 13.3,13.3 8.5,15.5 10.7,10.7" fill="currentColor" fill-opacity="0.35"/></svg> Filière / Spécialité (Lycée &amp; BTS)</label>
                 <div style="margin-top: 8px;">
                     <select class="dash-grade-select" id="optionsFiliereSelect" style="width: 100%; max-width: 100%;">
                         <option value="generale">📚 Voie Générale (SES, NSI, HGGSP, SI, HLP…)</option>
@@ -332,12 +263,12 @@
                 </p>
             </div>
 
-            <!-- Section Apparence : Couleur de l'interface, Couleur des boutons, Luminosité des boutons (pilotable en admin) -->
+            <!-- Section Apparence -->
             <div id="optionsAppearanceSection">
-                <div class="options-section-title">🎨 Apparence &amp; Confort Visuel</div>
+                <div class="options-section-title"><svg class="eq-icon eq-icon--gold" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 0 0 0 18h1.5a2.5 2.5 0 0 0 0-5H13a1.5 1.5 0 0 1 0-3h3.5A4.5 4.5 0 0 0 21 8.5 5.5 5.5 0 0 0 12 3z" fill="currentColor" fill-opacity="0.18"/><circle cx="7.5" cy="11" r="1" fill="currentColor"/><circle cx="10" cy="7.5" r="1" fill="currentColor"/></svg> Apparence &amp; Confort Visuel</div>
 
                 <div class="option-group">
-                    <label class="option-label" for="uiColorPicker">🌌 Couleur de l'interface</label>
+                    <label class="option-label" for="uiColorPicker"><svg class="eq-icon eq-icon--cyan" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="6" fill="currentColor" fill-opacity="0.2"/><ellipse cx="12" cy="12" rx="10.5" ry="3.5" transform="rotate(-22 12 12)" fill="none"/></svg> Couleur de l'interface</label>
                     <div class="color-presets-row" id="uiColorPresets" role="group"
                         aria-label="Préréglages couleur de l'interface">
                         <button type="button" class="color-swatch" data-ui-preset="default" data-bg="#0d1f3a"
@@ -373,7 +304,7 @@
                 </div>
 
                 <div class="option-group">
-                    <label class="option-label" for="btnColorPicker">🎛️ Couleur des boutons</label>
+                    <label class="option-label" for="btnColorPicker"><svg class="eq-icon eq-icon--gold" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="2" fill="currentColor"/><circle cx="15" cy="12" r="2" fill="currentColor"/><circle cx="11" cy="17" r="2" fill="currentColor"/></svg> Couleur des boutons</label>
                     <div class="color-presets-row" id="btnColorPresets" role="group"
                         aria-label="Préréglages couleur des boutons">
                         <button type="button" class="color-swatch" data-btn-preset="default" data-btn="#24354f"
@@ -397,33 +328,31 @@
                 </div>
 
                 <div class="option-group">
-                    <label class="option-label" for="btnBrightness">🔅 Luminosité des boutons</label>
+                    <label class="option-label" for="btnBrightness"><svg class="eq-icon eq-icon--gold" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor" fill-opacity="0.24"/><path d="M12 3v2M12 19v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M3 12h2M19 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg> Luminosité des boutons</label>
                     <div class="slider-container">
                         <input type="range" min="45" max="110" value="80" class="slider" id="btnBrightness">
                         <span class="volume-value" id="valueBtnBrightnessDisplay">80%</span>
                     </div>
                     <div class="appearance-reset-row">
-                        <button type="button" class="btn-appearance-reset" id="resetAppearanceBtn">↺ Réinitialiser
+                        <button type="button" class="btn-appearance-reset" id="resetAppearanceBtn"><svg class="eq-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg> Réinitialiser
                             l'apparence</button>
                     </div>
                 </div>
             </div><!-- fin #optionsAppearanceSection -->
 
-            <!-- Section GitHub & Projet Open Source (Étape 11) -->
+            <!-- Section GitHub & Projet Open Source -->
             <div class="options-project-info"
                 style="margin-top: 10px; margin-bottom: 12px; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); text-align: center; font-size: 13px; color: var(--muted, #94a3b8);">
-                <span>✨ Projet EDUQUEST</span> ·
-                <a href="https://github.com/EDUQUEST2026-2027/EDUQUEST" target="_blank" rel="noopener"
+                <span><svg class="eq-icon eq-icon--gold" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2.1 6.9L21 11l-6.9 2.1L12 20l-2.1-6.9L3 11l6.9-2.1L12 2z" fill="currentColor" fill-opacity="0.24"/></svg> Projet EDUQUEST</span> ·
+                <a href="https://github.com/EDUQUEST2026-2027/EDUQUEST" target="_blank" rel="noopener noreferrer"
                     id="optionsGithubLink"
-                    style="color: var(--cyan, #38bdf8); text-decoration: none; font-weight: 600;">🐙 Dépôt GitHub</a>
+                    style="color: var(--cyan, #38bdf8); text-decoration: none; font-weight: 600;"><svg class="eq-icon eq-icon--cyan" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21" fill="currentColor" fill-opacity="0.14"/></svg> Dépôt GitHub</a>
             </div>
 
             <!-- Boutons d'action -->
-            <!-- #saveOptions → déclenche la sauvegarde de toutes les options via DB -->
-            <!-- #backButton  → retour sans sauvegarder (window.location.href = 'index.html') -->
             <div class="options-buttons">
-                <button class="option-button" id="saveOptions">💾 SAUVEGARDER</button>
-                <button class="option-button danger" id="backButton">← RETOUR</button>
+                <button type="button" class="option-button" id="saveOptions"><svg class="eq-icon eq-icon--gold" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h11l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" fill="currentColor" fill-opacity="0.16"/><path d="M17 21v-7H7v7M7 3v5h8"/></svg> SAUVEGARDER</button>
+                <button type="button" class="option-button danger" id="backButton"><svg class="eq-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg> RETOUR</button>
             </div>
 
         </section>
@@ -433,135 +362,88 @@
         <section class="login-container" role="dialog" aria-modal="true" aria-labelledby="loginModalTitle">
             <button type="button" class="modal-top-close" id="closeLoginX"
                 onclick="document.getElementById('modalLogin').hidden = true;" aria-label="Fermer"
-                title="Fermer">✕</button>
+                title="Fermer"><svg class="eq-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
 
-            <!-- Titre de la page -->
-            <h1 class="options-header" id="loginModalTitle">🔐 COMPTE</h1>
+            <h1 class="options-header" id="loginModalTitle"><svg class="eq-icon eq-icon--gold" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2.5" fill="currentColor" fill-opacity="0.2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1.2" fill="currentColor"/></svg> COMPTE</h1>
 
-            <!-- ============================================================
-                 PANNEAU UTILISATEUR CONNECTÉ (#userInfo)
-                 Affiché si DB.getCurrentUser() retourne un utilisateur.
-                 Caché par défaut (style="display:none"), JS le révèle si connecté.
-                 Styles dans style.css → .user-info-panel, .user-info-text
-            ============================================================ -->
             <div class="user-info-panel" id="userInfo" style="display:none;">
-                <!-- Le pseudo est injecté dynamiquement par JS (updateUserDisplay) -->
-                <p class="user-info-text" id="userNameDisplay">👤 Joueur</p>
-                <!-- Clic → DB.logout() puis redirection vers index.html -->
-                <button class="option-button danger" id="logoutBtn">↩ SE DÉCONNECTER</button>
+                <p class="user-info-text" id="userNameDisplay">Joueur</p>
+                <button type="button" class="option-button danger" id="logoutBtn"><svg class="eq-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5" fill="currentColor" fill-opacity="0.14"/><path d="M15 16l4-4-4-4M19 12H9"/></svg> SE DÉCONNECTER</button>
             </div>
 
-            <!-- ============================================================
-                 ONGLETS DE NAVIGATION
-                 Basculent entre le formulaire de connexion et d'inscription.
-                 La classe CSS 'active' sur l'onglet cliqué change son style (doré).
-                 Géré dans app.js → initConnexion() → bloc "Onglets"
-                 Styles : .login-tabs, .login-tab, .login-tab.active dans style.css
-            ============================================================ -->
             <div class="login-tabs" id="loginTabs">
-                <!-- Onglet actif par défaut (classe 'active' = surlignage doré) -->
-                <button class="login-tab active" id="tabLogin">Se connecter</button>
-                <button class="login-tab" id="tabRegister">Créer un compte</button>
+                <button type="button" class="login-tab active" id="tabLogin">Se connecter</button>
+                <button type="button" class="login-tab" id="tabRegister">Créer un compte</button>
             </div>
 
-            <!-- ============================================================
-                 PANNEAU DE CONNEXION (#panelLogin)
-                 Visible par défaut (pas d'attribut 'hidden').
-                 Caché quand l'onglet "Créer un compte" est cliqué.
-            ============================================================ -->
             <div id="panelLogin">
-
-                <!-- Message descriptif -->
                 <div class="login-description">
                     <p class="login-description-text">Connectez-vous pour sauvegarder votre progression</p>
                 </div>
 
-                <!-- Bouton connexion via Google (OAuth — à implémenter, voir commentaire <head>) -->
-                <button class="menu-button primary google-login-button" id="googleLogin">
-                    🔵 SE CONNECTER AVEC GOOGLE
+                <button type="button" class="menu-button primary google-login-button" id="googleLogin">
+                    <svg class="eq-icon eq-icon--cyan" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12.2c0-.6-.1-1.2-.2-1.8H12v3.5h4.5a3.9 3.9 0 0 1-1.7 2.5v2.1h2.7A8 8 0 0 0 20 12.2z" fill="currentColor" fill-opacity="0.24"/><path d="M12 20a8 8 0 1 1 5.4-13.9l-2.3 2.2A4.9 4.9 0 1 0 16.5 14"/></svg> SE CONNECTER AVEC GOOGLE
                 </button>
 
-                <!-- Séparateur visuel entre Google et la connexion classique -->
                 <div class="login-separator">
                     <span class="login-separator-text">- OU -</span>
                 </div>
 
-                <!-- Champ email de connexion -->
-                <!-- autocomplete="email" : aide le navigateur à proposer des emails mémorisés -->
-                <input type="email" id="loginEmail" placeholder="📧 votre@email.com" class="login-input"
+                <input type="email" id="loginEmail" placeholder="votre@email.com" class="login-input"
                     autocomplete="email">
 
-                <!-- Champ mot de passe de connexion -->
-                <!-- autocomplete="current-password" : aide le gestionnaire de mots de passe -->
-                <input type="password" id="loginPassword" placeholder="🔑 ••••••••" class="login-input"
+                <input type="password" id="loginPassword" placeholder="Mot de passe" class="login-input"
                     autocomplete="current-password">
 
-                <!-- Boutons d'action -->
-                <!-- Le bouton est désactivé par JS pendant la requête DB.login() -->
                 <div class="options-buttons">
-                    <button class="option-button" id="classicLogin">✓ CONNEXION</button>
-                    <button class="option-button danger"
-                        onclick="document.getElementById('modalLogin').hidden = true;">← RETOUR</button>
+                    <button type="button" class="option-button" id="classicLogin"><svg class="eq-icon eq-icon--emerald" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg> CONNEXION</button>
+                    <button type="button" class="option-button danger"
+                        onclick="document.getElementById('modalLogin').hidden = true;"><svg class="eq-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg> RETOUR</button>
                 </div>
+            </div>
 
-            </div><!-- fin #panelLogin -->
-
-            <!-- ============================================================
-                 PANNEAU D'INSCRIPTION (#panelRegister)
-                 Caché par défaut (attribut HTML5 'hidden').
-                 Révélé quand l'onglet "Créer un compte" est cliqué.
-            ============================================================ -->
             <div id="panelRegister" hidden>
-
-                <!-- Message descriptif -->
                 <div class="login-description">
                     <p class="login-description-text">Créez votre compte pour rejoindre l'aventure !</p>
                 </div>
 
-                <!-- Pseudo du joueur (affiché dans le jeu) -->
-                <!-- autocomplete="username" : aide le gestionnaire de mots de passe -->
-                <input type="text" id="regUsername" placeholder="🧙 Pseudo affiché" class="login-input"
+                <input type="text" id="regUsername" placeholder="Pseudo affiché" class="login-input"
                     autocomplete="username">
 
-                <!-- Email (identifiant de connexion) -->
-                <input type="email" id="regEmail" placeholder="📧 votre@email.com" class="login-input"
+                <input type="email" id="regEmail" placeholder="votre@email.com" class="login-input"
                     autocomplete="email">
 
-                <!-- Mot de passe (minimum 6 caractères — validé par JS avant envoi) -->
-                <input type="password" id="regPassword" placeholder="🔑 Mot de passe" class="login-input"
+                <input type="password" id="regPassword" placeholder="Mot de passe (min. 6 caractères)" class="login-input"
                     autocomplete="new-password">
 
-                <!-- Confirmation du mot de passe (doit être identique à regPassword) -->
-                <input type="password" id="regConfirm" placeholder="🔑 Confirmer" class="login-input"
+                <input type="password" id="regConfirm" placeholder="Confirmer le mot de passe" class="login-input"
                     autocomplete="new-password">
 
-                <!-- Boutons d'action -->
-                <!-- Le bouton est désactivé par JS pendant la requête DB.register() -->
                 <div class="options-buttons">
-                    <button class="option-button" id="registerBtn">✦ CRÉER UN COMPTE</button>
-                    <button class="option-button danger"
-                        onclick="document.getElementById('modalLogin').hidden = true;">← RETOUR</button>
+                    <button type="button" class="option-button" id="registerBtn"><svg class="eq-icon eq-icon--gold" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2.1 6.9L21 11l-6.9 2.1L12 20l-2.1-6.9L3 11l6.9-2.1L12 2z" fill="currentColor" fill-opacity="0.24"/></svg> CRÉER UN COMPTE</button>
+                    <button type="button" class="option-button danger"
+                        onclick="document.getElementById('modalLogin').hidden = true;"><svg class="eq-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg> RETOUR</button>
                 </div>
-
-            </div><!-- fin #panelRegister -->
+            </div>
 
         </section>
     </div>
 
-    <!-- Modale de confirmation Quitter (v1.27.0) -->
+    <!-- Modale de confirmation Quitter -->
     <div id="modalQuitConfirm" class="modal-overlay" hidden>
         <section class="quit-modal-card" role="dialog" aria-modal="true" aria-labelledby="quitModalTitle">
-            <div class="quit-modal-icon">🚪</div>
+            <div class="quit-modal-icon"><svg class="eq-icon eq-icon--danger" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5" fill="currentColor" fill-opacity="0.14"/><path d="M15 16l4-4-4-4M19 12H9"/></svg></div>
             <h2 class="quit-modal-title" id="quitModalTitle">Quitter EDUQUEST ?</h2>
             <p class="quit-modal-text">Ta progression est automatiquement sauvegardée. La musique sera coupée et la page
                 va se fermer.</p>
             <div class="quit-modal-actions">
-                <button type="button" class="option-button danger" id="confirmQuitYes">✕ QUITTER MAINTENANT</button>
-                <button type="button" class="option-button" id="confirmQuitCancel">← RESTER</button>
+                <button type="button" class="option-button danger" id="confirmQuitYes"><svg class="eq-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg> QUITTER MAINTENANT</button>
+                <button type="button" class="option-button" id="confirmQuitCancel"><svg class="eq-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg> RESTER</button>
             </div>
         </section>
     </div>
 
+    <script src="js/core/icons.js"></script>
     <script src="js/db.js"></script>
     <script src="js/admin-store.js"></script>
     <script src="js/core/audio-manager.js"></script>

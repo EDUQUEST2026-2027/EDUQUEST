@@ -1,48 +1,102 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
-  <!-- ILOT AGRONOMIE & ECOLOGIE (STAV) - EDUQUEST -->
   <defs>
-    <linearGradient id="agRockDeep" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#362511"/>
-      <stop offset="0.6" stop-color="#211609"/>
-      <stop offset="1" stop-color="#110b04"/>
-    </linearGradient>
-    <linearGradient id="agRockTop" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#3f6212"/>
-      <stop offset="0.6" stop-color="#2d4a0e"/>
-      <stop offset="1" stop-color="#1a2e05"/>
-    </linearGradient>
-    <linearGradient id="agLeaf" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#86efac"/>
-      <stop offset="1" stop-color="#16a34a"/>
-    </linearGradient>
-    <radialGradient id="agHalo" cx="0.5" cy="0.4" r="0.6">
-      <stop offset="0" stop-color="#4ade80" stop-opacity="0.38"/>
-      <stop offset="0.6" stop-color="#facc15" stop-opacity="0.14"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    <radialGradient id="iagronomieHalo" cx="0.5" cy="0.44" r="0.52">
+      <stop offset="0" stop-color="#4ade80" stop-opacity="0.34"/>
+      <stop offset="0.58" stop-color="#c8a84b" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#070b1a" stop-opacity="0"/>
     </radialGradient>
-    <filter id="agShadow" x="-25%" y="-25%" width="150%" height="150%">
-      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.55"/>
+    <linearGradient id="iagronomieRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c3e68"/>
+      <stop offset="0.55" stop-color="#192544"/>
+      <stop offset="1" stop-color="#0d1428"/>
+    </linearGradient>
+    <linearGradient id="iagronomieRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#18223d"/>
+      <stop offset="1" stop-color="#080d1b"/>
+    </linearGradient>
+    <linearGradient id="iagronomiePlateau" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#265928"/>
+      <stop offset="1" stop-color="#122e14"/>
+    </linearGradient>
+    <linearGradient id="iagronomieGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7e29c"/>
+      <stop offset="0.5" stop-color="#c8a84b"/>
+      <stop offset="1" stop-color="#8b661d"/>
+    </linearGradient>
+    <linearGradient id="iagronomieAccent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#bbf7d0"/>
+      <stop offset="1" stop-color="#4ade80"/>
+    </linearGradient>
+    <linearGradient id="iagronomieBanner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c2a4f"/>
+      <stop offset="1" stop-color="#0c1328"/>
+    </linearGradient>
+    <filter id="iagronomieShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="9" stdDeviation="7" flood-color="#000000" flood-opacity="0.52"/>
     </filter>
   </defs>
-  <circle cx="210" cy="182" r="148" fill="url(#agHalo)"/>
-  <g filter="url(#agShadow)">
-    <path d="M 74 250 Q 210 276 346 250 Q 372 294 318 345 Q 210 398 102 345 Q 48 294 74 250 Z" fill="url(#agRockDeep)"/>
-    <path d="M 86 244 Q 210 268 334 244 Q 356 278 318 314 Q 210 366 102 314 Q 64 278 86 244 Z" fill="url(#agRockTop)"/>
-    <ellipse cx="210" cy="244" rx="138" ry="40" fill="#1e3a0a"/>
-    <ellipse cx="210" cy="240" rx="126" ry="32" fill="none" stroke="#86efac" stroke-width="2.2"/>
+
+  <!-- Halo astral unifié -->
+  <circle cx="210" cy="195" r="185" fill="url(#iagronomieHalo)"/>
+
+  <!-- Étoiles astrales dorées (grille signature EDUQUEST) -->
+  <g fill="#f2dc96">
+    <path d="M52 94 l2.6 6 6 2.6 -6 2.6 -2.6 6 -2.6 -6 -6 -2.6 6 -2.6 Z" opacity="0.88"/>
+    <path d="M368 72 l2.2 5 5 2.2 -5 2.2 -2.2 5 -2.2 -5 -5 -2.2 5 -2.2 Z" opacity="0.72"/>
+    <path d="M382 174 l1.8 4 4 1.8 -4 1.8 -1.8 4 -1.8 -4 -4 -1.8 4 -1.8 Z" opacity="0.55"/>
+    <circle cx="64" cy="210" r="2.4" fill="#bbf7d0" opacity="0.65"/>
+    <circle cx="352" cy="264" r="2.6" opacity="0.5"/>
+    <circle cx="320" cy="44" r="2" fill="#bbf7d0" opacity="0.6"/>
   </g>
-  <!-- Grande pousse écologique + Épi de blé doré + Goutte d'eau -->
-  <g filter="url(#agShadow)">
-    <path d="M 210 238 L 210 132" stroke="#4ade80" stroke-width="8" stroke-linecap="round"/>
-    <path d="M 210 180 C 158 174 134 138 148 112 C 178 112 204 138 210 180 Z" fill="url(#agLeaf)" stroke="#dcfce7" stroke-width="2.5"/>
-    <path d="M 210 162 C 262 156 286 120 272 94 C 242 94 216 120 210 162 Z" fill="url(#agLeaf)" stroke="#dcfce7" stroke-width="2.5"/>
-    <!-- Épi doré gauche -->
-    <path d="M 134 234 L 122 162" stroke="#facc15" stroke-width="4" stroke-linecap="round"/>
-    <ellipse cx="116" cy="176" rx="8" ry="14" transform="rotate(-25 116 176)" fill="#fde047"/>
-    <ellipse cx="132" cy="184" rx="8" ry="14" transform="rotate(20 132 184)" fill="#f59e0b"/>
-    <ellipse cx="118" cy="156" rx="7" ry="12" transform="rotate(-18 118 156)" fill="#fde047"/>
-    <!-- Goutte d'eau pure droite -->
-    <path d="M 294 156 C 294 156 318 188 318 206 A 24 24 0 0 1 270 206 C 270 188 294 156 294 156 Z" fill="#38bdf8" stroke="#e0f2fe" stroke-width="2.5"/>
-    <circle cx="286" cy="202" r="5" fill="#e0f2fe" opacity="0.8"/>
+
+  <g filter="url(#iagronomieShadow)">
+    <!-- Socle rocheux flottant unifié -->
+    <path d="M34 232 L210 264 L386 232 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 L68 284 Z" fill="url(#iagronomieRockTop)" stroke="#080e1d" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M68 284 L132 300 L210 308 L288 300 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 Z" fill="url(#iagronomieRockDeep)" opacity="0.85"/>
+    <!-- Veines cristallines de la matière -->
+    <path d="M120 296 L142 324 M296 296 L278 326 M192 318 L210 356 L228 318" stroke="#bbf7d0" stroke-width="2.4" stroke-linecap="round" opacity="0.5" fill="none"/>
+    <!-- Galets flottants sous l'île -->
+    <polygon points="164,376 175,382 169,394 157,388" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <polygon points="256,374 268,382 260,393 249,386" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <circle cx="210" cy="400" r="4" fill="#bbf7d0" opacity="0.75"/>
+
+    <!-- Plateau insulaire cerclé d'or -->
+    <ellipse cx="210" cy="236" rx="176" ry="54" fill="url(#iagronomiePlateau)" stroke="url(#iagronomieGold)" stroke-width="3.5"/>
+    <ellipse cx="210" cy="232" rx="158" ry="43" fill="none" stroke="#bbf7d0" stroke-width="1.5" stroke-opacity="0.45"/>
+
+    <!-- Scène dédiée à la matière -->
+    
+      <!-- Pousse vigoureuse + Épi de blé doré + Goutte d'eau pure -->
+      <g transform="translate(210 148)">
+        <ellipse cx="0" cy="80" rx="80" ry="14" fill="#091326" opacity="0.45"/>
+        <!-- Grande pousse centrale -->
+        <path d="M0 70 V-42" stroke="#4ade80" stroke-width="8" stroke-linecap="round"/>
+        <path d="M0 10 C-56 4 -74 -34 -56 -56 C-26 -54 -6 -28 0 10 Z" fill="url(#iagronomieAccent)" stroke="#0c2614" stroke-width="2.5"/>
+        <path d="M0 -8 C56 -14 74 -52 56 -74 C26 -72 6 -46 0 -8 Z" fill="url(#iagronomieAccent)" stroke="#0c2614" stroke-width="2.5"/>
+        <!-- Épi de blé gauche -->
+        <g transform="translate(-68 24) rotate(-14)">
+          <line x1="0" y1="42" x2="0" y2="-38" stroke="#facc15" stroke-width="4"/>
+          <ellipse cx="-8" cy="-16" rx="7" ry="12" transform="rotate(-24 -8 -16)" fill="#fde047"/>
+          <ellipse cx="8" cy="-6" rx="7" ry="12" transform="rotate(24 8 -6)" fill="#f59e0b"/>
+          <ellipse cx="-8" cy="6" rx="7" ry="12" transform="rotate(-24 -8 6)" fill="#fde047"/>
+        </g>
+        <!-- Goutte d'eau droite -->
+        <path d="M68 -6 C68 -6 92 26 92 44 A24 24 0 0 1 44 44 C44 26 68 -6 68 -6 Z" fill="#38bdf8" stroke="#e0f2fe" stroke-width="2.5"/>
+        <circle cx="60" cy="40" r="5" fill="#ffffff" opacity="0.75"/>
+      </g>
+
+    <!-- Bannière astrale dorée unifiée -->
+    <g transform="translate(210 336)">
+      <path d="M-90 -19 L90 -19 L78 19 L-78 19 Z"
+            fill="url(#iagronomieBanner)" stroke="url(#iagronomieGold)" stroke-width="3" stroke-linejoin="round"/>
+      <g fill="#f5de8a">
+        <circle cx="-74" cy="-9" r="2.4"/>
+        <circle cx="74" cy="-9" r="2.4"/>
+        <circle cx="-68" cy="10" r="2.4"/>
+        <circle cx="68" cy="10" r="2.4"/>
+      </g>
+      <text x="0" y="7" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="19" font-weight="700"
+            fill="#f4de94" letter-spacing="2">AGRONOMIE</text>
+    </g>
   </g>
 </svg>

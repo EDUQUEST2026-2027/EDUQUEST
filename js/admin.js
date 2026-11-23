@@ -1,5 +1,5 @@
 /* =============================================================================
-   ADMIN.JS — EDUQUEST v1.29.1
+   ADMIN.JS — EDUQUEST v1.30.0
    Interface du panneau d'administration (admin.html).
 
    PRINCIPE :
@@ -7,7 +7,7 @@
    - Onglets (pilotage intégral) :
        • Niveaux & Filières → 9 niveaux (6e → BTS 2) et 18 filières (AdminStore)
        • Matières & leçons  → 36 matières + personnalisées, 6 types de questions
-       • Boutique & Succès  → 97 articles, 78 succès filtrés par filière, 9 quêtes
+       • Boutique & Succès  → 98 articles, 78 succès filtrés par filière, 9 quêtes
        • Membres            → comptes locaux (db.js, rôle élève/admin, XP/pièces/filière)
        • Réglages, IA & Crédits → feature flags, Multi-IA, export/import, reset
    - Toutes les saisies utilisateur sont échappées (esc) avant insertion HTML.
@@ -16,7 +16,8 @@
    SÉCURITÉ :
    L'accès est protégé par rôle 'admin' (db.js). Si aucun admin n'existe,
    un formulaire de création est présenté. Si un admin existe mais que la
-   session courante n'est pas admin, un formulaire de connexion est présenté.
+   session courante n'est pas admin, seul le formulaire de connexion est autorisé
+   et toutes les actions privilégiées sont bloquées tant que l'admin n'est pas connecté.
    ============================================================================= */
 
 (function () {
@@ -25,6 +26,25 @@
 
     const esc = (typeof AdminStore !== 'undefined') ? AdminStore.esc
         : (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    const safeHex = (c, fb = '#c8a84b') => {
+        const s = typeof c === 'string' ? c.trim() : '';
+        return /^#[0-9a-f]{6}$/i.test(s) ? s : fb;
+    };
+
+    const isSafeImgUrl = (raw) => {
+        const s = typeof raw === 'string' ? raw.trim() : '';
+        if (!s) return false;
+        if (/^(javascript|vbscript|file):/i.test(s) || s.startsWith('//')) return false;
+        if (/^data:/i.test(s)) {
+            return /^data:image\/(png|webp|jpeg|jpg|gif|svg\+xml);base64,[a-z0-9+/=\s]+$/i.test(s);
+        }
+        return s.startsWith('https://') || s.startsWith('http://') || s.startsWith('Image/') || s.startsWith('/Image/')
+            || /^[a-z0-9_-]+\.(png|webp|svg|jpg|jpeg)$/i.test(s);
+    };
+
+    const ico = (name, size = 16, tone = '') => (window.EduIcons ? window.EduIcons.svg(name, { size, tone }) : '');
+    const emoIco = (emoji, size = 18, tone = '') => (window.EduIcons ? window.EduIcons.fromEmoji(emoji, { size, tone }) : esc(emoji || ''));
 
     const LESSON_LABELS = {
         qcm: 'QCM',
@@ -37,70 +57,66 @@
     const LESSON_ORDER = ['qcm', 'vrai_faux', 'reponse_courte', 'texte_a_trous', 'texte_a_choix', 'drag_and_drop'];
 
     const OFFICIAL_ISLANDS = [
-        { value: 'Image/ile/maths.webp', label: '📐 Île des Mathématiques' },
-        { value: 'Image/ile/francais.webp', label: '📚 Île du Français' },
-        { value: 'Image/ile/histoire.webp', label: '📜 Île de l\'Histoire' },
-        { value: 'Image/ile/geo.svg', label: '🌍 Île de la Géographie' },
-        { value: 'Image/ile/svt.webp', label: '🔬 Île des SVT' },
-        { value: 'Image/ile/anglais.webp', label: '🇬🇧 Île d\'Anglais' },
-        { value: 'Image/ile/physique.webp', label: '⚡ Île de Physique' },
-        { value: 'Image/ile/chimie.svg', label: '🧪 Île de Chimie' },
-        { value: 'Image/ile/technologie.webp', label: '💻 Île de Technologie' },
-        { value: 'Image/ile/philo.svg', label: '🏛️ Île de Philosophie' },
-        { value: 'Image/ile/emc.svg', label: '⚖️ Île d\'EMC' },
-        { value: 'Image/ile/nsi.svg', label: '💻 Île de NSI & Numérique' },
-        { value: 'Image/ile/ses.svg', label: '📈 Île de SES (Économie)' },
-        { value: 'Image/ile/espagnol.svg', label: '🇪🇸 Île d\'Espagnol (LV2)' },
-        { value: 'Image/ile/arts.svg', label: '🎨 Île d\'Histoire des Arts' },
-        { value: 'Image/ile/hggsp.svg', label: '🌐 Île de HGGSP (Géopolitique)' },
-        { value: 'Image/ile/si.svg', label: '⚙️ Île des Sciences de l\'Ingénieur' },
-        { value: 'Image/ile/msgn.svg', label: '📊 Île de Management & Gestion (MSGN)' },
-        { value: 'Image/ile/droit_eco.svg', label: '⚖️ Île de Droit & Économie' },
-        { value: 'Image/ile/mercatique.svg', label: '🎯 Île de Mercatique & Gestion-Finance' },
-        { value: 'Image/ile/i2d.svg', label: '🌿 Île d\'Innovation & Dév. Durable (I2D)' },
-        { value: 'Image/ile/sin.svg', label: '📡 Île de Systèmes d\'Info & Énergie (SIN)' },
-        { value: 'Image/ile/cybersecurite.svg', label: '🛡️ Île de Cybersécurité (CIEL)' },
-        { value: 'Image/ile/reseaux.svg', label: '🔌 Île de Réseaux & Systèmes (CIEL)' },
-        { value: 'Image/ile/electronique.svg', label: '🔋 Île d\'Électronique & Embarqué (CIEL)' },
-        { value: 'Image/ile/stss.svg', label: '🩺 Île de Sciences Sanitaires & Sociales (STSS)' },
-        { value: 'Image/ile/biotech.svg', label: '🧫 Île de Biotechnologies & Labo (STL / ASSP)' },
-        { value: 'Image/ile/design.svg', label: '✏️ Île de Design & Arts Appliqués (STD2A)' },
-        { value: 'Image/ile/hotellerie.svg', label: '🍽️ Île d\'Hôtellerie & Restauration (STHR)' },
-        { value: 'Image/ile/agronomie.svg', label: '🌱 Île d\'Agronomie & Vivant (STAV)' },
-        { value: 'Image/ile/spectacle.svg', label: '🎭 Île des Arts de la Scène & Culture (S2TMD)' },
-        { value: 'Image/ile/hlp.svg', label: '📖 Île d\'Humanités & Littérature (HLP)' },
-        { value: 'Image/ile/dev_bdd.svg', label: '🖥️ Île de Développement & BDD (BTS SIO)' },
-        { value: 'Image/ile/commerce.svg', label: '🛒 Île de Relation Client & Commerce (BTS MCO)' },
-        { value: 'Image/ile/comptabilite.svg', label: '🧮 Île de Comptabilité & Finance (BTS CG)' },
-        { value: 'Image/ile/electrotech.svg', label: '⚡ Île d\'Électrotechnique & Énergie (MELEC)' },
+        { value: 'Image/ile/maths.svg', label: 'Île des Mathématiques' },
+        { value: 'Image/ile/francais.svg', label: 'Île du Français' },
+        { value: 'Image/ile/histoire.svg', label: 'Île de l\'Histoire' },
+        { value: 'Image/ile/geo.svg', label: 'Île de la Géographie' },
+        { value: 'Image/ile/svt.svg', label: 'Île des SVT' },
+        { value: 'Image/ile/anglais.svg', label: 'Île d\'Anglais' },
+        { value: 'Image/ile/physique.svg', label: 'Île de Physique' },
+        { value: 'Image/ile/chimie.svg', label: 'Île de Chimie' },
+        { value: 'Image/ile/technologie.svg', label: 'Île de Technologie' },
+        { value: 'Image/ile/philo.svg', label: 'Île de Philosophie' },
+        { value: 'Image/ile/emc.svg', label: 'Île d\'EMC' },
+        { value: 'Image/ile/nsi.svg', label: 'Île de NSI & Numérique' },
+        { value: 'Image/ile/ses.svg', label: 'Île de SES (Économie)' },
+        { value: 'Image/ile/espagnol.svg', label: 'Île d\'Espagnol (LV2)' },
+        { value: 'Image/ile/arts.svg', label: 'Île d\'Histoire des Arts' },
+        { value: 'Image/ile/hggsp.svg', label: 'Île de HGGSP (Géopolitique)' },
+        { value: 'Image/ile/si.svg', label: 'Île des Sciences de l\'Ingénieur' },
+        { value: 'Image/ile/msgn.svg', label: 'Île de Management & Gestion (MSGN)' },
+        { value: 'Image/ile/droit_eco.svg', label: 'Île de Droit & Économie' },
+        { value: 'Image/ile/mercatique.svg', label: 'Île de Mercatique & Gestion-Finance' },
+        { value: 'Image/ile/i2d.svg', label: 'Île d\'Innovation & Dév. Durable (I2D)' },
+        { value: 'Image/ile/sin.svg', label: 'Île de Systèmes d\'Info & Énergie (SIN)' },
+        { value: 'Image/ile/cybersecurite.svg', label: 'Île de Cybersécurité (CIEL)' },
+        { value: 'Image/ile/reseaux.svg', label: 'Île de Réseaux & Systèmes (CIEL)' },
+        { value: 'Image/ile/electronique.svg', label: 'Île d\'Électronique & Embarqué (CIEL)' },
+        { value: 'Image/ile/stss.svg', label: 'Île de Sciences Sanitaires & Sociales (STSS)' },
+        { value: 'Image/ile/biotech.svg', label: 'Île de Biotechnologies & Labo (STL / ASSP)' },
+        { value: 'Image/ile/design.svg', label: 'Île de Design & Arts Appliqués (STD2A)' },
+        { value: 'Image/ile/hotellerie.svg', label: 'Île d\'Hôtellerie & Restauration (STHR)' },
+        { value: 'Image/ile/agronomie.svg', label: 'Île d\'Agronomie & Vivant (STAV)' },
+        { value: 'Image/ile/spectacle.svg', label: 'Île des Arts de la Scène & Culture (S2TMD)' },
+        { value: 'Image/ile/hlp.svg', label: 'Île d\'Humanités & Littérature (HLP)' },
+        { value: 'Image/ile/dev_bdd.svg', label: 'Île de Développement & BDD (BTS SIO)' },
+        { value: 'Image/ile/commerce.svg', label: 'Île de Relation Client & Commerce (BTS MCO)' },
+        { value: 'Image/ile/comptabilite.svg', label: 'Île de Comptabilité & Finance (BTS CG)' },
+        { value: 'Image/ile/electrotech.svg', label: 'Île d\'Électrotechnique & Énergie (MELEC)' },
     ];
 
     function renderSubjectIcon(icon, altText = '', extraClass = '') {
         const raw = typeof icon === 'string' ? icon.trim() : '';
-        const isImg = raw && (
-            raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('data:') ||
-            raw.startsWith('/') || raw.startsWith('Image/') ||
-            /\.(png|webp|svg|jpg|jpeg)$/i.test(raw)
-        );
-        if (isImg) {
+        if (isSafeImgUrl(raw)) {
             let src = raw;
-            if (!src.startsWith('http') && !src.startsWith('data:') && !src.startsWith('/') && !src.startsWith('Image/')) {
+            if (!src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('data:') && !src.startsWith('/') && !src.startsWith('Image/')) {
                 src = 'Image/ile/' + src;
             }
-            return `<img src="${esc(src)}" alt="${esc(altText)}" class="adm-subj-img ${extraClass}" loading="lazy" decoding="async" onerror="this.onerror=null;this.replaceWith(document.createTextNode('📘'));">`;
+            return `<img src="${esc(src)}" alt="${esc(altText)}" class="adm-subj-img ${esc(extraClass)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.style.display='none';">`;
         }
-        return `<span class="adm-subj-emoji ${extraClass}">${esc(raw || '📘')}</span>`;
+        return `<span class="adm-subj-emoji ${esc(extraClass)}">${emoIco(raw || 'book', 22, 'gold')}</span>`;
     }
 
     /* ============================== ÉTAT ============================== */
 
     const S = {
         authed: false,                 // false par défaut : vérifié au démarrage
+        hasAnyAdmin: false,            // true dès qu'au moins un compte admin existe (bloque setupFirst)
         gate: 'login',                 // 'login' | 'setup' — formulaire affiché
         tab: 'levels',                 // levels | subjects | members | settings
         subjectId: null,               // matière ouverte (onglet matières)
         subjectList: [],               // liste éditable en cache
-        editingLesson: -1,             // -1 = nouvelle leçon, sinon index
+        editingLesson: null,           // null = fermé, -1 = nouvelle leçon, >= 0 = index
         lessonDraft: null,             // leçon en cours d'édition
         levelsDraft: null,             // niveaux en cours d'édition
         filieresDraft: null,           // filières en cours d'édition
@@ -108,7 +124,6 @@
         subjectSearch: '',             // filtre de recherche dans la liste des matières
         badgeFiliereFilter: 'all',     // filtre de filière dans l'onglet Succès
         members: [],                   // cache des comptes locaux
-        err: '',
         modeApi: false,
         studyGrade: '6eme',            // niveau d'étude sélectionné pour prévisualiser/tester
         questionVariant: 0,            // graine / index de variante aléatoire
@@ -196,42 +211,43 @@
     /* ============================== CONNEXION / PREMIER ADMIN ============================== */
 
     function renderGate() {
-        const isSetup = S.gate === 'setup';
-        const showSetupLink = !isSetup;
+        const isSetup = S.gate === 'setup' && !S.hasAnyAdmin;
+        const showSetupLink = !isSetup && !S.hasAnyAdmin;
         const showLoginLink = isSetup;
         app.innerHTML = `
             <div class="adm-gate">
                 <div class="adm-card">
-                    <h2>${isSetup ? '🛡️ Créer le premier administrateur' : '🛡️ Accès administrateur'}</h2>
+                    <h2>${ico('shield', 20, 'gold')} ${isSetup ? 'Créer le premier administrateur' : 'Accès administrateur'}</h2>
                     <p class="adm-gate-sub">${isSetup
                 ? 'Aucun compte administrateur n\'existe encore. Créez-le pour ouvrir le panneau.'
                 : 'Connectez-vous avec un compte dont le rôle est « admin ».'}</p>
 
                     ${isSetup ? `
-                        <div class="adm-form">
+                        <form class="adm-form" onsubmit="event.preventDefault(); ADM.setupFirst();">
                             <div class="adm-field"><label>Adresse e-mail</label>
-                                <input class="adm-input" id="admSetEmail" type="email" autocomplete="username" placeholder="admin@ecole.fr"></div>
+                                <input class="adm-input" id="admSetEmail" type="email" autocomplete="username" placeholder="admin@ecole.fr" required></div>
                             <div class="adm-field"><label>Pseudo</label>
-                                <input class="adm-input" id="admSetPseudo" autocomplete="nickname" placeholder="Administrateur"></div>
+                                <input class="adm-input" id="admSetPseudo" autocomplete="nickname" placeholder="Administrateur" required></div>
                             <div class="adm-field"><label>Mot de passe (6 caractères min.)</label>
-                                <input class="adm-input" id="admSetPass" type="password" autocomplete="new-password"></div>
+                                <input class="adm-input" id="admSetPass" type="password" autocomplete="new-password" minlength="6" required></div>
                             <div class="adm-error" id="admSetErr"></div>
-                            <button class="adm-btn" onclick="ADM.setupFirst()">Créer et ouvrir le panneau</button>
-                        </div>
+                            <button type="submit" class="adm-btn">Créer et ouvrir le panneau</button>
+                        </form>
                     ` : `
-                        <div class="adm-form">
+                        <form class="adm-form" onsubmit="event.preventDefault(); ADM.login();">
                             <div class="adm-field"><label>Adresse e-mail</label>
-                                <input class="adm-input" id="admLoginEmail" type="email" autocomplete="username" placeholder="admin@ecole.fr"></div>
+                                <input class="adm-input" id="admLoginEmail" type="email" autocomplete="username" placeholder="admin@ecole.fr" required></div>
                             <div class="adm-field"><label>Mot de passe</label>
-                                <input class="adm-input" id="admLoginPass" type="password" autocomplete="current-password"></div>
+                                <input class="adm-input" id="admLoginPass" type="password" autocomplete="current-password" required></div>
                             <div class="adm-error" id="admLoginErr"></div>
-                            <button class="adm-btn" onclick="ADM.login()">Ouvrir le panneau</button>
-                        </div>
+                            <button type="submit" class="adm-btn">Ouvrir le panneau</button>
+                        </form>
                     `}
+                    ${(showSetupLink || showLoginLink) ? `
                     <div class="adm-gate-switch">
-                        ${showSetupLink ? 'Aucun administrateur ? <a onclick="ADM.switchGate()">Créer le premier compte admin</a>' : ''}
-                        ${showLoginLink ? 'Un compte admin existe déjà ? <a onclick="ADM.switchGate()">Se connecter</a>' : ''}
-                    </div>
+                        ${showSetupLink ? 'Aucun administrateur ? <a href="#" onclick="event.preventDefault(); ADM.switchGate();">Créer le premier compte admin</a>' : ''}
+                        ${showLoginLink ? 'Un compte admin existe déjà ? <a href="#" onclick="event.preventDefault(); ADM.switchGate();">Se connecter</a>' : ''}
+                    </div>` : ''}
                 </div>
             </div>`;
     }
@@ -244,18 +260,19 @@
     /* ============================== PANNEAU (coquille) ============================== */
 
     const TABS = [
-        { id: 'levels', icon: '🎓', label: 'Niveaux' },
-        { id: 'filieres', icon: '🧭', label: 'Filières' },
-        { id: 'subjects', icon: '📚', label: 'Matières & leçons' },
-        { id: 'badges', icon: '🏆', label: 'Succès' },
-        { id: 'shop', icon: '🛍️', label: 'Boutique' },
-        { id: 'rewards', icon: '🎁', label: 'Récompenses & Quêtes' },
-        { id: 'members', icon: '👥', label: 'Membres' },
-        { id: 'credits', icon: '✨', label: 'Crédits' },
-        { id: 'settings', icon: '⚙️', label: 'Réglages' },
+        { id: 'levels', icon: 'gradCap', label: 'Niveaux' },
+        { id: 'filieres', icon: 'compass', label: 'Filières' },
+        { id: 'subjects', icon: 'book', label: 'Matières & leçons' },
+        { id: 'badges', icon: 'trophy', label: 'Succès' },
+        { id: 'shop', icon: 'shop', label: 'Boutique' },
+        { id: 'rewards', icon: 'gift', label: 'Récompenses & Quêtes' },
+        { id: 'members', icon: 'users', label: 'Membres' },
+        { id: 'credits', icon: 'sparkle', label: 'Crédits' },
+        { id: 'settings', icon: 'settings', label: 'Réglages' },
     ];
 
     function renderPanel() {
+        const me = (typeof DB !== 'undefined' && DB.getCurrentUser) ? DB.getCurrentUser() : null;
         app.innerHTML = `
             <div class="adm-stats" id="admStats">
                 <div class="adm-stat"><b>…</b><span>Comptes</span></div>
@@ -265,15 +282,16 @@
                 <div class="adm-stat"><b>…</b><span>Boutique</span></div>
                 <div class="adm-stat"><b>…</b><span>Succès</span></div>
             </div>
-            <div class="adm-tabs">
+            <div class="adm-tabs" role="tablist">
                 ${TABS.map(t => `
-                    <button class="adm-tab${S.tab === t.id ? ' active' : ''}" onclick="ADM.tab('${t.id}')">${t.icon} ${t.label}</button>`).join('')}
+                    <button type="button" role="tab" aria-selected="${S.tab === t.id ? 'true' : 'false'}" class="adm-tab${S.tab === t.id ? ' active' : ''}" onclick="ADM.tab('${t.id}')">${ico(t.icon, 16)} ${t.label}</button>`).join('')}
+                <button type="button" class="adm-tab adm-tab-logout" style="margin-left:auto;" onclick="ADM.logout()" title="Déconnecter ${esc(me && me.username ? me.username : 'l\'administrateur')}">${ico('exit', 15)} Déconnexion</button>
             </div>
             <div id="admTab">${renderTab()}</div>
             <div id="admModalWrap">${S.testModalQuestion ? renderTestModal() : ''}</div>
             <p class="adm-hint" style="margin-top:18px; text-align:center;">
                 Rechargez la page du jeu (F5) pour voir vos modifications appliquées.<br>
-                <a href="legal.html" target="_blank">Mentions légales, confidentialité &amp; cookies</a>
+                <a href="legal.html" target="_blank" rel="noopener noreferrer">Mentions légales, confidentialité &amp; cookies</a>
             </p>`;
         refreshStats();
     }
@@ -303,7 +321,7 @@
         const subs = typeof AdminStore !== 'undefined' ? AdminStore.listEditable(AdminStore.getDefaultSubjects()) : [];
         const shopItems = typeof AdminStore !== 'undefined' ? AdminStore.getShopItems() : [];
         const badges = typeof AdminStore !== 'undefined' ? AdminStore.getBadges() : [];
-        if (!wrap) return;
+        if (!wrap || !wrap.isConnected) return;
         const cells = wrap.querySelectorAll('.adm-stat b');
         if (cells.length >= 6) {
             cells[0].textContent = String(members.length);
@@ -472,7 +490,7 @@
                                 const af = Array.isArray(x.allowedFilieres) && x.allowedFilieres.length ? x.allowedFilieres : ['all'];
                                 const filTag = af.includes('all') ? '' : `<span class="adm-badge adm-badge-system" style="padding:1px 6px; font-size:0.7rem;">${esc(af.slice(0, 2).join(', ').toUpperCase())}${af.length > 2 ? '+' : ''}</span>`;
                                 return `
-                                <button class="adm-subject-item${S.subjectId === x.id ? ' active' : ''}" onclick="ADM.openSubject('${x.id}')">
+                                <button type="button" class="adm-subject-item${S.subjectId === x.id ? ' active' : ''}" data-id="${esc(x.id)}" onclick="ADM.openSubject(this.dataset.id)">
                                     <span class="icon">${renderSubjectIcon(x.island || x.icon, x.name)}</span>
                                     <span class="name">
                                         <span style="display:block; font-weight:600;">${esc(x.name || x.id)}</span>
@@ -544,29 +562,32 @@
         const fresh = subjectList().find(x => x.id === sub.id) || sub;
         const lessons = fresh.lessons || [];
         const isCustom = typeof AdminStore !== 'undefined' && AdminStore.isCustom(sub.id);
-        const customized = isCustom || (typeof AdminStore !== 'undefined' && AdminStore.hasOverride(sub.id));
         const levels = typeof AdminStore !== 'undefined' ? AdminStore.getLevels() : [];
 
-        // Niveaux autorisés : si vide, tous les niveaux correspondant à la bande
-        const allowedNiveaux = Array.isArray(fresh.allowedNiveaux) ? fresh.allowedNiveaux : [];
+        // Niveaux autorisés effectifs (respecte un tableau explicitement vide via « Tout décocher »)
+        const effectiveAllowed = (fresh._allowedNiveauxExplicit && Array.isArray(fresh.allowedNiveaux))
+            ? fresh.allowedNiveaux
+            : ((typeof AdminStore !== 'undefined' && AdminStore.defaultAllowedNiveauxForSubject)
+                ? AdminStore.defaultAllowedNiveauxForSubject(fresh)
+                : (Array.isArray(fresh.allowedNiveaux) ? fresh.allowedNiveaux : []));
 
         // Sous-onglet actif : 'manual' | 'procedural'
         const subTab = S.subjectSubTab || 'manual';
 
-        // Lignes de leçons manuelles avec bouton de test 🧪
+        // Lignes de leçons manuelles avec bouton de test
         const lessonRows = lessons.map((l, i) => `
             <div class="adm-lesson-row">
                 <div class="head">
                     <span class="num" style="color:var(--gold); font-weight:700;">${i + 1}</span>
                     <span class="t">${esc(l.title || ('Niveau ' + (i + 1)))}</span>
                     <span class="adm-badge adm-badge-type">${esc(typeLabel(l.type))}</span>
-                    <span class="q">${esc(clip(l.q || l.textWithBlanks || l.q, 75))}</span>
+                    <span class="q">${esc(clip(l.q || l.textWithBlanks || '', 75))}</span>
                     <div class="adm-row-actions">
-                        <button class="adm-ico-btn" title="Monter" ${i === 0 ? 'disabled' : ''} onclick="ADM.lessonMove(${i},-1)">↑</button>
-                        <button class="adm-ico-btn" title="Descendre" ${i === lessons.length - 1 ? 'disabled' : ''} onclick="ADM.lessonMove(${i},1)">↓</button>
-                        <button class="adm-ico-btn" title="Tester cette leçon" onclick="ADM.testLesson(${i})">🧪</button>
-                        <button class="adm-ico-btn" title="Modifier" onclick="ADM.editLesson(${i})">✏️</button>
-                        <button class="adm-ico-btn danger" title="Supprimer" onclick="ADM.deleteLesson(${i})">🗑</button>
+                        <button type="button" class="adm-ico-btn" title="Monter" ${i === 0 ? 'disabled' : ''} onclick="ADM.lessonMove(${i},-1)">↑</button>
+                        <button type="button" class="adm-ico-btn" title="Descendre" ${i === lessons.length - 1 ? 'disabled' : ''} onclick="ADM.lessonMove(${i},1)">↓</button>
+                        <button type="button" class="adm-ico-btn" title="Tester cette leçon" onclick="ADM.testLesson(${i})">${ico('potion', 15, 'cyan')}</button>
+                        <button type="button" class="adm-ico-btn" title="Modifier" onclick="ADM.editLesson(${i})">${ico('edit', 15)}</button>
+                        <button type="button" class="adm-ico-btn danger" title="Supprimer" onclick="ADM.deleteLesson(${i})">${ico('close', 15, 'danger')}</button>
                     </div>
                 </div>
             </div>`).join('');
@@ -577,8 +598,8 @@
         const currentIcon = fresh.island || fresh.icon || '';
         const matchingIsland = OFFICIAL_ISLANDS.find(isl => isl.value === currentIcon || (currentIcon && currentIcon.endsWith(isl.value.replace('Image/ile/', ''))));
 
-        // Questions procédurales adaptées à la classe sélectionnée
-        const gradeQuestions = typeof AdminStore !== 'undefined'
+        // Questions procédurales : calculées uniquement lorsque le sous-onglet « procedural » est actif (gain de perf)
+        const gradeQuestions = (subTab === 'procedural' && typeof AdminStore !== 'undefined')
             ? AdminStore.getSubjectQuestionsForGrade(fresh.id, S.studyGrade, S.questionVariant, 8)
             : { manual: [], generated: [] };
 
@@ -640,7 +661,7 @@
                 <div class="adm-note">
                     ${isCustom
                 ? `Matière personnalisée : vous pouvez choisir à quels niveaux d'étude et cycles elle est rattachée (${lessons.length} leçon(s) manuelle(s)).`
-                : `Matière officielle : adaptable par niveau d'étude (${fresh.band || 'all'}). Vous pouvez surcharger les premières leçons manuellement ou laisser le générateur adapter le contenu automatiquement.`}
+                : `Matière officielle : adaptable par niveau d'étude (${esc(fresh.band || 'all')}). Vous pouvez surcharger les premières leçons manuellement ou laisser le générateur adapter le contenu automatiquement.`}
                 </div>
 
                 <!-- FORMULAIRE MÉTA-DONNÉES & CYCLE D'ÉTUDE -->
@@ -665,26 +686,16 @@
                         <label style="display:flex; justify-content:space-between; align-items:center;">
                             <span>Niveaux d'étude autorisés pour cette matière :</span>
                             <span style="font-size:0.8rem; font-weight:normal; color:var(--muted);">
-                                ${(() => {
-                                    const eff = (typeof AdminStore !== 'undefined' && AdminStore.defaultAllowedNiveauxForSubject)
-                                        ? AdminStore.defaultAllowedNiveauxForSubject(fresh)
-                                        : allowedNiveaux;
-                                    return eff.length + ' classe(s) sélectionnée(s)';
-                                })()}
+                                ${effectiveAllowed.length} classe(s) sélectionnée(s)
                             </span>
                         </label>
                         <div class="adm-grade-pills">
-                            ${(() => {
-                                const effectiveAllowed = (typeof AdminStore !== 'undefined' && AdminStore.defaultAllowedNiveauxForSubject)
-                                    ? AdminStore.defaultAllowedNiveauxForSubject(fresh)
-                                    : allowedNiveaux;
-                                return levels.map(l => {
-                                    const isChecked = effectiveAllowed.includes(l.id);
-                                    return `<button type="button" class="adm-grade-pill ${isChecked ? 'checked' : ''}" onclick="ADM.toggleSubjectGrade('${l.id}')">
-                                        ${isChecked ? '✓' : '○'} ${esc(l.label || l.id)}
-                                    </button>`;
-                                }).join('');
-                            })()}
+                            ${levels.map(l => {
+                                const isChecked = effectiveAllowed.includes(l.id);
+                                return `<button type="button" class="adm-grade-pill ${isChecked ? 'checked' : ''}" data-id="${esc(l.id)}" onclick="ADM.toggleSubjectGrade(this.dataset.id)">
+                                    ${isChecked ? '✓' : '○'} ${esc(l.label || l.id)}
+                                </button>`;
+                            }).join('')}
                             <button type="button" class="adm-btn adm-btn-ghost" style="padding:3px 8px; font-size:0.75rem;" onclick="ADM.setAllSubjectGrades(true)">Tout cocher</button>
                             <button type="button" class="adm-btn adm-btn-ghost" style="padding:3px 8px; font-size:0.75rem;" onclick="ADM.setAllSubjectGrades(false)">Tout décocher</button>
                         </div>
@@ -707,22 +718,22 @@
                                 const allFil = AdminStore.getFilieres();
                                 const af = AdminStore.defaultAllowedFilieresForSubject(fresh);
                                 const isAll = af.includes('all');
-                                const allBtn = `<button type="button" class="adm-grade-pill ${isAll ? 'checked' : ''}" onclick="ADM.toggleSubjectFiliere('all')">${isAll ? '✓' : '○'} 🌐 Toutes les filières</button>`;
+                                const allBtn = `<button type="button" class="adm-grade-pill ${isAll ? 'checked' : ''}" onclick="ADM.toggleSubjectFiliere('all')">${isAll ? '✓' : '○'} Toutes les filières</button>`;
                                 const filBtns = allFil.map(f => {
                                     const checked = !isAll && af.includes(f.id);
-                                    return `<button type="button" class="adm-grade-pill ${checked ? 'checked' : ''}" onclick="ADM.toggleSubjectFiliere('${esc(f.id)}')">${checked ? '✓' : '○'} ${esc(f.icon || '🧭')} ${esc(f.shortLabel || f.label)}</button>`;
+                                    return `<button type="button" class="adm-grade-pill ${checked ? 'checked' : ''}" data-id="${esc(f.id)}" onclick="ADM.toggleSubjectFiliere(this.dataset.id)">${checked ? '✓' : '○'} ${emoIco(f.icon || 'compass', 14)} ${esc(f.shortLabel || f.label)}</button>`;
                                 }).join('');
                                 return allBtn + filBtns;
                             })()}
                         </div>
-                        <label style="margin-top:8px;">Marquer comme « ⭐ Spécialité phare » pour :</label>
+                        <label style="margin-top:8px;">Marquer comme « Spécialité phare » pour :</label>
                         <div class="adm-grade-pills">
                             ${(() => {
                                 const allFil = AdminStore.getFilieres();
                                 const specs = Array.isArray(fresh.specialtyFilieres) ? fresh.specialtyFilieres : [];
                                 return allFil.map(f => {
                                     const isSpec = specs.includes(f.id);
-                                    return `<button type="button" class="adm-grade-pill adm-filiere-pill ${isSpec ? 'checked is-specialty' : ''}" onclick="ADM.toggleSubjectSpecialty('${esc(f.id)}')">${isSpec ? '⭐' : '☆'} ${esc(f.shortLabel || f.label)}</button>`;
+                                    return `<button type="button" class="adm-grade-pill adm-filiere-pill ${isSpec ? 'checked is-specialty' : ''}" data-id="${esc(f.id)}" onclick="ADM.toggleSubjectSpecialty(this.dataset.id)">${isSpec ? ico('starFilled', 13, 'gold') : ico('starEmpty', 13, 'muted')} ${esc(f.shortLabel || f.label)}</button>`;
                                 }).join('');
                             })()}
                         </div>
@@ -734,13 +745,13 @@
                             <label>Illustration / Île officielle</label>
                             <select class="adm-select" id="admMetaIslandSelect" onchange="ADM.onSubjectIslandSelect(this.value, 'admMetaIcon', 'admMetaPreview')">
                                 <option value="">— Emoji ou URL personnalisée —</option>
-                                ${OFFICIAL_ISLANDS.map(isl => `<option value="${isl.value}"${matchingIsland && matchingIsland.value === isl.value ? ' selected' : ''}>${isl.label}</option>`).join('')}
+                                ${OFFICIAL_ISLANDS.map(isl => `<option value="${esc(isl.value)}"${matchingIsland && matchingIsland.value === isl.value ? ' selected' : ''}>${esc(isl.label)}</option>`).join('')}
                             </select>
                         </div>
                         <div class="adm-field" style="flex:1; min-width:180px;">
                             <label>Icône (URL, fichier ou emoji)</label>
                             <div style="display:flex; gap:6px; align-items:center;">
-                                <input class="adm-input" id="admMetaIcon" value="${esc(fresh.island || fresh.icon)}" placeholder="Ex: Image/ile/maths.webp ou 📐" oninput="ADM.updateSubjectIconPreview('admMetaIcon', 'admMetaPreview')">
+                                <input class="adm-input" id="admMetaIcon" value="${esc(fresh.island || fresh.icon)}" placeholder="Ex: Image/ile/maths.svg" oninput="ADM.updateSubjectIconPreview('admMetaIcon', 'admMetaPreview')">
                                 <label class="adm-ico-btn" style="cursor:pointer; display:flex; align-items:center; padding:6px 9px;" title="Charger une image locale (PNG, SVG, WebP, JPG)">
                                     📁<input type="file" accept="image/*" style="display:none;" onchange="ADM.handleSubjectImageUpload(this, 'admMetaIcon', 'admMetaPreview')">
                                 </label>
@@ -799,7 +810,7 @@
                             <div class="adm-field">
                                 <label>Niveau d'étude à prévisualiser :</label>
                                 <select class="adm-select" id="admStudyGradeSelect" onchange="ADM.changeStudyGrade(this.value)">
-                                    ${levels.map(l => `<option value="${l.id}"${S.studyGrade === l.id ? ' selected' : ''}>${l.label || l.id} (${l.band === 'lycee' ? 'Lycée' : 'Collège'})</option>`).join('')}
+                                    ${levels.map(l => `<option value="${esc(l.id)}"${S.studyGrade === l.id ? ' selected' : ''}>${esc(l.label || l.id)} (${l.band === 'lycee' ? 'Lycée' : 'Collège'})</option>`).join('')}
                                 </select>
                             </div>
                             <div style="display:flex; gap:8px; align-items:flex-end;">
@@ -865,27 +876,50 @@
                     <label class="adm-hint" style="display:block; margin-bottom:6px;">Saisissez votre réponse :</label>
                     <input class="adm-input" id="admTestShortInput" value="${esc(S.testModalAnswer || '')}" placeholder="Tapez votre réponse ici..." oninput="ADM.setTestTextAnswer(this.value)" style="font-size:1.05rem; padding:10px 14px;">
                 </div>`;
-        } else if (type === 'texte_a_trous' || type === 'texte_a_choix') {
+        } else if (type === 'texte_a_choix' && Array.isArray(q.choices) && q.choices.length > 0) {
             const text = q.textWithBlanks || q.q || '';
-            const choicesHint = (type === 'texte_a_choix' && Array.isArray(q.choices) && q.choices.length)
-                ? `<p class="adm-hint" style="margin:6px 0;">Choix proposés par trou : ${q.choices.map((c, idx) => `<b>#${idx + 1}</b> (${esc(Array.isArray(c) ? c.join(' / ') : c)})`).join(' · ')}</p>`
-                : '';
+            const curAns = Array.isArray(S.testModalAnswer) ? S.testModalAnswer : q.choices.map(() => '');
             interactiveHtml = `
                 <div style="margin:16px 0; font-size:1.05rem; line-height:1.6;">
                     <p style="background:rgba(255,255,255,0.03); padding:10px; border-radius:8px;">${esc(text)}</p>
-                    ${choicesHint}
+                    <div style="display:flex; flex-direction:column; gap:8px; margin-top:10px;">
+                        ${q.choices.map((opts, idx) => `
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <label class="adm-hint" style="min-width:70px;">Trou #${idx + 1} :</label>
+                                <select class="adm-select" onchange="ADM.setTestBlankChoice(${idx}, this.value)">
+                                    <option value="">— Choisir —</option>
+                                    ${(Array.isArray(opts) ? opts : [opts]).map(opt => `<option value="${esc(opt)}"${curAns[idx] === opt ? ' selected' : ''}>${esc(opt)}</option>`).join('')}
+                                </select>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+        } else if (type === 'texte_a_trous' || type === 'texte_a_choix') {
+            const text = q.textWithBlanks || q.q || '';
+            interactiveHtml = `
+                <div style="margin:16px 0; font-size:1.05rem; line-height:1.6;">
+                    <p style="background:rgba(255,255,255,0.03); padding:10px; border-radius:8px;">${esc(text)}</p>
                     <label class="adm-hint" style="display:block; margin:8px 0 4px;">Saisissez les mots choisis (séparés par une virgule) :</label>
                     <input class="adm-input" id="admTestBlanksInput" value="${esc(Array.isArray(S.testModalAnswer) ? S.testModalAnswer.join(', ') : (S.testModalAnswer || ''))}" placeholder="ex: mot1, mot2..." oninput="ADM.setTestTextAnswer(this.value.split(',').map(s=>s.trim()))">
                 </div>`;
-        } else { // drag_and_drop
-            const items = q.items || [];
-            const targets = q.targets || [];
+        } else { // drag_and_drop interactif
+            const items = Array.isArray(q.items) ? q.items : [];
+            const targets = Array.isArray(q.targets) ? q.targets : [];
+            const curMap = (S.testModalAnswer && typeof S.testModalAnswer === 'object' && !Array.isArray(S.testModalAnswer))
+                ? S.testModalAnswer : {};
             interactiveHtml = `
                 <div style="margin:16px 0;">
-                    <p class="adm-hint">Paires à valider :</p>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                        <div>${items.map((it, idx) => `<div style="padding:8px; background:rgba(255,255,255,0.05); border-radius:6px; margin-bottom:6px;"><b>${idx + 1}.</b> ${esc(it)}</div>`).join('')}</div>
-                        <div>${targets.map((tg, idx) => `<div style="padding:8px; background:rgba(255,255,255,0.05); border-radius:6px; margin-bottom:6px; color:var(--gold-soft);">→ ${esc(tg)}</div>`).join('')}</div>
+                    <p class="adm-hint" style="margin-bottom:8px;">Associez chaque élément à sa cible correspondante :</p>
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        ${items.map((it, idx) => `
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:center;">
+                                <div style="padding:8px; background:rgba(255,255,255,0.05); border-radius:6px;"><b>${idx + 1}.</b> ${esc(it)}</div>
+                                <select class="adm-select" data-item="${esc(it)}" onchange="ADM.setTestDragAnswer(this.dataset.item, this.value)">
+                                    <option value="">— Sélectionner une cible —</option>
+                                    ${targets.map(tg => `<option value="${esc(tg)}"${curMap[it] === tg ? ' selected' : ''}>${esc(tg)}</option>`).join('')}
+                                </select>
+                            </div>
+                        `).join('')}
                     </div>
                 </div>`;
         }
@@ -974,18 +1008,19 @@
 
     function typeFields(type, d) {
         if (type === 'qcm') {
-            const opts = Array.isArray(d.opts) ? d.opts.slice(0, 4) : ['', '', '', ''];
+            const rawOpts = Array.isArray(d.opts) && d.opts.length >= 2 ? d.opts.slice(0, 6) : ['', '', '', ''];
+            const opts = rawOpts.slice();
             while (opts.length < 4) opts.push('');
-            const correct = Number(d.correct);
+            const correct = Number.isInteger(Number(d.correct)) ? Number(d.correct) : 0;
             return `
                 <div class="adm-field"><label>Question</label>
                     <textarea class="adm-textarea" id="admF_q" rows="2">${esc(d.q || '')}</textarea></div>
                 <div class="adm-field"><label>Réponses proposées (cochez la bonne)</label>
                     ${opts.map((o, i) => `
                         <div class="adm-opt-row" style="margin-bottom:6px;">
-                            <input type="radio" name="admF_correct" value="${i}" id="admC${i}" ${i === correct ? 'checked' : ''} title="Bonne réponse">
-                            <input class="adm-input" id="admF_opt${i}" value="${esc(o)}" placeholder="Réponse ${String.fromCharCode(65 + i)}">
-                            ${i === correct ? '<span class="adm-correct-tag">✔ bonne réponse</span>' : ''}
+                            <input type="radio" name="admF_correct" value="${i}" id="admC${i}" ${i === correct ? 'checked' : ''} title="Bonne réponse" onchange="ADM.updateQcmCorrectTag(${i})">
+                            <input class="adm-input" id="admF_opt${i}" data-qcm-opt="1" value="${esc(o)}" placeholder="Réponse ${String.fromCharCode(65 + i)}">
+                            <span class="adm-correct-tag" id="admCTag${i}" style="${i === correct ? '' : 'display:none;'}">✔ bonne réponse</span>
                         </div>`).join('')}
                 </div>`;
         }
@@ -1044,7 +1079,10 @@
         const lesson = { type, title: val('admF_title').trim() };
         if (type === 'qcm') {
             lesson.q = val('admF_q').trim();
-            lesson.opts = [0, 1, 2, 3].map(i => val('admF_opt' + i).trim());
+            const optInputs = Array.from(document.querySelectorAll('input[data-qcm-opt="1"]'));
+            lesson.opts = optInputs.length > 0
+                ? optInputs.map(el => String(el.value || '').trim()).filter((v, idx, arr) => v !== '' || idx < 2 || arr.slice(idx + 1).some(Boolean))
+                : [0, 1, 2, 3].map(i => val('admF_opt' + i).trim());
             const radio = document.querySelector('input[name="admF_correct"]:checked');
             lesson.correct = radio ? Number(radio.value) : 0;
             lesson.exp = val('admF_exp').trim();
@@ -1128,8 +1166,8 @@
             return `
                 <div class="adm-shop-card ${b.disabled ? 'disabled' : ''}">
                     <div class="adm-shop-card-head">
-                        <div class="adm-shop-orb" style="font-size: 2rem; background: rgba(200,168,75,0.15);">
-                            ${esc(b.icon || '🏆')}
+                        <div class="adm-shop-orb" style="font-size: 1.8rem; background: rgba(200,168,75,0.15);">
+                            ${emoIco(b.icon || 'trophy', 26, 'gold')}
                         </div>
                         <div class="adm-shop-meta">
                             <div class="adm-shop-title">
@@ -1142,12 +1180,12 @@
                     </div>
                     <p class="adm-shop-desc">${esc(b.desc || 'Aucune description')}</p>
                     <div class="adm-shop-actions">
-                        <button class="adm-btn ${isUnlocked ? 'adm-btn-ok' : 'adm-btn-ghost'}" style="padding:4px 10px; font-size:0.85rem;" onclick="ADM.toggleBadgeUnlock('${esc(b.id)}')">
-                            ${isUnlocked ? '✓ Débloqué (Test)' : '🔒 Verrouillé'}
+                        <button type="button" class="adm-btn ${isUnlocked ? 'adm-btn-ok' : 'adm-btn-ghost'}" style="padding:4px 10px; font-size:0.85rem;" data-id="${esc(b.id)}" onclick="ADM.toggleBadgeUnlock(this.dataset.id)">
+                            ${isUnlocked ? ico('check', 14, 'emerald') + ' Débloqué (Test)' : ico('lock', 14, 'muted') + ' Verrouillé'}
                         </button>
                         <div class="adm-row-actions">
-                            <button class="adm-ico-btn" title="Modifier" onclick="ADM.editBadge('${esc(b.id)}')">✏️ Modifier</button>
-                            <button class="adm-ico-btn danger" title="Supprimer" onclick="ADM.deleteBadge('${esc(b.id)}')">🗑️</button>
+                            <button type="button" class="adm-ico-btn" title="Modifier" data-id="${esc(b.id)}" onclick="ADM.editBadge(this.dataset.id)">${ico('edit', 14)} Modifier</button>
+                            <button type="button" class="adm-ico-btn danger" title="Supprimer" data-id="${esc(b.id)}" onclick="ADM.deleteBadge(this.dataset.id)">${ico('close', 14, 'danger')}</button>
                         </div>
                     </div>
                 </div>`;
@@ -1170,7 +1208,7 @@
                     <button class="adm-shop-filter-btn ${filFilter === 'college' ? 'active' : ''}" onclick="ADM.setBadgeFiliereFilter('college')">🏫 Collège</button>
                     ${allFilieres.map(f => {
                         const cnt = allBadges.filter(b => b.band !== 'college' && Array.isArray(b.allowedFilieres) && b.allowedFilieres.includes(f.id) && !b.allowedFilieres.includes('all')).length;
-                        return `<button class="adm-shop-filter-btn ${filFilter === f.id ? 'active' : ''}" onclick="ADM.setBadgeFiliereFilter('${esc(f.id)}')">${esc(f.icon || '🧭')} ${esc(f.shortLabel || f.label)} (${cnt})</button>`;
+                        return `<button type="button" class="adm-shop-filter-btn ${filFilter === f.id ? 'active' : ''}" data-id="${esc(f.id)}" onclick="ADM.setBadgeFiliereFilter(this.dataset.id)">${emoIco(f.icon || 'compass', 14)} ${esc(f.shortLabel || f.label)} (${cnt})</button>`;
                     }).join('')}
                 </div>
 
@@ -1248,7 +1286,7 @@
                             <button type="button" class="adm-grade-pill ${isAllFil ? 'checked' : ''}" onclick="ADM.toggleEditBadgeFiliere('all')">${isAllFil ? '✓' : '○'} 🌐 Toutes les filières</button>
                             ${allFilieres.map(f => {
                                 const checked = !isAllFil && curFil.includes(f.id);
-                                return `<button type="button" class="adm-grade-pill ${checked ? 'checked' : ''}" onclick="ADM.toggleEditBadgeFiliere('${esc(f.id)}')">${checked ? '✓' : '○'} ${esc(f.icon || '🧭')} ${esc(f.shortLabel || f.label)}</button>`;
+                                return `<button type="button" class="adm-grade-pill ${checked ? 'checked' : ''}" data-id="${esc(f.id)}" onclick="ADM.toggleEditBadgeFiliere(this.dataset.id)">${checked ? '✓' : '○'} ${emoIco(f.icon || 'compass', 14)} ${esc(f.shortLabel || f.label)}</button>`;
                             }).join('')}
                         </div>
                         <span class="adm-hint">Ex : cochez uniquement « CIEL » pour que les élèves STSS ou STMG ne voient pas ce succès par défaut.</span>
@@ -1297,26 +1335,29 @@
         const editor = S.editingShopItem ? renderShopItemEditor(S.editingShopItem) : '';
 
         const itemCards = filtered.map((item) => {
+            const safeColor = safeHex(item.color, '#c8a84b');
+            const safeImg = isSafeImgUrl(item.img) ? item.img.trim() : '';
+            const itemCost = Math.max(0, Number(item.cost) || 0);
             return `
                 <div class="adm-shop-card ${item.disabled ? 'disabled' : ''}">
                     <div class="adm-shop-card-head">
-                        <div class="adm-shop-orb" style="--sc:${esc(item.color || '#c8a84b')}">
-                            ${item.img ? `<img src="${esc(item.img)}" alt="" loading="lazy" decoding="async">` : esc(item.icon || '✨')}
+                        <div class="adm-shop-orb" style="--sc:${safeColor}">
+                            ${safeImg ? `<img src="${esc(safeImg)}" alt="" loading="lazy" decoding="async">` : emoIco(item.icon || 'sparkle', 22, 'gold')}
                         </div>
                         <div class="adm-shop-meta">
                             <div class="adm-shop-title">
                                 <b>${esc(item.name)}</b>
                                 <span class="adm-badge adm-badge-type">${esc(SHOP_CATEGORY_LABELS[item.category] || item.category)}</span>
                             </div>
-                            <div class="adm-shop-cost">🪙 ${item.cost === 0 ? 'Offert' : item.cost + ' pièces'}</div>
+                            <div class="adm-shop-cost">${ico('coin', 14, 'gold')} ${itemCost === 0 ? 'Offert' : itemCost + ' pièces'}</div>
                         </div>
                     </div>
                     <p class="adm-shop-desc">${esc(item.desc || 'Aucune description')}</p>
                     <div class="adm-shop-actions">
                         <span class="adm-badge ${item.disabled ? 'adm-badge-admin' : 'adm-badge-eleve'}">${item.disabled ? 'Désactivé' : 'Actif'}</span>
                         <div class="adm-row-actions">
-                            <button class="adm-ico-btn" title="Modifier" onclick="ADM.editShopItem('${esc(item.id)}')">✏️ Modifier</button>
-                            <button class="adm-ico-btn danger" title="Supprimer" onclick="ADM.deleteShopItem('${esc(item.id)}')">🗑️</button>
+                            <button type="button" class="adm-ico-btn" title="Modifier" data-id="${esc(item.id)}" onclick="ADM.editShopItem(this.dataset.id)">${ico('edit', 14)} Modifier</button>
+                            <button type="button" class="adm-ico-btn danger" title="Supprimer" data-id="${esc(item.id)}" onclick="ADM.deleteShopItem(this.dataset.id)">${ico('close', 14, 'danger')}</button>
                         </div>
                     </div>
                 </div>`;
@@ -1389,13 +1430,13 @@
                         <div class="adm-field">
                             <label>Couleur du Halo / Aura (Hex)</label>
                             <div style="display:flex; gap:8px;">
-                                <input class="adm-input" type="color" id="admShopColorPicker" value="${item.color || '#c8a84b'}" style="width:50px; padding:2px; height:38px; cursor:pointer;" onchange="document.getElementById('admShopColor').value = this.value; ADM.updateShopPreview();">
-                                <input class="adm-input" id="admShopColor" value="${esc(item.color || '#c8a84b')}" placeholder="#4fd8c4" oninput="document.getElementById('admShopColorPicker').value = this.value; ADM.updateShopPreview();">
+                                <input class="adm-input" type="color" id="admShopColorPicker" value="${safeHex(item.color, '#c8a84b')}" style="width:50px; padding:2px; height:38px; cursor:pointer;" onchange="document.getElementById('admShopColor').value = this.value; ADM.updateShopPreview();">
+                                <input class="adm-input" id="admShopColor" value="${esc(safeHex(item.color, '#c8a84b'))}" placeholder="#4fd8c4" oninput="if(/^#[0-9a-f]{6}$/i.test(this.value.trim()))document.getElementById('admShopColorPicker').value = this.value.trim(); ADM.updateShopPreview();">
                             </div>
                         </div>
                         <div class="adm-field">
                             <label>Chemin de l'image (pour avatar, optionnel)</label>
-                            <input class="adm-input" id="admShopImg" value="${esc(item.img || '')}" placeholder="ex: Image/personnages/lovelace.webp" oninput="ADM.updateShopPreview()">
+                            <input class="adm-input" id="admShopImg" value="${esc(item.img || '')}" placeholder="ex: Image/personnages/lovelace.svg" oninput="ADM.updateShopPreview()">
                         </div>
                     </div>
 
@@ -1415,12 +1456,12 @@
                     <div style="margin: 10px 0; padding: 12px; background: rgba(7,11,26,0.5); border-radius: 10px; border: 1px dashed rgba(200,168,75,0.3);">
                         <div style="font-size:12px; color:var(--muted); margin-bottom:6px; text-transform:uppercase;">Aperçu dans la boutique :</div>
                         <div id="admShopLivePreview" style="display:inline-flex; align-items:center; gap:14px; background: rgba(13,19,48,0.9); padding:12px 18px; border-radius:12px; border:1px solid rgba(200,168,75,0.4);">
-                            <div class="adm-shop-orb" id="admPreviewOrb" style="--sc:${item.color || '#c8a84b'}; width:50px; height:50px; margin:0;">
-                                ${item.img ? `<img id="admPreviewImg" src="${esc(item.img)}" alt="" loading="lazy" decoding="async">` : '<span id="admPreviewIcon">✨</span>'}
+                            <div class="adm-shop-orb" id="admPreviewOrb" style="--sc:${safeHex(item.color, '#c8a84b')}; width:50px; height:50px; margin:0;">
+                                ${isSafeImgUrl(item.img) ? `<img id="admPreviewImg" src="${esc(item.img.trim())}" alt="" loading="lazy" decoding="async">` : `<span id="admPreviewIcon">${ico('sparkle', 20, 'gold')}</span>`}
                             </div>
                             <div>
                                 <div id="admPreviewTitle" style="font-weight:700; color:#fff;">${esc(item.name || 'Nom de l\'article')}</div>
-                                <div id="admPreviewCost" style="font-size:12px; color:var(--gold);">🪙 ${item.cost === 0 ? 'Offert' : (item.cost || 50) + ' pièces'}</div>
+                                <div id="admPreviewCost" style="font-size:12px; color:var(--gold);">${ico('coin', 13, 'gold')} ${(Number(item.cost) || 0) === 0 ? 'Offert' : (Number(item.cost) || 50) + ' pièces'}</div>
                             </div>
                         </div>
                     </div>
@@ -1606,34 +1647,34 @@
                         <div style="font-size:0.78rem; color:var(--muted);">${esc(m.email)}</div>
                     </td>
                     <td>
-                        <select class="adm-select adm-member-inline-select" onchange="ADM.setMemberGrade('${esc(m.email)}', this.value)" title="Classe de cet élève">
+                        <select class="adm-select adm-member-inline-select" data-email="${esc(m.email)}" onchange="ADM.setMemberGrade(this.dataset.email, this.value)" title="Classe de cet élève">
                             ${levels.map(l => `<option value="${esc(l.id)}"${curNiv === l.id ? ' selected' : ''}>${esc(l.label)}</option>`).join('')}
                         </select>
                     </td>
                     <td>
                         ${filApplicable ? `
-                        <select class="adm-select adm-member-inline-select" onchange="ADM.setMemberFiliere('${esc(m.email)}', this.value)" title="Filière de cet élève">
-                            ${filieres.map(f => `<option value="${esc(f.id)}"${curFil === f.id ? ' selected' : ''}>${esc(f.icon || '')} ${esc(f.shortLabel || f.label)}</option>`).join('')}
+                        <select class="adm-select adm-member-inline-select" data-email="${esc(m.email)}" onchange="ADM.setMemberFiliere(this.dataset.email, this.value)" title="Filière de cet élève">
+                            ${filieres.map(f => `<option value="${esc(f.id)}"${curFil === f.id ? ' selected' : ''}>${esc(f.shortLabel || f.label)}</option>`).join('')}
                         </select>` : '<span class="adm-hint">Collège</span>'}
                     </td>
                     <td style="white-space:nowrap; font-size:0.86rem;">
-                        <div>⚡ <b>${m.xp || 0}</b> XP · 🪙 <b>${m.coins ?? 30}</b></div>
-                        <div style="color:var(--muted); font-size:0.78rem;">🏆 ${m.badgesCount || 0} succès · ${fmtDate(m.created)}</div>
+                        <div>${ico('bolt', 13, 'cyan')} <b>${Number(m.xp) || 0}</b> XP · ${ico('coin', 13, 'gold')} <b>${Number(m.coins ?? 30) || 0}</b></div>
+                        <div style="color:var(--muted); font-size:0.78rem;">${ico('trophy', 12, 'gold')} ${Number(m.badgesCount) || 0} succès · ${fmtDate(m.created)}</div>
                     </td>
                     <td>
                         <select class="adm-select adm-member-inline-select" ${isMe ? 'disabled title="Vous ne pouvez pas changer votre propre rôle"' : ''}
-                            onchange="ADM.setRole('${esc(m.email)}', this.value)">
+                            data-email="${esc(m.email)}" onchange="ADM.setRole(this.dataset.email, this.value)">
                             <option value="eleve"${m.role !== 'admin' ? ' selected' : ''}>Élève</option>
                             <option value="admin"${m.role === 'admin' ? ' selected' : ''}>Administrateur</option>
                         </select>
                     </td>
                     <td>
                         <div class="adm-row-actions">
-                            <button class="adm-ico-btn" title="Offrir +100 pièces & +50 XP" onclick="ADM.bonusMember('${esc(m.email)}')">🎁</button>
-                            <button class="adm-ico-btn" title="Changer le pseudo" onclick="ADM.renameMember('${esc(m.email)}','${esc(m.username)}')">✏️</button>
-                            <button class="adm-ico-btn" title="Réinitialiser le mot de passe" onclick="ADM.resetPass('${esc(m.email)}')">🔑</button>
-                            <button class="adm-ico-btn" title="Réinitialiser la progression" onclick="ADM.resetMemberProgress('${esc(m.email)}','${esc(m.username)}')">🔄</button>
-                            <button class="adm-ico-btn danger" title="Supprimer le compte" ${isMe ? 'disabled' : ''} onclick="ADM.deleteMember('${esc(m.email)}','${esc(m.username)}')">🗑</button>
+                            <button type="button" class="adm-ico-btn" title="Offrir +100 pièces & +50 XP" data-email="${esc(m.email)}" onclick="ADM.bonusMember(this.dataset.email)">${ico('gift', 14, 'gold')}</button>
+                            <button type="button" class="adm-ico-btn" title="Changer le pseudo" data-email="${esc(m.email)}" data-name="${esc(m.username)}" onclick="ADM.renameMember(this.dataset.email, this.dataset.name)">${ico('edit', 14)}</button>
+                            <button type="button" class="adm-ico-btn" title="Réinitialiser le mot de passe" data-email="${esc(m.email)}" onclick="ADM.resetPass(this.dataset.email)">${ico('key', 14, 'cyan')}</button>
+                            <button type="button" class="adm-ico-btn" title="Réinitialiser la progression" data-email="${esc(m.email)}" data-name="${esc(m.username)}" onclick="ADM.resetMemberProgress(this.dataset.email, this.dataset.name)">${ico('refresh', 14)}</button>
+                            <button type="button" class="adm-ico-btn danger" title="Supprimer le compte" ${isMe ? 'disabled' : ''} data-email="${esc(m.email)}" data-name="${esc(m.username)}" onclick="ADM.deleteMember(this.dataset.email, this.dataset.name)">${ico('close', 14, 'danger')}</button>
                         </div>
                     </td>
                 </tr>`;
@@ -1686,8 +1727,8 @@
         return `
             <div class="adm-card">
                 <div class="adm-toolbar">
-                    <h2 style="margin:0;">⚙️ Configuration Générale &amp; Pilotage Intégral de l'Interface Client</h2>
-                    <span class="adm-badge adm-badge-system">v1.29.2</span>
+                    <h2 style="margin:0;">${ico('settings', 18, 'gold')} Configuration Générale &amp; Pilotage Intégral de l'Interface Client</h2>
+                    <span class="adm-badge adm-badge-system">v1.30.0</span>
                 </div>
                 <p class="adm-hint">Pilotez ici l'intégralité de l'interface client : identité, textes, parcours par défaut, chronomètre, anti-triche 3★, verrouillage collège, bouton Quitter, apparence par défaut, modules actifs et mode examen.</p>
 
@@ -2074,7 +2115,7 @@
             <div class="adm-card">
                 <h2>✨ Crédits du créateur</h2>
                 <p class="adm-hint">Ces informations apparaissent dans le <b>pied de page de toutes les
-                pages du jeu</b> et dans la <a href="legal.html" target="_blank"><b>page légale</b></a>
+                pages du jeu</b> et dans la <a href="legal.html" target="_blank" rel="noopener noreferrer"><b>page légale</b></a>
                 (mentions légales, confidentialité, cookies). Laissez un champ vide pour masquer
                 l'élément correspondant.</p>
 
@@ -2104,28 +2145,54 @@
             </div>
 
             <div class="adm-card">
-                <h2>⚖️ Informations légales</h2>
-                <p class="adm-hint">Le site est accompagné d'une <a href="legal.html" target="_blank">page
+                <h2>${ico('scales', 18, 'gold')} Informations légales</h2>
+                <p class="adm-hint">Le site est accompagné d'une <a href="legal.html" target="_blank" rel="noopener noreferrer">page
                 légale</a> alimentée automatiquement par ces crédits, et d'un <b>bandeau de consentement
                 aux cookies</b> (RGPD) affiché à la première visite du site.</p>
                 <div class="adm-toolbar">
-                    <a class="adm-btn adm-btn-ghost" href="legal.html" target="_blank">Ouvrir la page légale</a>
-                    <button class="adm-btn adm-btn-ghost" onclick="ADM.openCookieBanner()">🍪 Afficher le bandeau cookies</button>
+                    <a class="adm-btn adm-btn-ghost" href="legal.html" target="_blank" rel="noopener noreferrer">Ouvrir la page légale</a>
+                    <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.openCookieBanner()">${ico('cookie', 15, 'gold')} Afficher le bandeau cookies</button>
                 </div>
-                <p class="adm-hint" id="admCrConsent" style="margin-top:8px;"></p>
+                <p class="adm-hint" id="admCrConsent" style="margin-top:8px;">${(() => {
+                    const st = window.EduCookies ? window.EduCookies.getConsent() : null;
+                    return !st
+                        ? 'Aucun choix enregistré sur ce navigateur : le bandeau s\'affichera automatiquement à la prochaine visite.'
+                        : 'Choix enregistré : « ' + esc(st.choice) + ' »' + (st.ts ? ' le ' + fmtDate(st.ts) : '') + '.';
+                })()}</p>
             </div>`;
     }
 
     /* ============================== ACTIONS — NIVEAUX ============================== */
 
+    function updateModeBadge() {
+        const modeEl = document.getElementById('admMode');
+        if (modeEl && typeof DB !== 'undefined') {
+            modeEl.textContent = DB.useApi ? 'Mode API SQL' : 'Mode local';
+            modeEl.className = 'adm-mode' + (DB.useApi ? ' api' : '');
+        }
+    }
+
     const ADM = {
-        tab(id) { S.tab = id; renderPanel(); },
-        switchGate() { S.gate = S.gate === 'login' ? 'setup' : 'login'; S.err = ''; render(); },
+        async tab(id) {
+            S.tab = id;
+            if (id === 'members') {
+                try { await refreshMembers(); } catch { }
+            }
+            renderPanel();
+        },
+        switchGate() {
+            if (S.hasAnyAdmin) {
+                S.gate = 'login';
+            } else {
+                S.gate = S.gate === 'login' ? 'setup' : 'login';
+            }
+            render();
+        },
 
         /* ----- Connexion / premier admin ----- */
         async login() {
             setError('admLoginErr', '');
-            const email = (document.getElementById('admLoginEmail') || {}).value || '';
+            const email = ((document.getElementById('admLoginEmail') || {}).value || '').trim();
             const pass = (document.getElementById('admLoginPass') || {}).value || '';
             if (!email || !pass) { setError('admLoginErr', 'Renseignez l\'e-mail et le mot de passe.'); return; }
             const r = await DB.login(email, pass);
@@ -2136,31 +2203,61 @@
                 setError('admLoginErr', 'Ce compte n\'est pas administrateur (rôle « admin » requis).');
                 return;
             }
+            S.hasAnyAdmin = true;
             S.authed = true;
+            try { await refreshMembers(); } catch { }
+            updateModeBadge();
             render();
             toast('Bienvenue dans le panneau d\'administration.', 'ok');
         },
 
         async setupFirst() {
             setError('admSetErr', '');
-            const email = (document.getElementById('admSetEmail') || {}).value || '';
-            const pseudo = (document.getElementById('admSetPseudo') || {}).value || '';
+            // Vérification de sécurité côté base : interdit la création si un admin existe déjà
+            try {
+                const check = await DB.listLocalMembers();
+                const existingAdmins = (check && check.ok && Array.isArray(check.data))
+                    ? check.data.filter(u => u.role === 'admin') : [];
+                if (existingAdmins.length > 0) {
+                    S.hasAnyAdmin = true;
+                    S.gate = 'login';
+                    render();
+                    setError('admLoginErr', 'Un compte administrateur existe déjà. Veuillez vous connecter.');
+                    return;
+                }
+            } catch { }
+            const email = ((document.getElementById('admSetEmail') || {}).value || '').trim();
+            const pseudo = ((document.getElementById('admSetPseudo') || {}).value || '').trim();
             const pass = (document.getElementById('admSetPass') || {}).value || '';
             if (!email || !pseudo || !pass) { setError('admSetErr', 'Tous les champs sont requis.'); return; }
             const r = await DB.createLocalMember(email, pseudo, pass, 'admin');
             if (!r.ok) { setError('admSetErr', r.error || 'Création impossible.'); return; }
             const login = await DB.login(email, pass);
             if (!login.ok) { setError('admSetErr', 'Compte créé, mais connexion impossible.'); return; }
+            S.hasAnyAdmin = true;
             S.authed = true;
+            try { await refreshMembers(); } catch { }
+            updateModeBadge();
             render();
             toast('Administrateur créé. Bienvenue !', 'ok');
         },
 
-        logout() {
-            DB.logout();
+        async logout() {
+            try { await DB.logout(); } catch { }
             S.authed = false;
-            S.subjectId = null; S.editingLesson = null; S.lessonDraft = null;
+            S.members = [];
+            S.subjectId = null;
+            S.editingLesson = null;
+            S.lessonDraft = null;
+            S.editingBadge = null;
+            S.editingShopItem = null;
+            S.testModalQuestion = null;
+            S.levelsDraft = null;
+            S.filieresDraft = null;
+            S.questsDraft = null;
+            S.gate = S.hasAnyAdmin ? 'login' : 'setup';
             render();
+            toast('Session administrateur déconnectée.', 'ok');
         },
 
         /* ----- Niveaux scolaires ----- */
@@ -2219,8 +2316,13 @@
         handleSubjectImageUpload(fileInput, targetInputId, previewId) {
             if (!fileInput || !fileInput.files || !fileInput.files[0]) return;
             const file = fileInput.files[0];
-            if (!file.type.startsWith('image/')) {
+            fileInput.value = '';
+            if (!file.type || !file.type.startsWith('image/')) {
                 toast('Veuillez sélectionner un fichier image valide.', 'err');
+                return;
+            }
+            if (file.size > 1500 * 1024) {
+                toast('Image trop volumineuse (max 1,5 Mo).', 'err');
                 return;
             }
             const reader = new FileReader();
@@ -2230,14 +2332,14 @@
                 img.onload = () => {
                     try {
                         const maxDim = 160;
-                        let w = img.width;
-                        let h = img.height;
+                        let w = img.naturalWidth || img.width || maxDim;
+                        let h = img.naturalHeight || img.height || maxDim;
                         if (w > maxDim || h > maxDim) {
                             if (w > h) {
-                                h = Math.round((h * maxDim) / w);
+                                h = Math.max(1, Math.round((h * maxDim) / w));
                                 w = maxDim;
                             } else {
-                                w = Math.round((w * maxDim) / h);
+                                w = Math.max(1, Math.round((w * maxDim) / h));
                                 h = maxDim;
                             }
                         }
@@ -2247,22 +2349,27 @@
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, w, h);
                         const optimizedDataUrl = canvas.toDataURL(file.type === 'image/png' ? 'image/png' : 'image/webp', 0.88);
+                        if (optimizedDataUrl.length > 220000) {
+                            toast('Image encodée trop lourde pour le stockage local.', 'err');
+                            return;
+                        }
                         const targetInput = document.getElementById(targetInputId);
                         if (targetInput) targetInput.value = optimizedDataUrl;
                         ADM.updateSubjectIconPreview(targetInputId, previewId);
                         toast('Image chargée et optimisée ✔', 'ok');
-                    } catch (err) {
-                        const targetInput = document.getElementById(targetInputId);
-                        if (targetInput) targetInput.value = rawDataUrl;
-                        ADM.updateSubjectIconPreview(targetInputId, previewId);
-                        toast('Image chargée ✔', 'ok');
+                    } catch {
+                        if (typeof rawDataUrl === 'string' && rawDataUrl.length <= 220000 && isSafeImgUrl(rawDataUrl)) {
+                            const targetInput = document.getElementById(targetInputId);
+                            if (targetInput) targetInput.value = rawDataUrl;
+                            ADM.updateSubjectIconPreview(targetInputId, previewId);
+                            toast('Image chargée ✔', 'ok');
+                        } else {
+                            toast('Impossible d\'optimiser cette image (taille dépassée).', 'err');
+                        }
                     }
                 };
                 img.onerror = () => {
-                    const targetInput = document.getElementById(targetInputId);
-                    if (targetInput) targetInput.value = rawDataUrl;
-                    ADM.updateSubjectIconPreview(targetInputId, previewId);
-                    toast('Image chargée ✔', 'ok');
+                    toast('Fichier image illisible ou corrompu.', 'err');
                 };
                 img.src = rawDataUrl;
             };
@@ -2275,8 +2382,11 @@
         },
         filAdd() {
             if (!S.filieresDraft) S.filieresDraft = AdminStore.getFilieres();
+            const existingIds = new Set(S.filieresDraft.map(f => String(f.id || '').toLowerCase()));
+            let n = S.filieresDraft.length + 1;
+            while (existingIds.has('filiere_' + n)) n++;
             S.filieresDraft.push({
-                id: 'filiere_' + (S.filieresDraft.length + 1),
+                id: 'filiere_' + n,
                 label: 'Nouvelle filière',
                 shortLabel: 'Nouvelle',
                 icon: '🧭',
@@ -2422,9 +2532,11 @@
             if (!S.subjectId) return;
             const sub = subjectList().find(x => x.id === S.subjectId);
             if (!sub) return;
-            let current = (typeof AdminStore !== 'undefined' && typeof AdminStore.defaultAllowedNiveauxForSubject === 'function')
-                ? AdminStore.defaultAllowedNiveauxForSubject(sub)
-                : (Array.isArray(sub.allowedNiveaux) && sub.allowedNiveaux.length ? sub.allowedNiveaux.slice() : AdminStore.getLevels().map(l => l.id));
+            let current = (sub._allowedNiveauxExplicit && Array.isArray(sub.allowedNiveaux))
+                ? sub.allowedNiveaux.slice()
+                : ((typeof AdminStore !== 'undefined' && typeof AdminStore.defaultAllowedNiveauxForSubject === 'function')
+                    ? AdminStore.defaultAllowedNiveauxForSubject(sub)
+                    : (Array.isArray(sub.allowedNiveaux) && sub.allowedNiveaux.length ? sub.allowedNiveaux.slice() : AdminStore.getLevels().map(l => l.id)));
             if (current.includes(gradeId)) {
                 current = current.filter(id => id !== gradeId);
             } else {
@@ -2474,7 +2586,7 @@
             const lessons = JSON.parse(JSON.stringify(sub.lessons || []));
             const clean = AdminStore.normalizeLesson({
                 type: q.type || 'qcm',
-                title: q.title || `Niveau ${lessons.length + 1} (${esc(S.studyGrade.toUpperCase())})`,
+                title: q.title || `Niveau ${lessons.length + 1} (${S.studyGrade.toUpperCase()})`,
                 q: q.q || '',
                 opts: q.opts,
                 correct: q.correct,
@@ -2527,16 +2639,31 @@
         setTestTextAnswer(ans) {
             S.testModalAnswer = ans;
         },
+        setTestBlankChoice(idx, val) {
+            if (!Array.isArray(S.testModalAnswer)) {
+                const len = (S.testModalQuestion && Array.isArray(S.testModalQuestion.choices)) ? S.testModalQuestion.choices.length : (idx + 1);
+                S.testModalAnswer = new Array(len).fill('');
+            }
+            S.testModalAnswer[idx] = val;
+        },
+        setTestDragAnswer(itemKey, targetVal) {
+            if (!S.testModalAnswer || typeof S.testModalAnswer !== 'object' || Array.isArray(S.testModalAnswer)) {
+                S.testModalAnswer = {};
+            }
+            S.testModalAnswer[itemKey] = targetVal;
+        },
         submitTestAnswer() {
             const q = S.testModalQuestion;
             if (!q) return;
-            if (S.testModalAnswer === null || S.testModalAnswer === undefined || S.testModalAnswer === '') {
+            const type = q.type || 'qcm';
+            const isEmpty = S.testModalAnswer === null || S.testModalAnswer === undefined || S.testModalAnswer === ''
+                || (type === 'drag_and_drop' && (typeof S.testModalAnswer !== 'object' || Object.keys(S.testModalAnswer).length === 0));
+            if (isEmpty) {
                 toast('Veuillez sélectionner ou saisir une réponse.', 'err');
                 return;
             }
             let isCorrect = false;
             let correctStr = '';
-            const type = q.type || 'qcm';
 
             if (typeof QuizEngine !== 'undefined' && typeof QuizEngine.grade === 'function') {
                 isCorrect = QuizEngine.grade(q, S.testModalAnswer);
@@ -2546,8 +2673,10 @@
                 else if (type === 'reponse_courte') {
                     const acc = (q.accepted || []).map(s => String(s).trim().toLowerCase());
                     isCorrect = acc.includes(String(S.testModalAnswer).trim().toLowerCase());
+                } else if (type === 'drag_and_drop' && Array.isArray(q.items) && Array.isArray(q.targets)) {
+                    isCorrect = q.items.length > 0 && q.items.every((it, idx) => S.testModalAnswer[it] === (q.pairs && q.pairs[it] ? q.pairs[it] : q.targets[idx]));
                 } else {
-                    isCorrect = true;
+                    isCorrect = false;
                 }
             }
 
@@ -2562,7 +2691,9 @@
             } else if (type === 'texte_a_trous' || type === 'texte_a_choix') {
                 correctStr = (q.blanks || []).map(b => (Array.isArray(b) ? b : [b]).join('/')).join(', ');
             } else {
-                correctStr = 'Association conforme';
+                const items = Array.isArray(q.items) ? q.items : [];
+                const targets = Array.isArray(q.targets) ? q.targets : [];
+                correctStr = items.map((it, idx) => `${it} → ${(q.pairs && q.pairs[it]) || targets[idx] || ''}`).join(' ; ');
             }
 
             S.testModalResult = {
@@ -2610,9 +2741,20 @@
             renderTabContent();
         },
         cancelLesson() { S.editingLesson = null; S.lessonDraft = null; renderTabContent(); },
+        updateQcmCorrectTag(selectedIdx) {
+            document.querySelectorAll('.adm-correct-tag').forEach((el, i) => {
+                el.style.display = (i === Number(selectedIdx)) ? '' : 'none';
+            });
+        },
         lessonType(type) {
-            // Conserve les champs communs (titre, question, explication) quand on change de type
-            const d = S.lessonDraft || {};
+            // Préserve les champs déjà saisis dans le DOM avant changement de type
+            const cur = readLessonForm();
+            const d = Object.assign({}, S.lessonDraft || {}, {
+                title: cur.title || (S.lessonDraft && S.lessonDraft.title) || '',
+                q: cur.q || (S.lessonDraft && S.lessonDraft.q) || '',
+                exp: cur.exp || (S.lessonDraft && S.lessonDraft.exp) || '',
+                textWithBlanks: cur.textWithBlanks || (S.lessonDraft && S.lessonDraft.textWithBlanks) || '',
+            });
             const common = { title: d.title, exp: d.exp };
             S.lessonDraft = { type };
             if (type === 'qcm') Object.assign(S.lessonDraft, { q: d.q, opts: ['', '', '', ''], correct: 0 }, common);
@@ -2652,6 +2794,7 @@
             const r = AdminStore.saveLessons(S.subjectId, lessons);
             if (!r.ok) { toast(r.error || 'Suppression impossible.', 'err'); return; }
             S.subjectList = [];
+            S.editingLesson = null; S.lessonDraft = null;
             renderTabContent();
             toast('Leçon supprimée.', 'ok');
         },
@@ -2666,6 +2809,8 @@
             const r = AdminStore.saveLessons(S.subjectId, lessons);
             if (!r.ok) { toast(r.error || 'Déplacement impossible.', 'err'); return; }
             S.subjectList = [];
+            if (S.editingLesson === i) S.editingLesson = j;
+            else if (S.editingLesson === j) S.editingLesson = i;
             renderTabContent();
         },
 
@@ -2700,18 +2845,19 @@
         },
         updateShopPreview() {
             const name = (document.getElementById('admShopName') || {}).value || 'Nom de l\'article';
-            const cost = parseInt((document.getElementById('admShopCost') || {}).value || '0', 10);
-            const color = (document.getElementById('admShopColor') || {}).value || '#c8a84b';
-            const img = (document.getElementById('admShopImg') || {}).value || '';
+            const rawCost = parseInt((document.getElementById('admShopCost') || {}).value || '0', 10);
+            const cost = Number.isFinite(rawCost) && rawCost >= 0 ? rawCost : 0;
+            const color = safeHex((document.getElementById('admShopColor') || {}).value, '#c8a84b');
+            const img = ((document.getElementById('admShopImg') || {}).value || '').trim();
 
             const t = document.getElementById('admPreviewTitle');
             const c = document.getElementById('admPreviewCost');
             const orb = document.getElementById('admPreviewOrb');
             if (t) t.textContent = name;
-            if (c) c.textContent = '🪙 ' + (cost === 0 ? 'Offert' : cost + ' pièces');
+            if (c) c.innerHTML = `${ico('coin', 13, 'gold')} ` + (cost === 0 ? 'Offert' : cost + ' pièces');
             if (orb) {
                 orb.style.setProperty('--sc', color);
-                orb.innerHTML = img ? `<img src="${esc(img)}" alt="">` : '<span>✨</span>';
+                orb.innerHTML = isSafeImgUrl(img) ? `<img src="${esc(img)}" alt="">` : `<span>${ico('sparkle', 20, 'gold')}</span>`;
             }
         },
         saveShopItem() {
@@ -2775,9 +2921,11 @@
             renderTabContent();
             toast('Récompenses rétablies par défaut.', 'ok');
         },
-        grantPlayerReward(xp, coins, reset = false) {
+        async grantPlayerReward(xp, coins, reset = false) {
             let currentXp = parseInt(DB.getOption('dash_xp') || '0', 10);
+            if (!Number.isFinite(currentXp)) currentXp = 0;
             let currentCoins = parseInt(DB.getOption('dash_coins') || '30', 10);
+            if (!Number.isFinite(currentCoins)) currentCoins = 30;
             if (reset) {
                 currentXp = 0;
                 currentCoins = 30;
@@ -2785,12 +2933,15 @@
                 DB.saveOption('dash_coins', '30');
                 toast('Portefeuille local réinitialisé à 30 pièces.', 'ok');
             } else {
-                currentXp += xp;
-                currentCoins += coins;
+                const addXp = Number.isFinite(Number(xp)) ? Number(xp) : 0;
+                const addCoins = Number.isFinite(Number(coins)) ? Number(coins) : 0;
+                currentXp += addXp;
+                currentCoins += addCoins;
                 DB.saveOption('dash_xp', String(currentXp));
                 DB.saveOption('dash_coins', String(currentCoins));
-                toast(`Ajouté avec succès : +${xp} XP et +${coins} pièces !`, 'ok');
+                toast(`Ajouté avec succès : +${addXp} XP et +${addCoins} pièces !`, 'ok');
             }
+            try { await refreshMembers(); } catch { }
         },
 
         /* ----- Pool des Quêtes Quotidiennes ----- */
@@ -3176,7 +3327,8 @@
             if (!confirm('Retirer TOUTES les personnalisations (niveaux, filières, matières, leçons, boutique, quêtes, succès) ?')) return;
             if (!confirm('Confirmez : cette action est irréversible.')) return;
             AdminStore.resetAll();
-            S.subjectList = []; S.subjectId = null; S.levelsDraft = null; S.filieresDraft = null; S.questsDraft = null;
+            S.subjectList = []; S.subjectId = null; S.editingLesson = null; S.lessonDraft = null;
+            S.editingBadge = null; S.editingShopItem = null; S.levelsDraft = null; S.filieresDraft = null; S.questsDraft = null;
             renderPanel();
             toast('Configuration administrateur réinitialisée.', 'ok');
         },
@@ -3348,7 +3500,21 @@
         },
     };
 
-    window.ADM = ADM;
+    const PUBLIC_ADM_ACTIONS = new Set(['login', 'setupFirst', 'switchGate']);
+    const safeADM = {};
+    Object.keys(ADM).forEach((key) => {
+        const fn = ADM[key];
+        safeADM[key] = (typeof fn === 'function' && !PUBLIC_ADM_ACTIONS.has(key))
+            ? function (...args) {
+                if (!S.authed) {
+                    toast('Authentification administrateur requise.', 'err');
+                    return;
+                }
+                return fn.apply(this, args);
+            }
+            : fn;
+    });
+    window.ADM = safeADM;
 
     /* ============================== HELPERS DE RENDU PARTIEL ============================== */
 
@@ -3364,33 +3530,39 @@
     /* ============================== DÉMARRAGE ============================== */
 
     async function boot() {
-        // v1.21.0 — Protection par rôle 'admin' via db.js.
+        updateModeBadge();
+        if (typeof DB !== 'undefined' && DB.useApi) {
+            const curApiUser = DB.getCurrentUser();
+            if (!curApiUser || curApiUser.role !== 'admin') {
+                S.authed = false;
+                renderApiNotice();
+                return;
+            }
+        }
+
+        // Toujours vérifier l'existence d'un compte administrateur avant tout affichage
+        let admins = [];
+        try {
+            const res = await DB.listLocalMembers();
+            if (res && res.ok && Array.isArray(res.data)) {
+                S.members = res.data;
+                admins = res.data.filter(u => u.role === 'admin');
+            }
+        } catch { }
+        S.hasAnyAdmin = admins.length > 0;
+
         // 1) Vérifier si la session courante est admin
         const currentUser = (typeof DB !== 'undefined') ? DB.getCurrentUser() : null;
         if (currentUser && currentUser.role === 'admin') {
             S.authed = true;
+            S.hasAnyAdmin = true;
         } else {
-            // 2) Pas de session admin — vérifier s'il existe des admins dans la base
-            let admins = [];
-            try {
-                const res = await DB.listLocalMembers();
-                admins = (res.ok && res.data) ? res.data.filter(u => u.role === 'admin') : [];
-            } catch { }
-            S.gate = admins.length === 0 ? 'setup' : 'login';
+            S.gate = S.hasAnyAdmin ? 'login' : 'setup';
             S.authed = false;
             render();
             return;
         }
 
-        try {
-            await refreshMembers(); // pour l'onglet Membres (mode local)
-        } catch { /* accès localStorage possiblement bloqué */ }
-
-        const modeEl = document.getElementById('admMode');
-        if (modeEl) {
-            modeEl.textContent = DB.useApi ? 'Mode API SQL' : 'Mode local';
-            modeEl.className = 'adm-mode' + (DB.useApi ? ' api' : '');
-        }
         render();
     }
 

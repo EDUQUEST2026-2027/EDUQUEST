@@ -1,71 +1,98 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
-  <!-- ILOT SIN SYSTEMES D INFORMATION ET NUMERIQUE - EDUQUEST -->
   <defs>
-    <linearGradient id="snRockDeep" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#271b52"/>
-      <stop offset="0.6" stop-color="#140d2e"/>
-      <stop offset="1" stop-color="#080517"/>
+    <radialGradient id="isinHalo" cx="0.5" cy="0.44" r="0.52">
+      <stop offset="0" stop-color="#a855f7" stop-opacity="0.34"/>
+      <stop offset="0.58" stop-color="#c8a84b" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#070b1a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="isinRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c3e68"/>
+      <stop offset="0.55" stop-color="#192544"/>
+      <stop offset="1" stop-color="#0d1428"/>
     </linearGradient>
-    <linearGradient id="snRockTop" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#4c3599"/>
-      <stop offset="0.6" stop-color="#2d1f61"/>
-      <stop offset="1" stop-color="#191038"/>
+    <linearGradient id="isinRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#18223d"/>
+      <stop offset="1" stop-color="#080d1b"/>
     </linearGradient>
-    <linearGradient id="snCyan" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#38bdf8"/>
+    <linearGradient id="isinPlateau" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c225c"/>
+      <stop offset="1" stop-color="#151033"/>
+    </linearGradient>
+    <linearGradient id="isinGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7e29c"/>
+      <stop offset="0.5" stop-color="#c8a84b"/>
+      <stop offset="1" stop-color="#8b661d"/>
+    </linearGradient>
+    <linearGradient id="isinAccent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d8b4fe"/>
       <stop offset="1" stop-color="#a855f7"/>
     </linearGradient>
-    <radialGradient id="snHalo" cx="0.5" cy="0.4" r="0.6">
-      <stop offset="0" stop-color="#a855f7" stop-opacity="0.34"/>
-      <stop offset="0.55" stop-color="#38bdf8" stop-opacity="0.2"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
-    </radialGradient>
-    <filter id="snShadow" x="-25%" y="-25%" width="150%" height="150%">
-      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.55"/>
-    </filter>
-    <filter id="snGlow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="4" result="b"/>
-      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    <linearGradient id="isinBanner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c2a4f"/>
+      <stop offset="1" stop-color="#0c1328"/>
+    </linearGradient>
+    <filter id="isinShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="9" stdDeviation="7" flood-color="#000000" flood-opacity="0.52"/>
     </filter>
   </defs>
 
-  <circle cx="210" cy="182" r="150" fill="url(#snHalo)"/>
+  <!-- Halo astral unifié -->
+  <circle cx="210" cy="195" r="185" fill="url(#isinHalo)"/>
 
-  <!-- Base rocheuse flottante -->
-  <g filter="url(#snShadow)">
-    <path d="M 75 250 Q 210 275 345 250 Q 372 294 320 344 Q 210 398 100 344 Q 48 294 75 250 Z" fill="url(#snRockDeep)"/>
-    <path d="M 85 245 Q 210 268 335 245 Q 358 278 320 314 Q 210 368 100 314 Q 62 278 85 245 Z" fill="url(#snRockTop)"/>
-    <ellipse cx="210" cy="245" rx="140" ry="42" fill="#171238"/>
-    <ellipse cx="210" cy="242" rx="130" ry="34" fill="none" stroke="#38bdf8" stroke-width="2" opacity="0.85"/>
+  <!-- Étoiles astrales dorées (grille signature EDUQUEST) -->
+  <g fill="#f2dc96">
+    <path d="M52 94 l2.6 6 6 2.6 -6 2.6 -2.6 6 -2.6 -6 -6 -2.6 6 -2.6 Z" opacity="0.88"/>
+    <path d="M368 72 l2.2 5 5 2.2 -5 2.2 -2.2 5 -2.2 -5 -5 -2.2 5 -2.2 Z" opacity="0.72"/>
+    <path d="M382 174 l1.8 4 4 1.8 -4 1.8 -1.8 4 -1.8 -4 -4 -1.8 4 -1.8 Z" opacity="0.55"/>
+    <circle cx="64" cy="210" r="2.4" fill="#d8b4fe" opacity="0.65"/>
+    <circle cx="352" cy="264" r="2.6" opacity="0.5"/>
+    <circle cx="320" cy="44" r="2" fill="#d8b4fe" opacity="0.6"/>
   </g>
 
-  <!-- Microcontrôleur / Puce centrale -->
-  <g filter="url(#snShadow)">
-    <!-- Broches latérales -->
-    <g stroke="#cbd5e1" stroke-width="4" stroke-linecap="round">
-      <line x1="142" y1="164" x2="156" y2="164"/>
-      <line x1="142" y1="180" x2="156" y2="180"/>
-      <line x1="142" y1="196" x2="156" y2="196"/>
-      <line x1="142" y1="212" x2="156" y2="212"/>
-      <line x1="264" y1="164" x2="278" y2="164"/>
-      <line x1="264" y1="180" x2="278" y2="180"/>
-      <line x1="264" y1="196" x2="278" y2="196"/>
-      <line x1="264" y1="212" x2="278" y2="212"/>
+  <g filter="url(#isinShadow)">
+    <!-- Socle rocheux flottant unifié -->
+    <path d="M34 232 L210 264 L386 232 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 L68 284 Z" fill="url(#isinRockTop)" stroke="#080e1d" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M68 284 L132 300 L210 308 L288 300 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 Z" fill="url(#isinRockDeep)" opacity="0.85"/>
+    <!-- Veines cristallines de la matière -->
+    <path d="M120 296 L142 324 M296 296 L278 326 M192 318 L210 356 L228 318" stroke="#d8b4fe" stroke-width="2.4" stroke-linecap="round" opacity="0.5" fill="none"/>
+    <!-- Galets flottants sous l'île -->
+    <polygon points="164,376 175,382 169,394 157,388" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <polygon points="256,374 268,382 260,393 249,386" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <circle cx="210" cy="400" r="4" fill="#d8b4fe" opacity="0.75"/>
+
+    <!-- Plateau insulaire cerclé d'or -->
+    <ellipse cx="210" cy="236" rx="176" ry="54" fill="url(#isinPlateau)" stroke="url(#isinGold)" stroke-width="3.5"/>
+    <ellipse cx="210" cy="232" rx="158" ry="43" fill="none" stroke="#d8b4fe" stroke-width="1.5" stroke-opacity="0.45"/>
+
+    <!-- Scène dédiée à la matière -->
+    
+      <!-- Oscilloscope onde sinus/carrée + Antenne IoT -->
+      <g transform="translate(210 148)">
+        <ellipse cx="0" cy="80" rx="80" ry="14" fill="#091326" opacity="0.45"/>
+        <!-- Écran oscilloscope -->
+        <rect x="-76" y="-40" width="152" height="96" rx="12" fill="#0f172a" stroke="url(#isinGold)" stroke-width="3.5"/>
+        <rect x="-64" y="-28" width="128" height="72" rx="6" fill="#121e3a"/>
+        <!-- Signal analogique + numérique -->
+        <path d="M-56 10 Q-40 -26 -24 10 T8 10" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
+        <path d="M8 10 H18 V-14 H34 V24 H48 V-14 H58" fill="none" stroke="#c084fc" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- Antenne émettrice au sommet -->
+        <line x1="0" y1="-40" x2="0" y2="-66" stroke="url(#isinGold)" stroke-width="4"/>
+        <circle cx="0" cy="-70" r="6" fill="#d8b4fe"/>
+        <path d="M-18 -78 A22 22 0 0 1 18 -78 M-30 -88 A36 36 0 0 1 30 -88" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round"/>
+      </g>
+
+    <!-- Bannière astrale dorée unifiée -->
+    <g transform="translate(210 336)">
+      <path d="M-90 -19 L90 -19 L78 19 L-78 19 Z"
+            fill="url(#isinBanner)" stroke="url(#isinGold)" stroke-width="3" stroke-linejoin="round"/>
+      <g fill="#f5de8a">
+        <circle cx="-74" cy="-9" r="2.4"/>
+        <circle cx="74" cy="-9" r="2.4"/>
+        <circle cx="-68" cy="10" r="2.4"/>
+        <circle cx="68" cy="10" r="2.4"/>
+      </g>
+      <text x="0" y="7" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="24" font-weight="700"
+            fill="#f4de94" letter-spacing="2">SIN</text>
     </g>
-    <rect x="156" y="148" width="108" height="84" rx="10" fill="#0f172a" stroke="url(#snCyan)" stroke-width="3"/>
-    <!-- Signal numérique PWM / Oscilloscope à l'écran -->
-    <path d="M 168 202 L 182 202 L 182 174 L 200 174 L 200 202 L 218 202 L 218 174 L 236 174 L 236 202 L 252 202" fill="none" stroke="#4ade80" stroke-width="3.5" stroke-linejoin="round" filter="url(#snGlow)"/>
   </g>
-
-  <!-- Antenne IoT / Ondes radio au sommet -->
-  <g filter="url(#snGlow)">
-    <line x1="210" y1="148" x2="210" y2="112" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
-    <circle cx="210" cy="108" r="6" fill="#f472b6"/>
-    <path d="M 186 116 A 28 28 0 0 1 234 116" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
-    <path d="M 172 102 A 44 44 0 0 1 248 102" fill="none" stroke="#a855f7" stroke-width="2.5" stroke-linecap="round"/>
-  </g>
-
-  <!-- Étiquette Hexa -->
-  <text x="210" y="254" text-anchor="middle" fill="#7dd3fc" font-family="monospace" font-size="13" font-weight="bold">0xFF · CAN</text>
 </svg>
-

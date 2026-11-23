@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
+  <defs>
+    <radialGradient id="ifrancaisHalo" cx="0.5" cy="0.44" r="0.52">
+      <stop offset="0" stop-color="#f59e0b" stop-opacity="0.34"/>
+      <stop offset="0.58" stop-color="#c8a84b" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#070b1a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ifrancaisRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c3e68"/>
+      <stop offset="0.55" stop-color="#192544"/>
+      <stop offset="1" stop-color="#0d1428"/>
+    </linearGradient>
+    <linearGradient id="ifrancaisRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#18223d"/>
+      <stop offset="1" stop-color="#080d1b"/>
+    </linearGradient>
+    <linearGradient id="ifrancaisPlateau" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3e3358"/>
+      <stop offset="1" stop-color="#1f1833"/>
+    </linearGradient>
+    <linearGradient id="ifrancaisGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7e29c"/>
+      <stop offset="0.5" stop-color="#c8a84b"/>
+      <stop offset="1" stop-color="#8b661d"/>
+    </linearGradient>
+    <linearGradient id="ifrancaisAccent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fde047"/>
+      <stop offset="1" stop-color="#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="ifrancaisBanner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c2a4f"/>
+      <stop offset="1" stop-color="#0c1328"/>
+    </linearGradient>
+    <filter id="ifrancaisShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="9" stdDeviation="7" flood-color="#000000" flood-opacity="0.52"/>
+    </filter>
+  </defs>
+
+  <!-- Halo astral unifié -->
+  <circle cx="210" cy="195" r="185" fill="url(#ifrancaisHalo)"/>
+
+  <!-- Étoiles astrales dorées (grille signature EDUQUEST) -->
+  <g fill="#f2dc96">
+    <path d="M52 94 l2.6 6 6 2.6 -6 2.6 -2.6 6 -2.6 -6 -6 -2.6 6 -2.6 Z" opacity="0.88"/>
+    <path d="M368 72 l2.2 5 5 2.2 -5 2.2 -2.2 5 -2.2 -5 -5 -2.2 5 -2.2 Z" opacity="0.72"/>
+    <path d="M382 174 l1.8 4 4 1.8 -4 1.8 -1.8 4 -1.8 -4 -4 -1.8 4 -1.8 Z" opacity="0.55"/>
+    <circle cx="64" cy="210" r="2.4" fill="#fde047" opacity="0.65"/>
+    <circle cx="352" cy="264" r="2.6" opacity="0.5"/>
+    <circle cx="320" cy="44" r="2" fill="#fde047" opacity="0.6"/>
+  </g>
+
+  <g filter="url(#ifrancaisShadow)">
+    <!-- Socle rocheux flottant unifié -->
+    <path d="M34 232 L210 264 L386 232 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 L68 284 Z" fill="url(#ifrancaisRockTop)" stroke="#080e1d" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M68 284 L132 300 L210 308 L288 300 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 Z" fill="url(#ifrancaisRockDeep)" opacity="0.85"/>
+    <!-- Veines cristallines de la matière -->
+    <path d="M120 296 L142 324 M296 296 L278 326 M192 318 L210 356 L228 318" stroke="#fde047" stroke-width="2.4" stroke-linecap="round" opacity="0.5" fill="none"/>
+    <!-- Galets flottants sous l'île -->
+    <polygon points="164,376 175,382 169,394 157,388" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <polygon points="256,374 268,382 260,393 249,386" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <circle cx="210" cy="400" r="4" fill="#fde047" opacity="0.75"/>
+
+    <!-- Plateau insulaire cerclé d'or -->
+    <ellipse cx="210" cy="236" rx="176" ry="54" fill="url(#ifrancaisPlateau)" stroke="url(#ifrancaisGold)" stroke-width="3.5"/>
+    <ellipse cx="210" cy="232" rx="158" ry="43" fill="none" stroke="#fde047" stroke-width="1.5" stroke-opacity="0.45"/>
+
+    <!-- Scène dédiée à la matière -->
+    
+      <!-- Grimoire ouvert + Plume dorée + Encrier -->
+      <g transform="translate(210 154)">
+        <ellipse cx="0" cy="74" rx="84" ry="15" fill="#091326" opacity="0.45"/>
+        <!-- Couverture reliée or -->
+        <path d="M-86 38 Q-42 20 0 42 Q42 20 86 38 L78 66 Q40 48 0 68 Q-40 48 -78 66 Z" fill="#6b2d3e" stroke="url(#ifrancaisGold)" stroke-width="3"/>
+        <!-- Pages parchemin -->
+        <path d="M-80 28 Q-40 6 0 32 Q40 6 80 28 L72 56 Q36 36 0 58 Q-36 36 -72 56 Z" fill="#f7eed2" stroke="#c8a84b" stroke-width="2.5"/>
+        <line x1="0" y1="32" x2="0" y2="58" stroke="#b59445" stroke-width="2.5"/>
+        <text x="-38" y="38" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="24" font-weight="900" fill="#5e2436">Aa</text>
+        <g stroke="#8c7344" stroke-width="2.5" stroke-linecap="round">
+          <line x1="16" y1="26" x2="58" y2="22"/><line x1="16" y1="36" x2="54" y2="33"/><line x1="16" y1="46" x2="48" y2="44"/>
+        </g>
+        <!-- Grande plume d'écrivain dorée -->
+        <g transform="translate(30 -36) rotate(24)">
+          <path d="M0 58 Q-8 -6 14 -68 Q34 -18 16 28 Q10 42 0 58 Z" fill="url(#ifrancaisAccent)" stroke="#0c1830" stroke-width="2.5"/>
+          <path d="M0 64 Q4 8 14 -64" stroke="#fff7d6" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+        </g>
+        <!-- Encrier cristal gauche -->
+        <g transform="translate(-76 48)">
+          <rect x="-15" y="-12" width="30" height="26" rx="6" fill="#1e3a5f" stroke="url(#ifrancaisGold)" stroke-width="2.5"/>
+          <rect x="-9" y="-20" width="18" height="9" rx="2" fill="url(#ifrancaisGold)"/>
+        </g>
+      </g>
+
+    <!-- Bannière astrale dorée unifiée -->
+    <g transform="translate(210 336)">
+      <path d="M-90 -19 L90 -19 L78 19 L-78 19 Z"
+            fill="url(#ifrancaisBanner)" stroke="url(#ifrancaisGold)" stroke-width="3" stroke-linejoin="round"/>
+      <g fill="#f5de8a">
+        <circle cx="-74" cy="-9" r="2.4"/>
+        <circle cx="74" cy="-9" r="2.4"/>
+        <circle cx="-68" cy="10" r="2.4"/>
+        <circle cx="68" cy="10" r="2.4"/>
+      </g>
+      <text x="0" y="7" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="22" font-weight="700"
+            fill="#f4de94" letter-spacing="2">FRANÇAIS</text>
+    </g>
+  </g>
+</svg>

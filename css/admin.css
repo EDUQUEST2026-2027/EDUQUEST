@@ -1,4 +1,4 @@
-/* admin.css — EDUQUEST v1.29.1 (feuille autonome, n'importe pas global.css) */
+/* admin.css — EDUQUEST v1.30.0 (feuille autonome, n'importe pas global.css) */
 /* Polices : Cinzel et Rajdhani chargées via <link> dans le HTML (évite @import bloquant) */
 
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -30,7 +30,43 @@ body {
         radial-gradient(1200px 600px at 80% -10%, rgba(95, 212, 230, 0.10), transparent 60%),
         radial-gradient(900px 500px at -10% 110%, rgba(200, 168, 75, 0.10), transparent 55%),
         linear-gradient(160deg, #0b1026 0%, var(--night) 60%, #0a0e22 100%);
-    background-attachment: fixed;
+}
+
+/* Système unifié d'icônes SVG (Astral & Or) */
+.eq-icon {
+    display: inline-block;
+    vertical-align: -0.16em;
+    flex-shrink: 0;
+    color: currentColor;
+}
+.eq-icon--gold    { color: #f4de94; }
+.eq-icon--cyan    { color: #5fd4e6; }
+.eq-icon--emerald { color: #6bca82; }
+.eq-icon--fire    { color: #ff9f43; }
+.eq-icon--danger  { color: #ff6b81; }
+.eq-icon--violet  { color: #c084fc; }
+.eq-icon--muted   { color: var(--muted); }
+.eq-icon-mono {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5em;
+    height: 1.5em;
+    padding: 0 4px;
+    border-radius: 6px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.8em;
+    font-weight: 800;
+    color: var(--gold-soft);
+    background: rgba(200, 168, 75, 0.16);
+    border: 1px solid rgba(200, 168, 75, 0.45);
+    vertical-align: middle;
+}
+.eq-stars-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    vertical-align: middle;
 }
 
 /* Petites « étoiles » fixes en fond */
@@ -60,6 +96,7 @@ body > * { position: relative; z-index: 1; }
     padding: 16px 26px;
     background: rgba(13, 19, 48, 0.72);
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(200, 168, 75, 0.25);
     position: sticky; top: 0; z-index: 20;
 }
@@ -114,6 +151,7 @@ body > * { position: relative; z-index: 1; }
 .adm-card {
     background: rgba(13, 19, 48, 0.72);
     backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(154, 167, 216, 0.18);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
@@ -386,88 +424,6 @@ body > * { position: relative; z-index: 1; }
 }
 
 /* ==========================================================================
-   v1.21 — RESPONSIVE MOBILE DU PANNEAU (téléphones ≤ 700px)
-   Objectifs : onglets en barre défilable, tableaux scrollables, formulaires
-   pleine largeur, zones tactiles confortables. Vérifié à 360px de large.
-   ========================================================================== */
-
-/* En-tête : le bloc brand et les boutons s'empilent proprement */
-@media (max-width: 700px) {
-    .adm-top {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-        padding: 14px 14px 12px;
-    }
-    .adm-top-right { margin-left: 0; width: 100%; justify-content: space-between; flex-wrap: wrap; }
-
-    /* Corps : marges réduites mais respirantes */
-    .adm-main { padding: 18px 12px 90px; }
-
-    /* Statistiques : 2 colonnes fixes au lieu de cartes trop étroites */
-    .adm-stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .adm-stat b { font-size: 21px; }
-
-    /* Onglets : barre horizontale DÉFILABLE (scroller au doigt) — les 5 onglets
-       tiennent sur une ligne et l'onglet actif reste bien visible. */
-    .adm-tabs {
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        gap: 6px;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none; /* esthétique : pas de scrollbar sous les onglets */
-        margin-bottom: 16px;
-    }
-    .adm-tabs::-webkit-scrollbar { display: none; }
-    .adm-tab {
-        flex: 0 0 auto;
-        padding: 10px 14px;
-        font-size: 12.5px;
-    }
-
-    /* Cartes et notes plus compactes */
-    .adm-card { padding: 16px 14px; }
-    .adm-note { padding: 10px 12px; font-size: 13.5px; }
-
-    /* Tableaux (niveaux, membres) : défilement horizontal au doigt + zones
-       tactiles plus grandes. Les inputs restent lisibles sans zoom. */
-    .adm-table-wrap {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        margin: 0 -14px; /* le scroll occupe toute la largeur de la carte */
-        padding: 0 14px;
-    }
-    .adm-table { min-width: 540px; } /* largeur naturelle : on scrolle plutôt que d'écraser */
-    .adm-table td { padding: 10px 8px; }
-    .adm-ico-btn { padding: 8px 11px; font-size: 14px; } /* cible tactile ≥ 40px */
-
-    /* Formulaires : champs pleine largeur (déjà empilés en colonne) */
-    .adm-input, .adm-select, .adm-textarea { width: 100%; font-size: 16px; } /* 16px = pas de zoom iOS */
-    .adm-toolbar { gap: 8px; }
-    .adm-toolbar .adm-btn { flex: 1 1 auto; text-align: center; padding: 12px 14px; }
-    .adm-btn { min-height: 44px; } /* cible tactile confortable */
-
-    /* Toast : bandeau en bas, pleine largeur, au-dessus des liens légaux */
-    .adm-toast {
-        left: 10px;
-        right: 10px;
-        bottom: 40px;
-        max-width: none;
-        text-align: center;
-    }
-
-    /* Rangées d'options (réponses QCM, aperçu, export…) : on garde la ligne
-       radio + réponse côte à côte, mais on autorise le repli du tag
-       « ✔ bonne réponse » et des boutons quand la place manque. */
-    .adm-opt-row { flex-wrap: wrap; }
-    .adm-opt-row .adm-btn { width: 100%; }
-    .adm-shop-grid { grid-template-columns: 1fr; gap: 10px; }
-    .adm-q-choices { grid-template-columns: 1fr; }
-    .adm-modal-backdrop { padding: 10px; }
-    .adm-modal-card { padding: 16px 14px; border-radius: 14px; max-height: 92dvh; }
-}
-
-/* ==========================================================================
    NOUVELLES FONCTIONNALITÉS : NIVEAUX D'ÉTUDE, QUESTIONS ALÉATOIRES & MODALE
    ========================================================================== */
 
@@ -618,6 +574,7 @@ body > * { position: relative; z-index: 1; }
     inset: 0;
     background: rgba(4, 7, 18, 0.82);
     backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     z-index: 10000;
     display: flex;
     align-items: center;
@@ -753,6 +710,72 @@ body > * { position: relative; z-index: 1; }
     min-width: 112px;
     padding: 4px 6px;
     font-size: 0.82rem;
+}
+
+/* ==========================================================================
+   RESPONSIVE MOBILE DU PANNEAU (téléphones ≤ 700px) — en fin de feuille
+   pour gagner la cascade sur .adm-q-choices, .adm-modal-backdrop et .adm-modal-card.
+   ========================================================================== */
+@media (max-width: 700px) {
+    .adm-top {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 14px 14px 12px;
+    }
+    .adm-top-right { margin-left: 0; width: 100%; justify-content: space-between; flex-wrap: wrap; }
+    .adm-main { padding: 18px 12px 90px; }
+    .adm-stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .adm-stat b { font-size: 21px; }
+    .adm-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 6px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        margin-bottom: 16px;
+    }
+    .adm-tabs::-webkit-scrollbar { display: none; }
+    .adm-tab {
+        flex: 0 0 auto;
+        padding: 10px 14px;
+        font-size: 12.5px;
+    }
+    .adm-card { padding: 16px 14px; }
+    .adm-note { padding: 10px 12px; font-size: 13.5px; }
+    .adm-table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -14px;
+        padding: 0 14px;
+    }
+    .adm-table { min-width: 540px; }
+    .adm-table td { padding: 10px 8px; }
+    .adm-ico-btn { padding: 8px 11px; font-size: 14px; }
+    .adm-input, .adm-select, .adm-textarea { width: 100%; font-size: 16px; }
+    .adm-toolbar { gap: 8px; }
+    .adm-toolbar .adm-btn { flex: 1 1 auto; text-align: center; padding: 12px 14px; }
+    .adm-btn { min-height: 44px; }
+    .adm-toast {
+        left: 10px;
+        right: 10px;
+        bottom: 40px;
+        max-width: none;
+        text-align: center;
+    }
+    .adm-opt-row { flex-wrap: wrap; }
+    .adm-opt-row .adm-btn { width: 100%; }
+    .adm-shop-grid { grid-template-columns: 1fr; gap: 10px; }
+    .adm-q-choices { grid-template-columns: 1fr; }
+    .adm-modal-backdrop { padding: 10px; }
+    .adm-modal-card { padding: 16px 14px; border-radius: 14px; max-height: 92dvh; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .adm-card, .adm-btn, .adm-shop-card, .adm-toast {
+        animation: none !important;
+        transition: none !important;
+    }
 }
 
 

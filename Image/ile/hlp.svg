@@ -1,47 +1,98 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
-  <!-- ILOT HUMANITES & LITTERATURE (HLP) - EDUQUEST -->
   <defs>
-    <linearGradient id="hlRockDeep" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#1e293b"/>
-      <stop offset="0.6" stop-color="#0f172a"/>
-      <stop offset="1" stop-color="#070b14"/>
-    </linearGradient>
-    <linearGradient id="hlRockTop" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#475569"/>
-      <stop offset="0.6" stop-color="#334155"/>
-      <stop offset="1" stop-color="#1e293b"/>
-    </linearGradient>
-    <linearGradient id="hlPaper" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#fef9c3"/>
-      <stop offset="1" stop-color="#fde68a"/>
-    </linearGradient>
-    <radialGradient id="hlHalo" cx="0.5" cy="0.4" r="0.6">
-      <stop offset="0" stop-color="#fbbf24" stop-opacity="0.38"/>
-      <stop offset="0.6" stop-color="#818cf8" stop-opacity="0.16"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    <radialGradient id="ihlpHalo" cx="0.5" cy="0.44" r="0.52">
+      <stop offset="0" stop-color="#eab308" stop-opacity="0.34"/>
+      <stop offset="0.58" stop-color="#c8a84b" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#070b1a" stop-opacity="0"/>
     </radialGradient>
-    <filter id="hlShadow" x="-25%" y="-25%" width="150%" height="150%">
-      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.55"/>
+    <linearGradient id="ihlpRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c3e68"/>
+      <stop offset="0.55" stop-color="#192544"/>
+      <stop offset="1" stop-color="#0d1428"/>
+    </linearGradient>
+    <linearGradient id="ihlpRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#18223d"/>
+      <stop offset="1" stop-color="#080d1b"/>
+    </linearGradient>
+    <linearGradient id="ihlpPlateau" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#362e54"/>
+      <stop offset="1" stop-color="#1b162e"/>
+    </linearGradient>
+    <linearGradient id="ihlpGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7e29c"/>
+      <stop offset="0.5" stop-color="#c8a84b"/>
+      <stop offset="1" stop-color="#8b661d"/>
+    </linearGradient>
+    <linearGradient id="ihlpAccent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fef08a"/>
+      <stop offset="1" stop-color="#eab308"/>
+    </linearGradient>
+    <linearGradient id="ihlpBanner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c2a4f"/>
+      <stop offset="1" stop-color="#0c1328"/>
+    </linearGradient>
+    <filter id="ihlpShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="9" stdDeviation="7" flood-color="#000000" flood-opacity="0.52"/>
     </filter>
   </defs>
-  <circle cx="210" cy="182" r="148" fill="url(#hlHalo)"/>
-  <g filter="url(#hlShadow)">
-    <path d="M 74 250 Q 210 276 346 250 Q 372 294 318 345 Q 210 398 102 345 Q 48 294 74 250 Z" fill="url(#hlRockDeep)"/>
-    <path d="M 86 244 Q 210 268 334 244 Q 356 278 318 314 Q 210 366 102 314 Q 64 278 86 244 Z" fill="url(#hlRockTop)"/>
-    <ellipse cx="210" cy="244" rx="138" ry="40" fill="#1e293b"/>
-    <ellipse cx="210" cy="240" rx="126" ry="32" fill="none" stroke="#fbbf24" stroke-width="2.2"/>
+
+  <!-- Halo astral unifié -->
+  <circle cx="210" cy="195" r="185" fill="url(#ihlpHalo)"/>
+
+  <!-- Étoiles astrales dorées (grille signature EDUQUEST) -->
+  <g fill="#f2dc96">
+    <path d="M52 94 l2.6 6 6 2.6 -6 2.6 -2.6 6 -2.6 -6 -6 -2.6 6 -2.6 Z" opacity="0.88"/>
+    <path d="M368 72 l2.2 5 5 2.2 -5 2.2 -2.2 5 -2.2 -5 -5 -2.2 5 -2.2 Z" opacity="0.72"/>
+    <path d="M382 174 l1.8 4 4 1.8 -4 1.8 -1.8 4 -1.8 -4 -4 -1.8 4 -1.8 Z" opacity="0.55"/>
+    <circle cx="64" cy="210" r="2.4" fill="#fef08a" opacity="0.65"/>
+    <circle cx="352" cy="264" r="2.6" opacity="0.5"/>
+    <circle cx="320" cy="44" r="2" fill="#fef08a" opacity="0.6"/>
   </g>
-  <!-- Grand livre ouvert lumineux + Plume d'écrivain dorée -->
-  <g filter="url(#hlShadow)">
-    <path d="M 114 152 Q 162 138 210 156 L 210 236 Q 162 218 114 232 Z" fill="url(#hlPaper)" stroke="#b45309" stroke-width="3"/>
-    <path d="M 306 152 Q 258 138 210 156 L 210 236 Q 258 218 306 232 Z" fill="url(#hlPaper)" stroke="#b45309" stroke-width="3"/>
-    <line x1="130" y1="176" x2="192" y2="180" stroke="#92400e" stroke-width="3" stroke-linecap="round"/>
-    <line x1="130" y1="194" x2="188" y2="198" stroke="#92400e" stroke-width="3" stroke-linecap="round"/>
-    <line x1="130" y1="212" x2="184" y2="215" stroke="#92400e" stroke-width="3" stroke-linecap="round"/>
-    <line x1="228" y1="180" x2="290" y2="176" stroke="#92400e" stroke-width="3" stroke-linecap="round"/>
-    <line x1="228" y1="198" x2="286" y2="194" stroke="#92400e" stroke-width="3" stroke-linecap="round"/>
-    <!-- Plume élancée -->
-    <path d="M 222 184 C 244 134 282 102 316 92 C 304 128 274 162 228 188 Z" fill="#818cf8" stroke="#e0e7ff" stroke-width="2.5"/>
-    <line x1="214" y1="196" x2="306" y2="100" stroke="#fef08a" stroke-width="3" stroke-linecap="round"/>
+
+  <g filter="url(#ihlpShadow)">
+    <!-- Socle rocheux flottant unifié -->
+    <path d="M34 232 L210 264 L386 232 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 L68 284 Z" fill="url(#ihlpRockTop)" stroke="#080e1d" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M68 284 L132 300 L210 308 L288 300 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 Z" fill="url(#ihlpRockDeep)" opacity="0.85"/>
+    <!-- Veines cristallines de la matière -->
+    <path d="M120 296 L142 324 M296 296 L278 326 M192 318 L210 356 L228 318" stroke="#fef08a" stroke-width="2.4" stroke-linecap="round" opacity="0.5" fill="none"/>
+    <!-- Galets flottants sous l'île -->
+    <polygon points="164,376 175,382 169,394 157,388" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <polygon points="256,374 268,382 260,393 249,386" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <circle cx="210" cy="400" r="4" fill="#fef08a" opacity="0.75"/>
+
+    <!-- Plateau insulaire cerclé d'or -->
+    <ellipse cx="210" cy="236" rx="176" ry="54" fill="url(#ihlpPlateau)" stroke="url(#ihlpGold)" stroke-width="3.5"/>
+    <ellipse cx="210" cy="232" rx="158" ry="43" fill="none" stroke="#fef08a" stroke-width="1.5" stroke-opacity="0.45"/>
+
+    <!-- Scène dédiée à la matière -->
+    
+      <!-- Rouleau antique d'Humanités + Couronne de laurier + Plume -->
+      <g transform="translate(210 148)">
+        <ellipse cx="0" cy="80" rx="80" ry="14" fill="#091326" opacity="0.45"/>
+        <!-- Parchemin vertical -->
+        <rect x="-48" y="-52" width="96" height="108" rx="6" fill="#f7eed2" stroke="url(#ihlpGold)" stroke-width="3.5"/>
+        <rect x="-58" y="-60" width="116" height="16" rx="8" fill="url(#ihlpGold)" stroke="#0c1830" stroke-width="2.5"/>
+        <rect x="-58" y="48" width="116" height="16" rx="8" fill="url(#ihlpGold)" stroke="#0c1830" stroke-width="2.5"/>
+        <g stroke="#785826" stroke-width="3" stroke-linecap="round">
+          <line x1="-30" y1="-26" x2="30" y2="-26"/><line x1="-30" y1="-8" x2="26" y2="-8"/>
+          <line x1="-30" y1="10" x2="30" y2="10"/><line x1="-30" y1="28" x2="14" y2="28"/>
+        </g>
+        <!-- Couronne de laurier dorée autour -->
+        <path d="M-74 28 C-92 -12 -74 -50 -44 -64 M74 28 C92 -12 74 -50 44 -64" fill="none" stroke="#facc15" stroke-width="5.5" stroke-linecap="round"/>
+      </g>
+
+    <!-- Bannière astrale dorée unifiée -->
+    <g transform="translate(210 336)">
+      <path d="M-90 -19 L90 -19 L78 19 L-78 19 Z"
+            fill="url(#ihlpBanner)" stroke="url(#ihlpGold)" stroke-width="3" stroke-linejoin="round"/>
+      <g fill="#f5de8a">
+        <circle cx="-74" cy="-9" r="2.4"/>
+        <circle cx="74" cy="-9" r="2.4"/>
+        <circle cx="-68" cy="10" r="2.4"/>
+        <circle cx="68" cy="10" r="2.4"/>
+      </g>
+      <text x="0" y="7" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="24" font-weight="700"
+            fill="#f4de94" letter-spacing="2">HLP</text>
+    </g>
   </g>
 </svg>

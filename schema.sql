@@ -1,5 +1,5 @@
 -- =============================================================================
--- SCHEMA.SQL — EDUQUEST v1.29.1
+-- SCHEMA.SQL — EDUQUEST v1.30.0
 -- Script de création de la base de données SQL (MySQL / MariaDB / PostgreSQL / SQLite)
 -- =============================================================================
 --
@@ -40,12 +40,11 @@ CREATE TABLE IF NOT EXISTS joueurs (
     token         VARCHAR(512)  DEFAULT NULL,             -- Token JWT de session active
     google_id     VARCHAR(255)  DEFAULT NULL,             -- ID OAuth Google (optionnel)
     cree_le       DATETIME      DEFAULT CURRENT_TIMESTAMP,
-    derniere_cnx  DATETIME      DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    derniere_cnx  DATETIME      DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_joueurs_email (email(191)),
+    INDEX idx_joueurs_token (token(191)),
+    INDEX idx_joueurs_role  (role)
 );
-
-CREATE INDEX IF NOT EXISTS idx_joueurs_email ON joueurs(email);
-CREATE INDEX IF NOT EXISTS idx_joueurs_token ON joueurs(token);
-CREATE INDEX IF NOT EXISTS idx_joueurs_role  ON joueurs(role);
 
 -- =============================================================================
 -- 2. TABLE : parametres (Options et préférences par joueur)
@@ -57,10 +56,9 @@ CREATE TABLE IF NOT EXISTS parametres (
     valeur      VARCHAR(500) NOT NULL,
     modifie_le  DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (joueur_id) REFERENCES joueurs(id) ON DELETE CASCADE,
-    UNIQUE KEY uq_joueur_cle (joueur_id, cle)
+    UNIQUE KEY uq_joueur_cle (joueur_id, cle),
+    INDEX idx_parametres_joueur (joueur_id)
 );
-
-CREATE INDEX IF NOT EXISTS idx_parametres_joueur ON parametres(joueur_id);
 
 -- =============================================================================
 -- 3. TABLE : configuration_site (Paramètres généraux du site gérés par l'admin)
@@ -111,10 +109,9 @@ CREATE TABLE IF NOT EXISTS lecons_manuelles (
     contenu_json   JSON         NOT NULL,               -- Structure complète de la question
     cree_le        DATETIME     DEFAULT CURRENT_TIMESTAMP,
     modifie_le     DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (matiere_id) REFERENCES matieres_config(id) ON DELETE CASCADE
+    FOREIGN KEY (matiere_id) REFERENCES matieres_config(id) ON DELETE CASCADE,
+    INDEX idx_lecons_matiere (matiere_id)
 );
-
-CREATE INDEX IF NOT EXISTS idx_lecons_matiere ON lecons_manuelles(matiere_id);
 
 -- =============================================================================
 -- 7. TABLE : progression (Parcours des 36 matières et 100 niveaux)
@@ -130,11 +127,10 @@ CREATE TABLE IF NOT EXISTS progression (
     termine_le   DATETIME     DEFAULT NULL,
     modifie_le   DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (joueur_id) REFERENCES joueurs(id) ON DELETE CASCADE,
-    UNIQUE KEY uq_progression (joueur_id, matiere, niveau, niveau_num)
+    UNIQUE KEY uq_progression (joueur_id, matiere, niveau, niveau_num),
+    INDEX idx_progression_joueur  (joueur_id),
+    INDEX idx_progression_mat_niv (joueur_id, matiere, niveau)
 );
-
-CREATE INDEX IF NOT EXISTS idx_progression_joueur  ON progression(joueur_id);
-CREATE INDEX IF NOT EXISTS idx_progression_mat_niv ON progression(joueur_id, matiere, niveau);
 
 -- =============================================================================
 -- 8. TABLE : quetes_journalieres (Suivi des quêtes quotidiennes à minuit)
@@ -147,10 +143,9 @@ CREATE TABLE IF NOT EXISTS quetes_journalieres (
     bonus_reclame BOOLEAN  NOT NULL DEFAULT FALSE, -- Coffre bonus (+50 pièces)
     modifie_le    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (joueur_id) REFERENCES joueurs(id) ON DELETE CASCADE,
-    UNIQUE KEY uq_joueur_date (joueur_id, date_quete)
+    UNIQUE KEY uq_joueur_date (joueur_id, date_quete),
+    INDEX idx_quetes_joueur_date (joueur_id, date_quete)
 );
-
-CREATE INDEX IF NOT EXISTS idx_quetes_joueur_date ON quetes_journalieres(joueur_id, date_quete);
 
 -- =============================================================================
 -- 9. TABLE : inventaire (Consommables, Halos, Avatars, Titres et Thèmes)
@@ -164,10 +159,9 @@ CREATE TABLE IF NOT EXISTS inventaire (
     equipe     BOOLEAN      NOT NULL DEFAULT FALSE,
     obtenu_le  DATETIME     DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (joueur_id) REFERENCES joueurs(id) ON DELETE CASCADE,
-    UNIQUE KEY uq_joueur_item (joueur_id, item_id)
+    UNIQUE KEY uq_joueur_item (joueur_id, item_id),
+    INDEX idx_inventaire_joueur (joueur_id)
 );
-
-CREATE INDEX IF NOT EXISTS idx_inventaire_joueur ON inventaire(joueur_id);
 
 -- =============================================================================
 -- 10. VUES ANALYTIQUES
@@ -251,17 +245,17 @@ INSERT IGNORE INTO parametres (joueur_id, cle, valeur) VALUES
 
 -- Configuration globale du site (synchronisée avec AdminStore.getSiteConfig)
 INSERT IGNORE INTO configuration_site (cle, valeur, description) VALUES
-    ('siteTitle',            'EDUQUEST — Révision Gamifiée',       'Titre principal affiché dans l’en-tête'),
-    ('tagline',              'Explore les îles du savoir !',       'Slogan affiché sur la page d’accueil'),
+    ('title',                'EDUQUEST',                           'Titre principal affiché dans l’en-tête'),
+    ('dashboardFooterNote',  'EDUQUEST — Contenus alignés sur les programmes officiels.', 'Note de pied de page du tableau de bord'),
     ('defaultNiveau',        '6eme',                               'Classe scolaire par défaut'),
     ('defaultFiliere',       'generale',                           'Filière par défaut au lycée / BTS'),
-    ('chronoQuestionSeconds','30',                                 'Durée en secondes du défi chronométré'),
+    ('quizTimerSeconds',     '45',                                 'Durée en secondes du défi chronométré'),
     ('xpMultiplier',         '1.0',                                'Multiplicateur global d’expérience'),
-    ('coinsMultiplier',      '1.0',                                'Multiplicateur global de pièces'),
-    ('soundVolume',          '60',                                 'Volume par défaut des effets sonores'),
-    ('musicVolume',          '35',                                 'Volume par défaut de la musique d’ambiance'),
+    ('coinMultiplier',       '1.0',                                'Multiplicateur global de pièces'),
+    ('defaultSfxVolume',     '60',                                 'Volume par défaut des effets sonores'),
+    ('defaultBgmVolume',     '35',                                 'Volume par défaut de la musique d’ambiance'),
     ('allowRegistration',    'true',                               'Autoriser l’auto-inscription des élèves'),
-    ('enableShop',           'true',                               'Activer la boutique (97 articles)'),
+    ('enableShop',           'true',                               'Activer la boutique (98 articles)'),
     ('enableQuests',         'true',                               'Activer les missions quotidiennes'),
     ('enableBadges',         'true',                               'Activer les succès (78 badges)'),
     ('enableChrono',         'true',                               'Autoriser le mode chronométré'),
@@ -278,19 +272,19 @@ INSERT IGNORE INTO configuration_ia (cle, valeur, description) VALUES
     ('providers',            '[]',                                 'Pool JSON de fournisseurs IA (Make, OpenAI-compatible, Gemini)'),
     ('fallbackToOffline',    'true',                               'Basculer automatiquement sur la banque locale en cas d’erreur');
 
--- Configuration des 36 matières officielles (Collège, Lycée & BTS sur 18 filières — synchronisée avec AdminStore.SUBJECT_DEFAULT_RULES)
+-- Configuration des 36 matières officielles (Collège, Lycée & BTS sur 18 filières — 100 % SVG Astral & Or)
 INSERT IGNORE INTO matieres_config (id, nom, icone, bande, classes_json, filieres_json, active, est_custom, description) VALUES
-    ('maths',         'Mathématiques',                'Image/ile/maths.webp',         'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale","bts1","bts2"]', '["all"]',                                                                                                TRUE, FALSE, 'Algèbre, géométrie, analyse, probabilités et maths appliquées BTS'),
-    ('francais',      'Français',                     'Image/ile/francais.webp',      'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale","bts1","bts2"]', '["all"]',                                                                                                TRUE, FALSE, 'Grammaire, littérature, orthographe et culture générale'),
-    ('histoire',      'Histoire',                     'Image/ile/histoire.webp',      'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["all"]',                                                                                                TRUE, FALSE, 'Grandes époques et repères historiques'),
+    ('maths',         'Mathématiques',                'Image/ile/maths.svg',          'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale","bts1","bts2"]', '["all"]',                                                                                                TRUE, FALSE, 'Algèbre, géométrie, analyse, probabilités et maths appliquées BTS'),
+    ('francais',      'Français',                     'Image/ile/francais.svg',       'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale","bts1","bts2"]', '["all"]',                                                                                                TRUE, FALSE, 'Grammaire, littérature, orthographe et culture générale'),
+    ('histoire',      'Histoire',                     'Image/ile/histoire.svg',       'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["all"]',                                                                                                TRUE, FALSE, 'Grandes époques et repères historiques'),
     ('geo',           'Géographie',                   'Image/ile/geo.svg',            'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["all"]',                                                                                                TRUE, FALSE, 'Territoires, mondialisation, climat et cartes'),
     ('emc',           'EMC',                          'Image/ile/emc.svg',            'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["all"]',                                                                                                TRUE, FALSE, 'Enseignement Moral et Civique, institutions et valeurs'),
-    ('anglais',       'Anglais',                      'Image/ile/anglais.webp',       'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale","bts1","bts2"]', '["all"]',                                                                                                TRUE, FALSE, 'Vocabulaire, temps verbaux, grammaire et anglais technique'),
+    ('anglais',       'Anglais',                      'Image/ile/anglais.svg',        'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale","bts1","bts2"]', '["all"]',                                                                                                TRUE, FALSE, 'Vocabulaire, temps verbaux, grammaire et anglais technique'),
     ('espagnol',      'Espagnol',                     'Image/ile/espagnol.svg',       'all',     '["5eme","4eme","3eme","2nde","1ere","terminale"]',                      '["generale","stmg","st2s","stl","std2a","sthr","stav","s2tmd","hlp_llce","sciences_spe","bts_mco","bac_pro_assp"]', TRUE, FALSE, 'Langue vivante 2 dès la 5ème : grammaire, lexique et culture hispanique'),
-    ('svt',           'SVT',                          'Image/ile/svt.webp',           'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["generale","st2s","stl","stav","sciences_spe","bac_pro_assp"]',                                         TRUE, FALSE, 'Sciences de la Vie et de la Terre'),
-    ('physique',      'Physique',                     'Image/ile/physique.webp',      'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale","bts1","bts2"]', '["generale","nsi_spe","sti2d","ciel","st2s","stl","std2a","stav","sciences_spe","bac_pro_melec"]',       TRUE, FALSE, 'Électricité, mécanique, énergie et optique'),
+    ('svt',           'SVT',                          'Image/ile/svt.svg',            'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["generale","st2s","stl","stav","sciences_spe","bac_pro_assp"]',                                         TRUE, FALSE, 'Sciences de la Vie et de la Terre'),
+    ('physique',      'Physique',                     'Image/ile/physique.svg',       'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale","bts1","bts2"]', '["generale","nsi_spe","sti2d","ciel","st2s","stl","std2a","stav","sciences_spe","bac_pro_melec"]',       TRUE, FALSE, 'Électricité, mécanique, énergie et optique'),
     ('chimie',        'Chimie',                       'Image/ile/chimie.svg',         'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["generale","nsi_spe","sti2d","st2s","stl","std2a","stav","sciences_spe","bac_pro_assp"]',               TRUE, FALSE, 'Atomes, molécules, pH et réactions chimiques'),
-    ('techno',        'Technologie',                  'Image/ile/technologie.webp',   'college', '["6eme","5eme","4eme","3eme"]',                                         '["all"]',                                                                                                TRUE, FALSE, 'Algorithmique, capteurs, matériaux et réseaux du collège'),
+    ('techno',        'Technologie',                  'Image/ile/technologie.svg',    'college', '["6eme","5eme","4eme","3eme"]',                                         '["all"]',                                                                                                TRUE, FALSE, 'Algorithmique, capteurs, matériaux et réseaux du collège'),
     ('arts',          'Arts & Musique',               'Image/ile/arts.svg',           'all',     '["6eme","5eme","4eme","3eme","2nde","1ere","terminale"]',               '["generale","std2a","s2tmd","hlp_llce"]',                                                                TRUE, FALSE, 'Histoire des arts, perspective, couleurs et culture musicale'),
     ('philo',         'Philosophie',                  'Image/ile/philo.svg',          'lycee',   '["terminale"]',                                                         '["generale","nsi_spe","stmg","sti2d","st2s","stl","std2a","sthr","stav","s2tmd","hlp_llce","sciences_spe"]', TRUE, FALSE, 'Concepts, auteurs et grandes notions de Terminale'),
     ('nsi',           'NSI & Numérique',              'Image/ile/nsi.svg',            'lycee',   '["2nde","1ere","terminale","bts1","bts2"]',                             '["generale","nsi_spe","sti2d","ciel","bts_sio"]',                                                        TRUE, FALSE, 'Informatique, Python, algorithmique, Web, SQL et architectures'),

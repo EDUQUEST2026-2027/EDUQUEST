@@ -1,17 +1,17 @@
 # EDUQUEST — llms.txt
 # Documentation destinée aux agents IA et assistants conversationnels.
 # Standard : https://llmstxt.org/
-# Dernière mise à jour : 2026-11-20
+# Dernière mise à jour : 2026-11-23
 
 > EDUQUEST est une application web éducative française de révision gamifiée
 > pour les élèves du collège, du lycée et de BTS (6e → Terminale, BTS 1 & 2,
-> 18 filières officielles, 36 matières). 100 % front-end, 100 % gratuit,
-> sans publicité, sans traceur, fonctionnelle hors-ligne (PWA).
+> 18 filières officielles, 36 matières). 100 % front-end, 100 % SVG (Astral & Or),
+> 100 % gratuit, sans publicité, sans traceur, fonctionnelle hors-ligne (PWA).
 
 ## Identité
 
 - **Nom** : EDUQUEST
-- **Version** : 1.29.1
+- **Version** : 1.30.0
 - **Type** : Application web éducative (jeu de révision gamifié)
 - **Langue** : français (fr-FR)
 - **Public** : élèves & étudiants (6e → Terminale, BTS 1/2), enseignants, établissements scolaires, familles
@@ -38,8 +38,8 @@ Interface claire et accessible sur PC comme sur smartphone : séparation nette e
 missions quotidiennes compactes et repliables, barre de navigation mobile fermable,
 confettis calibrés respectant les options Particules / Mode Éco / Animations,
 5 potions consommables (Double XP, Bouclier d'Étoile, Élixir de Fortune, Sablier
-Temporel, Flamme Éternelle), 78 succès filtrés par filière, boutique de 97 articles
-(27 avatars, 24 auras, 26 titres, 15 thèmes CSS, 5 boosters).
+Temporel, Flamme Éternelle), 78 succès filtrés par filière, boutique de 98 articles
+(27 avatars SVG, 24 auras, 26 titres, 16 thèmes CSS, 5 boosters).
 
 ## Matières & Filières (36 matières officielles, 18 filières, 100 niveaux chacune)
 
@@ -78,7 +78,7 @@ gamifié, streak, combo, éducation nationale, gratuit, pwa, offline
 | Route | Description |
 |-------|-------------|
 | `index.html` | Accueil — menu principal, modales Options (classe, 18 filières, audio, particules, apparence, mode chrono, éco-énergie), connexion/inscription et confirmation Quitter |
-| `dashboard.html` | Tableau de bord élève : sélecteurs classe & filière, HUD 🔥 Série / ⚡ Combo, missions quotidiennes repliables, 36 matières filtrables par spécialités, boutique (97 articles), 78 succès filtrés par filière |
+| `dashboard.html` | Tableau de bord élève : sélecteurs classe & filière, HUD Série / Combo, missions quotidiennes repliables, 36 matières filtrables par spécialités, boutique (98 articles), 78 succès filtrés par filière |
 | `map.html` | Carte de la matière : parcours des îles (niveaux 1 à 100), sélecteur d'avatar, badge classe/filière en lecture seule, expulsion hors programme, quiz adaptatif |
 | `legal.html` | Mentions légales, politique de confidentialité et gestion des cookies |
 
@@ -86,14 +86,15 @@ gamifié, streak, combo, éducation nationale, gratuit, pwa, offline
 
 | Route | Rôle |
 |-------|------|
-| `admin.html` | Panneau d'administration unifié (membres, 9 niveaux 6e → BTS, 18 filières, 36 matières, leçons manuelles & procédurales, boutique 97 articles, 78 succès, pool 9 quêtes, feature flags, pool Multi-IA & crédits) |
+| `admin.html` | Panneau d'administration unifié (membres, 9 niveaux 6e → BTS, 18 filières, 36 matières, leçons manuelles & procédurales, boutique 98 articles, 78 succès, pool 9 quêtes, feature flags, pool Multi-IA & crédits) |
 | `test.html` | Banc de tests navigateur autonome (13 suites QA) avec runner visuel, benchmark et test interactif en direct |
 
 ## Architecture technique
 
 | Fichier / Dossier | Rôle |
 |-------------------|------|
-| `js/app.js` | Contrôleur principal, vues, apparence, particules, HUD 🔥/⚡, boutique, 78 succès, confettis Canvas calibrés |
+| `js/core/icons.js` | Bibliothèque unifiée de 70+ icônes SVG duotone (*Astral & Or*, `window.EduIcons`) |
+| `js/app.js` | Contrôleur principal, vues, apparence, particules, HUD Série/Combo, boutique, 78 succès, confettis Canvas calibrés |
 | `js/db.js` | Persistance isolée par compte (`localStorage` / API SQL optionnelle) : progression, classe, filière, boosters, tentatives anti-triche, profil adaptatif |
 | `js/question-bank.js` | Banque officielle des 36 matières et générateurs procéduraux déterministes (100 niveaux/matière, lazy variants) |
 | `js/quiz-engine.js` | Moteur de rendu et validation des 6 types de questions avec tolérance Levenshtein et association sans collision |
@@ -104,13 +105,13 @@ gamifié, streak, combo, éducation nationale, gratuit, pwa, offline
 | `js/core/quiz-session.js` | Pipeline unifié de soumission des quiz et consommation sécurisée des boosters |
 | `js/features/daily-quests.js` | Quêtes journalières déterministes (PRNG Mulberry32, tirage Fisher-Yates, renouvellement minuit) |
 | `js/ai-provider.js` | Orchestrateur Multi-IA (Make, OpenAI-compatible, Gemini) avec bascule en cascade et repli local |
-| `js/admin-store.js` | Configuration centrale : 9 niveaux, 18 filières, règles officielles des 36 matières, 97 articles boutique, 78 badges, 9 quêtes & IA |
+| `js/admin-store.js` | Configuration centrale : 9 niveaux, 18 filières, règles officielles des 36 matières, 98 articles boutique, 78 badges, 9 quêtes & IA |
 | `js/admin.js` | Interface et moteur du panneau d'administration |
 | `js/cookies.js` | Bandeau de consentement RGPD/CNIL avec fermeture rapide (mémorisation 12 mois) |
-| `css/` | `global.css` (dont 15 thèmes visuels), `style.css` (dont 27 avatars), `quests.css`, `admin.css` |
-| `service-worker.js` | PWA et pré-cache hors-ligne intégral (`eduquest-cache-v1.29.1` — 93 ressources) |
-| `schema.sql` | Schéma relationnel SQL (joueurs, paramètres, 36 matières + 18 filières, leçons, progression, quêtes, inventaire) |
-| `tests/` | Suite de **109 tests unitaires** natifs Node.js sur 11 fichiers (`node --test tests/*.test.js`) |
+| `css/` | `global.css` (dont 16 thèmes visuels), `style.css` (dont 27 avatars SVG), `quests.css`, `admin.css` |
+| `service-worker.js` | PWA et pré-cache hors-ligne intégral (`eduquest-cache-v1.30.0` — 93 ressources 100 % SVG) |
+| `schema.sql` | Schéma relationnel SQL (joueurs, paramètres, 36 matières SVG + 18 filières, leçons, progression, quêtes, inventaire) |
+| `tests/` | Suite de tests unitaires natifs Node.js (`node --test tests/*.test.js`) |
 
 ## Données personnelles & Confidentialité
 

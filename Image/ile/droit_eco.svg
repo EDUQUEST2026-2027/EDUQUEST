@@ -1,75 +1,101 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
-  <!-- ILOT DROIT ET ECONOMIE - EDUQUEST -->
   <defs>
-    <linearGradient id="deRockDeep" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#3b271c"/>
-      <stop offset="0.6" stop-color="#21140d"/>
-      <stop offset="1" stop-color="#100804"/>
-    </linearGradient>
-    <linearGradient id="deRockTop" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#6e4a35"/>
-      <stop offset="0.6" stop-color="#472d1f"/>
-      <stop offset="1" stop-color="#29180f"/>
-    </linearGradient>
-    <linearGradient id="deGold" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#fff4b8"/>
-      <stop offset="0.5" stop-color="#f5c542"/>
-      <stop offset="1" stop-color="#b47b09"/>
-    </linearGradient>
-    <linearGradient id="deWood" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#b45309"/>
-      <stop offset="1" stop-color="#5c2808"/>
-    </linearGradient>
-    <radialGradient id="deHalo" cx="0.5" cy="0.4" r="0.6">
-      <stop offset="0" stop-color="#f5c542" stop-opacity="0.34"/>
-      <stop offset="0.55" stop-color="#60a5fa" stop-opacity="0.16"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    <radialGradient id="idroitecoHalo" cx="0.5" cy="0.44" r="0.52">
+      <stop offset="0" stop-color="#d97706" stop-opacity="0.34"/>
+      <stop offset="0.58" stop-color="#c8a84b" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#070b1a" stop-opacity="0"/>
     </radialGradient>
-    <filter id="deShadow" x="-25%" y="-25%" width="150%" height="150%">
-      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.55"/>
-    </filter>
-    <filter id="deGlow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="4" result="b"/>
-      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    <linearGradient id="idroitecoRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c3e68"/>
+      <stop offset="0.55" stop-color="#192544"/>
+      <stop offset="1" stop-color="#0d1428"/>
+    </linearGradient>
+    <linearGradient id="idroitecoRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#18223d"/>
+      <stop offset="1" stop-color="#080d1b"/>
+    </linearGradient>
+    <linearGradient id="idroitecoPlateau" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#473123"/>
+      <stop offset="1" stop-color="#241811"/>
+    </linearGradient>
+    <linearGradient id="idroitecoGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7e29c"/>
+      <stop offset="0.5" stop-color="#c8a84b"/>
+      <stop offset="1" stop-color="#8b661d"/>
+    </linearGradient>
+    <linearGradient id="idroitecoAccent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fcd34d"/>
+      <stop offset="1" stop-color="#d97706"/>
+    </linearGradient>
+    <linearGradient id="idroitecoBanner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c2a4f"/>
+      <stop offset="1" stop-color="#0c1328"/>
+    </linearGradient>
+    <filter id="idroitecoShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="9" stdDeviation="7" flood-color="#000000" flood-opacity="0.52"/>
     </filter>
   </defs>
 
-  <circle cx="210" cy="182" r="150" fill="url(#deHalo)"/>
+  <!-- Halo astral unifié -->
+  <circle cx="210" cy="195" r="185" fill="url(#idroitecoHalo)"/>
 
-  <g filter="url(#deShadow)">
-    <path d="M 75 250 Q 210 275 345 250 Q 372 294 320 344 Q 210 398 100 344 Q 48 294 75 250 Z" fill="url(#deRockDeep)"/>
-    <path d="M 85 245 Q 210 268 335 245 Q 358 278 320 314 Q 210 368 100 314 Q 62 278 85 245 Z" fill="url(#deRockTop)"/>
-    <ellipse cx="210" cy="245" rx="140" ry="42" fill="#1e293b"/>
-    <ellipse cx="210" cy="242" rx="130" ry="34" fill="none" stroke="url(#deGold)" stroke-width="2.5"/>
+  <!-- Étoiles astrales dorées (grille signature EDUQUEST) -->
+  <g fill="#f2dc96">
+    <path d="M52 94 l2.6 6 6 2.6 -6 2.6 -2.6 6 -2.6 -6 -6 -2.6 6 -2.6 Z" opacity="0.88"/>
+    <path d="M368 72 l2.2 5 5 2.2 -5 2.2 -2.2 5 -2.2 -5 -5 -2.2 5 -2.2 Z" opacity="0.72"/>
+    <path d="M382 174 l1.8 4 4 1.8 -4 1.8 -1.8 4 -1.8 -4 -4 -1.8 4 -1.8 Z" opacity="0.55"/>
+    <circle cx="64" cy="210" r="2.4" fill="#fcd34d" opacity="0.65"/>
+    <circle cx="352" cy="264" r="2.6" opacity="0.5"/>
+    <circle cx="320" cy="44" r="2" fill="#fcd34d" opacity="0.6"/>
   </g>
 
-  <g filter="url(#deShadow)">
-    <ellipse cx="210" cy="240" rx="46" ry="12" fill="url(#deGold)"/>
-    <rect x="204" y="118" width="12" height="122" rx="4" fill="url(#deGold)"/>
-    <circle cx="210" cy="114" r="11" fill="url(#deGold)" filter="url(#deGlow)"/>
-    <rect x="128" y="130" width="164" height="8" rx="4" fill="url(#deGold)"/>
-    <line x1="142" y1="138" x2="124" y2="188" stroke="#fde68a" stroke-width="2"/>
-    <line x1="142" y1="138" x2="160" y2="188" stroke="#fde68a" stroke-width="2"/>
-    <path d="M 116 188 Q 142 208 168 188 Z" fill="url(#deGold)"/>
-    <line x1="278" y1="138" x2="260" y2="188" stroke="#fde68a" stroke-width="2"/>
-    <line x1="278" y1="138" x2="296" y2="188" stroke="#fde68a" stroke-width="2"/>
-    <path d="M 252 188 Q 278 208 304 188 Z" fill="url(#deGold)"/>
-  </g>
+  <g filter="url(#idroitecoShadow)">
+    <!-- Socle rocheux flottant unifié -->
+    <path d="M34 232 L210 264 L386 232 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 L68 284 Z" fill="url(#idroitecoRockTop)" stroke="#080e1d" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M68 284 L132 300 L210 308 L288 300 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 Z" fill="url(#idroitecoRockDeep)" opacity="0.85"/>
+    <!-- Veines cristallines de la matière -->
+    <path d="M120 296 L142 324 M296 296 L278 326 M192 318 L210 356 L228 318" stroke="#fcd34d" stroke-width="2.4" stroke-linecap="round" opacity="0.5" fill="none"/>
+    <!-- Galets flottants sous l'île -->
+    <polygon points="164,376 175,382 169,394 157,388" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <polygon points="256,374 268,382 260,393 249,386" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <circle cx="210" cy="400" r="4" fill="#fcd34d" opacity="0.75"/>
 
-  <g filter="url(#deShadow)">
-    <rect x="108" y="210" width="48" height="36" rx="4" fill="#fef3c7" stroke="#b47b09" stroke-width="2"/>
-    <line x1="118" y1="222" x2="146" y2="222" stroke="#78350f" stroke-width="2.5"/>
-    <line x1="118" y1="230" x2="142" y2="230" stroke="#78350f" stroke-width="2.5"/>
-    <line x1="118" y1="238" x2="138" y2="238" stroke="#78350f" stroke-width="2.5"/>
-  </g>
+    <!-- Plateau insulaire cerclé d'or -->
+    <ellipse cx="210" cy="236" rx="176" ry="54" fill="url(#idroitecoPlateau)" stroke="url(#idroitecoGold)" stroke-width="3.5"/>
+    <ellipse cx="210" cy="232" rx="158" ry="43" fill="none" stroke="#fcd34d" stroke-width="1.5" stroke-opacity="0.45"/>
 
-  <g transform="translate(284, 224) rotate(-30)" filter="url(#deShadow)">
-    <rect x="-26" y="-4" width="52" height="8" rx="4" fill="url(#deWood)"/>
-    <rect x="14" y="-16" width="20" height="32" rx="4" fill="url(#deWood)" stroke="#f5c542" stroke-width="2"/>
-  </g>
+    <!-- Scène dédiée à la matière -->
+    
+      <!-- Balance juridique + Marteau de juge + Code de loi -->
+      <g transform="translate(210 148)">
+        <ellipse cx="0" cy="80" rx="80" ry="14" fill="#091326" opacity="0.45"/>
+        <!-- Grand pilier & fléau dorés -->
+        <rect x="-32" y="54" width="64" height="12" rx="4" fill="url(#idroitecoGold)"/>
+        <line x1="0" y1="-52" x2="0" y2="54" stroke="url(#idroitecoGold)" stroke-width="7" stroke-linecap="round"/>
+        <line x1="-64" y1="-34" x2="64" y2="-34" stroke="url(#idroitecoGold)" stroke-width="5.5" stroke-linecap="round"/>
+        <circle cx="0" cy="-52" r="9" fill="#fde68a"/>
+        <!-- Plateaux -->
+        <path d="M-64 -34 L-82 14 M-64 -34 L-46 14 M64 -34 L46 14 M64 -34 L82 14" stroke="#f5de8a" stroke-width="2.2"/>
+        <path d="M-86 14 Q-64 34 -42 14 Z M42 14 Q64 34 86 14 Z" fill="url(#idroitecoGold)" stroke="#0c1830" stroke-width="2"/>
+        <!-- Code juridique rouge relié or -->
+        <g transform="translate(46 46)">
+          <rect x="-28" y="-16" width="56" height="30" rx="4" fill="#7f1d1d" stroke="url(#idroitecoGold)" stroke-width="2.5"/>
+          <line x1="-18" y1="-4" x2="18" y2="-4" stroke="#fde68a" stroke-width="2.5"/>
+        </g>
+      </g>
 
-  <g filter="url(#deGlow)">
-    <circle cx="210" cy="86" r="16" fill="#0f172a" stroke="#f5c542" stroke-width="2"/>
-    <text x="210" y="92" text-anchor="middle" fill="#fef08a" font-family="Georgia, serif" font-size="18" font-weight="bold">§</text>
+    <!-- Bannière astrale dorée unifiée -->
+    <g transform="translate(210 336)">
+      <path d="M-120 -19 L120 -19 L108 19 L-108 19 Z"
+            fill="url(#idroitecoBanner)" stroke="url(#idroitecoGold)" stroke-width="3" stroke-linejoin="round"/>
+      <g fill="#f5de8a">
+        <circle cx="-104" cy="-9" r="2.4"/>
+        <circle cx="104" cy="-9" r="2.4"/>
+        <circle cx="-98" cy="10" r="2.4"/>
+        <circle cx="98" cy="10" r="2.4"/>
+      </g>
+      <text x="0" y="7" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="19" font-weight="700"
+            fill="#f4de94" letter-spacing="2">DROIT &amp; ÉCO</text>
+    </g>
   </g>
 </svg>

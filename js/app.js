@@ -1,11 +1,11 @@
 /* ==========================================================================
-   APP.JS — EDUQUEST v1.29.1
+   APP.JS — EDUQUEST v1.30.0
    Contrôleur principal du jeu : cycle de vie des vues, apparence, audio,
    chronomètre, anti-triche, moteur adaptatif / multi-IA, HUD et modales.
    ========================================================================== */
 
 /* ==========================================================================
-   GESTIONNAIRE D'ERREUR GLOBAL (PWA / Audit v1.18)
+   GESTIONNAIRE D'ERREUR GLOBAL (PWA / Audit v1.30)
    Capture les erreurs fatales pour afficher une UI élégante plutôt qu'un écran blanc.
 ========================================================================== */
 function setupGlobalErrorHandler() {
@@ -33,9 +33,21 @@ function setupGlobalErrorHandler() {
     }
 
     function showErrorScreen(msg, isPromise = false) {
+        if (!document.body) {
+            document.addEventListener('DOMContentLoaded', () => showErrorScreen(msg, isPromise), { once: true });
+            return;
+        }
         if (document.getElementById('eduquest-crash-screen')) return;
+        const alertSvg = (typeof window !== 'undefined' && window.EduIcons)
+            ? window.EduIcons.svg('alert', { size: 52, tone: 'danger' })
+            : '';
+        const reloadSvg = (typeof window !== 'undefined' && window.EduIcons)
+            ? window.EduIcons.svg('refresh', { size: 16 })
+            : '';
         const crashScreen = document.createElement('div');
         crashScreen.id = 'eduquest-crash-screen';
+        crashScreen.setAttribute('role', 'alertdialog');
+        crashScreen.setAttribute('aria-modal', 'true');
         crashScreen.style.cssText = `
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(10, 15, 36, 0.95); backdrop-filter: blur(10px);
@@ -45,20 +57,21 @@ function setupGlobalErrorHandler() {
             padding: 20px; box-sizing: border-box;
         `;
         crashScreen.innerHTML = `
-            <div style="font-size: 3.5rem; margin-bottom: 15px;">⚠️</div>
+            <div style="margin-bottom: 15px; color: #ff6b81;">${alertSvg}</div>
             <h1 style="color: #ff4757; margin-bottom: 12px; font-size: 1.8rem;">Oups... Une anicroche technique !</h1>
             <p style="color: #a4b0be; max-width: 600px; margin-bottom: 25px; line-height: 1.5; font-size: 0.95rem;">
                 Le jeu a rencontré un problème inattendu.<br>
                 <code style="display: block; margin-top: 12px; padding: 10px; background: #2f3542; color: #ff6b81; border-radius: 6px; font-family: monospace; font-size: 0.85rem; word-break: break-all;">${sanitize(msg)}</code>
             </p>
             <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
-                <button id="eduquest-crash-reload-btn" style="
+                <button type="button" id="eduquest-crash-reload-btn" style="
                     background: linear-gradient(135deg, #1e90ff, #3742fa);
                     border: none; padding: 12px 24px; color: white; font-weight: bold;
                     border-radius: 8px; cursor: pointer; font-size: 1rem;
+                    display: inline-flex; align-items: center; gap: 8px;
                     box-shadow: 0 4px 15px rgba(30, 144, 255, 0.4);
-                ">🔄 Recharger la page</button>
-                <button id="eduquest-crash-dismiss-btn" style="
+                ">${reloadSvg} Recharger la page</button>
+                <button type="button" id="eduquest-crash-dismiss-btn" style="
                     background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.2);
                     padding: 12px 20px; color: #ced6e0; font-weight: 600;
                     border-radius: 8px; cursor: pointer; font-size: 0.95rem;
@@ -93,20 +106,60 @@ setupGlobalErrorHandler();
    ========================================================================== */
 
 /** Version de l'application — affichée dans le footer de toutes les pages. */
-const APP_VERSION = '1.29.1';
+const APP_VERSION = '1.30.0';
+
+/** Helpers d'icônes SVG unifiées (Astral & Or — js/core/icons.js). */
+function eqIcon(name, size = 16, tone = '', className = '') {
+    if (typeof window !== 'undefined' && window.EduIcons && typeof window.EduIcons.svg === 'function') {
+        return window.EduIcons.svg(name, { size, tone, className });
+    }
+    return '';
+}
+function eqEmoji(val, size = 16, tone = '', className = '') {
+    if (typeof window !== 'undefined' && window.EduIcons && typeof window.EduIcons.fromEmoji === 'function') {
+        return window.EduIcons.fromEmoji(val, { size, tone, className });
+    }
+    return escapeHtml(val || '');
+}
+function eqStars(count, max = 3, size = 14) {
+    const m = Math.max(1, Math.min(5, Number(max) || 3));
+    const c = Math.max(0, Math.min(m, Number(count) || 0));
+    if (typeof window !== 'undefined' && window.EduIcons && typeof window.EduIcons.stars === 'function') {
+        return window.EduIcons.stars(c, m, size);
+    }
+    return '★'.repeat(c) + '☆'.repeat(m - c);
+}
+function eqStripEmoji(text) {
+    if (typeof window !== 'undefined' && window.EduIcons && typeof window.EduIcons.stripLeadingEmoji === 'function') {
+        return window.EduIcons.stripLeadingEmoji(text);
+    }
+    return String(text || '');
+}
+function safeHexColor(val, fallback = '#c8a84b') {
+    const s = String(val || '').trim();
+    return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(s) ? s : fallback;
+}
+function isSafeExternalUrl(raw) {
+    const s = String(raw || '').trim();
+    if (!s) return false;
+    if (/^(javascript|vbscript|data):/i.test(s)) return false;
+    if (/^https?:\/\//i.test(s)) return true;
+    return !s.includes(':') && !s.startsWith('//');
+}
 
 /**
  * Calcule une couleur de texte à fort contraste (#0b1220 ou #f0f4ff) selon
- * la luminance relative d'une couleur hexadécimale #rrggbb.
+ * la luminance relative WCAG 2.1 d'une couleur hexadécimale #rrggbb.
  */
 function _contrastTextForHex(hex) {
     const clean = String(hex || '').replace('#', '');
     if (!/^[0-9a-f]{6}$/i.test(clean)) return '#f0f4ff';
-    const r = parseInt(clean.slice(0, 2), 16) / 255;
-    const g = parseInt(clean.slice(2, 4), 16) / 255;
-    const b = parseInt(clean.slice(4, 6), 16) / 255;
+    const lin = (c) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+    const r = lin(parseInt(clean.slice(0, 2), 16) / 255);
+    const g = lin(parseInt(clean.slice(2, 4), 16) / 255);
+    const b = lin(parseInt(clean.slice(4, 6), 16) / 255);
     const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    return lum > 0.62 ? '#0b1220' : '#f0f4ff';
+    return lum > 0.179 ? '#0b1220' : '#f0f4ff';
 }
 
 /** Helper sûr pour lire la configuration globale du site pilotée depuis admin.html. */
@@ -123,8 +176,14 @@ function applySiteBranding() {
     if (typeof document === 'undefined') return;
     const cfg = getSiteConfigSafe();
     const siteTitle = (typeof cfg.title === 'string' && cfg.title.trim()) ? cfg.title.trim() : 'EDUQUEST';
-    if (document.title && siteTitle !== 'EDUQUEST') {
-        document.title = document.title.replace(/EDUQUEST/g, siteTitle);
+    if (document.documentElement) {
+        if (!document.documentElement.dataset.origTitle && document.title) {
+            document.documentElement.dataset.origTitle = document.title;
+        }
+        const baseTitle = document.documentElement.dataset.origTitle || document.title;
+        if (baseTitle) {
+            document.title = baseTitle.replace(/EDUQUEST/g, siteTitle);
+        }
     }
     const logoImg = document.querySelector('.logo-image');
     if (logoImg) logoImg.alt = siteTitle;
@@ -147,6 +206,10 @@ function triggerClassChangeExpulsion(newNiveauLabel, reasonText = '', targetUrl 
         return;
     }
 
+    if (window._expulsionTimer) {
+        clearTimeout(window._expulsionTimer);
+        window._expulsionTimer = null;
+    }
     const existing = document.getElementById('eduquest-class-expulsion');
     if (existing) existing.remove();
 
@@ -161,7 +224,7 @@ function triggerClassChangeExpulsion(newNiveauLabel, reasonText = '', targetUrl 
     overlay.setAttribute('aria-modal', 'true');
     overlay.innerHTML = `
         <div class="class-expulsion-card">
-            <div class="class-expulsion-icon">🎓</div>
+            <div class="class-expulsion-icon">${eqIcon('gradCap', 44, 'gold')}</div>
             <div class="class-expulsion-title">Changement de parcours détecté</div>
             <div class="class-expulsion-desc">${descHtml}</div>
             <div class="class-expulsion-bar">
@@ -177,7 +240,8 @@ function triggerClassChangeExpulsion(newNiveauLabel, reasonText = '', targetUrl 
         });
     }
 
-    setTimeout(() => {
+    window._expulsionTimer = setTimeout(() => {
+        window._expulsionTimer = null;
         if (typeof onComplete === 'function') {
             overlay.remove();
             onComplete();
@@ -205,7 +269,9 @@ function applyAppearanceSettings() {
     root.setAttribute('data-theme', shopTheme);
 
     // 2. Luminosité des boutons (défaut pilotable en admin, 80 % par défaut)
-    const adminBrightness = Number.isFinite(Number(cfg.defaultBtnBrightness)) ? Number(cfg.defaultBtnBrightness) : 80;
+    const adminBrightness = (cfg.defaultBtnBrightness != null && cfg.defaultBtnBrightness !== '' && Number.isFinite(Number(cfg.defaultBtnBrightness)))
+        ? Number(cfg.defaultBtnBrightness)
+        : 80;
     const clientBrightness = getOption('btnBrightness');
     const rawBrightness = allowClient && clientBrightness !== null
         ? parseInt(clientBrightness, 10)
@@ -273,13 +339,13 @@ function applySiteAnnouncement() {
     const maintMsg = (cfg && typeof cfg.maintenanceMessage === 'string') ? cfg.maintenanceMessage.trim() : '';
     const msg = (cfg && typeof cfg.announcement === 'string') ? cfg.announcement.trim() : '';
     if (maint && maintMsg) {
-        el.textContent = '⚠️ ' + maintMsg;
+        el.innerHTML = `${eqIcon('alert', 16, 'gold')} <span>${escapeHtml(maintMsg)}</span>`;
         el.hidden = false;
     } else if (maint) {
-        el.textContent = '⚠️ Mode maintenance / examen activé par l\'administrateur.';
+        el.innerHTML = `${eqIcon('alert', 16, 'gold')} <span>Mode maintenance / examen activé par l'administrateur.</span>`;
         el.hidden = false;
     } else if (msg) {
-        el.textContent = '📢 ' + msg;
+        el.innerHTML = `${eqIcon('megaphone', 16, 'gold')} <span>${escapeHtml(msg)}</span>`;
         el.hidden = false;
     } else {
         el.textContent = '';
@@ -309,13 +375,13 @@ function refreshFooterCredits() {
     const bits = [];
     if (c.studioName) bits.push(escapeHtml(c.studioName));
     if (c.creatorName) bits.push('Créé par ' + escapeHtml(c.creatorName));
-    if (c.website) {
+    if (c.website && isSafeExternalUrl(c.website)) {
         const url = /^https?:\/\//i.test(c.website) ? c.website : 'https://' + c.website;
-        bits.push('<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener">' + escapeHtml(c.website) + '</a>');
+        bits.push('<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(c.website) + '</a>');
     }
-    if (c.githubUrl) {
+    if (c.githubUrl && isSafeExternalUrl(c.githubUrl)) {
         const ghUrl = /^https?:\/\//i.test(c.githubUrl) ? c.githubUrl : 'https://' + c.githubUrl;
-        bits.push('<a href="' + escapeHtml(ghUrl) + '" target="_blank" rel="noopener" class="footer-github-link" title="Dépôt GitHub du projet">🐙 GitHub</a>');
+        bits.push('<a href="' + escapeHtml(ghUrl) + '" target="_blank" rel="noopener noreferrer" class="footer-github-link" title="Dépôt GitHub du projet">' + eqIcon('github', 14, 'cyan') + ' GitHub</a>');
     }
     if (c.contactEmail) {
         bits.push('<a href="mailto:' + escapeHtml(c.contactEmail) + '">' + escapeHtml(c.contactEmail) + '</a>');
@@ -329,8 +395,9 @@ function refreshFooterCredits() {
 
     const optGh = document.getElementById('optionsGithubLink');
     if (optGh) {
-        if (c.githubUrl) {
+        if (c.githubUrl && isSafeExternalUrl(c.githubUrl)) {
             optGh.href = /^https?:\/\//i.test(c.githubUrl) ? c.githubUrl : 'https://' + c.githubUrl;
+            optGh.rel = 'noopener noreferrer';
             optGh.style.display = '';
         } else {
             optGh.style.display = 'none';
@@ -480,7 +547,7 @@ function applyParticulesSetting() {
         if (typeof Celebrate !== 'undefined' && typeof Celebrate.clear === 'function') {
             Celebrate.clear();
         }
-    } else if ((clouds && clouds.children.length === 0) || (stars && stars.children.length === 0)) {
+    } else if (getOption('ecoMode') !== 'true' && ((clouds && clouds.children.length === 0) || (stars && stars.children.length === 0))) {
         createEnvironment();
     }
 }
@@ -495,8 +562,16 @@ function applyEcoModeSetting() {
     if (document.body) {
         document.body.classList.toggle('eco-mode-active', isEco);
     }
-    if (isEco && typeof Celebrate !== 'undefined' && typeof Celebrate.clear === 'function') {
-        Celebrate.clear();
+    if (isEco) {
+        if (typeof Celebrate !== 'undefined' && typeof Celebrate.clear === 'function') {
+            Celebrate.clear();
+        }
+    } else if (getOption('particules') !== 'false') {
+        const clouds = document.getElementById('clouds');
+        const stars = document.getElementById('stars') || document.getElementById('stars-bg');
+        if ((clouds && clouds.children.length === 0) || (stars && stars.children.length === 0)) {
+            createEnvironment();
+        }
     }
 }
 
@@ -518,9 +593,15 @@ function applyAnimationsSetting() {
 /**
  * Génère et insère les éléments visuels de l'environnement (étoiles + nuages).
  * Optimisé : utilise DocumentFragment (1 seul reflow), adapte la densité sur mobile,
- * et utilise des délais négatifs sur les nuages pour éviter l'empilement sur le bord gauche.
+ * saute la création DOM si Particules désactivées ou Mode Éco actif.
  */
 function createEnvironment() {
+    if (getOption('particules') === 'false' || getOption('ecoMode') === 'true') {
+        applyParticulesSetting();
+        applyEcoModeSetting();
+        applyAnimationsSetting();
+        return;
+    }
     const starsContainer = document.getElementById('stars') || document.getElementById('stars-bg');
     const cloudsContainer = document.getElementById('clouds');
     const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
@@ -601,47 +682,38 @@ function setupCookieConsentFallback() {
  *
  * @returns {boolean} true si la demande de plein écran a été envoyée, false sinon
  */
+function getFullscreenElement() {
+    return document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement || null;
+}
+
 function applyFullscreenSetting() {
     const val = getOption('pleinEcran');
-    if (val === 'true' && !document.fullscreenElement) {
-        const el = document.documentElement; // On passe <html> en plein écran
-        // Support multi-navigateurs : requestFullscreen (standard), webkitRequestFullscreen (Safari), msRequestFullscreen (vieux IE/Edge)
+    if (val === 'true' && !getFullscreenElement()) {
+        const el = document.documentElement;
         const request = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
         if (request) {
-            try { request.call(el); } catch (e) {} // Le try/catch évite une erreur si refusé
+            try {
+                Promise.resolve(request.call(el)).catch(() => {});
+            } catch (_) {}
             return true;
         }
     }
     return false;
 }
 
-/**
- * Variable de suivi : true si le plein écran a été activé par notre code.
- * Utilisée pour détecter si l'utilisateur a quitté le plein écran manuellement
- * (touche Échap) et mettre à jour l'option en conséquence.
- */
 let _fullscreenAppliedByCommon = false;
 
-/**
- * Synchronise l'état du plein écran avec l'option sauvegardée.
- * Écouteur de l'événement 'fullscreenchange' :
- *   - Si le plein écran est quitté (Échap) → on sauvegarde pleinEcran = 'false'
- *   - Si le plein écran est entré → on note qu'il est actif
- *
- * Sans ça, l'option resterait 'true' même si l'utilisateur a appuyé sur Échap,
- * et le jeu tenterait de remettre le plein écran à chaque changement de page.
- */
 function syncFullscreenState() {
-    if (!document.fullscreenElement && _fullscreenAppliedByCommon) {
-        // L'utilisateur a quitté le plein écran manuellement
+    const fsEl = getFullscreenElement();
+    if (!fsEl && _fullscreenAppliedByCommon) {
         _fullscreenAppliedByCommon = false;
-        saveOption('pleinEcran', 'false'); // Mise à jour de l'option sauvegardée
-    } else if (document.fullscreenElement) {
+        saveOption('pleinEcran', 'false');
+    } else if (fsEl) {
         _fullscreenAppliedByCommon = true;
     }
 }
-// Écoute les changements de plein écran sur toute la durée de vie de la page
 document.addEventListener('fullscreenchange', syncFullscreenState);
+document.addEventListener('webkitfullscreenchange', syncFullscreenState);
 
 /**
  * Met à jour le texte du footer avec la version actuelle de l'application.
@@ -680,6 +752,8 @@ function showNotification(message, type = 'success') {
     const notif = document.createElement('div');
     notif.className = 'notification';
     if (type === 'error') notif.classList.add('error');
+    notif.setAttribute('role', 'status');
+    notif.setAttribute('aria-live', 'polite');
     notif.textContent = message;
     document.body.appendChild(notif);
     setTimeout(() => notif.remove(), 3000);
@@ -813,7 +887,7 @@ function initConnexion() {
             userInfo.style.display = user ? 'block' : 'none';
         }
         if (userNameDisplay && user) {
-            userNameDisplay.textContent = '👤 ' + user.username;
+            userNameDisplay.innerHTML = `${eqIcon('user', 16, 'gold')} <span>${escapeHtml(user.username)}</span>`;
         }
     }
 
@@ -822,19 +896,15 @@ function initConnexion() {
 
     /* --- Gestion des onglets Connexion / Inscription --- */
 
-    /**
-     * Bascule entre les panneaux "Se connecter" et "Créer un compte"
-     * en cliquant sur les onglets tabLogin / tabRegister.
-     *
-     * La classe CSS 'active' sur l'onglet contrôle son style (surligné en doré).
-     * L'attribut HTML 'hidden' sur les panneaux contrôle leur visibilité.
-     */
-    if (tabLogin && tabRegister) {
-        const siteCfg = (typeof AdminStore !== 'undefined' && typeof AdminStore.getSiteConfig === 'function')
+    function isRegistrationAllowed() {
+        const cfg = (typeof AdminStore !== 'undefined' && typeof AdminStore.getSiteConfig === 'function')
             ? AdminStore.getSiteConfig()
             : null;
-        const allowReg = !siteCfg || siteCfg.allowRegistration !== false;
-        if (!allowReg) {
+        return !cfg || cfg.allowRegistration !== false;
+    }
+
+    if (tabLogin && tabRegister) {
+        if (!isRegistrationAllowed()) {
             tabRegister.hidden = true;
             if (panelRegister) panelRegister.hidden = true;
         }
@@ -842,96 +912,80 @@ function initConnexion() {
         tabLogin.addEventListener('click', () => {
             tabLogin.classList.add('active');
             tabRegister.classList.remove('active');
-            if (panelLogin)    panelLogin.hidden    = false; // Affiche le formulaire de connexion
-            if (panelRegister) panelRegister.hidden = true;  // Cache le formulaire d'inscription
+            if (panelLogin)    panelLogin.hidden    = false;
+            if (panelRegister) panelRegister.hidden = true;
         });
 
         tabRegister.addEventListener('click', () => {
-            if (!allowReg) {
+            if (!isRegistrationAllowed()) {
                 showNotification('Les inscriptions sont temporairement fermées par l\'administrateur.', 'error');
                 return;
             }
             tabRegister.classList.add('active');
             tabLogin.classList.remove('active');
-            if (panelRegister) panelRegister.hidden = false; // Affiche le formulaire d'inscription
-            if (panelLogin)    panelLogin.hidden    = true;  // Cache le formulaire de connexion
+            if (panelRegister) panelRegister.hidden = false;
+            if (panelLogin)    panelLogin.hidden    = true;
         });
     }
 
-    /* --- Connexion via Google (OAuth — à implémenter) --- */
-    /**
-     * TODO : Brancher Google OAuth 2.0.
-     * Pour l'implémentation :
-     *   1. Configurer un projet Google Cloud Console avec OAuth2
-     *   2. Obtenir un client_id
-     *   3. Implémenter DB.loginGoogle(token) dans db.js
-     *   4. Le serveur backend valide le token Google et crée/connecte le compte
-     * Référence : https://developers.google.com/identity/gsi/web
-     */
+    /* --- Connexion via Google (OAuth — à configurer) --- */
     if (googleLogin) {
         googleLogin.addEventListener('click', () => {
-            showNotification('Connexion Google — à configurer avec OAuth', 'success');
+            showNotification('Connexion Google — disponible dès activation d\'un serveur OAuth.', 'success');
         });
     }
 
     /* --- Connexion classique (email + mot de passe) --- */
-    /**
-     * Lit les valeurs des champs email et mot de passe, valide qu'ils sont
-     * remplis, puis appelle DB.login() qui gère la vérification (locale ou API).
-     *
-     * Le bouton est désactivé pendant la requête pour éviter les doubles soumissions.
-     * Après succès, redirige vers index.html après 1 seconde.
-     */
     if (classicLogin) {
         classicLogin.addEventListener('click', async () => {
-            const email    = (document.getElementById('loginEmail')    || {}).value || '';
-            const password = (document.getElementById('loginPassword') || {}).value || '';
+            const email    = String((document.getElementById('loginEmail')    || {}).value || '').trim();
+            const password = String((document.getElementById('loginPassword') || {}).value || '');
 
-            // Validation côté client (vérification rapide avant d'appeler DB)
             if (!email || !password) {
                 showNotification('Veuillez remplir tous les champs.', 'error');
                 return;
             }
 
-            classicLogin.disabled = true; // Désactive le bouton pendant la requête
+            classicLogin.disabled = true;
             showNotification('Connexion en cours...');
-
-            const result = await DB.login(email, password); // Appel db.js
-
-            classicLogin.disabled = false; // Réactive le bouton
-            if (result.ok) {
-                showNotification('✓ Bienvenue, ' + result.username + ' !');
-                setTimeout(() => { 
-                    if(document.getElementById('modalLogin')) document.getElementById('modalLogin').hidden = true;
-                    window.location.reload();
-                }, 800);
-            } else {
-                // result.error contient le message d'erreur retourné par DB.login()
-                showNotification(result.error || 'Erreur de connexion.', 'error');
+            try {
+                const result = await DB.login(email, password);
+                if (result && result.ok) {
+                    showNotification('Bienvenue, ' + result.username + ' !');
+                    setTimeout(() => {
+                        const m = document.getElementById('modalLogin');
+                        if (m) m.hidden = true;
+                        window.location.reload();
+                    }, 800);
+                } else {
+                    showNotification((result && result.error) || 'Erreur de connexion.', 'error');
+                }
+            } catch (_) {
+                showNotification('Erreur lors de la connexion.', 'error');
+            } finally {
+                classicLogin.disabled = false;
             }
         });
     }
 
     /* --- Inscription (création d'un nouveau compte) --- */
-    /**
-     * Valide les 4 champs du formulaire d'inscription :
-     *   - Tous les champs doivent être remplis
-     *   - Les deux mots de passe doivent correspondre
-     *   - Le mot de passe doit faire au moins 6 caractères (sécurité minimale)
-     *
-     * Puis appelle DB.register() qui crée le compte (local ou via API).
-     * Après succès, redirige vers index.html (connexion automatique).
-     */
     if (registerBtn) {
         registerBtn.addEventListener('click', async () => {
-            const email    = (document.getElementById('regEmail')    || {}).value || '';
-            const username = (document.getElementById('regUsername') || {}).value || '';
-            const password = (document.getElementById('regPassword') || {}).value || '';
-            const confirm  = (document.getElementById('regConfirm')  || {}).value || '';
+            if (!isRegistrationAllowed()) {
+                showNotification('Les inscriptions sont temporairement fermées par l\'administrateur.', 'error');
+                return;
+            }
+            const email    = String((document.getElementById('regEmail')    || {}).value || '').trim();
+            const username = String((document.getElementById('regUsername') || {}).value || '').trim();
+            const password = String((document.getElementById('regPassword') || {}).value || '');
+            const confirm  = String((document.getElementById('regConfirm')  || {}).value || '');
 
-            // Validations côté client
             if (!email || !username || !password || !confirm) {
                 showNotification('Veuillez remplir tous les champs.', 'error');
+                return;
+            }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showNotification('Adresse e-mail invalide.', 'error');
                 return;
             }
             if (password !== confirm) {
@@ -943,38 +997,46 @@ function initConnexion() {
                 return;
             }
 
-            registerBtn.disabled = true; // Évite les doubles soumissions
+            registerBtn.disabled = true;
             showNotification('Création du compte...');
-
-            const result = await DB.register(email, username, password); // Appel db.js
-
-            registerBtn.disabled = false;
-            if (result.ok) {
-                showNotification('✓ Compte créé ! Bienvenue, ' + result.username + ' !');
-                setTimeout(() => { 
-                    if(document.getElementById('modalLogin')) document.getElementById('modalLogin').hidden = true;
-                    window.location.reload();
-                }, 800);
-            } else {
-                showNotification(result.error || 'Erreur lors de l\'inscription.', 'error');
+            try {
+                const result = await DB.register(email, username, password);
+                if (result && result.ok) {
+                    showNotification('Compte créé ! Bienvenue, ' + result.username + ' !');
+                    setTimeout(() => {
+                        const m = document.getElementById('modalLogin');
+                        if (m) m.hidden = true;
+                        window.location.reload();
+                    }, 800);
+                } else {
+                    showNotification((result && result.error) || 'Erreur lors de l\'inscription.', 'error');
+                }
+            } catch (_) {
+                showNotification('Erreur lors de l\'inscription.', 'error');
+            } finally {
+                registerBtn.disabled = false;
             }
         });
     }
 
     /* --- Déconnexion --- */
-    /**
-     * Appelle DB.logout() pour effacer la session, puis met à jour l'affichage
-     * et recharge la page pour basculer sur la session invité.
-     */
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async () => {
-            await DB.logout(); // Efface la session (locale ET serveur si API activée)
-            showNotification('Déconnecté.');
-            updateUserDisplay(); // Cache le bloc userInfo immédiatement
-            setTimeout(() => { 
-                if(document.getElementById('modalLogin')) document.getElementById('modalLogin').hidden = true;
-                window.location.reload();
-            }, 600);
+            logoutBtn.disabled = true;
+            try {
+                await DB.logout();
+                showNotification('Déconnecté.');
+                updateUserDisplay();
+                setTimeout(() => {
+                    const m = document.getElementById('modalLogin');
+                    if (m) m.hidden = true;
+                    window.location.reload();
+                }, 600);
+            } catch (_) {
+                showNotification('Erreur lors de la déconnexion.', 'error');
+            } finally {
+                logoutBtn.disabled = false;
+            }
         });
     }
 
@@ -1081,22 +1143,35 @@ function initOptions() {
         optFiliereGroup.hidden = !applicable;
     }
 
-    function updateVolumeMusique(applyLive = true) {
+    let _audioSaveTimer = null;
+    function scheduleAudioSave(key, val) {
+        if (_audioSaveTimer) clearTimeout(_audioSaveTimer);
+        _audioSaveTimer = setTimeout(() => {
+            _audioSaveTimer = null;
+            saveOption(key, val);
+        }, 140);
+    }
+
+    function updateVolumeMusique(applyLive = true, immediateSave = false) {
+        if (!volumeMusique) return;
         const disp = document.getElementById('valueMusiqueDisplay');
         if (disp) disp.textContent = volumeMusique.value + '%';
         if (applyLive) {
-            saveOption('volumeMusique', volumeMusique.value);
+            if (immediateSave) saveOption('volumeMusique', volumeMusique.value);
+            else scheduleAudioSave('volumeMusique', volumeMusique.value);
             if (typeof AudioManager !== 'undefined' && typeof AudioManager.setMusicVolume === 'function') {
                 AudioManager.setMusicVolume(volumeMusique.value);
             }
         }
     }
 
-    function updateVolumeEffets(applyLive = true) {
+    function updateVolumeEffets(applyLive = true, immediateSave = false) {
+        if (!volumeEffets) return;
         const disp = document.getElementById('valueEffetsDisplay');
         if (disp) disp.textContent = volumeEffets.value + '%';
         if (applyLive) {
-            saveOption('volumeEffets', volumeEffets.value);
+            if (immediateSave) saveOption('volumeEffets', volumeEffets.value);
+            else scheduleAudioSave('volumeEffets', volumeEffets.value);
             if (typeof AudioManager !== 'undefined' && typeof AudioManager.setSfxVolume === 'function') {
                 AudioManager.setSfxVolume(volumeEffets.value);
             }
@@ -1126,13 +1201,15 @@ function initOptions() {
     }
 
     function updateSoundControlsState(userInitiated = false) {
+        if (!sonsActifs || !musiqueActive || !effetsActifs) return;
         const allActive        = sonsActifs.checked;
         const musiqueContainer = musiqueActive.closest('.checkbox-container');
         const effetsContainer  = effetsActifs.closest('.checkbox-container');
 
         if (!allActive) {
-            musiqueActive.dataset.prevChecked = String(musiqueActive.checked);
-            effetsActifs.dataset.prevChecked  = String(effetsActifs.checked);
+            // Ne mémorise l'état précédent que si le contrôle n'était pas déjà désactivé (évite de corrompre au rechargement)
+            if (!musiqueActive.disabled) musiqueActive.dataset.prevChecked = String(musiqueActive.checked);
+            if (!effetsActifs.disabled)  effetsActifs.dataset.prevChecked  = String(effetsActifs.checked);
             musiqueActive.checked  = false;
             musiqueActive.disabled = true;
             effetsActifs.checked   = false;
@@ -1184,8 +1261,8 @@ function initOptions() {
             chronoDurLabel.textContent = durSec + 's';
         }
 
-        volumeMusique.value = getOption('volumeMusique') || defaultBgm;
-        volumeEffets.value  = getOption('volumeEffets')  || defaultSfx;
+        if (volumeMusique) volumeMusique.value = getOption('volumeMusique') || defaultBgm;
+        if (volumeEffets) volumeEffets.value   = getOption('volumeEffets')  || defaultSfx;
         updateVolumeMusique(false);
         updateVolumeEffets(false);
 
@@ -1220,9 +1297,11 @@ function initOptions() {
         }
         syncFiliereGroupVisibility();
 
-        if (!sonsActifs.checked) {
+        if (sonsActifs && !sonsActifs.checked && musiqueActive && effetsActifs) {
             musiqueActive.dataset.prevChecked = getOption('musiqueActive') || 'true';
             effetsActifs.dataset.prevChecked  = getOption('effetsActifs')  || 'true';
+            musiqueActive.disabled = true;
+            effetsActifs.disabled  = true;
         }
         // Mise à jour visuelle UNIQUEMENT (userInitiated = false)
         updateSoundControlsState(false);
@@ -1249,20 +1328,26 @@ function initOptions() {
 
     function saveCurrentOptionsLocally() {
         const patch = {
-            volumeMusique: volumeMusique.value,
-            volumeEffets: volumeEffets.value,
-            pleinEcran: String(pleinEcran.checked),
-            particules: String(particulesCheckbox.checked),
-            ecoMode: String(ecoModeCheckbox.checked),
-            sonsActifs: String(sonsActifs.checked),
             uiPreset: curUiPreset,
             uiColor: curUiColor,
             uiAccent: curUiAccent,
             btnPreset: curBtnPreset,
             btnColor: curBtnColor,
-            musiqueActive: sonsActifs.checked ? String(musiqueActive.checked) : String(musiqueActive.dataset.prevChecked !== 'false'),
-            effetsActifs: sonsActifs.checked ? String(effetsActifs.checked) : String(effetsActifs.dataset.prevChecked !== 'false'),
         };
+        if (volumeMusique) patch.volumeMusique = volumeMusique.value;
+        if (volumeEffets) patch.volumeEffets = volumeEffets.value;
+        if (pleinEcran) patch.pleinEcran = String(pleinEcran.checked);
+        if (particulesCheckbox) patch.particules = String(particulesCheckbox.checked);
+        if (ecoModeCheckbox) patch.ecoMode = String(ecoModeCheckbox.checked);
+        if (sonsActifs) {
+            patch.sonsActifs = String(sonsActifs.checked);
+            if (musiqueActive) {
+                patch.musiqueActive = sonsActifs.checked ? String(musiqueActive.checked) : String(musiqueActive.dataset.prevChecked !== 'false');
+            }
+            if (effetsActifs) {
+                patch.effetsActifs = sonsActifs.checked ? String(effetsActifs.checked) : String(effetsActifs.dataset.prevChecked !== 'false');
+            }
+        }
         if (animationsCheckbox) patch.animationsActives = String(animationsCheckbox.checked);
         if (modeChronoCheckbox) patch.modeChrono = String(modeChronoCheckbox.checked);
         if (btnBrightness) patch.btnBrightness = String(btnBrightness.value);
@@ -1316,28 +1401,40 @@ function initOptions() {
     chargerOptionsUI();
 
     /* --- Écouteurs audio --- */
-    sonsActifs.addEventListener('change', () => updateSoundControlsState(true));
-    musiqueActive.addEventListener('change', () => {
-        saveCurrentOptionsLocally();
-        if (typeof AudioManager !== 'undefined' && typeof AudioManager.syncWithOptions === 'function') {
-            AudioManager.syncWithOptions(true);
-        }
-    });
+    if (sonsActifs) sonsActifs.addEventListener('change', () => updateSoundControlsState(true));
+    if (musiqueActive) {
+        musiqueActive.addEventListener('change', () => {
+            saveCurrentOptionsLocally();
+            if (typeof AudioManager !== 'undefined' && typeof AudioManager.syncWithOptions === 'function') {
+                AudioManager.syncWithOptions(true);
+            }
+        });
+    }
     // Correctif v1.27.0 : effetsActifs ne touche JAMAIS la musique de fond !
-    effetsActifs.addEventListener('change', () => {
-        saveCurrentOptionsLocally();
-        if (effetsActifs.checked && sonsActifs.checked && typeof AudioManager !== 'undefined') {
-            AudioManager.playSfx('click');
-        }
-    });
+    if (effetsActifs) {
+        effetsActifs.addEventListener('change', () => {
+            saveCurrentOptionsLocally();
+            if (effetsActifs.checked && (!sonsActifs || sonsActifs.checked) && typeof AudioManager !== 'undefined') {
+                AudioManager.playSfx('click');
+            }
+        });
+    }
 
-    volumeMusique.addEventListener('input', () => updateVolumeMusique(true));
-    volumeMusique.addEventListener('change', saveCurrentOptionsLocally);
-    volumeEffets.addEventListener('input', () => updateVolumeEffets(true));
-    volumeEffets.addEventListener('change', () => {
-        saveCurrentOptionsLocally();
-        if (typeof AudioManager !== 'undefined') AudioManager.playSfx('click');
-    });
+    if (volumeMusique) {
+        volumeMusique.addEventListener('input', () => updateVolumeMusique(true, false));
+        volumeMusique.addEventListener('change', () => {
+            if (_audioSaveTimer) { clearTimeout(_audioSaveTimer); _audioSaveTimer = null; }
+            saveCurrentOptionsLocally();
+        });
+    }
+    if (volumeEffets) {
+        volumeEffets.addEventListener('input', () => updateVolumeEffets(true, false));
+        volumeEffets.addEventListener('change', () => {
+            if (_audioSaveTimer) { clearTimeout(_audioSaveTimer); _audioSaveTimer = null; }
+            saveCurrentOptionsLocally();
+            if (typeof AudioManager !== 'undefined') AudioManager.playSfx('click');
+        });
+    }
 
     /* --- Écouteurs Apparence --- */
     let _appearanceSaveTimer = null;
@@ -1432,27 +1529,29 @@ function initOptions() {
     }
 
     /* --- Écouteurs affichage, classe & filière --- */
-    pleinEcran.addEventListener('change', () => {
-        if (pleinEcran.checked) {
-            const request = document.documentElement.requestFullscreen
-                         || document.documentElement.webkitRequestFullscreen
-                         || document.documentElement.msRequestFullscreen;
-            if (request) {
-                try { Promise.resolve(request.call(document.documentElement)).catch(() => {}); } catch (_) {}
+    if (pleinEcran) {
+        pleinEcran.addEventListener('change', () => {
+            if (pleinEcran.checked) {
+                const request = document.documentElement.requestFullscreen
+                             || document.documentElement.webkitRequestFullscreen
+                             || document.documentElement.msRequestFullscreen;
+                if (request) {
+                    try { Promise.resolve(request.call(document.documentElement)).catch(() => {}); } catch (_) {}
+                }
+            } else if (getFullscreenElement()) {
+                const exit = document.exitFullscreen
+                          || document.webkitExitFullscreen
+                          || document.msExitFullscreen;
+                if (exit) {
+                    try { Promise.resolve(exit.call(document)).catch(() => {}); } catch (_) {}
+                }
             }
-        } else if (document.fullscreenElement) {
-            const exit = document.exitFullscreen
-                      || document.webkitExitFullscreen
-                      || document.msExitFullscreen;
-            if (exit) {
-                try { Promise.resolve(exit.call(document)).catch(() => {}); } catch (_) {}
-            }
-        }
-        saveCurrentOptionsLocally();
-    });
+            saveCurrentOptionsLocally();
+        });
+    }
 
-    ecoModeCheckbox.addEventListener('change', saveCurrentOptionsLocally);
-    particulesCheckbox.addEventListener('change', saveCurrentOptionsLocally);
+    if (ecoModeCheckbox) ecoModeCheckbox.addEventListener('change', saveCurrentOptionsLocally);
+    if (particulesCheckbox) particulesCheckbox.addEventListener('change', saveCurrentOptionsLocally);
     if (animationsCheckbox) animationsCheckbox.addEventListener('change', saveCurrentOptionsLocally);
     if (modeChronoCheckbox) modeChronoCheckbox.addEventListener('change', saveCurrentOptionsLocally);
     if (optNiveauSelect) {
@@ -1469,7 +1568,7 @@ function initOptions() {
         if (typeof AudioManager !== 'undefined' && typeof AudioManager.syncWithOptions === 'function') {
             AudioManager.syncWithOptions(true);
         }
-        showNotification('⚙ Options sauvegardées et appliquées !');
+        showNotification('Options sauvegardées et appliquées !');
         setTimeout(closeOptionsModal, 600);
     });
 
@@ -1502,9 +1601,11 @@ function initOptions() {
         });
     }
 
-    document.addEventListener('fullscreenchange', () => {
-        pleinEcran.checked = !!document.fullscreenElement;
-    });
+    const syncPleinEcranCb = () => {
+        if (pleinEcran) pleinEcran.checked = !!getFullscreenElement();
+    };
+    document.addEventListener('fullscreenchange', syncPleinEcranCb);
+    document.addEventListener('webkitfullscreenchange', syncPleinEcranCb);
 }
 
 /* ==========================================================================
@@ -1512,18 +1613,12 @@ function initOptions() {
    Moteur de confettis Canvas autonome, optimisé mobile & respectueux des options.
    ========================================================================== */
 
-/**
- * Moteur de confettis autonome (aucune dépendance externe / CDN) :
- * - Respecte strictement les options Particules, Mode Éco et Animations.
- * - Densité nettement allégée sur téléphone + plafond dur + anti-doublon (cooldown).
- *   Celebrate.confetti();                  // célébration calibrée
- *   Celebrate.burst(element);              // petite explosion sur un bouton
- *   Celebrate.clear();                     // purge immédiate du canvas
- */
 const Celebrate = (() => {
     const COLORS = ['#ffd166', '#c8a84b', '#6bca82', '#4cc9f0', '#f72585', '#b388ff', '#ff9f43'];
     let canvas = null, ctx = null, particles = [], rafId = null;
+    let burstTimer = null;
     let lastConfettiAt = 0;
+    let viewW = 0, viewH = 0;
     const CONFETTI_COOLDOWN_MS = 1800;
 
     function isMobileViewport() {
@@ -1539,14 +1634,14 @@ const Celebrate = (() => {
             if (getOption('particules') === 'false') return true;
             if (getOption('ecoMode') === 'true') return true;
         }
-        return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        return Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     }
 
     let needsResize = true;
 
     function ensureCanvas() {
         if (canvas) {
-            if (needsResize) resize();
+            if (needsResize || canvas.width === 0) resize();
             return;
         }
         canvas = document.createElement('canvas');
@@ -1568,21 +1663,36 @@ const Celebrate = (() => {
     function resize() {
         if (!canvas || !ctx) return;
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        canvas.width = window.innerWidth * dpr;
-        canvas.height = window.innerHeight * dpr;
+        viewW = window.innerWidth;
+        viewH = window.innerHeight;
+        canvas.width = Math.round(viewW * dpr);
+        canvas.height = Math.round(viewH * dpr);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         needsResize = false;
     }
 
+    function releaseCanvasMemory() {
+        if (canvas) {
+            canvas.width = 0;
+            canvas.height = 0;
+            needsResize = true;
+        }
+    }
+
     function clear() {
         particles = [];
+        if (burstTimer) {
+            clearTimeout(burstTimer);
+            burstTimer = null;
+        }
         if (rafId) {
             cancelAnimationFrame(rafId);
             rafId = null;
         }
-        if (ctx && canvas) {
-            ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        if (ctx && canvas && canvas.width > 0) {
+            ctx.clearRect(0, 0, viewW || window.innerWidth, viewH || window.innerHeight);
         }
+        releaseCanvasMemory();
     }
 
     function spawn(x, y, count, spread, power, angle) {
@@ -1613,15 +1723,13 @@ const Celebrate = (() => {
     }
 
     function tick() {
-        if (particlesBlocked()) {
-            clear();
-            return;
-        }
-        if (needsResize) resize();
-        ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-        particles = particles.filter(p => p.life < p.maxLife && p.y < window.innerHeight + 36);
+        if (needsResize || (canvas && canvas.width === 0)) resize();
+        ctx.clearRect(0, 0, viewW, viewH);
+        const alive = [];
+        const maxY = viewH + 36;
         for (let i = 0; i < particles.length; i++) {
             const p = particles[i];
+            if (p.life >= p.maxLife || p.y >= maxY) continue;
             p.life++;
             p.vy += 0.19;
             p.vx *= 0.985;
@@ -1640,12 +1748,14 @@ const Celebrate = (() => {
                 ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.rot)));
             }
             ctx.restore();
+            alive.push(p);
         }
+        particles = alive;
         if (particles.length) {
             rafId = requestAnimationFrame(tick);
         } else {
             rafId = null;
-            ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+            releaseCanvasMemory();
         }
     }
 
@@ -1664,15 +1774,20 @@ const Celebrate = (() => {
             if (now - lastConfettiAt < CONFETTI_COOLDOWN_MS) return;
             lastConfettiAt = now;
             ensureCanvas();
-            const w = window.innerWidth, h = window.innerHeight;
+            const w = viewW || window.innerWidth, h = viewH || window.innerHeight;
             if (isMobileViewport()) {
                 spawn(w * 0.2, h * 0.65, 11, 0.75, 11, -Math.PI / 2.5);
                 spawn(w * 0.8, h * 0.65, 11, 0.75, 11, -Math.PI * 1.5 / 2.5);
             } else {
                 spawn(0, h * 0.75, 28, 0.85, 15, -Math.PI / 3);
                 spawn(w, h * 0.75, 28, 0.85, 15, -Math.PI * 2 / 3);
-                setTimeout(() => {
-                    if (!particlesBlocked() && confettiEnabledBySite()) spawn(w / 2, h * 0.35, 20, Math.PI * 2, 8, 0);
+                if (burstTimer) clearTimeout(burstTimer);
+                burstTimer = setTimeout(() => {
+                    burstTimer = null;
+                    if (!particlesBlocked() && confettiEnabledBySite()) {
+                        ensureCanvas();
+                        spawn((viewW || w) / 2, (viewH || h) * 0.35, 20, Math.PI * 2, 8, 0);
+                    }
                 }, 160);
             }
         },
@@ -1681,8 +1796,8 @@ const Celebrate = (() => {
             if (particlesBlocked() || !confettiEnabledBySite()) return;
             ensureCanvas();
             const r = el && el.getBoundingClientRect ? el.getBoundingClientRect() : null;
-            const x = r ? r.left + r.width / 2 : window.innerWidth / 2;
-            const y = r ? r.top + r.height / 2 : window.innerHeight / 2;
+            const x = r ? r.left + r.width / 2 : (viewW || window.innerWidth) / 2;
+            const y = r ? r.top + r.height / 2 : (viewH || window.innerHeight) / 2;
             const mobile = isMobileViewport();
             spawn(x, y, mobile ? 12 : 24, Math.PI * 2, mobile ? 7 : 9, 0);
         },
@@ -1707,7 +1822,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined' && !window.
  * Sort immédiatement si l'en-tête .map-header n'existe pas (pas sur cette page).
  *
  * FONCTIONNEMENT GÉNÉRAL :
- * - La matière et l'icône sont passées dans l'URL (ex: map.html?matiere=Mathématiques&icon=Image/ile/maths.webp)
+ * - La matière et l'icône sont passées dans l'URL (ex: map.html?matiere=Mathématiques&icon=Image/ile/maths.svg)
  * - La progression est chargée de façon asynchrone via DB.loadProgress()
  * - Les 6 boutons de niveau (dots) sont mis à jour visuellement selon la progression
  * - Un clic sur un dot ouvre une modale pour simuler la complétion d'un niveau
@@ -1736,7 +1851,7 @@ function getLessonHint(lesson, subjectId) {
 
     if (subj.includes('math')) {
         if (q.includes('+')) return "Effectue l'addition colonne par colonne en surveillant les retenues.";
-        if (q.includes('-')) return "Pour la soustraction, pose le calcul ou décompose en dizaines et unités.";
+        if (/\d\s*[-−]\s*\d/.test(q)) return "Pour la soustraction, pose le calcul ou décompose en dizaines et unités.";
         if (q.includes('×') || q.includes('*')) return "Fais appel à tes tables de multiplication et décompose si nécessaire.";
         if (q.includes('÷') || q.includes('/')) return "La division cherche combien de fois le diviseur est contenu dans le dividende.";
         if (q.includes('hypoténuse') || q.includes('pythagore')) return "Théorème de Pythagore : Hypoténuse² = Côté1² + Côté2².";
@@ -1895,13 +2010,13 @@ function renderStreakAndComboPillsHtml(streakData, { compact = false } = {}) {
     const comboLit = comboCount >= 2 || multiplier > 1.0;
 
     return `<div class="dash-stats-pills ${compact ? 'is-compact' : ''}">
-        <button type="button" class="dash-streak-pill ${streakHot ? 'is-hot' : ''}" onclick="window._showStatHelp('streak')" title="🔥 Série : ${streakCount} niveau${streakCount > 1 ? 'x' : ''} réussi${streakCount > 1 ? 's' : ''} d'affilée (clic pour info)" aria-label="Série de ${streakCount} victoires">
-            <span class="dash-pill-icon" aria-hidden="true">🔥</span>
+        <button type="button" class="dash-streak-pill ${streakHot ? 'is-hot' : ''}" onclick="window._showStatHelp('streak')" title="Série : ${streakCount} niveau${streakCount > 1 ? 'x' : ''} réussi${streakCount > 1 ? 's' : ''} d'affilée (clic pour info)" aria-label="Série de ${streakCount} victoires">
+            <span class="dash-pill-icon" aria-hidden="true">${eqIcon('flame', 15, 'fire')}</span>
             <span class="dash-streak-count">${streakCount}</span>
             <span class="dash-pill-label">Série</span>
         </button>
-        <button type="button" class="dash-combo-pill ${comboLit ? 'is-lit' : ''}" onclick="window._showStatHelp('combo')" title="⚡ Énergie Combo : ${comboCount} bonne${comboCount > 1 ? 's' : ''} réponse${comboCount > 1 ? 's' : ''} de suite → Multiplicateur x${multiplier.toFixed(1)} XP &amp; score" aria-label="Énergie Combo multiplicateur x${multiplier.toFixed(1)}">
-            <span class="dash-pill-icon" aria-hidden="true">⚡</span>
+        <button type="button" class="dash-combo-pill ${comboLit ? 'is-lit' : ''}" onclick="window._showStatHelp('combo')" title="Énergie Combo : ${comboCount} bonne${comboCount > 1 ? 's' : ''} réponse${comboCount > 1 ? 's' : ''} de suite → Multiplicateur x${multiplier.toFixed(1)} XP &amp; score" aria-label="Énergie Combo multiplicateur x${multiplier.toFixed(1)}">
+            <span class="dash-pill-icon" aria-hidden="true">${eqIcon('bolt', 15, 'cyan')}</span>
             <span class="dash-combo-val">x${multiplier.toFixed(1)}</span>
             <span class="dash-pill-label">Combo</span>
         </button>
@@ -1910,8 +2025,7 @@ function renderStreakAndComboPillsHtml(streakData, { compact = false } = {}) {
 
 /**
  * Barre de combo dans une modale de quiz :
- * ⚡ est TOUJOURS réservé à l'Énergie / Multiplicateur de Combo ;
- * 🔥 est TOUJOURS réservé au rappel de la Série de victoires.
+ * Éclair = Énergie / Multiplicateur de Combo ; Flamme = Série de victoires.
  */
 function renderQuizComboBarHtml(streakData) {
     const data = streakData || { count: 0, combo: 0 };
@@ -1920,12 +2034,12 @@ function renderQuizComboBarHtml(streakData) {
     const multiplier = (typeof DB !== 'undefined' && DB.getMultiplier) ? DB.getMultiplier(comboCount) : 1.0;
     const tierName = (typeof window.comboTierName === 'function') ? window.comboTierName(comboCount) : '';
     const streakMini = streakCount > 0
-        ? `<span class="dash-quiz-streak-mini" title="🔥 Série actuelle : ${streakCount} victoires d'affilée">🔥 ${streakCount}</span>`
+        ? `<span class="dash-quiz-streak-mini" title="Série actuelle : ${streakCount} victoires d'affilée">${eqIcon('flame', 14, 'fire')} ${streakCount}</span>`
         : '';
 
     return `<div class="dash-quiz-combo-bar ${comboCount >= 2 ? 'is-lit' : ''}">
         <div class="dash-combo-left">
-            <span class="dash-combo-bolt" aria-hidden="true">⚡</span>
+            <span class="dash-combo-bolt" aria-hidden="true">${eqIcon('bolt', 18, 'cyan')}</span>
             <div>
                 <div class="dash-combo-txt">Énergie Combo : <b>${comboCount}</b></div>
                 <div class="dash-combo-subtitle">${escapeHtml(tierName)}</div>
@@ -1933,7 +2047,7 @@ function renderQuizComboBarHtml(streakData) {
         </div>
         <div class="dash-combo-right">
             ${streakMini}
-            <div class="dash-combo-mult-badge" title="Multiplicateur appliqué à l'XP et au score">⚡ <b>x${multiplier.toFixed(1)}</b></div>
+            <div class="dash-combo-mult-badge" title="Multiplicateur appliqué à l'XP et au score">${eqIcon('bolt', 13, 'gold')} <b>x${multiplier.toFixed(1)}</b></div>
         </div>
     </div>`;
 }
@@ -1946,9 +2060,9 @@ window._toggleQuizHint = function(btn) {
     drawer.style.display = isHidden ? 'block' : 'none';
     btn.classList.toggle('active', isHidden);
     btn.setAttribute('aria-expanded', String(isHidden));
-    btn.innerHTML = isHidden 
-        ? `<span class="dash-hint-icon">💡</span> Masquer l'indice` 
-        : `<span class="dash-hint-icon">💡</span> Besoin d'un indice ?`;
+    btn.innerHTML = isHidden
+        ? `<span class="dash-hint-icon">${eqIcon('bulb', 15, 'gold')}</span> Masquer l'indice`
+        : `<span class="dash-hint-icon">${eqIcon('bulb', 15, 'gold')}</span> Besoin d'un indice ?`;
 };
 
 /**
@@ -1959,11 +2073,12 @@ function renderQuizMetaStripHtml(attempt) {
     if (!attempt) return '';
     // Nombre max d'étoiles si l'élève répond juste sur la tentative actuelle
     const nextAttemptNumber = attempt.answered ? attempt.attempts : (attempt.attempts + 1);
-    const maxStars = (typeof GameRules !== 'undefined' && GameRules.starsFor)
+    const rawMaxStars = (typeof GameRules !== 'undefined' && GameRules.starsFor)
         ? GameRules.starsFor(nextAttemptNumber, Boolean(attempt.usedShield))
         : 3;
+    const maxStars = Math.max(0, Math.min(3, Number(rawMaxStars) || 0));
     const penalized = maxStars < 3;
-    const starsHtml = '⭐'.repeat(maxStars) + '☆'.repeat(3 - maxStars);
+    const starsHtml = eqStars(maxStars, 3, 14);
     const stakeLabel = penalized
         ? `${starsHtml} Max ${maxStars} étoile${maxStars > 1 ? 's' : ''}`
         : `${starsHtml} 3 étoiles en jeu`;
@@ -1977,19 +2092,20 @@ function renderQuizMetaStripHtml(attempt) {
 
     const isAi = attempt.source === 'ai';
     const tierId = attempt.difficultyTier || (attempt.tierInfo && attempt.tierInfo.id) || 'standard';
-    const tierIcon = (attempt.tierInfo && attempt.tierInfo.icon) || (tierId === 'remediation' ? '🌱' : tierId === 'approfondissement' ? '🚀' : '⚡');
+    const tierIcon = (attempt.tierInfo && attempt.tierInfo.icon) || (tierId === 'remediation' ? 'leaf' : tierId === 'approfondissement' ? 'rocket' : 'bolt');
     const persona = (!isAi && ((attempt.lesson && attempt.lesson.aiAgent) || attempt.aiAgent)) || null;
 
     let sourcePillHtml = '';
     if (persona) {
         const personaRole = persona.adaptedAfterFailure ? 'Question réinitialisée & adaptée' : (persona.role || 'Adaptatif');
-        const safeColor = /^#[0-9a-f]{6}$/i.test(String(persona.color || '')) ? persona.color : '#4cc9f0';
-        sourcePillHtml = `<span class="ai-pool-badge ${persona.adaptedAfterFailure ? 'is-adapted' : ''}" style="--persona-color:${safeColor};" title="${escapeHtml(persona.name)} — ${escapeHtml(personaRole)}">${escapeHtml(persona.icon || '🤖')} <span>${escapeHtml(persona.name)} · ${escapeHtml(personaRole)}</span></span>`;
+        const safeColor = safeHexColor(persona.color, '#4cc9f0');
+        sourcePillHtml = `<span class="ai-pool-badge ${persona.adaptedAfterFailure ? 'is-adapted' : ''}" style="--persona-color:${safeColor};" title="${escapeHtml(persona.name)} — ${escapeHtml(personaRole)}">${eqEmoji(persona.icon || 'bot', 14)} <span>${escapeHtml(persona.name)} · ${escapeHtml(personaRole)}</span></span>`;
     } else {
-        const sourceLabel = isAi
-            ? `🤖 ${attempt.providerName || 'IA adaptative'}`
-            : `${tierIcon} ${attempt.providerName || 'Adaptatif'}`;
-        sourcePillHtml = `<span class="quiz-source-pill ${isAi ? 'is-ai' : ''} tier-${escapeHtml(tierId)}" title="Difficulté adaptative & anti-répétition">${escapeHtml(sourceLabel)}</span>`;
+        const iconHtml = isAi ? eqIcon('bot', 14, 'cyan') : eqEmoji(tierIcon, 14, 'gold');
+        const labelTxt = isAi
+            ? (attempt.providerName || 'IA adaptative')
+            : (attempt.providerName || 'Adaptatif');
+        sourcePillHtml = `<span class="quiz-source-pill ${isAi ? 'is-ai' : ''} tier-${escapeHtml(tierId)}" title="Difficulté adaptative & anti-répétition">${iconHtml} ${escapeHtml(labelTxt)}</span>`;
     }
 
     return `
@@ -2047,13 +2163,16 @@ function getEquippedAvatarId() {
     return 'robot';
 }
 
-/** Vérifie qu'une URL d'image d'avatar est sûre pour un attribut src. */
+/** Vérifie qu'une URL d'image d'avatar/île est sûre pour un attribut src. */
 function isSafeAvatarImgSrc(src) {
     if (typeof src !== 'string') return false;
     const clean = src.trim();
-    if (!clean) return false;
-    if (/^(javascript|vbscript|data):/i.test(clean)) return false;
-    return true;
+    if (!clean || clean.startsWith('//') || clean.includes('..')) return false;
+    if (/^(javascript|vbscript):/i.test(clean)) return false;
+    if (/^data:/i.test(clean)) {
+        return /^data:image\/(png|webp|jpeg|jpg|gif|svg\+xml);base64,[a-z0-9+/=\s]+$/i.test(clean);
+    }
+    return /^(\/?Image\/|https?:\/\/)/i.test(clean);
 }
 
 function initMap() {
@@ -2064,10 +2183,10 @@ function initMap() {
     function isIconFile(icon) {
         if (typeof icon !== 'string') return false;
         const clean = icon.trim();
-        return /\.(png|svg|webp|jpg|jpeg)$/i.test(clean)
-            || clean.startsWith('Image/')
-            || clean.startsWith('https://')
-            || clean.startsWith('http://');
+        if (!clean || clean.startsWith('//') || clean.includes('..')) return false;
+        if (/^(javascript|vbscript):/i.test(clean)) return false;
+        if (isSafeAvatarImgSrc(clean)) return true;
+        return /^[a-z0-9._-]+\.(png|svg|webp|jpg|jpeg)$/i.test(clean);
     }
 
     const MATIERE_TO_SUBJECT_ID = {
@@ -2148,9 +2267,10 @@ function initMap() {
     // Affiche la classe (et la filière au lycée/BTS) en lecture seule dans l'en-tête
     const mapGradeBadge = document.getElementById('mapGradeBadge');
     if (mapGradeBadge) {
-        mapGradeBadge.textContent = filiereObj
-            ? `🎓 ${niveauLabel} · ${filiereObj.shortLabel || filiereObj.label}`
-            : `🎓 ${niveauLabel}`;
+        const badgeTxt = filiereObj
+            ? `${niveauLabel} · ${filiereObj.shortLabel || filiereObj.label}`
+            : `${niveauLabel}`;
+        mapGradeBadge.innerHTML = `${eqIcon('gradCap', 15, 'gold')} <span>${escapeHtml(badgeTxt)}</span>`;
     }
 
     /** Transition dynamique d'expulsion vers le tableau de bord si la matière est hors programme. */
@@ -2181,10 +2301,10 @@ function initMap() {
         const defaultSubject = (DASH_SUBJECTS && DASH_SUBJECTS[0]) ? DASH_SUBJECTS[0] : null;
         if (defaultSubject) {
             subject = defaultSubject.name;
-            icon = icon || getSubjectIslandSrc(defaultSubject) || defaultSubject.icon || 'Image/ile/maths.webp';
+            icon = icon || getSubjectIslandSrc(defaultSubject) || defaultSubject.icon || 'Image/ile/maths.svg';
         } else {
             subject = 'Mathématiques';
-            icon = icon || 'Image/ile/maths.webp';
+            icon = icon || 'Image/ile/maths.svg';
         }
     }
 
@@ -2212,6 +2332,11 @@ function initMap() {
             carteSubject = matchedRaw._custom
                 ? matchedRaw
                 : (typeof QuestionBank !== 'undefined' ? QuestionBank.extend(matchedRaw, 100, niveauActuel) : matchedRaw);
+        } else if (DASH_SUBJECTS && DASH_SUBJECTS[0]) {
+            // Anti-triche : une matière inconnue dans ?matiere=... ne doit jamais ouvrir la modale libre .star-choice
+            carteSubject = DASH_SUBJECTS[0];
+            subject = carteSubject.name;
+            icon = getSubjectIslandSrc(carteSubject) || 'Image/ile/maths.svg';
         }
     }
 
@@ -2249,7 +2374,7 @@ function initMap() {
     if (canonicalIcon) {
         icon = canonicalIcon;
     } else if (!icon || !isIconFile(icon)) {
-        icon = 'Image/ile/maths.webp';
+        icon = 'Image/ile/maths.svg';
     }
 
     const TOTAL_LEVELS = carteSubject ? carteSubject.lessons.length : 6;
@@ -2262,11 +2387,10 @@ function initMap() {
     const resolveIslandUrl = (src) => {
         if (!src || typeof src !== 'string') return '';
         const clean = src.trim();
-        // Refuse javascript: et schémas dangereux
-        if (/^\s*javascript:/i.test(clean) || /^\s*data:text\/html/i.test(clean)) return 'Image/ile/maths.webp';
-        if (clean.startsWith('http://') || clean.startsWith('https://') || clean.startsWith('/') || clean.startsWith('Image/')) {
-            return clean;
+        if (!clean || clean.startsWith('//') || clean.includes('..') || /^(javascript|vbscript):/i.test(clean) || /^\s*data:text\/html/i.test(clean)) {
+            return 'Image/ile/maths.svg';
         }
+        if (isSafeAvatarImgSrc(clean)) return clean;
         return 'Image/ile/' + clean.replace(/[^a-zA-Z0-9._-]/g, '');
     };
 
@@ -2280,7 +2404,7 @@ function initMap() {
             img.style.cssText = 'width:1.2em;height:1.2em;vertical-align:middle;object-fit:contain;';
             iconEl.appendChild(img);
         } else {
-            iconEl.textContent = icon;
+            iconEl.innerHTML = eqEmoji(icon, 26, 'gold');
         }
     }
 
@@ -2296,7 +2420,7 @@ function initMap() {
     document.title = 'EDUQUEST - ' + (carteSubject ? carteSubject.name : subject);
 
     function renderMapHeaderStreak() {
-        const headerRight = mapHeader.querySelector('div[style*="pointer-events: auto"]');
+        const headerRight = mapHeader.querySelector('.map-header-actions') || mapHeader.querySelector('div[style*="pointer-events"]');
         if (!headerRight) return;
         let streakEl = document.getElementById('mapHeaderStreakPill');
         const streakData = (typeof DB !== 'undefined' && DB.getStreakData) ? DB.getStreakData() : { count: 0, combo: 0 };
@@ -2356,9 +2480,10 @@ function initMap() {
         let dotsHTML = '';
         for (let i = 1; i <= TOTAL_LEVELS; i++) {
             const { x, y } = levelCoords(i);
-            dotsHTML += `<button class="level-dot" type="button" data-level="${i}" style="left:${x}%; top:${y}px;">
+            const initLocked = i > 1;
+            dotsHTML += `<button class="level-dot${initLocked ? ' locked' : ''}" type="button" data-level="${i}" aria-label="Niveau ${i}"${initLocked ? ' disabled' : ''} style="left:${x}%; top:${y}px;">
                 <span class="level-number">${i}</span>
-                <span class="level-stars-display"></span>
+                <span class="level-stars-display">${initLocked ? eqIcon('lock', 12, 'muted') : ''}</span>
             </button>`;
         }
 
@@ -2429,7 +2554,7 @@ function initMap() {
             if (current && isSafeAvatarImgSrc(current.img)) {
                 btn.innerHTML = `<img src="${escapeHtml(current.img)}" alt="${escapeHtml(name)}" decoding="async">`;
             } else {
-                btn.textContent = '👤';
+                btn.innerHTML = eqIcon('user', 20, 'gold');
             }
         }
 
@@ -2458,17 +2583,17 @@ function initMap() {
                 const isActive = avatar.id === activeId;
                 const imgHtml = isSafeAvatarImgSrc(avatar.img)
                     ? `<img src="${escapeHtml(avatar.img)}" alt="${escapeHtml(avatar.name)}" loading="lazy" decoding="async">`
-                    : `<span class="map-skin-fallback">👤</span>`;
+                    : `<span class="map-skin-fallback">${eqIcon('user', 22, 'gold')}</span>`;
                 const badgeHtml = isActive
-                    ? `<span class="map-skin-badge is-equipped">✓</span>`
+                    ? `<span class="map-skin-badge is-equipped">${eqIcon('check', 11, 'emerald')}</span>`
                     : (!isUnlocked
-                        ? `<span class="map-skin-badge is-locked">🔒 ${Number(avatar.cost) || 0}</span>`
+                        ? `<span class="map-skin-badge is-locked">${eqIcon('lock', 10, 'muted')} ${Number(avatar.cost) || 0}</span>`
                         : '');
                 return `
                     <button type="button"
                         class="map-skin-item ${isActive ? 'is-active' : ''} ${isUnlocked ? '' : 'is-locked'}"
                         data-skin-id="${escapeHtml(avatar.id)}"
-                        style="--skin-accent:${escapeHtml(avatar.color || '#c8a84b')}"
+                        style="--skin-accent:${safeHexColor(avatar.color, '#c8a84b')}"
                         ${isUnlocked ? '' : 'disabled'}
                         title="${escapeHtml(avatar.name)}${isUnlocked ? '' : ` — À débloquer en boutique (${Number(avatar.cost) || 0} pièces)`}">
                         <span class="map-skin-thumb">${imgHtml}${badgeHtml}</span>
@@ -2570,30 +2695,43 @@ function initMap() {
      *
      * @returns {Promise<object>} La progression du joueur pour cette matière
      */
-    async function loadProgress() {
-        const data = await DB.loadProgress(subject, niveauActuel);
-        return data || getDefaultProgress(); // Progression par défaut si rien en base
+    function normalizeProgress(data) {
+        const base = getDefaultProgress();
+        if (!data || typeof data !== 'object' || !data.levels || typeof data.levels !== 'object') return base;
+        for (let i = 1; i <= TOTAL_LEVELS; i++) {
+            const raw = data.levels[i];
+            if (raw && typeof raw === 'object') {
+                const stars = Math.max(0, Math.min(3, parseInt(raw.stars, 10) || 0));
+                base.levels[i] = {
+                    unlocked: Boolean(raw.unlocked) || i === 1 || stars > 0,
+                    stars,
+                };
+            }
+        }
+        // Si le niveau i est terminé, débloque i+1 (migration sauvegardes 6 niveaux → 100 niveaux)
+        for (let i = 1; i < TOTAL_LEVELS; i++) {
+            if (base.levels[i].stars > 0) base.levels[i + 1].unlocked = true;
+        }
+        return base;
     }
 
-    /**
-     * Sauvegarde la progression via DB (localStorage + API si activée).
-     * Appelée à chaque modification de la progression (étoiles gagnées).
-     *
-     * @param {object} progress - Objet progression complet
-     */
+    async function loadProgress() {
+        try {
+            const data = await DB.loadProgress(subject, niveauActuel);
+            return normalizeProgress(data);
+        } catch (err) {
+            console.warn('[map] Chargement de progression échoué, repli par défaut.', err);
+            return getDefaultProgress();
+        }
+    }
+
     function saveProgress(progress) {
         DB.saveProgress(subject, niveauActuel, progress);
     }
 
-    /**
-     * Génère la chaîne d'affichage des étoiles pour un niveau.
-     * Utilise des étoiles pleines (⭐) pour les gagnées et vides (☆) pour le reste.
-     *
-     * @param {number} stars - Nombre d'étoiles gagnées (0, 1, 2 ou 3)
-     * @returns {string} Ex: '⭐⭐☆' pour 2 étoiles
-     */
     function renderStars(stars) {
-        return stars === 0 ? '' : '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+        const clamped = Math.max(0, Math.min(3, parseInt(stars, 10) || 0));
+        return clamped === 0 ? '' : eqStars(clamped, 3, 12);
     }
 
     /**
@@ -2683,15 +2821,15 @@ function initMap() {
                 // Niveau verrouillé : grisé, non cliquable
                 btn.classList.add('locked');
                 btn.disabled = true;
-                if (starsDisplay) starsDisplay.textContent = '🔒';
+                if (starsDisplay) starsDisplay.innerHTML = eqIcon('lock', 12, 'muted');
             } else if (data.stars > 0) {
                 // Niveau terminé avec étoiles : affiche les étoiles gagnées
                 btn.classList.add('completed');
-                if (starsDisplay) starsDisplay.textContent = renderStars(data.stars);
+                if (starsDisplay) starsDisplay.innerHTML = renderStars(data.stars);
             } else {
                 // Niveau débloqué mais pas encore terminé
                 if (i === currentLevel) btn.classList.add('active'); // Niveau en cours
-                if (starsDisplay) starsDisplay.textContent = ''; // Pas d'étoiles
+                if (starsDisplay) starsDisplay.innerHTML = ''; // Pas d'étoiles
             }
         }
 
@@ -2716,6 +2854,9 @@ function initMap() {
         } else {
             scrollToLevel(findCurrentLevel(progress), false);
         }
+    }).catch(err => {
+        console.warn('[map] Impossible de charger la progression.', err);
+        renderLevels(progress);
     });
 
     /* --- Gestion de la modale de résultat de niveau --- */
@@ -2756,9 +2897,17 @@ function initMap() {
         return mapTimer ? mapTimer.getRemaining() : 0;
     }
 
+    function commitPendingMapVictoryIfNeeded() {
+        if (currentAttempt && currentAttempt.answered && currentAttempt.isCorrect && !currentAttempt._committed && currentModalLevel) {
+            const starsNow = starsFromAttempts(currentAttempt.attempts, currentAttempt.usedShield);
+            unlockNextAndSave(starsNow, currentAttempt);
+        }
+    }
+
     window.addEventListener('pagehide', stopMapTimer);
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && modal && !modal.hidden) {
+            commitPendingMapVictoryIfNeeded();
             stopMapTimer();
             modal.hidden = true;
             positionCharacter(findCurrentLevel(progress), true);
@@ -2770,32 +2919,37 @@ function initMap() {
     }
 
     /**
-     * Débloque le niveau suivant et sauvegarde, commun aux deux modes.
+     * Débloque le niveau suivant et sauvegarde.
      */
-    function unlockNextAndSave(starsEarned, attempt = null) {
+    function unlockNextAndSave(starsEarned, attempt = null, { skipRewards = false } = {}) {
         stopMapTimer();
+        if (attempt) {
+            if (attempt._committed) return { isFirstSuccess: false, xpGained: 0, coinsGained: 0, scoreGained: 0, multiplier: 1, streak: 0 };
+            attempt._committed = true;
+        }
         const cfg = getSiteConfigSafe();
         const strictAntiCheat = cfg.strictStarsAntiCheat !== false;
-        const isFirstSuccess = progress.levels[currentModalLevel].stars === 0 && starsEarned > 0;
-        if (starsEarned > progress.levels[currentModalLevel].stars) {
-            progress.levels[currentModalLevel].stars = starsEarned;
+        const clampedStars = Math.max(0, Math.min(3, parseInt(starsEarned, 10) || 0));
+        const isFirstSuccess = !skipRewards && progress.levels[currentModalLevel].stars === 0 && clampedStars > 0;
+        if (clampedStars > progress.levels[currentModalLevel].stars) {
+            progress.levels[currentModalLevel].stars = clampedStars;
         }
         if (currentModalLevel + 1 <= TOTAL_LEVELS) {
             progress.levels[currentModalLevel + 1].unlocked = true;
         }
 
-        // Anti-triche 3★ (pilotable en admin) :
-        // - strictStarsAntiCheat = true : on conserve le compteur d'échecs après erreur pour empêcher
-        //   d'obtenir 3★ en rejouant le niveau (sauf réinitialisation explicite de la matière).
-        // - strictStarsAntiCheat = false : on efface le compteur à la victoire (permet de rejouer pour 3★).
         const hadUnshieldedError = attempt && GameRules && typeof GameRules.effectiveAttempts === 'function'
             ? GameRules.effectiveAttempts(attempt.attempts, attempt.usedShield) > 1
-            : (starsEarned < 3);
+            : (clampedStars < 3);
         if ((!strictAntiCheat || !hadUnshieldedError) && typeof DB !== 'undefined' && typeof DB.clearLevelAttempt === 'function') {
             DB.clearLevelAttempt(effectiveSubjectId, niveauActuel, currentModalLevel - 1);
         }
 
-        const streakRes = (typeof DB !== 'undefined' && DB.recordLevelVictory) ? DB.recordLevelVictory() : { streak: 1, combo: 0, multiplier: 1.0 };
+        // Anti-farm : ne comptabilise la victoire de série et les quêtes que lors de la première réussite
+        const curStreak = (typeof DB !== 'undefined' && DB.getStreakData) ? DB.getStreakData() : { count: 0, combo: 0, maxCombo: 0 };
+        const streakRes = isFirstSuccess && typeof DB !== 'undefined' && DB.recordLevelVictory
+            ? DB.recordLevelVictory()
+            : { streak: curStreak.count || 0, combo: curStreak.combo || 0, maxCombo: curStreak.maxCombo || 0, multiplier: (typeof DB !== 'undefined' && DB.getMultiplier) ? DB.getMultiplier() : 1.0 };
         const mult = (streakRes && streakRes.multiplier) || ((typeof DB !== 'undefined' && DB.getMultiplier) ? DB.getMultiplier() : 1.0);
         renderMapHeaderStreak();
 
@@ -2816,7 +2970,7 @@ function initMap() {
             if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster(GameRules.DOUBLE_XP_ID)) {
                 usedDoubleXp = DB.useBooster(GameRules.DOUBLE_XP_ID);
                 if (usedDoubleXp && typeof showNotification === 'function') {
-                    showNotification('🧪 Potion Double XP consommée : XP doublée !', 'success');
+                    showNotification('Potion Double XP consommée : XP doublée !', 'success');
                 }
             }
 
@@ -2824,12 +2978,12 @@ function initMap() {
             if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster(doubleCoinsId)) {
                 usedDoubleCoins = DB.useBooster(doubleCoinsId);
                 if (usedDoubleCoins && typeof showNotification === 'function') {
-                    showNotification('🪙 Élixir de Fortune consommé : pièces doublées !', 'success');
+                    showNotification('Élixir de Fortune consommé : pièces doublées !', 'success');
                 }
             }
 
             const gains = GameRules.computeLevelRewards({
-                stars: starsEarned,
+                stars: clampedStars,
                 multiplier: mult,
                 chronoEnabled: (typeof QuizTimer !== 'undefined') ? QuizTimer.isEnabled() : (getOption('modeChrono') === 'true'),
                 timeRemaining: getMapRemainingTime(),
@@ -2855,22 +3009,24 @@ function initMap() {
         saveProgress(progress);
         renderLevels(progress);
 
-        if (starsEarned > 0) {
+        if (clampedStars > 0 && !skipRewards) {
             Celebrate.confetti();
             if (typeof AudioManager !== 'undefined' && typeof AudioManager.playSfx === 'function') {
                 AudioManager.playSfx('victory');
             }
-            DailyQuests.track(GameRules.questDelta({
-                stars: starsEarned,
-                attempts: attempt ? attempt.attempts : 0,
-                xp: xpGained,
-            }));
+            if (isFirstSuccess) {
+                DailyQuests.track(GameRules.questDelta({
+                    stars: clampedStars,
+                    attempts: attempt ? attempt.attempts : 0,
+                    xp: xpGained,
+                }));
+            }
             const usedShield = Boolean(attempt && attempt.usedShield);
             if (typeof window.checkBadges === 'function') {
                 window.checkBadges({
-                    justCompletedLevel: true,
-                    starsEarned: starsEarned,
-                    justAnsweredFirstTry: starsEarned === 3,
+                    justCompletedLevel: isFirstSuccess,
+                    starsEarned: clampedStars,
+                    justAnsweredFirstTry: isFirstSuccess && clampedStars === 3,
                     subjectId: effectiveSubjectId,
                     usedDoubleXp: usedDoubleXp,
                     usedDoubleCoins: usedDoubleCoins,
@@ -2962,9 +3118,9 @@ function initMap() {
             if (metaEl) metaEl.innerHTML = '';
             delete body.dataset.renderedLessonKey;
             questionEl.textContent = 'Génération de la question…';
-            body.innerHTML = `<div class="dash-feedback">⏳ Préparation d'une question adaptée pour le niveau ${currentModalLevel}…</div>`;
+            body.innerHTML = `<div class="dash-feedback">${eqIcon('hourglass', 15, 'gold')} Préparation d'une question adaptée pour le niveau ${currentModalLevel}…</div>`;
             feedbackEl.innerHTML = '';
-            actionsEl.innerHTML = `<button class="dash-btn-ghost" id="modal-quiz-cancel">Annuler</button>`;
+            actionsEl.innerHTML = `<button type="button" class="dash-btn-ghost" id="modal-quiz-cancel">Annuler</button>`;
             document.getElementById('modal-quiz-cancel').addEventListener('click', () => {
                 stopMapTimer();
                 modal.hidden = true;
@@ -3021,18 +3177,18 @@ function initMap() {
                 hintSlot.innerHTML = hintText ? `
                     <div class="dash-hint-container">
                         <button class="dash-hint-toggle-btn" type="button" onclick="window._toggleQuizHint(this)" aria-expanded="false">
-                            <span class="dash-hint-icon">💡</span> Besoin d'un indice ?
+                            <span class="dash-hint-icon">${eqIcon('bulb', 15, 'gold')}</span> Besoin d'un indice ?
                         </button>
                         <div class="dash-hint-drawer" style="display: none;">
                             <div class="dash-hint-drawer-content">
-                                <span class="dash-hint-badge">💡 INDICE PÉDAGOGIQUE</span>
+                                <span class="dash-hint-badge">${eqIcon('bulb', 13, 'gold')} INDICE PÉDAGOGIQUE</span>
                                 <p class="dash-hint-text">${escapeHtml(hintText)}</p>
                             </div>
                         </div>
                     </div>` : '';
             }
             feedbackEl.innerHTML = '';
-            actionsEl.innerHTML = `<button class="dash-btn-ghost" id="modal-quiz-cancel">Annuler</button>`;
+            actionsEl.innerHTML = `<button type="button" class="dash-btn-ghost" id="modal-quiz-cancel">Annuler</button>`;
             document.getElementById('modal-quiz-cancel').addEventListener('click', () => {
                 stopMapTimer();
                 modal.hidden = true;
@@ -3049,7 +3205,7 @@ function initMap() {
                         currentAttempt.usedExtraTime = true;
                         effectiveDuration += extraSec;
                         currentAttempt.chronoDuration = effectiveDuration;
-                        showNotification(`⏳ Sablier Temporel consommé : +${extraSec}s ajoutées au chrono !`, 'info');
+                        showNotification(`Sablier Temporel consommé : +${extraSec}s ajoutées au chrono !`, 'info');
                     }
                     mapTimer.start(effectiveDuration);
                 }
@@ -3068,10 +3224,10 @@ function initMap() {
             const expText = currentAttempt.explanation || (lesson ? lesson.exp : '') || '';
             feedbackEl.innerHTML = `
                 <div class="dash-feedback ${isCorrect ? 'ok' : 'ko'}">
-                    <div class="dash-feedback-badge">${isCorrect ? '✓ Bonne réponse ! ' + multTag : '✗ Pas tout à fait... (une nouvelle question te sera proposée)'}</div>
+                    <div class="dash-feedback-badge">${isCorrect ? `${eqIcon('check', 16, 'emerald')} Bonne réponse ! ${multTag}` : `${eqIcon('close', 16, 'danger')} Pas tout à fait... (une nouvelle question te sera proposée)`}</div>
                     ${expText ? `
                         <div class="dash-feedback-exp">
-                            <div class="dash-feedback-exp-title">📖 Explication &amp; Règle de cours :</div>
+                            <div class="dash-feedback-exp-title">${eqIcon('bookOpen', 15, 'cyan')} Explication &amp; Règle de cours :</div>
                             <div class="dash-feedback-exp-content">${escapeHtml(expText)}</div>
                         </div>
                     ` : ''}
@@ -3079,16 +3235,16 @@ function initMap() {
 
             if (isCorrect) {
                 const starsNow = starsFromAttempts(currentAttempt.attempts, currentAttempt.usedShield);
-                actionsEl.innerHTML = `<button class="dash-btn-primary" id="modal-quiz-continue">Continuer (${'⭐'.repeat(starsNow)})</button>`;
+                actionsEl.innerHTML = `<button type="button" class="dash-btn-primary" id="modal-quiz-continue">Continuer (${eqStars(starsNow, 3, 14)})</button>`;
                 document.getElementById('modal-quiz-continue').addEventListener('click', () => {
                     const res = unlockNextAndSave(starsNow, currentAttempt);
                     modal.hidden = true;
-                    showNotification(`✓ Niveau réussi — ${'⭐'.repeat(starsNow)}${res.isFirstSuccess ? ` (+${res.xpGained} XP ${res.multiplier > 1.0 ? `[x${res.multiplier}] ` : ''}, +${res.coinsGained} pièces, +${res.scoreGained} pts)` : ''}`);
+                    showNotification(`Niveau réussi (${starsNow}/3 étoiles)${res.isFirstSuccess ? ` · +${res.xpGained} XP ${res.multiplier > 1.0 ? `[x${res.multiplier}] ` : ''}, +${res.coinsGained} pièces, +${res.scoreGained} pts` : ''}`);
                 }, { once: true });
             } else {
                 actionsEl.innerHTML = `
-                    <button class="dash-btn-ghost" id="modal-quiz-quit">Quitter</button>
-                    <button class="dash-btn-primary" id="modal-quiz-retry">🔄 Réessayer (nouvelle question)</button>`;
+                    <button type="button" class="dash-btn-ghost" id="modal-quiz-quit">Quitter</button>
+                    <button type="button" class="dash-btn-primary" id="modal-quiz-retry">${eqIcon('refresh', 15)} Réessayer (nouvelle question)</button>`;
                 document.getElementById('modal-quiz-quit').addEventListener('click', () => {
                     stopMapTimer();
                     modal.hidden = true;
@@ -3186,16 +3342,15 @@ function initMap() {
         btn.addEventListener('click', () => {
             if (!currentModalLevel) return;
             const stars = parseInt(btn.dataset.stars, 10);
-            const res = unlockNextAndSave(stars);
+            unlockNextAndSave(stars, null, { skipRewards: true });
             modal.hidden = true;
-            if (res.isFirstSuccess) {
-                showNotification(`✓ Progression sauvegardée (+${res.xpGained} XP, +${res.coinsGained} pièces)`);
-            }
+            showNotification('Progression sauvegardée.');
         });
     });
 
     const closeBtn = document.getElementById('modal-close');
     if (closeBtn) closeBtn.addEventListener('click', () => {
+        commitPendingMapVictoryIfNeeded();
         stopMapTimer();
         modal.hidden = true;
         positionCharacter(findCurrentLevel(progress), true);
@@ -3203,6 +3358,7 @@ function initMap() {
 
     const resetBtn = document.getElementById('reset-progress');
     if (resetBtn) resetBtn.addEventListener('click', () => {
+        if (!confirm('Réinitialiser toute ta progression dans cette matière pour cette classe ?')) return;
         stopMapTimer();
         if (typeof DB !== 'undefined' && typeof DB.clearSubjectAttempts === 'function') {
             DB.clearSubjectAttempts(effectiveSubjectId, niveauActuel);
@@ -3211,14 +3367,16 @@ function initMap() {
         saveProgress(progress);
         modal.hidden = true;
         renderLevels(progress);
+        showNotification('Progression de la matière réinitialisée.');
     });
 
-    // Resynchronisation de la progression lors d'un retour de page (BFCache / bouton Précédent)
-    window.addEventListener('pageshow', () => {
+    // Resynchronisation de la progression uniquement lors d'un retour BFCache
+    window.addEventListener('pageshow', (e) => {
+        if (!e || !e.persisted) return;
         loadProgress().then(loaded => {
             progress = loaded;
             renderLevels(progress);
-        });
+        }).catch(() => {});
     });
 
     const backBtn = document.querySelector('.back-button');
@@ -3266,8 +3424,8 @@ const DASH_SKINS = [
     { id: 'braise',   name: 'Braise Cosmique',  category: 'aura', color: '#f5714f', cost: 170 },
     { id: 'neon',     name: 'Éclair Néon',      category: 'aura', color: '#00ffcc', cost: 250 },
     { id: 'magma',    name: 'Flamboiement Magma', category: 'aura', color: '#ff3300', cost: 300 },
-    // Skins "personnage" — portraits dans la Boutique + habillage CSS sur la carte.
-    { id: 'robot',             name: 'Robot Assistant',    category: 'avatar', color: '#8fb8c9', img: 'Image/personnages/robot.webp',             cost: 0 },
+    // Skins "personnage" — portraits SVG unifiés (Astral & Or) dans la Boutique + habillage CSS sur la carte.
+    { id: 'robot',             name: 'Robot Assistant',    category: 'avatar', color: '#8fb8c9', img: 'Image/personnages/robot.svg',              cost: 0 },
     { id: 'david-martinez',    name: 'David Martinez',     category: 'avatar', color: '#ffea00', img: 'Image/personnages/david-martinez.svg',     cost: 0 },
     { id: 'fall-guys',         name: 'Champion Fall Guys', category: 'avatar', color: '#ff3e9d', img: 'Image/personnages/fall-guys.svg',          cost: 150 },
     { id: 'hope-fortnite',     name: 'Hope (Fortnite)',    category: 'avatar', color: '#2563eb', img: 'Image/personnages/hope-fortnite.svg',      cost: 200 },
@@ -3275,15 +3433,15 @@ const DASH_SKINS = [
     { id: 'helldiver',         name: 'Helldiver',          category: 'avatar', color: '#ffd60a', img: 'Image/personnages/helldiver.svg',          cost: 300 },
     { id: 'space-marine',      name: 'Space Marine',       category: 'avatar', color: '#1d4ed8', img: 'Image/personnages/space-marine.svg',       cost: 350 },
     { id: 'doom-guy',          name: 'Doom Slayer',        category: 'avatar', color: '#4f772d', img: 'Image/personnages/doom-guy.svg',           cost: 400 },
-    { id: 'einstein',          name: 'Albert Einstein',    category: 'avatar', color: '#7fb3d5', img: 'Image/personnages/einstein.webp',          cost: 150 },
-    { id: 'marie-curie',       name: 'Marie Curie',        category: 'avatar', color: '#6bca82', img: 'Image/personnages/marie-curie.webp',       cost: 150 },
-    { id: 'christophe-colomb', name: 'Christophe Colomb',  category: 'avatar', color: '#c8a84b', img: 'Image/personnages/christophe-colomb.webp', cost: 200 },
-    { id: 'lovelace',          name: 'Ada Lovelace',       category: 'avatar', color: '#ff66b2', img: 'Image/personnages/lovelace.webp',          cost: 250 },
-    { id: 'pythagore',         name: 'Pythagore',          category: 'avatar', color: '#ffd166', img: 'Image/personnages/pythagore.webp',         cost: 300 },
-    { id: 'davinci',           name: 'Léonard de Vinci',   category: 'avatar', color: '#a8dadc', img: 'Image/personnages/davinci.webp',           cost: 350 },
-    { id: 'hugo',              name: 'Victor Hugo',        category: 'avatar', color: '#457b9d', img: 'Image/personnages/hugo.webp',              cost: 350 },
-    { id: 'astronaute',        name: 'Astronaute Céleste',  category: 'avatar', color: '#f1faee', img: 'Image/personnages/astronaute.webp',        cost: 400 },
-    { id: 'mage',              name: 'Archimage du Savoir', category: 'avatar', color: '#9d4edd', img: 'Image/personnages/mage.webp',              cost: 500 },
+    { id: 'einstein',          name: 'Albert Einstein',    category: 'avatar', color: '#7fb3d5', img: 'Image/personnages/einstein.svg',           cost: 150 },
+    { id: 'marie-curie',       name: 'Marie Curie',        category: 'avatar', color: '#6bca82', img: 'Image/personnages/marie-curie.svg',        cost: 150 },
+    { id: 'christophe-colomb', name: 'Christophe Colomb',  category: 'avatar', color: '#c8a84b', img: 'Image/personnages/christophe-colomb.svg',  cost: 200 },
+    { id: 'lovelace',          name: 'Ada Lovelace',       category: 'avatar', color: '#ff66b2', img: 'Image/personnages/lovelace.svg',           cost: 250 },
+    { id: 'pythagore',         name: 'Pythagore',          category: 'avatar', color: '#ffd166', img: 'Image/personnages/pythagore.svg',          cost: 300 },
+    { id: 'davinci',           name: 'Léonard de Vinci',   category: 'avatar', color: '#a8dadc', img: 'Image/personnages/davinci.svg',            cost: 350 },
+    { id: 'hugo',              name: 'Victor Hugo',        category: 'avatar', color: '#457b9d', img: 'Image/personnages/hugo.svg',               cost: 350 },
+    { id: 'astronaute',        name: 'Astronaute Céleste',  category: 'avatar', color: '#f1faee', img: 'Image/personnages/astronaute.svg',         cost: 400 },
+    { id: 'mage',              name: 'Archimage du Savoir', category: 'avatar', color: '#9d4edd', img: 'Image/personnages/mage.svg',               cost: 500 },
     { id: 'nikola-tesla',      name: 'Nikola Tesla',        category: 'avatar', color: '#38bdf8', img: 'Image/personnages/nikola-tesla.svg',       cost: 220 },
     { id: 'pasteur',           name: 'Louis Pasteur',       category: 'avatar', color: '#4ade80', img: 'Image/personnages/pasteur.svg',            cost: 220 },
     { id: 'rosalind-franklin', name: 'Rosalind Franklin',   category: 'avatar', color: '#34d399', img: 'Image/personnages/rosalind-franklin.svg',  cost: 240 },
@@ -3297,22 +3455,22 @@ const DASH_SKINS = [
 ];
 
 const RAW_DASH_SUBJECTS = [
-    { id: "maths", name: "Mathématiques", icon: "∑", island: "Image/ile/maths.webp", lessons: [
+    { id: "maths", name: "Mathématiques", icon: "∑", island: "Image/ile/maths.svg", lessons: [
         { title: "Les fractions", q: "Combien font 1/2 + 1/4 ?", opts: ["3/6", "1/6", "3/4", "2/6"], correct: 2, exp: "Au même dénominateur (4) : 2/4 + 1/4 = 3/4." },
         { title: "Le théorème de Pythagore", q: "Dans un triangle rectangle de côtés 3 et 4, quelle est la longueur de l'hypoténuse ?", opts: ["4,5", "7", "6", "5"], correct: 3, exp: "√(3² + 4²) = √25 = 5." },
         { title: "Équations du 1er degré", q: "Résous 2x + 3 = 11. Que vaut x ?", opts: ["3", "5,5", "7", "4"], correct: 3, exp: "2x = 8, donc x = 4." },
         { title: "Les probabilités", q: "On lance un dé à 6 faces. Quelle est la probabilité d'obtenir un nombre pair ?", opts: ["1/2", "1/3", "2/3", "1/6"], correct: 0, exp: "3 issues favorables (2,4,6) sur 6 : 3/6 = 1/2." },
         { type: "drag_and_drop", title: "Calcul mental", q: "Associe chaque opération à son résultat.", items: ["7 × 8", "144 ÷ 12", "9²", "√81"], targets: ["56", "12", "81", "9"], pairs: { "7 × 8": "56", "144 ÷ 12": "12", "9²": "81", "√81": "9" }, exp: "7 × 8 = 56, 144 ÷ 12 = 12, 9² = 81, √81 = 9." },
     ]},
-    { id: "francais", name: "Français", icon: "Aa", island: "Image/ile/francais.webp", lessons: [
+    { id: "francais", name: "Français", icon: "Aa", island: "Image/ile/francais.svg", lessons: [
         { title: "Les classes grammaticales", q: "Dans « Le chat noir dort », quel mot est un adjectif ?", opts: ["noir", "le", "chat", "dort"], correct: 0, exp: "« Noir » qualifie le nom « chat »." },
         { title: "Le conditionnel", q: "Quelle est la terminaison du conditionnel présent à la 1ère personne du singulier pour « aimer » ?", opts: ["aimerais", "aimais", "aimerai", "aime"], correct: 0, exp: "Radical du futur + terminaisons de l'imparfait : j'aimerais." },
         { title: "Les figures de style", q: "« Il pleut des cordes » est une :", opts: ["comparaison", "anaphore", "métaphore", "litote"], correct: 2, exp: "L'image remplace directement la réalité, sans outil de comparaison : c'est une métaphore." },
         { type: "texte_a_choix", title: "L'argumentation", q: "Complète la phrase avec les connecteurs logiques appropriés.", textWithBlanks: "Il pleuvait des cordes, ___ nous sommes sortis ___ nous avions promis d'aider Marc.", choices: [["mais", "donc", "ainsi", "alors"], ["car", "pourtant", "cependant", "en effet"]], blanks: [["mais"], ["car"]], exp: "« Mais » marque l'opposition et « car » introduit la cause." },
         { type: "texte_a_trous", title: "Accord du participe passé", q: "Complète la règle.", textWithBlanks: "Avec l'auxiliaire être, le participe passé s'accorde avec le ___ ; avec avoir, il ne s'accorde en général pas avec le ___.", blanks: [["sujet"], ["sujet"]], distractors: ["verbe", "complément", "adjectif"], exp: "Être → accord avec le sujet ; avoir → pas d'accord avec le sujet (sauf COD placé avant, hors programme ici)." },
     ]},
-    { id: "physique", name: "Physique", icon: "⚛", island: "Image/ile/physique.webp", lessons: [
-        { title: "Les états de la matière", q: "Comment appelle-t-on le passage direct de l'état solide à l'état gazeux ?", opts: ["condensation", "fusion", "évaporation", "sublimation"], correct: 3, exp: "La sublimation évite l'étape liquide." },
+    { id: "physique", name: "Physique", icon: "⚛", island: "Image/ile/physique.svg", lessons: [
+        { title: "Changements d'état", q: "À pression atmosphérique normale, à quelle température l'eau pure bout-elle ?", opts: ["0 °C", "50 °C", "100 °C", "120 °C"], correct: 2, exp: "À pression atmosphérique normale (1 013 hPa), l'eau pure bout à 100 °C et gèle à 0 °C." },
         { title: "La tension électrique", q: "Quelle unité mesure la tension électrique ?", opts: ["le volt", "l'ohm", "le watt", "l'ampère"], correct: 0, exp: "Le volt (V) mesure la tension." },
         { title: "Les atomes", q: "Combien de protons possède un atome d'hydrogène ?", opts: ["0", "2", "1", "8"], correct: 2, exp: "L'hydrogène a le numéro atomique 1." },
         { title: "Les mélanges", q: "L'eau salée est un exemple de :", opts: ["mélange homogène", "solide", "corps pur", "mélange hétérogène"], correct: 0, exp: "Le sel est totalement dissous : on ne distingue plus les constituants." },
@@ -3325,28 +3483,28 @@ const RAW_DASH_SUBJECTS = [
         { type: "texte_a_choix", title: "La neutralisation", q: "Complète le bilan de la réaction.", textWithBlanks: "La réaction entre un acide et une base produit un ___ et de l'___.", choices: [["sel", "gaz", "métal", "précipité"], ["eau", "alcool", "huile", "air"]], blanks: [["sel"], ["eau"]], exp: "Acide + Base → Sel + Eau : c'est la réaction de neutralisation acido-basique." },
         { type: "texte_a_trous", title: "La molécule d'eau", q: "Complète la formule de la molécule d'eau.", textWithBlanks: "La formule de l'eau est ___₂___ : deux atomes d'hydrogène pour un atome d'oxygène.", blanks: [["H"], ["O"]], distractors: ["C", "N", "Fe"], exp: "H₂O : deux hydrogènes (H) et un oxygène (O)." },
     ]},
-    { id: "svt", name: "SVT", icon: "❦", island: "Image/ile/svt.webp", lessons: [
+    { id: "svt", name: "SVT", icon: "❦", island: "Image/ile/svt.svg", lessons: [
         { title: "La photosynthèse", q: "Quel gaz les plantes absorbent-elles lors de la photosynthèse ?", opts: ["le CO₂", "l'O₂", "l'hydrogène", "l'azote"], correct: 0, exp: "Le CO₂ est transformé en matière organique grâce à la lumière." },
         { title: "Le système digestif", q: "Où débute la digestion des glucides ?", opts: ["dans la bouche", "dans l'estomac", "dans le foie", "dans l'intestin grêle"], correct: 0, exp: "La salive contient une enzyme qui amorce la digestion de l'amidon." },
         { title: "La génétique", q: "L'ADN se trouve principalement dans :", opts: ["le cytoplasme", "la membrane", "le noyau de la cellule", "les ribosomes"], correct: 2, exp: "Le noyau protège et organise le matériel génétique." },
         { title: "Les écosystèmes", q: "Un organisme qui se nourrit exclusivement de végétaux est un :", opts: ["décomposeur", "carnivore", "herbivore", "omnivore"], correct: 2, exp: "Par définition, un herbivore ne consomme que des végétaux." },
         { type: "reponse_courte", title: "Le cœur", q: "Combien de cavités possède le cœur humain ?", accepted: ["4", "quatre"], exp: "Le cœur a 4 cavités : 2 oreillettes et 2 ventricules." },
     ]},
-    { id: "techno", name: "Technologie", icon: "⚙", band: "college", allowedNiveaux: ["6eme", "5eme", "4eme", "3eme"], island: "Image/ile/technologie.webp", lessons: [
+    { id: "techno", name: "Technologie", icon: "⚙", band: "college", allowedNiveaux: ["6eme", "5eme", "4eme", "3eme"], island: "Image/ile/technologie.svg", lessons: [
         { type: "texte_a_choix", title: "Les algorithmes", q: "Choisis les bons termes pour compléter la définition.", textWithBlanks: "Pour répéter des instructions tant qu'une condition est vraie, on utilise une boucle ___, et pour faire un choix, une condition ___.", choices: [["tant que", "pour", "infinie"], ["si", "sinon", "alors"]], blanks: [["tant que"], ["si"]], exp: "« Tant que » (while) et « si » (if) sont des structures fondamentales en programmation." },
         { title: "Les capteurs", q: "Un capteur de température mesure :", opts: ["la pression", "la chaleur ambiante", "le son", "la lumière"], correct: 1, exp: "C'est sa fonction première : convertir une température en signal exploitable." },
         { title: "Les matériaux", q: "Le PLA est un matériau souvent utilisé en :", opts: ["chauffage", "soudure", "impression 3D", "isolation électrique"], correct: 2, exp: "Le PLA est un plastique biodégradable très utilisé en fabrication additive." },
         { title: "Les réseaux", q: "Le Wi-Fi fait référence à :", opts: ["un câble réseau", "un type de processeur", "une connexion sans fil", "un logiciel"], correct: 2, exp: "Le Wi-Fi permet une connexion réseau sans câble." },
         { type: "drag_and_drop", title: "Composants électroniques", q: "Associe chaque composant à son rôle.", items: ["Résistance", "LED", "Capteur"], targets: ["Limite le courant", "Émet de la lumière", "Mesure une grandeur physique"], pairs: { "Résistance": "Limite le courant", LED: "Émet de la lumière", Capteur: "Mesure une grandeur physique" }, exp: "Chaque composant a une fonction précise dans un circuit." },
     ]},
-    { id: "anglais", name: "Anglais", icon: "En", island: "Image/ile/anglais.webp", lessons: [
+    { id: "anglais", name: "Anglais", icon: "En", island: "Image/ile/anglais.svg", lessons: [
         { title: "Present Perfect", q: "Choose the correct form: 'I ___ never been to London.'", opts: ["have", "having", "has", "had"], correct: 0, exp: "Subject 'I' + present perfect → 'have never been'." },
         { title: "Vocabulaire du quotidien", q: "What does 'to look forward to' mean?", opts: ["chercher quelque chose", "attendre avec impatience", "regarder devant soi", "avancer"], correct: 1, exp: "Cette expression exprime une attente positive d'un événement." },
         { title: "Comparatives", q: "'This book is ___ than the other one.'", opts: ["interesting", "more interesting", "most interesting", "interestinger"], correct: 1, exp: "Les adjectifs longs forment leur comparatif avec 'more'." },
         { title: "Modal verbs", q: "Which modal expresses obligation?", opts: ["must", "could", "would", "might"], correct: 0, exp: "'Must' exprime une obligation forte." },
         { type: "texte_a_trous", title: "Simple past", q: "Complète la phrase.", textWithBlanks: "Yesterday, she ___ (go) to the cinema and ___ (watch) a great film.", blanks: [["went"], ["watched"]], distractors: ["gone", "goes", "watches", "watching"], exp: "'Go' est irrégulier (went) ; 'watch' est régulier (+ed)." },
     ]},
-    { id: "histoire", name: "Histoire", icon: "⌂", island: "Image/ile/histoire.webp", lessons: [
+    { id: "histoire", name: "Histoire", icon: "⌂", island: "Image/ile/histoire.svg", lessons: [
         { title: "La Révolution française", q: "En quelle année la Révolution française a-t-elle débuté ?", opts: ["1804", "1715", "1848", "1789"], correct: 3, exp: "La prise de la Bastille a lieu le 14 juillet 1789." },
         { title: "La Première Guerre mondiale", q: "La Première Guerre mondiale se termine en :", opts: ["1920", "1918", "1945", "1914"], correct: 1, exp: "L'armistice est signé le 11 novembre 1918." },
         { title: "L'Empire romain", q: "Quelle ville était la capitale de l'Empire romain ?", opts: ["Carthage", "Byzance", "Rome", "Athènes"], correct: 2, exp: "Rome est le centre politique de l'Empire jusqu'à sa scission." },
@@ -3374,14 +3532,14 @@ const RAW_DASH_SUBJECTS = [
         { type: "vrai_faux", title: "L'éthique et la morale", q: "Pour Emmanuel Kant, un acte moral doit être guidé par le devoir et l'impératif catégorique, sans rechercher son propre intérêt.", correct: true, exp: "Vrai : la morale déontologique kantienne repose sur le devoir désintéressé." },
         { type: "texte_a_trous", title: "Le contrat social", q: "Complète la citation de Jean-Jacques Rousseau.", textWithBlanks: "L'homme est né ___ et partout il est dans les ___.", blanks: [["libre"], ["fers"]], distractors: ["seul", "sage", "liens", "chaînes"], exp: "« L'homme est né libre et partout il est dans les fers » (Du contrat social, 1762)." },
     ]},
-    { id: "nsi", name: "NSI & Numérique", icon: "Image/ile/nsi.svg", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["generale", "nsi_spe", "sti2d", "ciel"], island: "Image/ile/nsi.svg", lessons: [
+    { id: "nsi", name: "NSI & Numérique", icon: "💻", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["generale", "nsi_spe", "sti2d", "ciel"], island: "Image/ile/nsi.svg", lessons: [
         { title: "Binaire et Bits", q: "Quelle est la valeur décimale de l'octet binaire 00001010 ?", opts: ["8", "10", "12", "16"], correct: 1, exp: "En binaire : 8 + 2 = 10 (positions 2³ et 2¹)." },
         { title: "Algorithmique Python", q: "En Python, que renvoie l'expression [x * 2 for x in [1, 2, 3]] ?", opts: ["[1, 2, 3]", "[2, 4, 6]", "[2, 2, 2]", "Error"], correct: 1, exp: "C'est une compréhension de liste qui multiplie chaque élément par 2 : [2, 4, 6]." },
         { type: "vrai_faux", title: "Complexité algorithmique", q: "La recherche dichotomique dans un tableau trié de taille N a une complexité logarithmique O(log N).", correct: true, exp: "Vrai : à chaque étape, on divise par deux l'espace de recherche." },
         { type: "texte_a_trous", title: "Architecture Web", q: "Complète le rôle des langages du Web.", textWithBlanks: "Le langage ___ structure le contenu d'une page, le langage ___ gère sa présentation visuelle et ___ assure son interactivité dynamique.", blanks: [["HTML"], ["CSS"], ["JavaScript"]], distractors: ["SQL", "Python", "PHP"], exp: "Le trio fondamental du front-end est HTML (structure), CSS (style) et JavaScript (interactivité)." },
         { type: "drag_and_drop", title: "Réseaux & Protocoles", q: "Associe chaque protocole à son usage.", items: ["HTTP / HTTPS", "DNS", "SSH"], targets: ["Transfert de pages Web", "Résolution nom de domaine en IP", "Connexion à distance sécurisée"], pairs: { "HTTP / HTTPS": "Transfert de pages Web", "DNS": "Résolution nom de domaine en IP", "SSH": "Connexion à distance sécurisée" }, exp: "Ces protocoles fondamentaux structurent les communications sur Internet." },
     ]},
-    { id: "ses", name: "SES (Économie)", icon: "Image/ile/ses.svg", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale"], allowedFilieres: ["generale"], island: "Image/ile/ses.svg", lessons: [
+    { id: "ses", name: "SES (Économie)", icon: "📊", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale"], allowedFilieres: ["generale"], island: "Image/ile/ses.svg", lessons: [
         { title: "Le marché et les prix", q: "Selon la loi de l'offre et de la demande, lorsque la demande d'un bien augmente sans que l'offre ne change, son prix :", opts: ["diminue", "tend à augmenter", "reste toujours fixe", "devient nul"], correct: 1, exp: "La rareté relative entraîne une hausse du prix d'équilibre." },
         { title: "La création monétaire", q: "Qui crée la majeure partie de la monnaie en circulation dans une économie moderne ?", opts: ["L'État par l'impôt", "Les banques commerciales lors de l'octroi de crédits", "La banque centrale par impression de billets", "Les entreprises industrielles"], correct: 1, exp: "« Les crédits font les dépôts » : les banques commerciales créent la monnaie scripturale lors d'un prêt." },
         { type: "vrai_faux", title: "Le PIB et la croissance", q: "Le Produit Intérieur Brut (PIB) mesure la richesse totale des patrimoines des ménages.", correct: false, exp: "Faux : le PIB mesure le flux de valeur ajoutée créée sur une période donnée (un an), pas le stock de patrimoine." },
@@ -3612,7 +3770,7 @@ function getEffectiveSubjects(niveau, filiere) {
 
     const canExtend = typeof QuestionBank !== 'undefined' && typeof QuestionBank.extend === 'function';
     const extended = filtered.map(s => {
-        const out = (s._custom || !canExtend) ? s : QuestionBank.extend(s, 100, currentNiv);
+        const out = (s._custom || !canExtend) ? { ...s } : QuestionBank.extend(s, 100, currentNiv);
         out._isSpecialty = isFiliereUsed
             && typeof AdminStore !== 'undefined'
             && typeof AdminStore.isSubjectSpecialtyForFiliere === 'function'
@@ -3621,6 +3779,10 @@ function getEffectiveSubjects(niveau, filiere) {
     });
 
     if (!hasAdminCustom) {
+        if (_effectiveSubjectsCache.size >= 18) {
+            const oldestKey = _effectiveSubjectsCache.keys().next().value;
+            if (oldestKey !== undefined) _effectiveSubjectsCache.delete(oldestKey);
+        }
         _effectiveSubjectsCache.set(cacheKey, extended);
     }
     return extended;
@@ -3636,16 +3798,16 @@ function ensureSubjectsLoaded(niveauOverride, filiereOverride) {
 }
 
 const SUBJECT_TO_MATIERE = {
-    maths:         { name: 'Mathématiques',          icon: 'maths.webp' },
-    francais:      { name: 'Français',               icon: 'francais.webp' },
-    histoire:      { name: 'Histoire',               icon: 'histoire.webp' },
+    maths:         { name: 'Mathématiques',          icon: 'maths.svg' },
+    francais:      { name: 'Français',               icon: 'francais.svg' },
+    histoire:      { name: 'Histoire',               icon: 'histoire.svg' },
     geo:           { name: 'Géographie',             icon: 'geo.svg' },
-    svt:           { name: 'SVT',                    icon: 'svt.webp' },
-    anglais:       { name: 'Anglais',                icon: 'anglais.webp' },
+    svt:           { name: 'SVT',                    icon: 'svt.svg' },
+    anglais:       { name: 'Anglais',                icon: 'anglais.svg' },
     espagnol:      { name: 'Espagnol',               icon: 'espagnol.svg' },
-    physique:      { name: 'Physique',               icon: 'physique.webp' },
+    physique:      { name: 'Physique',               icon: 'physique.svg' },
     chimie:        { name: 'Chimie',                 icon: 'chimie.svg' },
-    techno:        { name: 'Technologie',            icon: 'technologie.webp' },
+    techno:        { name: 'Technologie',            icon: 'technologie.svg' },
     arts:          { name: 'Arts & Musique',         icon: 'arts.svg' },
     philo:         { name: 'Philosophie',            icon: 'philo.svg' },
     emc:           { name: 'EMC',                    icon: 'emc.svg' },
@@ -3675,23 +3837,22 @@ const SUBJECT_TO_MATIERE = {
 };
 
 /**
- * Résout l'illustration de l'île flottante pour une matière (DASH_SUBJECTS).
- * Priorité : image personnalisée, island SVG/WebP du projet, ou fallback null.
+ * Résout l'illustration de l'île flottante SVG pour une matière (DASH_SUBJECTS).
+ * Priorité : image personnalisée sûre, icône fichier si surchargée, island SVG, ou null.
  */
 function getSubjectIslandSrc(subject) {
     if (!subject) return null;
-    if (subject.image) return subject.image;
-    if (subject.island) return subject.island;
+    if (subject.image && isSafeAvatarImgSrc(subject.image)) return subject.image;
 
     const iconStr = typeof subject.icon === 'string' ? subject.icon.trim() : '';
-    if (iconStr && (iconStr.startsWith('http://') || iconStr.startsWith('https://') || iconStr.startsWith('data:') || /\.(png|webp|svg|jpg|jpeg)$/i.test(iconStr))) {
-        if (iconStr.startsWith('http') || iconStr.startsWith('data:') || iconStr.startsWith('/') || iconStr.startsWith('Image/')) {
-            return iconStr;
-        }
+    if (iconStr && (isSafeAvatarImgSrc(iconStr) || /^[a-z0-9._-]+\.(png|webp|svg|jpg|jpeg)$/i.test(iconStr))) {
+        if (isSafeAvatarImgSrc(iconStr)) return iconStr;
         return 'Image/ile/' + iconStr;
     }
 
     if (subject._iconOverridden) return null;
+
+    if (subject.island && isSafeAvatarImgSrc(subject.island)) return subject.island;
 
     const mapping = SUBJECT_TO_MATIERE[subject.id];
     if (mapping && mapping.icon && /\.(png|webp|svg)$/i.test(mapping.icon)) {
@@ -3913,7 +4074,7 @@ function checkBadges(extra = {}) {
                 pass = ownedSkins.length >= 20;
                 break;
             case 'fashion_victim':
-                pass = (equippedAura && equippedAura !== 'aurore') || ownedSkins.length >= 3 || !!extra.auraEquipped || !!extra.boughtSkin;
+                pass = (equippedAura && equippedAura !== 'aurore') || !!extra.auraEquipped;
                 break;
             case 'theme_custom':
                 pass = (theme && theme !== 'default') || (extra.theme && extra.theme !== 'default') || !!extra.themeEquipped;
@@ -3972,8 +4133,10 @@ function checkBadges(extra = {}) {
                 pass = (completedPerSubject['histoire'] || 0) >= 5;
                 break;
             case 'sciences_fan':
-            case 'maitre_chimie':
                 pass = (completedPerSubject['svt'] || 0) >= 5 || (completedPerSubject['physique'] || 0) >= 5 || (completedPerSubject['chimie'] || 0) >= 5;
+                break;
+            case 'maitre_chimie':
+                pass = (completedPerSubject['chimie'] || 0) >= 5;
                 break;
             case 'philo_fan':
             case 'maitre_philo':
@@ -4107,14 +4270,14 @@ function checkBadges(extra = {}) {
             else if (cond === 'questClaimed' && !!extra.questClaimed) pass = true;
             else if (cond === 'dailyChestOpened' && !!extra.dailyChestOpened) pass = true;
             else if (cond === 'justAnsweredFirstTry' && (!!extra.justAnsweredFirstTry || extra.starsEarned === 3)) pass = true;
-            else if (cond === 'auraEquipped' && ((equippedAura && equippedAura !== 'aurore') || !!extra.auraEquipped || !!extra.boughtSkin)) pass = true;
+            else if (cond === 'auraEquipped' && ((equippedAura && equippedAura !== 'aurore') || !!extra.auraEquipped)) pass = true;
             else if (cond === 'themeEquipped' && ((theme && theme !== 'default') || (extra.theme && extra.theme !== 'default') || !!extra.themeEquipped)) pass = true;
             else if (cond === 'titleEquipped' && (Boolean(equippedTitle) || !!extra.titleEquipped)) pass = true;
             else if (cond === 'allSubjectsStarted' && allSubjectsStartedNow) pass = true;
             else if (cond === 'oneSubjectAdvanced' && oneSubjectAdvancedNow) pass = true;
             else {
                 if (!genericCtx) {
-                    genericCtx = {
+                    genericCtx = Object.assign(Object.create(null), {
                         totalCompleted,
                         threeStarCount,
                         xp,
@@ -4125,6 +4288,7 @@ function checkBadges(extra = {}) {
                         francaisLevel: completedPerSubject['francais'] || 0,
                         histoireLevel: completedPerSubject['histoire'] || 0,
                         geoLevel: completedPerSubject['geo'] || 0,
+                        chimieLevel: completedPerSubject['chimie'] || 0,
                         scienceLevel: Math.max(completedPerSubject['svt'] || 0, completedPerSubject['physique'] || 0, completedPerSubject['chimie'] || 0),
                         sciencesSpeLevel: Math.max(completedPerSubject['maths'] || 0, completedPerSubject['physique'] || 0, completedPerSubject['chimie'] || 0, completedPerSubject['svt'] || 0),
                         philoLevel: completedPerSubject['philo'] || 0,
@@ -4162,22 +4326,22 @@ function checkBadges(extra = {}) {
                         comptabiliteLevel: completedPerSubject['comptabilite'] || 0,
                         electrotechLevel: completedPerSubject['electrotech'] || 0,
                         hasBooster: hasAnyBooster ? 1 : 0,
-                        usedDoubleXp: (extra.usedDoubleXp || extra.usedBooster === 'boost-xp') ? 1 : 0,
-                        usedDoubleCoins: (extra.usedDoubleCoins || extra.usedBooster === 'boost-coins') ? 1 : 0,
-                        usedShield: (extra.usedShield || extra.usedBooster === 'boost-shield') ? 1 : 0,
+                        usedDoubleXp: (extra.usedDoubleXp || extra.usedBooster === 'boost-xp' || ((boostersHistory.used && boostersHistory.used['boost-xp']) > 0)) ? 1 : 0,
+                        usedDoubleCoins: (extra.usedDoubleCoins || extra.usedBooster === 'boost-coins' || ((boostersHistory.used && boostersHistory.used['boost-coins']) > 0)) ? 1 : 0,
+                        usedShield: (extra.usedShield || extra.usedBooster === 'boost-shield' || ((boostersHistory.used && boostersHistory.used['boost-shield']) > 0)) ? 1 : 0,
                         streakCount: (typeof extra.streakCount === 'number') ? extra.streakCount : streakCountNow,
                         comboCount: (typeof extra.comboCount === 'number') ? extra.comboCount : comboCountNow,
                         maxCombo: (typeof extra.maxCombo === 'number') ? extra.maxCombo : maxComboNow,
                         totalScore: totalScoreNow,
-                    };
+                    });
                     // Supporte aussi toute matière personnalisée via <subjectId>Level
                     Object.keys(completedPerSubject).forEach(sid => {
                         const k = sid + 'Level';
-                        if (!(k in genericCtx)) genericCtx[k] = completedPerSubject[sid] || 0;
+                        if (!Object.prototype.hasOwnProperty.call(genericCtx, k)) genericCtx[k] = completedPerSubject[sid] || 0;
                     });
                 }
                 const m = cond.match(/^([a-zA-Z0-9_]+)\s*(>=|<=|>|<|===|==)\s*([0-9]+)$/);
-                if (m) {
+                if (m && Object.prototype.hasOwnProperty.call(genericCtx, m[1])) {
                     const varVal = genericCtx[m[1]] ?? 0;
                     const op = m[2];
                     const num = parseInt(m[3], 10);
@@ -4192,7 +4356,6 @@ function checkBadges(extra = {}) {
 
         if (pass) {
             DB.unlockBadge(b.id);
-            unlockedIds.push(b.id);
             unlockedSet.add(b.id);
             newlyUnlocked.push(b);
         }
@@ -4376,7 +4539,7 @@ function initDashboard() {
 
     function renderHeader() {
         const user = DB.getCurrentUser();
-        const greeting = user ? `<span class="dash-user-greeting">Salut, ${escapeHtml(user.username)} 👋</span>` : '';
+        const greeting = user ? `<span class="dash-user-greeting">Salut, ${escapeHtml(user.username)} ${eqIcon('wave', 15, 'gold')}</span>` : '';
 
         // --- Sélecteur de classe (6ème → Terminale + BTS) ---
         const niveaux = (window.AdminStore && typeof AdminStore.getNiveauxScolaires === 'function')
@@ -4445,8 +4608,12 @@ function initDashboard() {
     function renderHud() {
         const pct = xpInLevel();
         const equippedTitleObj = state.equippedTitle ? getShopCatalog().find(x => x.id === state.equippedTitle) : null;
+        const titleColor = equippedTitleObj ? safeHexColor(equippedTitleObj.color, '#ffd166') : '#ffd166';
+        const titleIconName = (equippedTitleObj && typeof window !== 'undefined' && window.EduIcons)
+            ? window.EduIcons.iconFromLabel(equippedTitleObj.name, 'tag')
+            : 'tag';
         const titleBadge = equippedTitleObj
-            ? `<span class="dash-hud-title-badge" style="color:${equippedTitleObj.color}; border: 1px solid ${equippedTitleObj.color}44; background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 6px;">${escapeHtml(equippedTitleObj.name)}</span>`
+            ? `<span class="dash-hud-title-badge" style="color:${titleColor}; border: 1px solid ${titleColor}44; background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 6px;">${eqIcon(titleIconName, 12)} ${escapeHtml(eqStripEmoji(equippedTitleObj.name))}</span>`
             : '';
 
         const streakData = (typeof DB !== 'undefined' && DB.getStreakData) ? DB.getStreakData() : { count: 0, combo: 0 };
@@ -4454,14 +4621,14 @@ function initDashboard() {
 
         const hudAvatarImg = skinImage(state.equippedAvatar);
         return `<div class="dash-hud">
-            <div class="dash-avatar" style="--dash-skin:${escapeHtml(skinColor(state.equippedAura))}">${hudAvatarImg ? `<img src="${escapeHtml(hudAvatarImg)}" alt="Avatar" decoding="async">` : `N${level()}`}</div>
+            <div class="dash-avatar" style="--dash-skin:${safeHexColor(skinColor(state.equippedAura), '#4fd8c4')}">${hudAvatarImg ? `<img src="${escapeHtml(hudAvatarImg)}" alt="Avatar" decoding="async">` : `N${level()}`}</div>
             <div class="dash-hud-mid">
                 <div class="dash-hud-level">Niveau ${level()} <span class="mono">· ${pct}/100 XP</span> ${titleBadge}</div>
                 <div class="dash-xp-track"><div class="dash-xp-fill" style="width:${pct}%"></div></div>
             </div>
             <div class="dash-hud-right">
                 ${statsPillsHtml}
-                <div class="dash-coins" title="Pièces d'or disponibles en boutique"><span class="dash-coin-dot"></span>${state.coins}</div>
+                <div class="dash-coins" title="Pièces d'or disponibles en boutique">${eqIcon('coin', 15, 'gold')}<span>${state.coins}</span></div>
             </div>
         </div>`;
     }
@@ -4490,42 +4657,42 @@ function initDashboard() {
         return `
         <!-- Onglets bureau classiques -->
         <nav class="dash-tabs" aria-label="Navigation principale">
-            <button class="dash-tab ${state.view === 'dashboard' || state.view === 'map' ? 'active' : ''}" onclick="window._dashGoDashboard()">🏝️ Matières</button>
-            ${showShop ? `<button class="dash-tab ${state.view === 'shop' ? 'active' : ''}" onclick="window._dashGoShop()">🛍️ Boutique</button>` : ''}
-            ${showBadges ? `<button class="dash-tab ${state.view === 'badges' ? 'active' : ''}" onclick="window._dashGoBadges()">🏆 Succès (${myUnlockedCount}/${myCatalog.length})</button>` : ''}
+            <button type="button" class="dash-tab ${state.view === 'dashboard' || state.view === 'map' ? 'active' : ''}" onclick="window._dashGoDashboard()">${eqIcon('island', 16, 'gold')} Matières</button>
+            ${showShop ? `<button type="button" class="dash-tab ${state.view === 'shop' ? 'active' : ''}" onclick="window._dashGoShop()">${eqIcon('shop', 16, 'gold')} Boutique</button>` : ''}
+            ${showBadges ? `<button type="button" class="dash-tab ${state.view === 'badges' ? 'active' : ''}" onclick="window._dashGoBadges()">${eqIcon('trophy', 16, 'gold')} Succès (${myUnlockedCount}/${myCatalog.length})</button>` : ''}
         </nav>
 
         <!-- Barre de navigation inférieure ergonomique et repliable pour mobile -->
-        <nav class="dash-bottom-nav ${navHidden ? 'is-collapsed' : ''}" aria-label="Navigation mobile" ${navHidden ? 'aria-hidden="true"' : ''}>
+        <nav class="dash-bottom-nav ${navHidden ? 'is-collapsed' : ''}" aria-label="Navigation mobile" ${navHidden ? 'aria-hidden="true" inert' : ''}>
             <button type="button" class="dash-bnav-item ${state.view === 'dashboard' || state.view === 'map' ? 'active' : ''}" onclick="window._dashGoDashboard()" aria-label="Matières">
-                <span class="dash-bnav-icon">🏝️</span>
+                <span class="dash-bnav-icon">${eqIcon('island', 20)}</span>
                 <span class="dash-bnav-label">Matières</span>
             </button>
             ${showShop ? `<button type="button" class="dash-bnav-item ${state.view === 'shop' ? 'active' : ''}" onclick="window._dashGoShop()" aria-label="Boutique">
-                <span class="dash-bnav-icon">🛍️</span>
+                <span class="dash-bnav-icon">${eqIcon('shop', 20)}</span>
                 <span class="dash-bnav-label">Boutique</span>
             </button>` : ''}
             ${showBadges ? `<button type="button" class="dash-bnav-item ${state.view === 'badges' ? 'active' : ''}" onclick="window._dashGoBadges()" aria-label="Succès">
                 <span class="dash-bnav-icon">
-                    🏆
+                    ${eqIcon('trophy', 20)}
                     <span class="dash-bnav-badge">${myUnlockedCount}</span>
                 </span>
                 <span class="dash-bnav-label">Succès</span>
             </button>` : ''}
             <a class="dash-bnav-item" href="index.html#options" aria-label="Options">
-                <span class="dash-bnav-icon">⚙️</span>
+                <span class="dash-bnav-icon">${eqIcon('settings', 20)}</span>
                 <span class="dash-bnav-label">Options</span>
             </a>
             <a class="dash-bnav-item" href="index.html" aria-label="Accueil">
-                <span class="dash-bnav-icon">🏠</span>
+                <span class="dash-bnav-icon">${eqIcon('home', 20)}</span>
                 <span class="dash-bnav-label">Accueil</span>
             </a>
             <button type="button" class="dash-bnav-item dash-bnav-close-btn" onclick="window._dashToggleBottomNav(true)" aria-label="Fermer le bandeau du bas" title="Fermer la barre du bas">
-                <span class="dash-bnav-icon">✕</span>
+                <span class="dash-bnav-icon">${eqIcon('close', 18)}</span>
                 <span class="dash-bnav-label">Fermer</span>
             </button>
         </nav>
-        ${navHidden ? `<button type="button" class="dash-bnav-reopen-btn" onclick="window._dashToggleBottomNav(false)" aria-label="Afficher le menu du bas">☰ Menu</button>` : ''}`;
+        ${navHidden ? `<button type="button" class="dash-bnav-reopen-btn" onclick="window._dashToggleBottomNav(false)" aria-label="Afficher le menu du bas">${eqIcon('menu', 16, 'gold')} Menu</button>` : ''}`;
     }
 
     /** Vue "Succès" : filtrée par filière/classe par défaut, avec bouton « Tout voir » et tri complet. */
@@ -4642,23 +4809,28 @@ function initDashboard() {
         const cards = list.map(item => {
             const { badge, unlocked, mine, specific, scopeLbl } = item;
             const isGlobalScope = !specific;
+            const scopeIconName = (typeof window !== 'undefined' && window.EduIcons)
+                ? window.EduIcons.iconFromLabel(scopeLbl, isGlobalScope ? 'globe' : 'compass')
+                : 'globe';
             return `<div class="dash-skin-card dash-badge-card ${unlocked ? 'is-unlocked' : 'locked'} ${!mine ? 'is-other-filiere' : ''}">
-                <span class="dash-badge-scope-pill ${isGlobalScope ? 'is-global' : ''}">${escapeHtml(scopeLbl)}</span>
-                <div class="dash-badge-icon">${unlocked ? badge.icon : '🔒'}</div>
+                <span class="dash-badge-scope-pill ${isGlobalScope ? 'is-global' : ''}">${eqIcon(scopeIconName, 12)} ${escapeHtml(eqStripEmoji(scopeLbl))}</span>
+                <div class="dash-badge-icon">${unlocked ? eqEmoji(badge.icon, 30, 'gold') : eqIcon('lock', 26, 'muted')}</div>
                 <div class="dash-skin-name">${escapeHtml(badge.name)}</div>
                 <div class="dash-badge-desc">${escapeHtml(badge.desc)}</div>
                 <div class="dash-badge-status" style="margin-top:auto; padding-top:8px; font-size:0.75rem; font-weight:700; color:${unlocked ? '#4ade80' : '#8fa1d0'};">
-                    ${unlocked ? '✓ DÉBLOQUÉ' : '🔒 VERROUILLÉ'}
+                    ${unlocked ? `${eqIcon('check', 13, 'emerald')} DÉBLOQUÉ` : `${eqIcon('lock', 13, 'muted')} VERROUILLÉ`}
                 </div>
             </div>`;
         }).join('');
 
         const hiddenCount = Math.max(0, catalog.length - myTrackCount);
+        const trackIconSvg = filObj ? eqEmoji(filObj.icon || 'compass', 14, 'cyan') : eqIcon('school', 14, 'gold');
+        const trackTextClean = filObj ? (filObj.shortLabel || filObj.label) : nivLabel;
 
         return `<section class="dash-section">
             <div class="dash-badges-head">
                 <div>
-                    <div class="dash-eyebrow">Succès · ${escapeHtml(trackLabel)}</div>
+                    <div class="dash-eyebrow">Succès · ${trackIconSvg} ${escapeHtml(trackTextClean)}</div>
                     <h2 class="dash-section-title">Tes accomplissements (${filFilter === 'all' ? `${globalUnlockedCount}/${catalog.length}` : `${myUnlockedCount}/${myTrackCount}`})</h2>
                     <div class="dash-badges-subtitle">
                         ${filFilter === 'mine'
@@ -4667,15 +4839,15 @@ function initDashboard() {
                     </div>
                 </div>
                 <button type="button" class="dash-badge-filter-btn show-all-btn ${filFilter === 'all' ? 'active' : ''}" id="dashBadgesToggleAllBtn" onclick="window._dashToggleBadgesShowAll(${filFilter === 'all' ? 'false' : 'true'})">
-                    ${filFilter === 'all' ? `🎯 Filtrer sur ma filière (${myTrackCount})` : `👁️ Tout voir (${catalog.length})`}
+                    ${filFilter === 'all' ? `${eqIcon('target', 15, 'cyan')} Filtrer sur ma filière (${myTrackCount})` : `${eqIcon('eye', 15, 'gold')} Tout voir (${catalog.length})`}
                 </button>
             </div>
 
             <div class="dash-badges-toolbar">
                 <div class="dash-badges-modes">
                     <button type="button" class="dash-badge-filter-btn ${statusFilter === 'all' ? 'active' : ''}" onclick="window._dashSetBadgeStatusFilter('all')">Tous</button>
-                    <button type="button" class="dash-badge-filter-btn ${statusFilter === 'unlocked' ? 'active' : ''}" onclick="window._dashSetBadgeStatusFilter('unlocked')">✓ Débloqués</button>
-                    <button type="button" class="dash-badge-filter-btn ${statusFilter === 'locked' ? 'active' : ''}" onclick="window._dashSetBadgeStatusFilter('locked')">🔒 À débloquer</button>
+                    <button type="button" class="dash-badge-filter-btn ${statusFilter === 'unlocked' ? 'active' : ''}" onclick="window._dashSetBadgeStatusFilter('unlocked')">${eqIcon('check', 14, 'emerald')} Débloqués</button>
+                    <button type="button" class="dash-badge-filter-btn ${statusFilter === 'locked' ? 'active' : ''}" onclick="window._dashSetBadgeStatusFilter('locked')">${eqIcon('lock', 14, 'muted')} À débloquer</button>
                 </div>
                 <div class="dash-badges-controls">
                     <select class="dash-badge-select" id="dashBadgeFiliereSelect" aria-label="Filtrer les succès par filière" onchange="window._dashSetBadgeFiliereFilter(this.value)">
@@ -4692,7 +4864,7 @@ function initDashboard() {
             </div>
 
             <div class="dash-skins-grid">
-                ${cards || `<div class="dash-badges-empty">Aucun succès ne correspond à ce filtre. <br><button type="button" class="dash-badge-filter-btn" style="margin-top:10px;" onclick="window._dashToggleBadgesShowAll(true)">👁️ Afficher tous les succès</button></div>`}
+                ${cards || `<div class="dash-badges-empty">Aucun succès ne correspond à ce filtre. <br><button type="button" class="dash-badge-filter-btn" style="margin-top:10px;" onclick="window._dashToggleBadgesShowAll(true)">${eqIcon('eye', 14, 'gold')} Afficher tous les succès</button></div>`}
             </div>
         </section>`;
     }
@@ -4727,19 +4899,19 @@ function initDashboard() {
             }
             if (done === 0) done = state.progress[s.id] || 0;
 
-            const total = s.lessons.length;
-            const pct = Math.round((done / total) * 100);
+            const total = Array.isArray(s.lessons) ? s.lessons.length : 0;
+            const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
             const islandSrc = getSubjectIslandSrc(s);
             const iconHtml = islandSrc
                 ? `<div class="dash-subject-island-wrap">
                      <img src="${escapeHtml(islandSrc)}" alt="${escapeHtml(s.name)}" class="dash-subject-island" loading="lazy" decoding="async">
                    </div>`
-                : `<div class="dash-subject-icon">${escapeHtml(s.icon || '📘')}</div>`;
+                : `<div class="dash-subject-icon">${eqEmoji(s.icon || 'book', 24, 'gold')}</div>`;
             const specBadge = s._isSpecialty
-                ? `<span class="dash-subject-badge" title="Matière phare de la filière ${escapeHtml(filShort)}">★ ${escapeHtml(filShort || 'Spé')}</span>`
+                ? `<span class="dash-subject-badge" title="Matière phare de la filière ${escapeHtml(filShort)}">${eqIcon('starFilled', 11, 'gold')} ${escapeHtml(filShort || 'Spé')}</span>`
                 : '';
 
-            return `<div class="dash-subject-card ${s._isSpecialty ? 'is-specialty' : ''}" onclick="window._dashOpenMap('${escapeHtml(s.id)}')" tabindex="0" role="button" aria-label="${escapeHtml(s.name)}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window._dashOpenMap('${escapeHtml(s.id)}');}">
+            return `<div class="dash-subject-card ${s._isSpecialty ? 'is-specialty' : ''}" data-subject-id="${escapeHtml(s.id)}" onclick="window._dashOpenMap(this.dataset.subjectId)" tabindex="0" role="button" aria-label="${escapeHtml(s.name)}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window._dashOpenMap(this.dataset.subjectId);}">
                 ${specBadge}
                 <span class="dash-pct mono">${done}/${total}</span>
                 ${iconHtml}
@@ -4750,13 +4922,13 @@ function initDashboard() {
 
         const filterBarHtml = (isFilUsed && specCount > 0) ? `
             <div class="dash-subject-filters" role="tablist" aria-label="Filtrer les matières">
-                <button type="button" class="dash-filter-chip ${activeFilter === 'all' ? 'active' : ''}" onclick="window._dashSetSubjectFilter('all')">Toutes (${DASH_SUBJECTS.length})</button>
-                <button type="button" class="dash-filter-chip ${activeFilter === 'specialites' ? 'active' : ''}" onclick="window._dashSetSubjectFilter('specialites')">★ Spécialités ${escapeHtml(filShort)} (${specCount})</button>
-                <button type="button" class="dash-filter-chip ${activeFilter === 'tronc' ? 'active' : ''}" onclick="window._dashSetSubjectFilter('tronc')">Tronc commun (${coreCount})</button>
+                <button type="button" role="tab" aria-selected="${activeFilter === 'all'}" class="dash-filter-chip ${activeFilter === 'all' ? 'active' : ''}" onclick="window._dashSetSubjectFilter('all')">Toutes (${DASH_SUBJECTS.length})</button>
+                <button type="button" role="tab" aria-selected="${activeFilter === 'specialites'}" class="dash-filter-chip ${activeFilter === 'specialites' ? 'active' : ''}" onclick="window._dashSetSubjectFilter('specialites')">${eqIcon('starFilled', 12, 'gold')} Spécialités ${escapeHtml(filShort)} (${specCount})</button>
+                <button type="button" role="tab" aria-selected="${activeFilter === 'tronc'}" class="dash-filter-chip ${activeFilter === 'tronc' ? 'active' : ''}" onclick="window._dashSetSubjectFilter('tronc')">Tronc commun (${coreCount})</button>
             </div>` : '';
 
         const programSummary = filObj
-            ? `Programme officiel · <b>${escapeHtml(nivLabel)}</b> · ${escapeHtml(filObj.icon || '')} <b>${escapeHtml(filObj.label)}</b>`
+            ? `Programme officiel · <b>${escapeHtml(nivLabel)}</b> · ${eqEmoji(filObj.icon || 'compass', 14, 'cyan')} <b>${escapeHtml(filObj.label)}</b>`
             : `Programme officiel · <b>${escapeHtml(nivLabel)}</b>`;
 
         return `
@@ -4781,36 +4953,40 @@ function initDashboard() {
             : {};
         if (siteCfg.enableQuests === false) return '';
         const data = DailyQuests.get();
-        const total = data.quests.length;
-        const claimedCount = data.quests.filter(q => q.claimed).length;
-        const readyCount = data.quests.filter(q => !q.claimed && DailyQuests.isComplete(q)).length;
+        const quests = Array.isArray(data && data.quests) ? data.quests : [];
+        const total = quests.length;
+        if (total === 0) return '';
+        const claimedCount = quests.filter(q => q.claimed).length;
+        const readyCount = quests.filter(q => !q.claimed && DailyQuests.isComplete(q)).length;
         const allClaimed = claimedCount === total;
         const collapsed = Boolean(state.questsCollapsed);
         const R = 26, C = 2 * Math.PI * R; // Anneau SVG
 
-        const cards = data.quests.map((q, i) => {
+        const cards = quests.map((q, i) => {
             const done = DailyQuests.isComplete(q);
-            const pct = Math.min(1, q.progress / q.target);
+            const target = Math.max(1, Number(q.target) || 1);
+            const pct = Math.min(1, (Number(q.progress) || 0) / target);
             const status = q.claimed ? 'claimed' : done ? 'ready' : 'active';
+            const qColor = safeHexColor(q.color, '#ffd166');
             const action = q.claimed
-                ? `<div class="quest-stamp">✓ Fait</div>`
+                ? `<div class="quest-stamp">${eqIcon('check', 13, 'emerald')} Fait</div>`
                 : done
-                    ? `<button type="button" class="quest-claim-btn" id="quest-claim-${q.id}" onclick="window._dashClaimQuest('${q.id}', this)">Réclamer</button>`
-                    : `<div class="quest-progress-label mono">${q.progress}/${q.target}</div>`;
-            return `<article class="quest-card is-${status}" style="--q-color:${q.color}; --q-delay:${i * 55}ms">
+                    ? `<button type="button" class="quest-claim-btn" id="quest-claim-${escapeHtml(q.id)}" data-quest-id="${escapeHtml(q.id)}" onclick="window._dashClaimQuest(this.dataset.questId, this)">Réclamer</button>`
+                    : `<div class="quest-progress-label mono">${q.progress}/${target}</div>`;
+            return `<article class="quest-card is-${status}" style="--q-color:${qColor}; --q-delay:${i * 55}ms">
                 <div class="quest-ring">
                     <svg viewBox="0 0 64 64" aria-hidden="true">
                         <circle class="quest-ring-bg" cx="32" cy="32" r="${R}"></circle>
                         <circle class="quest-ring-fg" cx="32" cy="32" r="${R}"
                             stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${(C * (1 - pct)).toFixed(2)}"></circle>
                     </svg>
-                    <span class="quest-icon">${q.icon}</span>
+                    <span class="quest-icon" style="color:${qColor}">${eqEmoji(q.icon, 20)}</span>
                 </div>
                 <div class="quest-card-body">
                     <h3 class="quest-title">${escapeHtml(q.title)}</h3>
                     <div class="quest-rewards">
                         <span class="quest-chip xp">+${q.xp} XP</span>
-                        <span class="quest-chip coin"><span class="dash-coin-dot"></span>${q.coins}</span>
+                        <span class="quest-chip coin">${eqIcon('coin', 12, 'gold')}${q.coins}</span>
                     </div>
                 </div>
                 <div class="quest-card-action">${action}</div>
@@ -4822,7 +4998,7 @@ function initDashboard() {
         const chest = `<button type="button" class="quest-chest is-${chestState}" id="quest-bonus-chest"
                 ${chestState === 'ready' ? `onclick="window._dashClaimBonus(this)"` : 'disabled'}
                 title="${chestState === 'opened' ? 'Coffre ouvert — reviens demain !' : `Réclame toutes les quêtes pour +${bonusCoins} pièces`}">
-                <span class="quest-chest-icon">${chestState === 'opened' ? '🎁' : chestState === 'ready' ? '🎁' : '🔒'}</span>
+                <span class="quest-chest-icon">${chestState === 'locked' ? eqIcon('lock', 15, 'muted') : eqIcon('gift', 16, chestState === 'opened' ? 'emerald' : '')}</span>
                 <span class="quest-chest-text">${chestState === 'opened' ? 'Récupéré' : chestState === 'ready' ? `Ouvrir +${bonusCoins}` : `+${bonusCoins}`}</span>
             </button>`;
 
@@ -4834,10 +5010,10 @@ function initDashboard() {
             <div class="quest-board-head">
                 <div class="quest-board-head-main">
                     <div class="quest-board-title-row">
-                        <h2 id="quest-board-title" class="quest-board-title">📋 Missions du jour</h2>
+                        <h2 id="quest-board-title" class="quest-board-title">${eqIcon('clipboard', 18, 'gold')} Missions du jour</h2>
                         ${readyPill}
                     </div>
-                    <div class="quest-timer">⏳ Renouvellement dans <b>${DailyQuests.timeLeftLabel()}</b></div>
+                    <div class="quest-timer">${eqIcon('hourglass', 13, 'muted')} Renouvellement dans <b>${DailyQuests.timeLeftLabel()}</b></div>
                 </div>
                 <div class="quest-board-side">
                     <div class="quest-overall">
@@ -4855,6 +5031,8 @@ function initDashboard() {
     }
 
     function nodePositions(n) {
+        if (n <= 0) return [];
+        if (n === 1) return [{ x: 300, y: 105 }];
         const positions = [];
         const stepX = 560 / (n - 1);
         for (let i = 0; i < n; i++) {
@@ -4867,9 +5045,14 @@ function initDashboard() {
 
     function renderMap() {
         const subject = DASH_SUBJECTS.find(s => s.id === state.currentSubject);
+        if (!subject) {
+            state.view = 'dashboard';
+            state.currentSubject = null;
+            return renderDashboard();
+        }
         const done = state.progress[subject.id] || 0;
         const MAX_VISIBLE = 12;
-        const visibleLessons = subject.lessons.slice(0, MAX_VISIBLE);
+        const visibleLessons = (subject.lessons || []).slice(0, MAX_VISIBLE);
         const positions = nodePositions(visibleLessons.length);
         const pathD = positions.map((p, i) => (i === 0 ? 'M' : 'L') + p.x + ' ' + p.y).join(' ');
 
@@ -4888,12 +5071,12 @@ function initDashboard() {
                     <animate attributeName="opacity" values="0.6;0;0.6" dur="2.4s" repeatCount="indefinite"/>
                 </circle>`;
             }
-            const glyph = completed ? '✓' : (locked ? '🔒' : (i + 1));
+            const glyph = completed ? '✓' : (locked ? '×' : (i + 1));
             return `
                 ${ring}
-                <g class="dash-node-group" onclick="${locked ? '' : `window._dashOpenQuiz('${subject.id}', ${i})`}" style="${locked ? 'cursor:default;' : ''}">
+                <g class="dash-node-group" data-subject-id="${escapeHtml(subject.id)}" data-lesson-idx="${i}" onclick="${locked ? '' : 'window._dashOpenQuiz(this.dataset.subjectId, Number(this.dataset.lessonIdx))'}" style="${locked ? 'cursor:default;' : ''}">
                     <circle cx="${p.x}" cy="${p.y}" r="16" fill="${fill}" stroke="var(--c-night)" stroke-width="2"/>
-                    <text x="${p.x}" y="${p.y + 5}" text-anchor="middle" font-size="12" font-weight="700" fill="${locked ? 'rgba(255,255,255,0.3)' : 'var(--c-night)'}">${glyph}</text>
+                    <text x="${p.x}" y="${p.y + 5}" text-anchor="middle" font-size="12" font-weight="700" fill="${locked ? 'rgba(255,255,255,0.35)' : 'var(--c-night)'}">${glyph}</text>
                     <text x="${p.x}" y="${p.y + (i % 2 === 0 ? -26 : 34)}" text-anchor="middle" class="dash-node-label">${escapeHtml(lesson.title)}</text>
                 </g>`;
         }).join('');
@@ -4901,10 +5084,10 @@ function initDashboard() {
         const islandSrc = getSubjectIslandSrc(subject);
         const eyebrowIcon = islandSrc
             ? `<img src="${escapeHtml(islandSrc)}" alt="" decoding="async" style="width:1.3em;height:1.3em;vertical-align:middle;object-fit:contain;margin-right:6px;">`
-            : `${escapeHtml(subject.icon || '📘')} `;
+            : `${eqEmoji(subject.icon || 'book', 16, 'gold')} `;
 
         return `<section>
-            <button class="dash-back-map" onclick="window._dashGoDashboard()">← Retour aux matières</button>
+            <button type="button" class="dash-back-map" onclick="window._dashGoDashboard()">${eqIcon('arrowLeft', 15)} Retour aux matières</button>
             <div class="dash-map-wrap">
                 <div class="dash-map-title">
                     <div class="dash-eyebrow" style="display:flex; align-items:center;">${eyebrowIcon} Parcours</div>
@@ -4920,7 +5103,7 @@ function initDashboard() {
     }
 
     function renderShop() {
-        const catalog = getShopCatalog();
+        const catalog = getShopCatalog().filter(item => !item.disabled);
         const activeCategory = state.shopCategory || 'all';
         const catCounts = { all: catalog.length };
         for (let i = 0; i < catalog.length; i++) {
@@ -4931,16 +5114,16 @@ function initDashboard() {
         const boostersMap = (typeof DB !== 'undefined' && DB.getBoosters) ? DB.getBoosters() : {};
 
         const categoryFilters = [
-            { id: 'all', label: 'Tous', icon: '✨' },
-            { id: 'aura', label: 'Halos', icon: '🌟' },
-            { id: 'avatar', label: 'Personnages', icon: '👤' },
-            { id: 'title', label: 'Titres', icon: '🏷️' },
-            { id: 'theme', label: 'Thèmes', icon: '🎨' },
-            { id: 'booster', label: 'Boosters', icon: '⚡' },
+            { id: 'all', label: 'Tous', icon: 'sparkle' },
+            { id: 'aura', label: 'Halos', icon: 'star' },
+            { id: 'avatar', label: 'Personnages', icon: 'user' },
+            { id: 'title', label: 'Titres', icon: 'tag' },
+            { id: 'theme', label: 'Thèmes', icon: 'palette' },
+            { id: 'booster', label: 'Boosters', icon: 'bolt' },
         ].map(cat => {
             const count = catCounts[cat.id] || 0;
             const active = activeCategory === cat.id ? 'active' : '';
-            return `<button class="dash-shop-filter-btn ${active}" onclick="window._dashSetShopCategory('${cat.id}')">${cat.icon} ${cat.label} <span class="dash-shop-badge">${count}</span></button>`;
+            return `<button type="button" class="dash-shop-filter-btn ${active}" data-cat="${cat.id}" onclick="window._dashSetShopCategory(this.dataset.cat)">${eqIcon(cat.icon, 14, active ? 'gold' : '')} ${cat.label} <span class="dash-shop-badge">${count}</span></button>`;
         }).join('');
 
         const cards = filtered.map(s => {
@@ -4950,6 +5133,7 @@ function initDashboard() {
             const isTitle = cat === 'title';
             const isTheme = cat === 'theme';
             const isBooster = cat === 'booster';
+            const safeColor = safeHexColor(s.color, isTitle ? '#ffd166' : '#4fd8c4');
 
             const boosterStock = boostersMap[s.id] || 0;
             const owned = isBooster ? (boosterStock > 0) : isShopItemOwned(s, state.ownedSkins);
@@ -4963,49 +5147,51 @@ function initDashboard() {
                             ? ((state.equippedTheme || 'default') === s.id)
                             : false;
 
+            const cleanName = eqStripEmoji(s.name);
             let visualHtml = '';
             if (isSafeAvatarImgSrc(s.img)) {
-                visualHtml = `<div class="dash-skin-orb" style="--sc:${escapeHtml(s.color || '#4fd8c4')}"><img src="${escapeHtml(s.img)}" alt="${escapeHtml(s.name)}" loading="lazy" decoding="async"></div>`;
+                visualHtml = `<div class="dash-skin-orb" style="--sc:${safeColor}"><img src="${escapeHtml(s.img)}" alt="${escapeHtml(cleanName)}" loading="lazy" decoding="async"></div>`;
             } else if (isTitle) {
-                visualHtml = `<div class="dash-shop-title-preview" style="color:${s.color || '#ffd166'}; border: 1px dashed ${s.color || '#ffd166'}88; background: rgba(0,0,0,0.3); border-radius: 4px; padding: 10px 6px; margin: 0 auto 12px; max-width: 140px; font-weight: 700; font-size: 13px;">${escapeHtml(s.name)}</div>`;
+                const titleIco = (typeof window !== 'undefined' && window.EduIcons) ? window.EduIcons.iconFromLabel(s.name, 'tag') : 'tag';
+                visualHtml = `<div class="dash-shop-title-preview" style="color:${safeColor}; border: 1px dashed ${safeColor}88; background: rgba(0,0,0,0.3); border-radius: 4px; padding: 10px 6px; margin: 0 auto 12px; max-width: 150px; font-weight: 700; font-size: 13px; display:flex; align-items:center; justify-content:center; gap:5px;">${eqIcon(titleIco, 14)} <span>${escapeHtml(cleanName)}</span></div>`;
             } else if (isTheme) {
-                visualHtml = `<div class="dash-shop-theme-preview" style="display: flex; gap: 4px; justify-content: center; margin: 0 auto 12px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px;">
-                    <div style="width: 16px; height: 16px; border-radius: 50%; background: ${s.color}; box-shadow: 0 0 6px ${s.color};"></div>
+                visualHtml = `<div class="dash-shop-theme-preview" style="display: flex; gap: 6px; justify-content: center; margin: 0 auto 12px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px;">
+                    <div style="width: 16px; height: 16px; border-radius: 50%; background: ${safeColor}; box-shadow: 0 0 6px ${safeColor};"></div>
                     <div style="width: 16px; height: 16px; border-radius: 50%; background: #1a103c;"></div>
                     <div style="width: 16px; height: 16px; border-radius: 50%; background: #ffd166;"></div>
                 </div>`;
             } else if (isBooster) {
-                const boosterGlyphMap = {
-                    'boost-shield': '🛡️',
-                    'boost-xp': '🧪',
-                    'boost-coins': '🪙',
-                    'boost-time': '⏳',
-                    'boost-combo': '🔥',
+                const boosterIconMap = {
+                    'boost-shield': 'shield',
+                    'boost-xp': 'potion',
+                    'boost-coins': 'coin',
+                    'boost-time': 'hourglass',
+                    'boost-combo': 'flame',
                 };
-                const boosterGlyph = boosterGlyphMap[s.id] || '⚡';
-                visualHtml = `<div class="dash-shop-booster-preview" style="width: 48px; height: 48px; line-height: 48px; border-radius: 50%; margin: 0 auto 12px; background: radial-gradient(circle, ${s.color}66, rgba(0,0,0,0.5)); border: 1px solid ${s.color}; font-size: 22px;">${boosterGlyph}</div>`;
+                const bIcon = boosterIconMap[s.id] || 'bolt';
+                visualHtml = `<div class="dash-shop-booster-preview" style="width: 48px; height: 48px; border-radius: 50%; margin: 0 auto 12px; display:flex; align-items:center; justify-content:center; color:${safeColor}; background: radial-gradient(circle, ${safeColor}44, rgba(0,0,0,0.5)); border: 1px solid ${safeColor};">${eqIcon(bIcon, 24)}</div>`;
             } else {
-                visualHtml = `<div class="dash-skin-orb" style="--sc:${s.color || '#4fd8c4'}"></div>`;
+                visualHtml = `<div class="dash-skin-orb" style="--sc:${safeColor}"></div>`;
             }
 
             let btn = '';
             if (isBooster) {
                 const affordable = state.coins >= s.cost;
                 btn = `<div style="font-size:12px; margin-bottom:8px; color:#ffd166; font-weight:700;">En réserve : ${boosterStock}</div>
-                       <button class="dash-skin-btn buy" ${affordable ? '' : 'disabled'} onclick="window._dashBuySkin('${s.id}')">Acheter (+1) · ${s.cost} pièces</button>`;
+                       <button type="button" class="dash-skin-btn buy" ${affordable ? '' : 'disabled'} data-item-id="${escapeHtml(s.id)}" onclick="window._dashBuySkin(this.dataset.itemId)">Acheter (+1) · ${s.cost} pièces</button>`;
             } else if (isEquipped) {
-                btn = `<button class="dash-skin-btn equipped" disabled>✓ Équipé</button>`;
+                btn = `<button type="button" class="dash-skin-btn equipped" disabled>${eqIcon('check', 13, 'emerald')} Équipé</button>`;
             } else if (owned) {
                 const actionLabel = isTitle ? 'Porter ce titre' : isTheme ? 'Appliquer' : isAvatar ? 'Incarner' : 'Équiper';
-                btn = `<button class="dash-skin-btn equip" onclick="window._dashEquipSkin('${s.id}')">${actionLabel}</button>`;
+                btn = `<button type="button" class="dash-skin-btn equip" data-item-id="${escapeHtml(s.id)}" onclick="window._dashEquipSkin(this.dataset.itemId)">${actionLabel}</button>`;
             } else {
                 const affordable = state.coins >= s.cost;
-                btn = `<button class="dash-skin-btn buy" ${affordable ? '' : 'disabled'} onclick="window._dashBuySkin('${s.id}')">${s.cost === 0 ? 'Obtenir' : `Acheter (${s.cost} pièces)`}</button>`;
+                btn = `<button type="button" class="dash-skin-btn buy" ${affordable ? '' : 'disabled'} data-item-id="${escapeHtml(s.id)}" onclick="window._dashBuySkin(this.dataset.itemId)">${s.cost === 0 ? 'Obtenir' : `Acheter (${s.cost} pièces)`}</button>`;
             }
 
             return `<div class="dash-skin-card ${owned ? 'is-owned' : ''} ${isEquipped ? 'is-equipped' : ''}">
                 ${visualHtml}
-                <div class="dash-skin-name">${escapeHtml(s.name)}</div>
+                <div class="dash-skin-name">${escapeHtml(cleanName)}</div>
                 ${s.desc ? `<div class="dash-skin-desc" style="font-size: 11px; color: rgba(255,255,255,0.6); margin-bottom: 8px; line-height: 1.3;">${escapeHtml(s.desc)}</div>` : ''}
                 <div class="dash-skin-cost">${s.cost === 0 ? 'Offert' : `${s.cost} pièces`}</div>
                 ${btn}
@@ -5117,13 +5303,15 @@ function initDashboard() {
                 overlay = document.createElement('div');
                 overlay.className = 'dash-overlay';
                 overlay.id = 'dashQuizOverlay';
+                overlay.setAttribute('role', 'dialog');
+                overlay.setAttribute('aria-modal', 'true');
                 document.body.appendChild(overlay);
             }
             delete overlay.dataset.quizKey;
             overlay.innerHTML = `<div class="dash-modal">
                 <div class="dash-eyebrow">${subject ? escapeHtml(subject.name) : 'Quiz'} · Niveau ${lessonIndex + 1}</div>
                 <h3 role="status" aria-live="polite">Génération d'une question adaptée…</h3>
-                <div class="dash-modal-actions"><button class="dash-btn-ghost" onclick="window._dashCloseQuiz()">Annuler</button></div>
+                <div class="dash-modal-actions"><button type="button" class="dash-btn-ghost" onclick="window._dashCloseQuiz()">Annuler</button></div>
             </div>`;
             return;
         }
@@ -5139,11 +5327,11 @@ function initDashboard() {
         const hintButtonHtml = (!answered && !checking && hintText) ? `
             <div class="dash-hint-container">
                 <button class="dash-hint-toggle-btn" type="button" onclick="window._toggleQuizHint(this)" aria-expanded="false">
-                    <span class="dash-hint-icon">💡</span> Besoin d'un indice ?
+                    <span class="dash-hint-icon">${eqIcon('bulb', 15, 'gold')}</span> Besoin d'un indice ?
                 </button>
                 <div class="dash-hint-drawer" style="display: none;">
                     <div class="dash-hint-drawer-content">
-                        <span class="dash-hint-badge">💡 INDICE PÉDAGOGIQUE</span>
+                        <span class="dash-hint-badge">${eqIcon('bulb', 13, 'gold')} INDICE PÉDAGOGIQUE</span>
                         <p class="dash-hint-text">${escapeHtml(hintText)}</p>
                     </div>
                 </div>
@@ -5162,10 +5350,10 @@ function initDashboard() {
             const multTag = multiplier > 1.0 ? `<span class="dash-combo-tag">x${multiplier.toFixed(1)}</span> ` : '';
             const expText = explanation || (lesson ? lesson.exp : '') || '';
             feedback = `<div class="dash-feedback ${isCorrect ? 'ok' : 'ko'}">
-                <div class="dash-feedback-badge">${isCorrect ? '✓ Bonne réponse ! ' + multTag : '✗ Pas tout à fait... (une nouvelle question te sera proposée)'}</div>
+                <div class="dash-feedback-badge">${isCorrect ? `${eqIcon('check', 16, 'emerald')} Bonne réponse ! ${multTag}` : `${eqIcon('close', 16, 'danger')} Pas tout à fait... (une nouvelle question te sera proposée)`}</div>
                 ${expText ? `
                     <div class="dash-feedback-exp">
-                        <div class="dash-feedback-exp-title">📖 Explication &amp; Règle de cours :</div>
+                        <div class="dash-feedback-exp-title">${eqIcon('bookOpen', 15, 'cyan')} Explication &amp; Règle de cours :</div>
                         <div class="dash-feedback-exp-content">${escapeHtml(expText)}</div>
                     </div>
                 ` : ''}
@@ -5186,7 +5374,7 @@ function initDashboard() {
                         siteXpMultiplier: siteCfg ? siteCfg.xpMultiplier : 1,
                         siteCoinMultiplier: siteCfg ? siteCfg.coinMultiplier : 1,
                     });
-                    feedback += `<div class="dash-reward-line"><span>+${preview.xp} XP ${multiplier > 1.0 ? `<b style="color:#ffa502;">(x${multiplier.toFixed(1)})</b>` : ''}</span><span>+${preview.coins} <span class="dash-coin-dot" style="display:inline-block; width:10px;height:10px; vertical-align:middle;"></span></span><span style="color:#ffbe0b; font-weight:700;">+${preview.score} pts</span></div>`;
+                    feedback += `<div class="dash-reward-line"><span>+${preview.xp} XP ${multiplier > 1.0 ? `<b style="color:#ffa502;">(x${multiplier.toFixed(1)})</b>` : ''}</span><span>+${preview.coins} ${eqIcon('coin', 13, 'gold')}</span><span style="color:#ffbe0b; font-weight:700;">+${preview.score} pts</span></div>`;
                 } else {
                     feedback += `<div class="dash-reward-line"><span>Niveau déjà réussi : entraînement sans récompense.</span></div>`;
                 }
@@ -5195,10 +5383,10 @@ function initDashboard() {
 
         const starsWin = isCorrect ? GameRules.starsFor(state.quiz.attempts, state.quiz.usedShield) : 0;
         const actions = !answered
-            ? `<div class="dash-modal-actions"><button class="dash-btn-ghost" onclick="window._dashCloseQuiz()">Annuler</button></div>`
+            ? `<div class="dash-modal-actions"><button type="button" class="dash-btn-ghost" onclick="window._dashCloseQuiz()">Annuler</button></div>`
             : isCorrect
-                ? `<div class="dash-modal-actions"><button class="dash-btn-primary" onclick="window._dashFinishQuiz()">Continuer (${'⭐'.repeat(starsWin)})</button></div>`
-                : `<div class="dash-modal-actions"><button class="dash-btn-ghost" onclick="window._dashCloseQuiz()">Quitter</button><button class="dash-btn-primary" onclick="window._dashRetryQuiz()">🔄 Réessayer (nouvelle question)</button></div>`;
+                ? `<div class="dash-modal-actions"><button type="button" class="dash-btn-primary" onclick="window._dashFinishQuiz()">Continuer (${eqStars(starsWin, 3, 14)})</button></div>`
+                : `<div class="dash-modal-actions"><button type="button" class="dash-btn-ghost" onclick="window._dashCloseQuiz()">Quitter</button><button type="button" class="dash-btn-primary" onclick="window._dashRetryQuiz()">${eqIcon('refresh', 15)} Réessayer (nouvelle question)</button></div>`;
 
         const chronoHtml = (chronoEnabled && !answered && !checking && typeof QuizTimer !== 'undefined')
             ? QuizTimer.renderBarHtml('chrono-bar-container', chronoDuration)
@@ -5241,6 +5429,8 @@ function initDashboard() {
             overlay = document.createElement('div');
             overlay.className = 'dash-overlay';
             overlay.id = 'dashQuizOverlay';
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
             document.body.appendChild(overlay);
         }
         overlay.dataset.quizKey = quizKey || '';
@@ -5385,15 +5575,20 @@ function initDashboard() {
         const nav = dashApp.querySelector('.dash-bottom-nav');
         if (nav) {
             nav.classList.toggle('is-collapsed', state.bottomNavHidden);
-            if (state.bottomNavHidden) nav.setAttribute('aria-hidden', 'true');
-            else nav.removeAttribute('aria-hidden');
+            if (state.bottomNavHidden) {
+                nav.setAttribute('aria-hidden', 'true');
+                nav.setAttribute('inert', '');
+            } else {
+                nav.removeAttribute('aria-hidden');
+                nav.removeAttribute('inert');
+            }
             const existingReopen = dashApp.querySelector('.dash-bnav-reopen-btn');
             if (state.bottomNavHidden && !existingReopen) {
                 const reopenBtn = document.createElement('button');
                 reopenBtn.type = 'button';
                 reopenBtn.className = 'dash-bnav-reopen-btn';
                 reopenBtn.setAttribute('aria-label', 'Afficher le menu du bas');
-                reopenBtn.textContent = '☰ Menu';
+                reopenBtn.innerHTML = `${eqIcon('menu', 16, 'gold')} Menu`;
                 reopenBtn.onclick = () => window._dashToggleBottomNav(false);
                 nav.insertAdjacentElement('afterend', reopenBtn);
             } else if (!state.bottomNavHidden && existingReopen) {
@@ -5478,6 +5673,10 @@ function initDashboard() {
     };
 
     window._dashCloseQuiz = function () {
+        if (state.quiz && state.quiz.answered && state.quiz.isCorrect && !state.quiz._committed) {
+            window._dashFinishQuiz();
+            return;
+        }
         stopDashTimer();
         state.quiz = null;
         const overlay = document.getElementById('dashQuizOverlay');
@@ -5515,10 +5714,12 @@ function initDashboard() {
 
     window._dashFinishQuiz = function () {
         stopDashTimer();
-        if (!state.quiz || !state.quiz.isCorrect) return;
+        if (!state.quiz || !state.quiz.isCorrect || state.quiz._committed) return;
+        state.quiz._committed = true;
         const { subjectId, lessonIndex, attempts } = state.quiz;
         const usedShield = Boolean(state.quiz.usedShield);
         const stars = GameRules.starsFor(attempts, usedShield);
+        const isFirstSuccess = lessonIndex === (state.progress[subjectId] || 0);
 
         // Anti-triche 3★ pilotable en admin (conserve le plafond si erreur et mode strict actif)
         const strictAntiCheat = getSiteConfigSafe().strictStarsAntiCheat !== false;
@@ -5529,13 +5730,19 @@ function initDashboard() {
             DB.clearLevelAttempt(subjectId, currentNiveau(), lessonIndex);
         }
 
-        const streakRes = (typeof DB !== 'undefined' && DB.recordLevelVictory) ? DB.recordLevelVictory() : { streak: 1, combo: 0, multiplier: 1.0 };
+        const curStreak = (typeof DB !== 'undefined' && DB.getStreakData) ? DB.getStreakData() : { count: 0, combo: 0, maxCombo: 0 };
+        const streakRes = (isFirstSuccess && typeof DB !== 'undefined' && DB.recordLevelVictory)
+            ? DB.recordLevelVictory()
+            : { streak: curStreak.count || 0, combo: curStreak.combo || 0, maxCombo: curStreak.maxCombo || 0, multiplier: (typeof DB !== 'undefined' && DB.getMultiplier) ? DB.getMultiplier() : 1.0 };
         const mult = (streakRes && streakRes.multiplier) || ((typeof DB !== 'undefined' && DB.getMultiplier) ? DB.getMultiplier() : 1.0);
         let xpGained = 0;
         let coinsGained = 0;
         let scoreGained = 0;
+        let usedDoubleXp = false;
+        let usedDoubleCoins = false;
+        let nextTotalScore = parseInt(getOption('dash_total_score') || '0', 10);
 
-        if (lessonIndex === (state.progress[subjectId] || 0)) {
+        if (isFirstSuccess) {
             state.progress[subjectId] = (state.progress[subjectId] || 0) + 1;
 
             const rewards = (typeof AdminStore !== 'undefined' && typeof AdminStore.getRewardsConfig === 'function')
@@ -5545,16 +5752,14 @@ function initDashboard() {
                 ? AdminStore.getSiteConfig()
                 : null;
 
-            let usedDoubleXp = false;
-            let usedDoubleCoins = false;
             if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster(GameRules.DOUBLE_XP_ID)) {
                 usedDoubleXp = DB.useBooster(GameRules.DOUBLE_XP_ID);
-                if (usedDoubleXp) showNotification('🧪 Potion Double XP consommée : XP doublée !', 'success');
+                if (usedDoubleXp) showNotification('Potion Double XP consommée : XP doublée !', 'success');
             }
             const doubleCoinsId = GameRules.DOUBLE_COINS_ID || 'boost-coins';
             if (typeof DB !== 'undefined' && DB.hasBooster && DB.hasBooster(doubleCoinsId)) {
                 usedDoubleCoins = DB.useBooster(doubleCoinsId);
-                if (usedDoubleCoins) showNotification('🪙 Élixir de Fortune consommé : pièces doublées !', 'success');
+                if (usedDoubleCoins) showNotification('Élixir de Fortune consommé : pièces doublées !', 'success');
             }
 
             const gains = GameRules.computeLevelRewards({
@@ -5572,11 +5777,19 @@ function initDashboard() {
             xpGained = gains.xp;
             coinsGained = gains.coins;
             scoreGained = gains.score;
-            const currentScore = parseInt(getOption('dash_total_score') || '0', 10);
-            saveOption('dash_total_score', String(currentScore + scoreGained));
+            nextTotalScore += scoreGained;
+            saveOption('dash_total_score', String(nextTotalScore));
 
             state.xp += xpGained;
             state.coins += coinsGained;
+        }
+        state.quiz = null;
+        const overlay = document.getElementById('dashQuizOverlay');
+        if (overlay) overlay.remove();
+        // Persiste XP/pièces/progression AVANT de vérifier les succès (évite un décalage d'un niveau)
+        persistState();
+
+        if (isFirstSuccess) {
             triggerBadgesCheck({
                 justAnsweredFirstTry: stars === 3,
                 justCompletedLevel: true,
@@ -5590,23 +5803,19 @@ function initDashboard() {
                 streakCount: streakRes.streak,
                 comboCount: streakRes.combo,
                 maxCombo: streakRes.maxCombo,
-                totalScore: currentScore + scoreGained
+                totalScore: nextTotalScore
             });
+            DailyQuests.track(GameRules.questDelta({ stars, attempts, xp: xpGained }));
         }
-        state.quiz = null;
-        const overlay = document.getElementById('dashQuizOverlay');
-        if (overlay) overlay.remove();
-        persistState();
 
         Celebrate.confetti();
         if (typeof AudioManager !== 'undefined' && typeof AudioManager.playSfx === 'function') {
             AudioManager.playSfx('victory');
         }
-        DailyQuests.track(GameRules.questDelta({ stars, attempts, xp: xpGained }));
 
         render();
         if (xpGained > 0) {
-            showNotification(`✓ +${xpGained} XP ${mult > 1.0 ? `[x${mult.toFixed(1)}] ` : ''}, +${coinsGained} pièces, +${scoreGained} pts !`);
+            showNotification(`+${xpGained} XP ${mult > 1.0 ? `[x${mult.toFixed(1)}] ` : ''}, +${coinsGained} pièces, +${scoreGained} pts !`);
         }
     };
 
@@ -5645,23 +5854,28 @@ function initDashboard() {
 
     window._dashBuySkin = function (id) {
         const item = getShopCatalog().find(s => s.id === id);
-        if (!item) return;
-        if (state.coins < item.cost) {
-            showNotification('❌ Pas assez de pièces pour cet article !');
+        if (!item || item.disabled) return;
+        const cat = item.category || 'aura';
+        if (cat !== 'booster' && isShopItemOwned(item, state.ownedSkins)) {
+            window._dashEquipSkin(id);
             return;
         }
-        state.coins -= item.cost;
+        const cost = Math.max(0, Number(item.cost) || 0);
+        if (state.coins < cost) {
+            showNotification('Pas assez de pièces pour cet article !', 'error');
+            return;
+        }
+        state.coins -= cost;
         if (typeof AudioManager !== 'undefined' && typeof AudioManager.playSfx === 'function') AudioManager.playSfx('coin');
-        const cat = item.category || 'aura';
 
         if (cat === 'booster') {
             if (typeof DB !== 'undefined' && DB.addBooster) {
                 DB.addBooster(id, 1);
             }
-            triggerBadgesCheck({ boughtBooster: true, boosterId: id, hasBooster: true });
             persistState();
+            triggerBadgesCheck({ boughtBooster: true, boosterId: id, hasBooster: true });
             render();
-            showNotification(`⚡ Potion « ${item.name} » ajoutée à ta réserve (+1) !`);
+            showNotification(`Potion « ${eqStripEmoji(item.name)} » ajoutée à ta réserve (+1) !`);
             return;
         }
 
@@ -5688,7 +5902,7 @@ function initDashboard() {
             auraEquipped: cat === 'aura' && id !== 'aurore',
         });
         render();
-        showNotification(`✓ « ${item.name} » débloqué et équipé !`);
+        showNotification(`« ${eqStripEmoji(item.name)} » débloqué et équipé !`);
     };
 
     window._dashEquipSkin = function (id) {
@@ -5834,7 +6048,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 modalOptions.hidden = false;
             }
-            history.replaceState(null, null, window.location.pathname + window.location.search);
+            try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch (_) {}
         }
     }
 

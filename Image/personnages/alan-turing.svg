@@ -1,26 +1,39 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
   <defs>
-    <radialGradient id="atBg" cx="40%" cy="30%" r="75%">
-      <stop offset="0%" stop-color="#22d3ee"/>
-      <stop offset="100%" stop-color="#091326"/>
+    <radialGradient id="avalanturingBg" cx="50%" cy="34%" r="72%">
+      <stop offset="0%" stop-color="#67e8f9" stop-opacity="0.92"/>
+      <stop offset="48%" stop-color="#06b6d4" stop-opacity="0.72"/>
+      <stop offset="100%" stop-color="#091126"/>
     </radialGradient>
+    <linearGradient id="avalanturingGold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fce9a6"/>
+      <stop offset="100%" stop-color="#b88d32"/>
+    </linearGradient>
+    <clipPath id="avalanturingClip"><circle cx="60" cy="60" r="56"/></clipPath>
   </defs>
-  <rect width="120" height="120" fill="url(#atBg)"/>
-  <!-- Ruban binaire Machine de Turing -->
-  <rect x="8" y="12" width="104" height="16" rx="4" fill="#0f172a" opacity="0.72" stroke="#22d3ee" stroke-width="1.2"/>
-  <text x="60" y="24" text-anchor="middle" fill="#67e8f9" font-family="monospace" font-size="11" font-weight="bold">0 1 1 0 1 0 0 1</text>
-  <!-- Veste tweed + cravate -->
-  <path d="M22 120 L30 82 Q60 75 90 82 L98 120 Z" fill="#334155" stroke="#1e293b" stroke-width="2"/>
-  <polygon points="49,82 60,108 71,82" fill="#e2e8f0"/>
-  <polygon points="57,84 63,84 65,112 60,118 55,112" fill="#0e7490"/>
-  <!-- Visage -->
-  <rect x="41" y="36" width="38" height="44" rx="17" fill="#f3cbb0" stroke="#9e6d4b" stroke-width="2"/>
-  <!-- Cheveux ondulés -->
-  <path d="M39 50 Q38 26 58 25 Q78 24 81 48 Q73 36 60 36 Q47 36 39 50 Z" fill="#4b3621"/>
-  <!-- Yeux & sourire réfléchi -->
-  <circle cx="51" cy="54" r="3" fill="#1e293b"/>
-  <circle cx="69" cy="54" r="3" fill="#1e293b"/>
-  <line x1="46" y1="49" x2="56" y2="49" stroke="#3b2918" stroke-width="2"/>
-  <line x1="64" y1="49" x2="74" y2="49" stroke="#3b2918" stroke-width="2"/>
-  <path d="M53 68 Q60 73 67 68" fill="none" stroke="#8d5531" stroke-width="2" stroke-linecap="round"/>
+  <rect width="120" height="120" fill="#091126"/>
+  <g clip-path="url(#avalanturingClip)">
+    <rect width="120" height="120" fill="url(#avalanturingBg)"/>
+    <!-- Constellation astrale de fond -->
+    <circle cx="60" cy="60" r="49" fill="none" stroke="url(#avalanturingGold)" stroke-width="1" stroke-dasharray="4 5" opacity="0.35"/>
+    <g fill="#f7e7ae" opacity="0.8">
+      <path d="M22 26 l1.4 3.2 3.2 1.4 -3.2 1.4 -1.4 3.2 -1.4 -3.2 -3.2 -1.4 3.2 -1.4 Z"/>
+      <circle cx="98" cy="28" r="1.8"/>
+      <circle cx="18" cy="64" r="1.4" opacity="0.6"/>
+      <circle cx="102" cy="58" r="1.6" opacity="0.7"/>
+    </g>
+    
+    <rect x="20" y="14" width="80" height="14" rx="4" fill="#091326" opacity="0.78" stroke="#22d3ee" stroke-width="1.2"/>
+    <text x="60" y="24" text-anchor="middle" fill="#67e8f9" font-family="monospace" font-size="10" font-weight="bold">0 1 1 0 1 0</text>
+    <path d="M22 118 L30 82 Q60 76 90 82 L98 118 Z" fill="#334155" stroke="#0e172a" stroke-width="2"/>
+    <polygon points="49,82 60,106 71,82" fill="#e2e8f0"/>
+    <polygon points="57,84 63,84 64,108 60,114 56,108" fill="#0e7490"/>
+    <rect x="41" y="36" width="38" height="44" rx="17" fill="#f3cbb0" stroke="#8a5a3a" stroke-width="1.8"/>
+    <path d="M39 50 Q38 26 58 25 Q78 24 81 48 Q73 36 60 36 Q47 36 39 50 Z" fill="#4b3621"/>
+    <circle cx="51" cy="54" r="2.8" fill="#0f172a"/><circle cx="69" cy="54" r="2.8" fill="#0f172a"/>
+    <path d="M53 68 Q60 72 67 68" fill="none" stroke="#8d5531" stroke-width="1.8" stroke-linecap="round"/>
+  
+  </g>
+  <!-- Cadre médaillon doré unifié -->
+  <circle cx="60" cy="60" r="56" fill="none" stroke="url(#avalanturingGold)" stroke-width="3.2"/>
 </svg>

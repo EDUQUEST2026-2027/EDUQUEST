@@ -24,29 +24,29 @@
     const MAX_RECENT_QUESTIONS = 30;
     const MAX_RECENT_RESULTS = 8;
 
-    const TIER_META = {
-        remediation: {
+    const TIER_META = Object.freeze({
+        remediation: Object.freeze({
             id: 'remediation',
             label: 'Consolidation',
             shortLabel: 'Consolidation',
             icon: '🌱',
             description: 'Questions de renforcement pour bien ancrer les bases.',
-        },
-        standard: {
+        }),
+        standard: Object.freeze({
             id: 'standard',
             label: 'Standard',
             shortLabel: 'Standard',
             icon: '⚡',
             description: 'Progression équilibrée adaptée à ta classe.',
-        },
-        approfondissement: {
+        }),
+        approfondissement: Object.freeze({
             id: 'approfondissement',
             label: 'Approfondissement',
             shortLabel: 'Défi +',
             icon: '🚀',
             description: 'Défis renforcés grâce à ta belle série de réussites !',
-        },
-    };
+        }),
+    });
 
     let memoryFallbackState = {};
 

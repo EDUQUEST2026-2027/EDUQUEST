@@ -1,5 +1,5 @@
-/* SERVICE-WORKER.JS — EDUQUEST v1.29.1 (PWA hors-ligne, pré-cache résilient cœur + médias) */
-const CACHE_NAME = 'eduquest-cache-v1.29.1';
+/* SERVICE-WORKER.JS — EDUQUEST v1.30.0 (PWA hors-ligne, pré-cache résilient cœur + médias 100 % SVG) */
+const CACHE_NAME = 'eduquest-cache-v1.30.0';
 
 const CORE_PRECACHE_URLS = [
   './',
@@ -12,6 +12,7 @@ const CORE_PRECACHE_URLS = [
   'css/style.css',
   'css/quests.css',
   'css/admin.css',
+  'js/core/icons.js',
   'js/app.js',
   'js/db.js',
   'js/admin.js',
@@ -27,14 +28,13 @@ const CORE_PRECACHE_URLS = [
   'js/core/quiz-session.js',
   'js/features/daily-quests.js',
   'manifest.webmanifest',
-  'fonts/PressStart2P-Regular.woff2',
   'fonts/Silkscreen-Regular.woff2',
   'fonts/Silkscreen-Bold.woff2',
-  'Image/logo.webp'
+  'Image/logo.svg'
 ];
 
 const MEDIA_PRECACHE_URLS = [
-  'Image/personnages/robot.webp',
+  'Image/personnages/robot.svg',
   'Image/personnages/david-martinez.svg',
   'Image/personnages/fall-guys.svg',
   'Image/personnages/hope-fortnite.svg',
@@ -42,15 +42,15 @@ const MEDIA_PRECACHE_URLS = [
   'Image/personnages/helldiver.svg',
   'Image/personnages/space-marine.svg',
   'Image/personnages/doom-guy.svg',
-  'Image/personnages/einstein.webp',
-  'Image/personnages/marie-curie.webp',
-  'Image/personnages/christophe-colomb.webp',
-  'Image/personnages/lovelace.webp',
-  'Image/personnages/pythagore.webp',
-  'Image/personnages/davinci.webp',
-  'Image/personnages/hugo.webp',
-  'Image/personnages/astronaute.webp',
-  'Image/personnages/mage.webp',
+  'Image/personnages/einstein.svg',
+  'Image/personnages/marie-curie.svg',
+  'Image/personnages/christophe-colomb.svg',
+  'Image/personnages/lovelace.svg',
+  'Image/personnages/pythagore.svg',
+  'Image/personnages/davinci.svg',
+  'Image/personnages/hugo.svg',
+  'Image/personnages/astronaute.svg',
+  'Image/personnages/mage.svg',
   'Image/personnages/nikola-tesla.svg',
   'Image/personnages/pasteur.svg',
   'Image/personnages/rosalind-franklin.svg',
@@ -61,15 +61,15 @@ const MEDIA_PRECACHE_URLS = [
   'Image/personnages/samourai-cyber.svg',
   'Image/personnages/alchimiste-etoile.svg',
   'Image/personnages/chevalier-astral.svg',
-  'Image/ile/maths.webp',
-  'Image/ile/francais.webp',
-  'Image/ile/histoire.webp',
+  'Image/ile/maths.svg',
+  'Image/ile/francais.svg',
+  'Image/ile/histoire.svg',
   'Image/ile/geo.svg',
-  'Image/ile/svt.webp',
-  'Image/ile/anglais.webp',
-  'Image/ile/physique.webp',
+  'Image/ile/svt.svg',
+  'Image/ile/anglais.svg',
+  'Image/ile/physique.svg',
   'Image/ile/chimie.svg',
-  'Image/ile/technologie.webp',
+  'Image/ile/technologie.svg',
   'Image/ile/philo.svg',
   'Image/ile/emc.svg',
   'Image/ile/nsi.svg',

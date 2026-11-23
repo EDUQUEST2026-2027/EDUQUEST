@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
+  <defs>
+    <radialGradient id="isvtHalo" cx="0.5" cy="0.44" r="0.52">
+      <stop offset="0" stop-color="#22c55e" stop-opacity="0.34"/>
+      <stop offset="0.58" stop-color="#c8a84b" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#070b1a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="isvtRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c3e68"/>
+      <stop offset="0.55" stop-color="#192544"/>
+      <stop offset="1" stop-color="#0d1428"/>
+    </linearGradient>
+    <linearGradient id="isvtRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#18223d"/>
+      <stop offset="1" stop-color="#080d1b"/>
+    </linearGradient>
+    <linearGradient id="isvtPlateau" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#24663b"/>
+      <stop offset="1" stop-color="#10361e"/>
+    </linearGradient>
+    <linearGradient id="isvtGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7e29c"/>
+      <stop offset="0.5" stop-color="#c8a84b"/>
+      <stop offset="1" stop-color="#8b661d"/>
+    </linearGradient>
+    <linearGradient id="isvtAccent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#86efac"/>
+      <stop offset="1" stop-color="#22c55e"/>
+    </linearGradient>
+    <linearGradient id="isvtBanner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c2a4f"/>
+      <stop offset="1" stop-color="#0c1328"/>
+    </linearGradient>
+    <filter id="isvtShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="9" stdDeviation="7" flood-color="#000000" flood-opacity="0.52"/>
+    </filter>
+  </defs>
+
+  <!-- Halo astral unifié -->
+  <circle cx="210" cy="195" r="185" fill="url(#isvtHalo)"/>
+
+  <!-- Étoiles astrales dorées (grille signature EDUQUEST) -->
+  <g fill="#f2dc96">
+    <path d="M52 94 l2.6 6 6 2.6 -6 2.6 -2.6 6 -2.6 -6 -6 -2.6 6 -2.6 Z" opacity="0.88"/>
+    <path d="M368 72 l2.2 5 5 2.2 -5 2.2 -2.2 5 -2.2 -5 -5 -2.2 5 -2.2 Z" opacity="0.72"/>
+    <path d="M382 174 l1.8 4 4 1.8 -4 1.8 -1.8 4 -1.8 -4 -4 -1.8 4 -1.8 Z" opacity="0.55"/>
+    <circle cx="64" cy="210" r="2.4" fill="#86efac" opacity="0.65"/>
+    <circle cx="352" cy="264" r="2.6" opacity="0.5"/>
+    <circle cx="320" cy="44" r="2" fill="#86efac" opacity="0.6"/>
+  </g>
+
+  <g filter="url(#isvtShadow)">
+    <!-- Socle rocheux flottant unifié -->
+    <path d="M34 232 L210 264 L386 232 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 L68 284 Z" fill="url(#isvtRockTop)" stroke="#080e1d" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M68 284 L132 300 L210 308 L288 300 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 Z" fill="url(#isvtRockDeep)" opacity="0.85"/>
+    <!-- Veines cristallines de la matière -->
+    <path d="M120 296 L142 324 M296 296 L278 326 M192 318 L210 356 L228 318" stroke="#86efac" stroke-width="2.4" stroke-linecap="round" opacity="0.5" fill="none"/>
+    <!-- Galets flottants sous l'île -->
+    <polygon points="164,376 175,382 169,394 157,388" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <polygon points="256,374 268,382 260,393 249,386" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <circle cx="210" cy="400" r="4" fill="#86efac" opacity="0.75"/>
+
+    <!-- Plateau insulaire cerclé d'or -->
+    <ellipse cx="210" cy="236" rx="176" ry="54" fill="url(#isvtPlateau)" stroke="url(#isvtGold)" stroke-width="3.5"/>
+    <ellipse cx="210" cy="232" rx="158" ry="43" fill="none" stroke="#86efac" stroke-width="1.5" stroke-opacity="0.45"/>
+
+    <!-- Scène dédiée à la matière -->
+    
+      <!-- Double hélice ADN + Grande feuille émeraude + Microscope -->
+      <g transform="translate(210 148)">
+        <ellipse cx="0" cy="80" rx="80" ry="14" fill="#091326" opacity="0.45"/>
+        <!-- Arbre/Feuille organique gauche -->
+        <path d="M-64 68 C-98 20 -80 -44 -20 -50 C-18 8 -34 52 -64 68 Z" fill="url(#isvtAccent)" stroke="#0c2618" stroke-width="3"/>
+        <path d="M-62 62 Q-46 10 -24 -42" stroke="#dcfce7" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+        <!-- Double hélice ADN centrale -->
+        <g transform="translate(16 0)">
+          <path d="M-24 -64 C24 -36 -24 0 24 32 C-12 52 -24 62 -24 68" stroke="#4ade80" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+          <path d="M24 -64 C-24 -36 24 0 -24 32 C12 52 24 62 24 68" stroke="#38bdf8" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+          <g stroke="#f5de8a" stroke-width="3" stroke-linecap="round">
+            <line x1="-12" y1="-44" x2="12" y2="-44"/><line x1="-14" y1="-18" x2="14" y2="-18"/>
+            <line x1="-14" y1="12" x2="14" y2="12"/><line x1="-12" y1="42" x2="12" y2="42"/>
+          </g>
+        </g>
+        <!-- Cellule lumineuse droite -->
+        <g transform="translate(76 34)">
+          <circle r="24" fill="#15803d" stroke="#86efac" stroke-width="3"/>
+          <circle cx="-4" cy="-3" r="9" fill="#bbf7d0"/>
+          <circle cx="9" cy="8" r="4" fill="#fde047"/>
+        </g>
+      </g>
+
+    <!-- Bannière astrale dorée unifiée -->
+    <g transform="translate(210 336)">
+      <path d="M-90 -19 L90 -19 L78 19 L-78 19 Z"
+            fill="url(#isvtBanner)" stroke="url(#isvtGold)" stroke-width="3" stroke-linejoin="round"/>
+      <g fill="#f5de8a">
+        <circle cx="-74" cy="-9" r="2.4"/>
+        <circle cx="74" cy="-9" r="2.4"/>
+        <circle cx="-68" cy="10" r="2.4"/>
+        <circle cx="68" cy="10" r="2.4"/>
+      </g>
+      <text x="0" y="7" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="24" font-weight="700"
+            fill="#f4de94" letter-spacing="2">SVT</text>
+    </g>
+  </g>
+</svg>

@@ -154,12 +154,13 @@
         });
         save(data);
         if (newlyDone.length && typeof setTimeout === 'function') {
-            setTimeout(() => {
+            const t = setTimeout(() => {
                 if (root.Celebrate && root.Celebrate.confetti) root.Celebrate.confetti();
                 if (typeof root.showNotification === 'function') {
-                    newlyDone.forEach(q => root.showNotification(`🎉 Quête accomplie : ${q.title} — récompense à réclamer !`));
+                    newlyDone.forEach(q => root.showNotification(`Quête accomplie : ${q.title} — récompense à réclamer !`));
                 }
             }, 450);
+            if (t && typeof t.unref === 'function') t.unref();
         }
         return newlyDone;
     }
@@ -178,7 +179,8 @@
         if (!q || q.claimed || !isComplete(q)) return null;
         q.claimed = true;
         save(data); // on marque AVANT de créditer : pas de double crédit si crash entre les deux
-        const mult = Number(getRewardsConfig().questRewardMultiplier) || 1;
+        const rawMult = Number(getRewardsConfig().questRewardMultiplier);
+        const mult = Number.isFinite(rawMult) && rawMult > 0 ? rawMult : 1;
         const finalXp = Math.round(q.xp * mult);
         const finalCoins = Math.round(q.coins * mult);
         addRewards(finalXp, finalCoins);
@@ -186,7 +188,8 @@
     }
 
     function getBonusCoins() {
-        return Number(getRewardsConfig().dailyChestCoins) || BONUS_COINS;
+        const raw = Number(getRewardsConfig().dailyChestCoins);
+        return Number.isFinite(raw) && raw > 0 ? Math.round(raw) : BONUS_COINS;
     }
 
     /** Ouvre le coffre bonus (toutes les quêtes réclamées). */

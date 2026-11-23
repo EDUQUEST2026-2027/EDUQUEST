@@ -188,15 +188,20 @@
         };
     }
 
+    const TIMER_SVG = '<svg class="eq-icon eq-icon--cyan" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8" fill="currentColor" fill-opacity="0.18"/><path d="M12 9v4l2.5 2M9 3h6M12 3v2"/></svg>';
+
     /** Construit le HTML standard et lisible de la barre de chronomètre. */
     function renderBarHtml(idOrPrefix, durationSec) {
         const ids = resolveIds(idOrPrefix);
         const d = Math.max(1, Math.round(Number(durationSec) || getConfiguredDuration()));
+        const icon = (root && root.EduIcons && typeof root.EduIcons.svg === 'function')
+            ? root.EduIcons.svg('timer', { size: 15, tone: 'cyan' })
+            : TIMER_SVG;
         return `
             <div id="${ids.containerId}" class="quiz-chrono-container" role="timer" aria-live="off">
                 <div class="quiz-chrono-header">
-                    <span>⏱ Mode Défi Chronométré</span>
-                    <span id="${ids.textId}" class="quiz-chrono-label">⏱ ${d}s</span>
+                    <span class="quiz-chrono-title">${icon} Mode Défi Chronométré</span>
+                    <span id="${ids.textId}" class="quiz-chrono-label">${icon}<span class="quiz-chrono-sec">${d}s</span></span>
                 </div>
                 <div class="quiz-chrono-track">
                     <div id="${ids.barId}" class="quiz-chrono-fill" style="width:100%;"></div>
@@ -212,7 +217,11 @@
         const bar = document.getElementById(ids.barId);
         const text = document.getElementById(ids.textId);
         if (bar) bar.style.width = tick.percent.toFixed(1) + '%';
-        if (text) text.textContent = '⏱ ' + Math.max(0, tick.remaining) + 's';
+        if (text) {
+            const secEl = text.querySelector('.quiz-chrono-sec');
+            if (secEl) secEl.textContent = Math.max(0, tick.remaining) + 's';
+            else text.textContent = Math.max(0, tick.remaining) + 's';
+        }
         if (container) {
             container.classList.toggle('is-warning', Boolean(tick.warning) && !tick.urgent);
             container.classList.toggle('is-urgent', Boolean(tick.urgent));

@@ -110,11 +110,18 @@ const QuizEngine = (() => {
         return question._renderedChoices;
     }
 
+    function iconHtml(name, fallback, tone) {
+        if (typeof window !== 'undefined' && window.EduIcons && typeof window.EduIcons.svg === 'function') {
+            return window.EduIcons.svg(name, { size: 15, tone: tone || '' });
+        }
+        return fallback;
+    }
+
     function renderQCM(question) {
         // Ordre stable pendant toute la tentative (ne change plus au clic ni à la correction)
         const choices = getShuffledChoices(question);
         return choices.map(c =>
-            `<button class="dash-option-btn" data-choice="${c.origIndex}">${esc(c.opt)}</button>`
+            `<button type="button" class="dash-option-btn" data-choice="${c.origIndex}">${esc(c.opt)}</button>`
         ).join('');
     }
     function bindQCM(container, question, quizState, onSubmit) {
@@ -151,8 +158,8 @@ const QuizEngine = (() => {
 
     function renderVraiFaux() {
         return `
-            <button class="dash-option-btn dash-vf-btn" data-choice="true">✓ Vrai</button>
-            <button class="dash-option-btn dash-vf-btn" data-choice="false">✗ Faux</button>`;
+            <button type="button" class="dash-option-btn dash-vf-btn" data-choice="true">${iconHtml('check', '✓', 'emerald')} Vrai</button>
+            <button type="button" class="dash-option-btn dash-vf-btn" data-choice="false">${iconHtml('close', '✗', 'danger')} Faux</button>`;
     }
     function bindVraiFaux(container, question, quizState, onSubmit) {
         container.querySelectorAll('[data-choice]').forEach(btn => {
@@ -202,6 +209,7 @@ const QuizEngine = (() => {
         if (!isCoarseTouchDevice()) input.focus();
     }
     function gradeReponseCourte(question, submitted) {
+        if (!question || !Array.isArray(question.accepted) || question.accepted.length === 0) return false;
         return question.accepted.some(a => isFuzzyMatch(a, submitted));
     }
     function freezeReponseCourte(container, question, submitted) {
@@ -230,10 +238,11 @@ const QuizEngine = (() => {
     function renderTexteATrous(question) {
         let blankIndex = 0;
         const isDropdown = question.type === 'texte_a_choix' || question.type === 'texte_menu_deroulant' || Boolean(question.useSelect || question.choices);
+        const cacheKey = String(question.q || '') + '|' + String(question.textWithBlanks || '');
 
-        if (!question._cachedDropdowns || question._cachedDropdownsKey !== question.q) {
+        if (!question._cachedDropdowns || question._cachedDropdownsKey !== cacheKey) {
             question._cachedDropdowns = {};
-            question._cachedDropdownsKey = question.q;
+            question._cachedDropdownsKey = cacheKey;
         }
 
         const sentence = esc(question.textWithBlanks).replace(/\[_{3,}\]|_{3,}/g, () => {
@@ -255,18 +264,18 @@ const QuizEngine = (() => {
         // Boîte de mots proposés pour le texte à trous textuel
         let wordBankHtml = '';
         if (!isDropdown && question.blanks) {
-            if (!question._cachedWordBank || question._cachedWordBankKey !== question.q) {
+            if (!question._cachedWordBank || question._cachedWordBankKey !== cacheKey) {
                 const rawWords = Array.from(new Set(
                     question.blanks.flat().concat(question.distractors || [])
                 )).filter(Boolean);
                 question._cachedWordBank = rawWords.length > 0 ? shuffleArray(rawWords) : [];
-                question._cachedWordBankKey = question.q;
+                question._cachedWordBankKey = cacheKey;
             }
             const shuffledWords = question._cachedWordBank;
             if (shuffledWords.length > 0) {
                 wordBankHtml = `
                     <div class="dash-wordbank-container">
-                        <span class="dash-wordbank-label">💡 Mots proposés (clique pour insérer) :</span>
+                        <span class="dash-wordbank-label">${iconHtml('bulb', '💡', 'gold')} Mots proposés (clique pour insérer) :</span>
                         <div class="dash-wordbank-chips">
                             ${shuffledWords.map(w => `<button type="button" class="dash-word-chip" data-word="${esc(w)}">${esc(w)}</button>`).join('')}
                         </div>
@@ -351,10 +360,12 @@ const QuizEngine = (() => {
        laquelle on veut l'associer. Un badge affiche les paires déjà faites. */
 
     function renderDragAndDrop(question) {
-        const items = question.items.map((it, i) =>
-            `<button class="dash-dd-chip" data-item="${i}">${esc(it)}</button>`).join('');
-        const targets = question.targets.map((t, i) =>
-            `<button class="dash-dd-target" data-target="${i}">${esc(t)}<span class="dash-dd-drop"></span></button>`).join('');
+        const rawItems = Array.isArray(question && question.items) ? question.items : [];
+        const rawTargets = Array.isArray(question && question.targets) ? question.targets : [];
+        const items = rawItems.map((it, i) =>
+            `<button type="button" class="dash-dd-chip" data-item="${i}">${esc(it)}</button>`).join('');
+        const targets = rawTargets.map((t, i) =>
+            `<button type="button" class="dash-dd-target" data-target="${i}">${esc(t)}<span class="dash-dd-drop"></span></button>`).join('');
         return `
             <div class="dash-dd-hint">Clique un élément, puis la case à laquelle il correspond.</div>
             <div class="dash-dd-row">${items}</div>
@@ -362,6 +373,7 @@ const QuizEngine = (() => {
             <button class="dash-btn-primary dash-dd-submit" type="button" disabled>Valider</button>`;
     }
     function bindDragAndDrop(container, question, quizState, onSubmit) {
+        const rawItems = Array.isArray(question && question.items) ? question.items : [];
         const pairs = {}; // { itemIndex: targetIndex }
         let selectedItem = null;
         const submitBtn = container.querySelector('.dash-dd-submit');
@@ -377,10 +389,10 @@ const QuizEngine = (() => {
                 const assignedItem = Object.keys(pairs).find(k => pairs[k] === tIdx);
                 const dropZone = target.querySelector('.dash-dd-drop');
                 if (dropZone) {
-                    dropZone.textContent = assignedItem !== undefined ? question.items[assignedItem] : '';
+                    dropZone.textContent = assignedItem !== undefined ? (rawItems[assignedItem] || '') : '';
                 }
             });
-            submitBtn.disabled = Object.keys(pairs).length < question.items.length;
+            if (submitBtn) submitBtn.disabled = rawItems.length === 0 || Object.keys(pairs).length < rawItems.length;
         }
 
         container.querySelectorAll('.dash-dd-chip').forEach(chip => {
@@ -402,13 +414,18 @@ const QuizEngine = (() => {
                 refresh();
             });
         });
-        submitBtn.addEventListener('click', () => onSubmit(pairs));
+        if (submitBtn) submitBtn.addEventListener('click', () => onSubmit(pairs));
     }
     function gradeDragAndDrop(question, submitted) {
+        if (!question || !Array.isArray(question.items) || question.items.length === 0 || !Array.isArray(question.targets) || !question.pairs) {
+            return false;
+        }
         const given = submitted && typeof submitted === 'object' ? submitted : {};
         return question.items.every((item, i) => {
+            const rawVal = given[i];
+            if (rawVal === undefined || rawVal === null || rawVal === '') return false;
             const expectedTargetIndex = question.targets.indexOf(question.pairs[item]);
-            return Number(given[i]) === expectedTargetIndex;
+            return expectedTargetIndex >= 0 && Number(rawVal) === expectedTargetIndex;
         });
     }
     function freezeDragAndDrop(container, question, submitted) {
@@ -427,10 +444,11 @@ const QuizEngine = (() => {
     }
     function revealDragAndDrop(container, question, submitted) {
         freezeDragAndDrop(container, question, submitted);
+        if (!question || !Array.isArray(question.items) || !Array.isArray(question.targets) || !question.pairs) return;
         const given = submitted && typeof submitted === 'object' ? submitted : {};
         container.querySelectorAll('.dash-dd-target').forEach(targetEl => {
             const targetIdx = Number(targetEl.dataset.target);
-            const itemIdx = Object.keys(given).find(i => Number(given[i]) === targetIdx);
+            const itemIdx = Object.keys(given).find(i => given[i] !== '' && given[i] != null && Number(given[i]) === targetIdx);
             if (itemIdx !== undefined) {
                 const itemName = question.items[itemIdx];
                 const expectedTargetIndex = question.targets.indexOf(question.pairs[itemName]);

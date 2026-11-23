@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <radialGradient id="aveinsteinBg" cx="50%" cy="34%" r="72%">
+      <stop offset="0%" stop-color="#bfdbfe" stop-opacity="0.92"/>
+      <stop offset="48%" stop-color="#60a5fa" stop-opacity="0.72"/>
+      <stop offset="100%" stop-color="#091126"/>
+    </radialGradient>
+    <linearGradient id="aveinsteinGold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fce9a6"/>
+      <stop offset="100%" stop-color="#b88d32"/>
+    </linearGradient>
+    <clipPath id="aveinsteinClip"><circle cx="60" cy="60" r="56"/></clipPath>
+  </defs>
+  <rect width="120" height="120" fill="#091126"/>
+  <g clip-path="url(#aveinsteinClip)">
+    <rect width="120" height="120" fill="url(#aveinsteinBg)"/>
+    <!-- Constellation astrale de fond -->
+    <circle cx="60" cy="60" r="49" fill="none" stroke="url(#aveinsteinGold)" stroke-width="1" stroke-dasharray="4 5" opacity="0.35"/>
+    <g fill="#f7e7ae" opacity="0.8">
+      <path d="M22 26 l1.4 3.2 3.2 1.4 -3.2 1.4 -1.4 3.2 -1.4 -3.2 -3.2 -1.4 3.2 -1.4 Z"/>
+      <circle cx="98" cy="28" r="1.8"/>
+      <circle cx="18" cy="64" r="1.4" opacity="0.6"/>
+      <circle cx="102" cy="58" r="1.6" opacity="0.7"/>
+    </g>
+    
+    <!-- Formule E=mc2 -->
+    <text x="60" y="22" text-anchor="middle" font-family="Georgia, serif" font-size="11" font-weight="700" fill="#fef08a" opacity="0.9">E = mc²</text>
+    <!-- Veste tweed & cravate -->
+    <path d="M22 118 L30 82 Q60 75 90 82 L98 118 Z" fill="#475569" stroke="#0e172a" stroke-width="2"/>
+    <polygon points="50,80 60,104 70,80" fill="#f8fafc"/>
+    <polygon points="57,84 63,84 64,106 60,112 56,106" fill="#9f1239"/>
+    <!-- Chevelure blanche ébouriffée -->
+    <path d="M28 58 Q20 42 32 34 Q32 22 48 26 Q60 16 72 26 Q88 22 88 34 Q100 42 92 58 Q86 68 78 64 L42 64 Q34 68 28 58 Z" fill="#e2e8f0" stroke="#64748b" stroke-width="1.8"/>
+    <!-- Visage -->
+    <rect x="41" y="36" width="38" height="44" rx="17" fill="#f5cca8" stroke="#8a5a3a" stroke-width="1.8"/>
+    <circle cx="51" cy="52" r="2.8" fill="#0f172a"/><circle cx="69" cy="52" r="2.8" fill="#0f172a"/>
+    <path d="M46 46 Q51 44 56 46 M64 46 Q69 44 74 46" stroke="#cbd5e1" stroke-width="2.6" stroke-linecap="round"/>
+    <!-- Moustache emblématique -->
+    <path d="M44 65 Q52 58 60 63 Q68 58 76 65 Q68 71 60 68 Q52 71 44 65 Z" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.3"/>
+  
+  </g>
+  <!-- Cadre médaillon doré unifié -->
+  <circle cx="60" cy="60" r="56" fill="none" stroke="url(#aveinsteinGold)" stroke-width="3.2"/>
+</svg>

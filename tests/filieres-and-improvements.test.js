@@ -272,12 +272,20 @@ test.describe('Anti-répétition renforcée (AdaptiveEngine + QuestionBank)', ()
     });
 });
 
-test.describe('Assets, PWA Service Worker & HTML — Cohérence v1.29.1', () => {
-    test('Toutes les 36 îles (29 SVG + 7 WebP) et tous les 27 avatars existent, sont non vides, valides XML et pré-cachés', () => {
+test.describe('Assets, PWA Service Worker & HTML — Cohérence v1.30.0 (100 % SVG Astral & Or)', () => {
+    test('Logo SVG, toutes les 36 îles SVG et tous les 27 avatars SVG existent, sont non vides, valides XML et pré-cachés (zéro .webp)', () => {
         const swContent = fs.readFileSync(path.join(ROOT, 'service-worker.js'), 'utf8');
+        assert.equal(swContent.includes('.webp'), false, 'service-worker.js ne doit plus référencer de fichiers .webp');
+        assert.equal(swContent.includes('js/core/icons.js'), true, 'js/core/icons.js doit être pré-caché');
+        assert.equal(swContent.includes('Image/logo.svg'), true, 'Image/logo.svg doit être pré-caché');
+
+        const logoPath = path.join(ROOT, 'Image', 'logo.svg');
+        assert.equal(fs.existsSync(logoPath), true, 'Image/logo.svg manquant');
+        assert.ok(fs.statSync(logoPath).size >= 500, 'Image/logo.svg trop petit');
+
         const allIslands = [
-            'maths.webp', 'francais.webp', 'histoire.webp', 'geo.svg', 'svt.webp',
-            'anglais.webp', 'physique.webp', 'chimie.svg', 'technologie.webp',
+            'maths.svg', 'francais.svg', 'histoire.svg', 'geo.svg', 'svt.svg',
+            'anglais.svg', 'physique.svg', 'chimie.svg', 'technologie.svg',
             'philo.svg', 'emc.svg', 'nsi.svg', 'ses.svg',
             'espagnol.svg', 'arts.svg', 'hggsp.svg', 'si.svg',
             'msgn.svg', 'droit_eco.svg', 'mercatique.svg',
@@ -294,36 +302,36 @@ test.describe('Assets, PWA Service Worker & HTML — Cohérence v1.29.1', () => 
             const stat = fs.statSync(fullPath);
             assert.ok(stat.size >= 500, `Fichier icône vide ou corrompu : Image/ile/${file} (${stat.size} octets)`);
             assert.equal(swContent.includes(`Image/ile/${file}`), true, `Non pré-caché dans service-worker.js : ${file}`);
-            if (file.endsWith('.svg')) {
-                const raw = fs.readFileSync(fullPath, 'utf8');
-                const noComments = raw.replace(/<!--[\s\S]*?-->/g, '');
-                const openSvgCount = (noComments.match(/<svg\b/g) || []).length;
-                const closeSvgCount = (noComments.match(/<\/svg>/g) || []).length;
-                assert.equal(openSvgCount, 1, `Nombre de balises <svg> invalide (${openSvgCount}) dans ${file}`);
-                assert.equal(closeSvgCount, 1, `Nombre de balises </svg> invalide (${closeSvgCount}) dans ${file}`);
-                assert.ok(noComments.includes('http://www.w3.org/2000/svg'), `xmlns SVG manquant : ${file}`);
-                const badAmp = noComments.match(/&(?!(amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)/g);
-                assert.equal(badAmp, null, `Esperluette XML non échappée dans ${file}`);
-            }
+            const raw = fs.readFileSync(fullPath, 'utf8');
+            const noComments = raw.replace(/<!--[\s\S]*?-->/g, '');
+            const openSvgCount = (noComments.match(/<svg\b/g) || []).length;
+            const closeSvgCount = (noComments.match(/<\/svg>/g) || []).length;
+            assert.equal(openSvgCount, 1, `Nombre de balises <svg> invalide (${openSvgCount}) dans ${file}`);
+            assert.equal(closeSvgCount, 1, `Nombre de balises </svg> invalide (${closeSvgCount}) dans ${file}`);
+            assert.ok(noComments.includes('http://www.w3.org/2000/svg'), `xmlns SVG manquant : ${file}`);
+            const badAmp = noComments.match(/&(?!(amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)/g);
+            assert.equal(badAmp, null, `Esperluette XML non échappée dans ${file}`);
         }
 
-        // Vérifie aussi tous les avatars dans Image/personnages/
+        // Vérifie aussi que tous les avatars dans Image/personnages/ sont 100 % SVG valides
         const charsDir = path.join(ROOT, 'Image', 'personnages');
-        for (const file of fs.readdirSync(charsDir)) {
+        const charFiles = fs.readdirSync(charsDir);
+        assert.equal(charFiles.length, 27, `27 avatars SVG attendus, trouvé ${charFiles.length}`);
+        for (const file of charFiles) {
+            assert.ok(file.endsWith('.svg'), `Avatar non SVG détecté : ${file}`);
             const fullPath = path.join(charsDir, file);
             const stat = fs.statSync(fullPath);
             assert.ok(stat.size >= 500, `Avatar vide ou corrompu : Image/personnages/${file} (${stat.size} octets)`);
-            if (file.endsWith('.svg')) {
-                const raw = fs.readFileSync(fullPath, 'utf8');
-                const noComments = raw.replace(/<!--[\s\S]*?-->/g, '');
-                const openSvgCount = (noComments.match(/<svg\b/g) || []).length;
-                const closeSvgCount = (noComments.match(/<\/svg>/g) || []).length;
-                assert.equal(openSvgCount, 1, `Nombre de balises <svg> invalide (${openSvgCount}) dans avatar ${file}`);
-                assert.equal(closeSvgCount, 1, `Nombre de balises </svg> invalide (${closeSvgCount}) dans avatar ${file}`);
-                assert.ok(noComments.includes('http://www.w3.org/2000/svg'), `xmlns SVG manquant dans avatar : ${file}`);
-                const badAmp = noComments.match(/&(?!(amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)/g);
-                assert.equal(badAmp, null, `Esperluette XML non échappée dans avatar ${file}`);
-            }
+            assert.equal(swContent.includes(`Image/personnages/${file}`), true, `Avatar non pré-caché : ${file}`);
+            const raw = fs.readFileSync(fullPath, 'utf8');
+            const noComments = raw.replace(/<!--[\s\S]*?-->/g, '');
+            const openSvgCount = (noComments.match(/<svg\b/g) || []).length;
+            const closeSvgCount = (noComments.match(/<\/svg>/g) || []).length;
+            assert.equal(openSvgCount, 1, `Nombre de balises <svg> invalide (${openSvgCount}) dans avatar ${file}`);
+            assert.equal(closeSvgCount, 1, `Nombre de balises </svg> invalide (${closeSvgCount}) dans avatar ${file}`);
+            assert.ok(noComments.includes('http://www.w3.org/2000/svg'), `xmlns SVG manquant dans avatar : ${file}`);
+            const badAmp = noComments.match(/&(?!(amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)/g);
+            assert.equal(badAmp, null, `Esperluette XML non échappée dans avatar ${file}`);
         }
     });
 

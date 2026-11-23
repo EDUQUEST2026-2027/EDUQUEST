@@ -1,26 +1,39 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
   <defs>
-    <radialGradient id="bg" cx="35%" cy="30%" r="75%">
-      <stop offset="0%" stop-color="#2563eb"/>
-      <stop offset="100%" stop-color="#090d16"/>
+    <radialGradient id="avspacemarineBg" cx="50%" cy="34%" r="72%">
+      <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.92"/>
+      <stop offset="48%" stop-color="#1d4ed8" stop-opacity="0.72"/>
+      <stop offset="100%" stop-color="#091126"/>
     </radialGradient>
+    <linearGradient id="avspacemarineGold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fce9a6"/>
+      <stop offset="100%" stop-color="#b88d32"/>
+    </linearGradient>
+    <clipPath id="avspacemarineClip"><circle cx="60" cy="60" r="56"/></clipPath>
   </defs>
-  <rect width="120" height="120" fill="url(#bg)"/>
-  <!-- Massive Ultramarine Pauldrons with Gold Trim -->
-  <path d="M10 120 Q10 72 42 74 L44 120 Z" fill="#1d4ed8" stroke="#f59e0b" stroke-width="4"/>
-  <path d="M110 120 Q110 72 78 74 L76 120 Z" fill="#1d4ed8" stroke="#f59e0b" stroke-width="4"/>
-  <!-- Chest Armor & Golden Aquila -->
-  <rect x="38" y="80" width="44" height="40" fill="#1e40af" stroke="#1e3a8a" stroke-width="2"/>
-  <polygon points="44,94 60,100 76,94 70,104 60,102 50,104" fill="#fbbf24"/>
-  <!-- Astartes Mk X Helmet -->
-  <rect x="35" y="28" width="50" height="54" rx="18" fill="#1d4ed8" stroke="#1e3a8a" stroke-width="3"/>
-  <!-- Top Helmet Ridge -->
-  <rect x="55" y="24" width="10" height="20" rx="3" fill="#2563eb" stroke="#fbbf24" stroke-width="1.5"/>
-  <!-- Glowing Red Eye Lenses -->
-  <polygon points="41,50 56,54 54,60 41,56" fill="#ef4444" stroke="#fca5a5" stroke-width="1.5"/>
-  <polygon points="79,50 64,54 66,60 79,56" fill="#ef4444" stroke="#fca5a5" stroke-width="1.5"/>
-  <!-- Angular Vox-Grille Mouthplate -->
-  <polygon points="60,58 46,74 74,74" fill="#1e3a8a" stroke="#93c5fd" stroke-width="2"/>
-  <line x1="56" y1="65" x2="64" y2="65" stroke="#090d16" stroke-width="2"/>
-  <line x1="53" y1="70" x2="67" y2="70" stroke="#090d16" stroke-width="2"/>
+  <rect width="120" height="120" fill="#091126"/>
+  <g clip-path="url(#avspacemarineClip)">
+    <rect width="120" height="120" fill="url(#avspacemarineBg)"/>
+    <!-- Constellation astrale de fond -->
+    <circle cx="60" cy="60" r="49" fill="none" stroke="url(#avspacemarineGold)" stroke-width="1" stroke-dasharray="4 5" opacity="0.35"/>
+    <g fill="#f7e7ae" opacity="0.8">
+      <path d="M22 26 l1.4 3.2 3.2 1.4 -3.2 1.4 -1.4 3.2 -1.4 -3.2 -3.2 -1.4 3.2 -1.4 Z"/>
+      <circle cx="98" cy="28" r="1.8"/>
+      <circle cx="18" cy="64" r="1.4" opacity="0.6"/>
+      <circle cx="102" cy="58" r="1.6" opacity="0.7"/>
+    </g>
+    
+    <!-- Épaulières géantes Ultramarine -->
+    <path d="M14 118 C14 78 32 72 44 76 L76 76 C88 72 106 78 106 118 Z" fill="#1d4ed8" stroke="url(#avspacemarineGold)" stroke-width="3"/>
+    <rect x="44" y="84" width="32" height="24" rx="4" fill="#1e3a8a" stroke="url(#avspacemarineGold)" stroke-width="2"/>
+    <!-- Casque Mk.X -->
+    <path d="M37 52 Q37 22 60 22 Q83 22 83 52 L78 76 Q60 84 42 76 Z" fill="#2563eb" stroke="#0e172a" stroke-width="2.2"/>
+    <!-- Optiques rouges -->
+    <polygon points="43,48 56,51 54,56 44,54" fill="#ef4444"/><polygon points="77,48 64,51 66,56 76,54" fill="#ef4444"/>
+    <!-- Grille respirateur -->
+    <polygon points="48,66 60,60 72,66 70,76 50,76" fill="#1e293b" stroke="#93c5fd" stroke-width="1.5"/>
+  
+  </g>
+  <!-- Cadre médaillon doré unifié -->
+  <circle cx="60" cy="60" r="56" fill="none" stroke="url(#avspacemarineGold)" stroke-width="3.2"/>
 </svg>

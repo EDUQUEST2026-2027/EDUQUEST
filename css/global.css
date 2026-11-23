@@ -1,5 +1,5 @@
 /* ==========================================================================
-   GLOBAL.CSS — EDUQUEST v1.29.1
+   GLOBAL.CSS — EDUQUEST v1.30.0
    Feuille de style partagée entre TOUTES les pages HTML.
 
    CONTENU :
@@ -446,11 +446,59 @@ body.no-particles .clouds {
     font-weight: 700;
     letter-spacing: 0.4px;
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     box-shadow: 0 6px 22px rgba(0, 0, 0, 0.4);
+}
+.site-announcement-banner[hidden] { display: none; }
+
+/* ===== SYSTÈME UNIFIÉ D'ICÔNES SVG (Astral & Or — js/core/icons.js) ===== */
+.eq-icon {
+    display: inline-block;
+    vertical-align: -0.16em;
+    flex-shrink: 0;
+    color: currentColor;
+}
+.eq-icon--gold    { color: #f4de94; }
+.eq-icon--cyan    { color: #5fd4e6; }
+.eq-icon--emerald { color: #6bca82; }
+.eq-icon--fire    { color: #ff9f43; }
+.eq-icon--danger  { color: #ff6b81; }
+.eq-icon--violet  { color: #c084fc; }
+.eq-icon--muted   { color: rgba(200, 214, 240, 0.6); }
+
+.eq-icon-mono {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5em;
+    height: 1.5em;
+    padding: 0 4px;
+    border-radius: 6px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.82em;
+    font-weight: 800;
+    color: #f4de94;
+    background: rgba(200, 168, 75, 0.16);
+    border: 1px solid rgba(200, 168, 75, 0.45);
+    vertical-align: middle;
+}
+.eq-stars-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    vertical-align: middle;
+}
+.adm-hint {
+    font-size: 0.82rem;
+    color: rgba(200, 215, 245, 0.68);
+    line-height: 1.4;
 }
 
 /* ===== NOTIFICATIONS TOAST (.notification) =====
-   Message temporaire qui apparaît en haut à droite.
+   Message temporaire qui apparaît en bas à droite (en haut sur mobile).
    Créé dynamiquement par JS (showNotification dans app.js).
    Disparaît automatiquement après 3s via l'animation CSS fadeOut.
 
@@ -464,6 +512,7 @@ body.no-particles .clouds {
     right: 20px;
     background: rgba(45, 80, 22, 0.92);          /* Fond vert sombre translucide */
     backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     border: 1px solid rgba(107, 202, 130, 0.4);
     border-top-color: rgba(107, 202, 130, 0.6);  /* Bord supérieur plus vif */
     border-radius: 14px;
@@ -518,6 +567,7 @@ body.no-particles .clouds {
     background: rgba(7, 11, 26, 0.55);
     border: 1px solid rgba(200, 168, 75, 0.25);
     backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     color: rgba(230, 207, 138, 0.85);
     font-size: 12px;
     letter-spacing: 1px;
@@ -991,6 +1041,14 @@ button::after,
     border-color: var(--ui-btn-border) !important;
     color: var(--ui-btn-text, #ffffff) !important;
 }
+[data-btn-custom="true"] .menu-button:not(.danger):hover,
+[data-btn-custom="true"] .dash-btn-primary:hover,
+[data-btn-custom="true"] .dash-skin-btn:not(:disabled):hover,
+[data-btn-custom="true"] .back-button:hover,
+[data-btn-custom="true"] .dash-back-btn:hover,
+[data-btn-custom="true"] .option-button:not(.danger):hover {
+    filter: brightness(calc(var(--btn-brightness, 0.80) + 0.16));
+}
 
 [data-ui-custom="true"] .background {
     background:
@@ -1004,7 +1062,6 @@ button::after,
 [data-ui-custom="true"] .options-container,
 [data-ui-custom="true"] .login-container,
 [data-ui-custom="true"] .dash-card,
-[data-ui-custom="true"] .dash-header,
 [data-ui-custom="true"] .dash-hud,
 [data-ui-custom="true"] .quest-board,
 [data-ui-custom="true"] .modal-content {
@@ -1037,6 +1094,9 @@ button::after,
 .class-expulsion-card {
     max-width: 460px;
     width: 100%;
+    max-height: 90vh;
+    max-height: 90dvh;
+    overflow-y: auto;
     padding: 30px 26px;
     border-radius: 20px;
     background: rgba(12, 20, 40, 0.88);
@@ -1045,6 +1105,9 @@ button::after,
     animation: panelSlideIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .class-expulsion-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 2.8rem;
     margin-bottom: 12px;
 }
@@ -1095,5 +1158,11 @@ button::after,
     background: rgba(179, 136, 255, 0.18);
     border-color: rgba(179, 136, 255, 0.5);
     color: #e4ccff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .star, .cloud, .notification, .class-expulsion-overlay, .class-expulsion-card {
+        animation: none !important;
+    }
 }
 

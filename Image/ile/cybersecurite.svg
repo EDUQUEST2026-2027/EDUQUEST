@@ -1,67 +1,96 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
-  <!-- ILOT CYBERSECURITE CIEL - EDUQUEST -->
   <defs>
-    <linearGradient id="cyRockDeep" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#0b2e26"/>
-      <stop offset="0.6" stop-color="#051a16"/>
-      <stop offset="1" stop-color="#020c0a"/>
-    </linearGradient>
-    <linearGradient id="cyRockTop" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#155e4d"/>
-      <stop offset="0.6" stop-color="#0d3b31"/>
-      <stop offset="1" stop-color="#06211b"/>
-    </linearGradient>
-    <linearGradient id="cyShield" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#34d399"/>
-      <stop offset="0.5" stop-color="#059669"/>
-      <stop offset="1" stop-color="#064e3b"/>
-    </linearGradient>
-    <linearGradient id="cyGold" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#fef08a"/>
-      <stop offset="1" stop-color="#f59e0b"/>
-    </linearGradient>
-    <radialGradient id="cyHalo" cx="0.5" cy="0.4" r="0.6">
-      <stop offset="0" stop-color="#10b981" stop-opacity="0.38"/>
-      <stop offset="0.55" stop-color="#38bdf8" stop-opacity="0.18"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    <radialGradient id="icybersecuriteHalo" cx="0.5" cy="0.44" r="0.52">
+      <stop offset="0" stop-color="#10b981" stop-opacity="0.34"/>
+      <stop offset="0.58" stop-color="#c8a84b" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#070b1a" stop-opacity="0"/>
     </radialGradient>
-    <filter id="cyShadow" x="-25%" y="-25%" width="150%" height="150%">
-      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.58"/>
-    </filter>
-    <filter id="cyGlow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="4" result="b"/>
-      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    <linearGradient id="icybersecuriteRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c3e68"/>
+      <stop offset="0.55" stop-color="#192544"/>
+      <stop offset="1" stop-color="#0d1428"/>
+    </linearGradient>
+    <linearGradient id="icybersecuriteRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#18223d"/>
+      <stop offset="1" stop-color="#080d1b"/>
+    </linearGradient>
+    <linearGradient id="icybersecuritePlateau" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#13433b"/>
+      <stop offset="1" stop-color="#09221e"/>
+    </linearGradient>
+    <linearGradient id="icybersecuriteGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7e29c"/>
+      <stop offset="0.5" stop-color="#c8a84b"/>
+      <stop offset="1" stop-color="#8b661d"/>
+    </linearGradient>
+    <linearGradient id="icybersecuriteAccent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6ee7b7"/>
+      <stop offset="1" stop-color="#10b981"/>
+    </linearGradient>
+    <linearGradient id="icybersecuriteBanner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c2a4f"/>
+      <stop offset="1" stop-color="#0c1328"/>
+    </linearGradient>
+    <filter id="icybersecuriteShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="9" stdDeviation="7" flood-color="#000000" flood-opacity="0.52"/>
     </filter>
   </defs>
 
-  <circle cx="210" cy="182" r="150" fill="url(#cyHalo)"/>
+  <!-- Halo astral unifié -->
+  <circle cx="210" cy="195" r="185" fill="url(#icybersecuriteHalo)"/>
 
-  <!-- Base rocheuse cyber-défense -->
-  <g filter="url(#cyShadow)">
-    <path d="M 75 250 Q 210 275 345 250 Q 372 294 320 344 Q 210 398 100 344 Q 48 294 75 250 Z" fill="url(#cyRockDeep)"/>
-    <path d="M 85 245 Q 210 268 335 245 Q 358 278 320 314 Q 210 368 100 314 Q 62 278 85 245 Z" fill="url(#cyRockTop)"/>
-    <ellipse cx="210" cy="245" rx="140" ry="42" fill="#06211b"/>
-    <ellipse cx="210" cy="242" rx="132" ry="34" fill="none" stroke="#34d399" stroke-width="2.5" filter="url(#cyGlow)"/>
-    <ellipse cx="210" cy="242" rx="92" ry="22" fill="none" stroke="#38bdf8" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <!-- Étoiles astrales dorées (grille signature EDUQUEST) -->
+  <g fill="#f2dc96">
+    <path d="M52 94 l2.6 6 6 2.6 -6 2.6 -2.6 6 -2.6 -6 -6 -2.6 6 -2.6 Z" opacity="0.88"/>
+    <path d="M368 72 l2.2 5 5 2.2 -5 2.2 -2.2 5 -2.2 -5 -5 -2.2 5 -2.2 Z" opacity="0.72"/>
+    <path d="M382 174 l1.8 4 4 1.8 -4 1.8 -1.8 4 -1.8 -4 -4 -1.8 4 -1.8 Z" opacity="0.55"/>
+    <circle cx="64" cy="210" r="2.4" fill="#6ee7b7" opacity="0.65"/>
+    <circle cx="352" cy="264" r="2.6" opacity="0.5"/>
+    <circle cx="320" cy="44" r="2" fill="#6ee7b7" opacity="0.6"/>
   </g>
 
-  <!-- Grand Bouclier de Cybersécurité central -->
-  <g filter="url(#cyShadow)">
-    <path d="M 210 98 L 274 124 L 274 176 C 274 214 246 238 210 252 C 174 238 146 214 146 176 L 146 124 Z" fill="url(#cyShield)" stroke="#a7f3d0" stroke-width="3"/>
-    <path d="M 210 112 L 260 132 L 260 174 C 260 204 238 224 210 236 C 182 224 160 204 160 174 L 160 132 Z" fill="#062c22" stroke="#34d399" stroke-width="1.5"/>
+  <g filter="url(#icybersecuriteShadow)">
+    <!-- Socle rocheux flottant unifié -->
+    <path d="M34 232 L210 264 L386 232 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 L68 284 Z" fill="url(#icybersecuriteRockTop)" stroke="#080e1d" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M68 284 L132 300 L210 308 L288 300 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 Z" fill="url(#icybersecuriteRockDeep)" opacity="0.85"/>
+    <!-- Veines cristallines de la matière -->
+    <path d="M120 296 L142 324 M296 296 L278 326 M192 318 L210 356 L228 318" stroke="#6ee7b7" stroke-width="2.4" stroke-linecap="round" opacity="0.5" fill="none"/>
+    <!-- Galets flottants sous l'île -->
+    <polygon points="164,376 175,382 169,394 157,388" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <polygon points="256,374 268,382 260,393 249,386" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <circle cx="210" cy="400" r="4" fill="#6ee7b7" opacity="0.75"/>
 
-    <!-- Cadenas doré au centre du bouclier -->
-    <path d="M 194 170 L 194 156 A 16 16 0 0 1 226 156 L 226 170" fill="none" stroke="url(#cyGold)" stroke-width="6" stroke-linecap="round"/>
-    <rect x="184" y="168" width="52" height="40" rx="8" fill="url(#cyGold)" stroke="#78350f" stroke-width="2"/>
-    <circle cx="210" cy="184" r="5" fill="#062c22"/>
-    <rect x="208" y="186" width="4" height="11" rx="2" fill="#062c22"/>
-  </g>
+    <!-- Plateau insulaire cerclé d'or -->
+    <ellipse cx="210" cy="236" rx="176" ry="54" fill="url(#icybersecuritePlateau)" stroke="url(#icybersecuriteGold)" stroke-width="3.5"/>
+    <ellipse cx="210" cy="232" rx="158" ry="43" fill="none" stroke="#6ee7b7" stroke-width="1.5" stroke-opacity="0.45"/>
 
-  <!-- Glyphes binaires et pare-feu -->
-  <g filter="url(#cyGlow)" font-family="monospace" font-weight="bold">
-    <text x="100" y="164" fill="#34d399" font-size="13">0110</text>
-    <text x="288" y="164" fill="#38bdf8" font-size="13">SHA</text>
-    <text x="104" y="206" fill="#38bdf8" font-size="12">TLS</text>
-    <text x="286" y="206" fill="#34d399" font-size="12">AES</text>
+    <!-- Scène dédiée à la matière -->
+    
+      <!-- Grand bouclier émeraude + Cadenas d'or + Anneaux pare-feu -->
+      <g transform="translate(210 144)">
+        <ellipse cx="0" cy="84" rx="74" ry="14" fill="#091326" opacity="0.45"/>
+        <!-- Bouclier -->
+        <path d="M0 -64 L62 -38 V16 C62 52 34 74 0 86 C-34 74 -62 52 -62 16 V-38 Z" fill="url(#icybersecuriteAccent)" stroke="url(#icybersecuriteGold)" stroke-width="4"/>
+        <path d="M0 -48 L48 -28 V14 C48 42 26 60 0 70 C-26 60 -48 42 -48 14 V-28 Z" fill="#0a2420" stroke="#6ee7b7" stroke-width="2"/>
+        <!-- Cadenas doré -->
+        <path d="M-16 6 V-10 A16 16 0 0 1 16 -10 V6" fill="none" stroke="url(#icybersecuriteGold)" stroke-width="7" stroke-linecap="round"/>
+        <rect x="-26" y="4" width="52" height="38" rx="8" fill="url(#icybersecuriteGold)" stroke="#0c1830" stroke-width="2.5"/>
+        <circle cx="0" cy="19" r="5" fill="#0a2420"/>
+        <rect x="-2.5" y="21" width="5" height="11" rx="2" fill="#0a2420"/>
+      </g>
+
+    <!-- Bannière astrale dorée unifiée -->
+    <g transform="translate(210 336)">
+      <path d="M-90 -19 L90 -19 L78 19 L-78 19 Z"
+            fill="url(#icybersecuriteBanner)" stroke="url(#icybersecuriteGold)" stroke-width="3" stroke-linejoin="round"/>
+      <g fill="#f5de8a">
+        <circle cx="-74" cy="-9" r="2.4"/>
+        <circle cx="74" cy="-9" r="2.4"/>
+        <circle cx="-68" cy="10" r="2.4"/>
+        <circle cx="68" cy="10" r="2.4"/>
+      </g>
+      <text x="0" y="7" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="23" font-weight="700"
+            fill="#f4de94" letter-spacing="2">CYBER</text>
+    </g>
   </g>
 </svg>

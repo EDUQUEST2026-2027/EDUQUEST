@@ -118,7 +118,7 @@ const EduCookies = (() => {
             // Règle CNIL : vérification de péremption du consentement (12 mois)
             if (c.ts) {
                 const ageMs = Date.now() - new Date(c.ts).getTime();
-                if (ageMs > 365 * 24 * 3600 * 1000) {
+                if (!Number.isFinite(ageMs) || ageMs < 0 || ageMs > 365 * 24 * 3600 * 1000) {
                     try { localStorage.removeItem(LS_KEY); } catch {}
                     _memoryConsent = null;
                     return null;
@@ -172,16 +172,19 @@ const EduCookies = (() => {
 
     let els = null; // racine actuellement affichée
 
+    const SVG_COOKIE = '<svg class="eq-icon eq-icon--gold" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px;"><path d="M12 3a9 9 0 1 0 9 9 3 3 0 0 1-3-3 3 3 0 0 1-3-3 3 3 0 0 1-3-3z" fill="currentColor" fill-opacity="0.18"/><circle cx="8.5" cy="10.5" r="1" fill="currentColor"/><circle cx="11.5" cy="15.5" r="1" fill="currentColor"/><circle cx="15" cy="13" r="1" fill="currentColor"/><circle cx="8.5" cy="15" r="0.8" fill="currentColor"/></svg>';
+    const SVG_CLOSE = '<svg class="eq-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
     function mainHtml() {
         return `
-            <div class="eqck-title">🍪 Cookies &amp; confidentialité</div>
+            <div class="eqck-title">${SVG_COOKIE}Cookies &amp; confidentialité</div>
             <p class="eqck-text">
                 Ce site fonctionne <b>sans cookie publicitaire</b> : seules des données
                 <b>strictement nécessaires</b> sont enregistrées sur votre appareil
                 (session de connexion, préférences, progression), et <b>rien n'est envoyé
                 à un serveur</b>. Vous pouvez accepter les cookies optionnels
                 (mesure d'audience), les refuser, ou choisir catégorie par catégorie.
-                <a href="legal.html" target="_blank" rel="noopener">Politique de confidentialité</a>
+                <a href="legal.html" target="_blank" rel="noopener noreferrer">Politique de confidentialité</a>
             </p>
             <div class="eqck-actions">
                 <button type="button" class="eqck-btn" id="eqckAccept">Tout accepter</button>
@@ -194,7 +197,7 @@ const EduCookies = (() => {
         const analytics = Boolean(saved && saved.analytics);
         const marketing = Boolean(saved && saved.marketing);
         return `
-            <div class="eqck-title">🍪 Vos préférences cookies</div>
+            <div class="eqck-title">${SVG_COOKIE}Vos préférences cookies</div>
             <div class="eqck-toggles">
                 <label class="eqck-toggle locked">
                     <input type="checkbox" checked disabled>
@@ -258,7 +261,7 @@ const EduCookies = (() => {
         // est pointer-events:none pour ne pas bloquer la page). Sans ce
         // wrapper, les boutons héritent de pointer-events:none et deviennent
         // inclicables → le bandeau semble « bloqué » sur la page.
-        root.innerHTML = '<div class="eqck-card"><button type="button" class="eqck-close" id="eqckCloseBtn" aria-label="Fermer et continuer sans cookies optionnels" title="Fermer">✕</button>' + (view === 'custom' ? customizeHtml(saved) : mainHtml()) + '</div>';
+        root.innerHTML = '<div class="eqck-card"><button type="button" class="eqck-close" id="eqckCloseBtn" aria-label="Fermer et continuer sans cookies optionnels" title="Fermer">' + SVG_CLOSE + '</button>' + (view === 'custom' ? customizeHtml(saved) : mainHtml()) + '</div>';
         const closeX = root.querySelector('#eqckCloseBtn');
         if (closeX) closeX.addEventListener('click', () => { writeConsent('refused', { analytics: false, marketing: false }); closeBanner(); });
         bindBanner(root, view);
@@ -291,7 +294,7 @@ const EduCookies = (() => {
 
     function init() {
         if (typeof document === 'undefined') return;
-        if (!readConsent()) setTimeout(() => openBanner(null), 600);
+        if (!readConsent()) setTimeout(() => { if (!readConsent()) openBanner(null); }, 600);
     }
     if (typeof document !== 'undefined') {
         if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

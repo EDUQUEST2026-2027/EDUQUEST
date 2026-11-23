@@ -1,4 +1,4 @@
-# Architecture Technique — EDUQUEST v1.29.1
+# Architecture Technique — EDUQUEST v1.30.0
 
 ## 1. Vue d'ensemble
 
@@ -21,10 +21,11 @@ EDUQUEST est une application web éducative 100 % front-end développée en Vani
             │                                                                   │
     ┌───────▼────────┐              ┌──────────────────┐               ┌────────▼───────┐
     │  Moteur Core   │              │   Fonctionnalités│               │  Persistance   │
-    │  GameRules     │              │   DailyQuests    │               │  DB (local/SQL)│
-    │  QuizSession   │              │   QuizEngine     │               │  AdminStore    │
-    │  AdaptiveEngine│              │   QuestionBank   │               │  EduCookies    │
-    │  QuizTimer     │              │   AiProvider     │               │                │
+    │  EduIcons (SVG)│              │   DailyQuests    │               │  DB (local/SQL)│
+    │  GameRules     │              │   QuizEngine     │               │  AdminStore    │
+    │  QuizSession   │              │   QuestionBank   │               │  EduCookies    │
+    │  AdaptiveEngine│              │   AiProvider     │               │                │
+    │  QuizTimer     │              │                  │               │                │
     │  AudioManager  │              │                  │               │                │
     └────────────────┘              └──────────────────┘               └────────────────┘
 ```
@@ -36,33 +37,34 @@ EDUQUEST est une application web éducative 100 % front-end développée en Vani
 ```text
 eduquest/
 ├── index.html                  # Accueil, modales Options (classe, 18 filières, apparence), Connexion & Quitter
-├── dashboard.html              # Tableau de bord élève, sélecteurs classe & filière, missions, 36 matières, boutique (97), succès (78)
+├── dashboard.html              # Tableau de bord élève, sélecteurs classe & filière, missions, 36 matières, boutique (98), succès (78)
 ├── map.html                    # Carte interactive d'aventure (1 → 100), personnage, badge filière et quiz
 ├── admin.html                  # Console d'administration unifiée (membres, 9 niveaux, 18 filières, 36 matières, boutique, succès, Multi-IA)
 ├── legal.html                  # Mentions légales, RGPD et gestion des cookies
 ├── test.html                   # Banc de tests autonome pour navigateur (13 suites QA)
-├── service-worker.js           # PWA & pré-cache hors-ligne intégral (eduquest-cache-v1.29.1, 93 ressources)
-├── manifest.webmanifest        # Manifeste PWA
+├── service-worker.js           # PWA & pré-cache hors-ligne intégral (eduquest-cache-v1.30.0, 100 % SVG)
+├── manifest.webmanifest        # Manifeste PWA (icône vectorielle Image/logo.svg)
 ├── robots.txt                  # Directives moteurs de recherche et robots IA
 ├── sitemap.xml                 # Plan du site public
 ├── llms.txt                    # Documentation normalisée pour assistants IA (llmstxt.org)
-├── package.json                # Scripts npm test & check (v1.29.1)
-├── schema.sql                  # Schéma SQL relationnel (36 matières, 18 filières, progression, quêtes, inventaire)
+├── package.json                # Scripts npm test & check (v1.30.0)
+├── schema.sql                  # Schéma SQL relationnel (36 matières SVG, 18 filières, progression, quêtes, inventaire)
 ├── css/
-│   ├── global.css              # Design system, cosmos animé, 15 thèmes visuels, boutons alignés, priorité apparence personnalisée
-│   ├── style.css               # Pages de jeu, 27 classes avatars, HUD 🔥/⚡, bandeau mobile fermable, filtres filières/succès, modales
-│   ├── quests.css              # Missions quotidiennes compactes & repliables, canvas confettis
-│   └── admin.css               # Thème glassmorphism du panneau d'administration
+│   ├── global.css              # Design system, cosmos animé, 16 thèmes visuels (15 custom + défaut), système d'icônes SVG .eq-icon
+│   ├── style.css               # Pages de jeu, 27 classes avatars SVG, HUD Série/Combo, bandeau mobile fermable, filtres, modales
+│   ├── quests.css              # Missions quotidiennes compactes & repliables, anneau SVG isolé (.quest-ring > svg), canvas confettis
+│   └── admin.css               # Thème glassmorphism du panneau d'administration & responsive mobile
 ├── js/
-│   ├── app.js                  # Contrôleur principal, particules/options synchronisées, HUD 🔥/⚡, 78 succès, confettis calibrés
-│   ├── db.js                   # Couche d'accès aux données isolée par compte (niveau, filière, progression, boosters, tentatives)
-│   ├── quiz-engine.js          # Moteur multi-types (6 formats, ___/[___], Levenshtein, drag & drop sans collision)
-│   ├── question-bank.js        # Banque officielle des 36 matières (Collège, Lycée, BTS), lazy variants & decks stables
-│   ├── admin-store.js          # Catalogue central (9 niveaux, 18 filières, 36 matières, 97 articles, 78 badges, 9 quêtes, IA)
-│   ├── admin.js                # Contrôleur d'interface d'administration (pilotage intégral)
+│   ├── app.js                  # Contrôleur principal, particules/options synchronisées, HUD SVG, 78 succès, confettis calibrés
+│   ├── db.js                   # Couche d'accès aux données isolée par compte (niveau, filière, progression, boosters, purge RGPD)
+│   ├── quiz-engine.js          # Moteur multi-types (6 formats, ___/[___], Levenshtein, drag & drop sans collision, icônes SVG)
+│   ├── question-bank.js        # Banque officielle des 36 matières (Collège, Lycée, BTS), lazy variants & decks stables sans biais de parité
+│   ├── admin-store.js          # Catalogue central (9 niveaux, 18 filières, 36 matières, 98 articles, 78 badges, 9 quêtes, IA)
+│   ├── admin.js                # Contrôleur d'interface d'administration (pilotage intégral, aperçu procédural à la demande)
 │   ├── ai-provider.js          # Pool Multi-IA (Make, OpenAI-compatible, Gemini) avec bascule et repli adaptatif
 │   ├── cookies.js              # Bandeau de consentement conforme RGPD/CNIL avec fermeture rapide (12 mois)
 │   ├── core/
+│   │   ├── icons.js            # Bibliothèque vectorielle unifiée EduIcons (70+ icônes SVG duotones Astral & Or)
 │   │   ├── audio-manager.js    # Audio global continu inter-pages, coupure manuelle persistée & bruitages Web Audio
 │   │   ├── quiz-timer.js       # Chronomètre unifié (Date.now) sur tous les exercices & réessais
 │   │   ├── adaptive-engine.js  # Moteur adaptatif local (240 signatures, rotation FIFO, reset échec, paliers)
@@ -70,14 +72,14 @@ eduquest/
 │   │   └── quiz-session.js     # Cycle de vie, anti-triche et pipeline de validation de question
 │   └── features/
 │       └── daily-quests.js     # Quêtes journalières déterministes (Mulberry32 + Fisher-Yates, minuit)
-├── fonts/                      # Polices pixel hébergées localement (PressStart2P, Silkscreen — .woff2 / .ttf)
+├── fonts/                      # Police pixel hébergée localement (Silkscreen — .woff2 / .ttf)
 ├── Image/
-│   ├── logo.webp               # Logo officiel
-│   ├── ile/                    # 36 îles-matières (29 SVG vectoriels + 7 WebP)
-│   └── personnages/            # 27 avatars (17 SVG vectoriels + 10 WebP)
+│   ├── logo.svg                # Blason officiel vectoriel SVG Astral & Or
+│   ├── ile/                    # 36 îles-matières 100 % SVG vectoriels (thème Astral & Or)
+│   └── personnages/            # 27 avatars 100 % SVG vectoriels (thème Astral & Or)
 ├── Musique/                    # 6 pistes audio MP3 d'ambiance
 ├── docs/                       # Documentation technique (ARCHITECTURE, GUIDE_CONTRIBUTION, API_PERSISTENCE)
-└── tests/                      # 11 suites de tests unitaires Node.js (109 tests)
+└── tests/                      # 12 suites de tests unitaires Node.js
     ├── adaptive-and-multi-ai.test.js
     ├── admin-store.test.js
     ├── audio-manager.test.js
@@ -89,6 +91,7 @@ eduquest/
     ├── question-bank.test.js
     ├── quiz-engine.test.js
     ├── quiz-timer.test.js
+    ├── svg-and-audit.test.js
     └── test-helper.js
 ```
 
@@ -96,7 +99,11 @@ eduquest/
 
 ## 3. Modules Core UMD & Règles pédagogiques
 
-Les modules situés dans `js/core/`, `js/features/`, `js/db.js`, `js/question-bank.js`, `js/quiz-engine.js` et `js/admin-store.js` sont compatibles navigateur (`window.*`) et Node.js (`module.exports`) pour exécuter les 109 tests sans navigateur.
+Les modules situés dans `js/core/`, `js/features/`, `js/db.js`, `js/question-bank.js`, `js/quiz-engine.js` et `js/admin-store.js` sont compatibles navigateur (`window.*`) et Node.js (`module.exports`) pour exécuter l'ensemble des tests unitaires sans navigateur.
+
+### `js/core/icons.js` — Système d'icônes vectorielles SVG (`EduIcons`)
+- Plus de **70 icônes SVG duotones** au format `viewBox="0 0 24 24"`, dessinées dans le thème **Astral & Or** (`currentColor` + calque secondaire d'accent).
+- Fonctions publiques : `EduIcons.svg(name, opts)`, `EduIcons.fromEmoji(emoji, opts)`, `EduIcons.stars(earned, total, opts)`, `EduIcons.stripLeadingEmoji(text)` et `EduIcons.iconFromLabel(text, fallback, opts)`.
 
 ### `js/admin-store.js` — Programmes officiels, Filières, Boutique & Succès
 - **9 niveaux par défaut :** `6eme`, `5eme`, `4eme`, `3eme` (cycle `college`), `2nde`, `1ere`, `terminale`, `bts1`, `bts2` (cycle `lycee`).
@@ -104,7 +111,7 @@ Les modules situés dans `js/core/`, `js/features/`, `js/db.js`, `js/question-ba
 - **36 matières officielles (`SUBJECT_DEFAULT_RULES`) :** filtrage strict par classe et filière via `isSubjectAllowedForNiveau(subject, niveauId, filiereId)` (ex. Technologie uniquement au collège, Espagnol dès la 5ème, Philosophie uniquement en Terminale, spécialités filières uniquement dans les voies concernées).
 - **`isSubjectSpecialtyForFiliere(subject, filiereId)` :** met en avant les spécialités phares de la filière en tête de grille sur `dashboard.html`.
 - **`hasSubjectCustomizations()` & `invalidateCache()` :** permettent à `app.js` de contourner `_effectiveSubjectsCache` dès que l'administrateur ajoute ou surcharge une matière, y compris en temps réel entre onglets (`storage`).
-- **Boutique (97 articles) & Succès (78 badges) :** catalogue central surchageable, avec filtrage automatique des succès par cycle/filière via `isBadgeRelevantFor(badge, niveauId, filiereId)`.
+- **Boutique (98 articles, 16 thèmes visuels) & Succès (78 badges) :** catalogue central surchageable, avec filtrage automatique des succès par cycle/filière via `isBadgeRelevantFor(badge, niveauId, filiereId)`.
 
 ### `js/core/adaptive-engine.js` & `js/question-bank.js` — Anti-répétition & Performance
 - Mémoire persistée par `(matière, classe)` jusqu'à **240 signatures** (`MAX_SEEN_SIGNATURES = 240`) et rotation FIFO sur les questions les plus anciennement vues si le vivier est épuisé.

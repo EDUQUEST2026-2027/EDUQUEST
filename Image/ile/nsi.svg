@@ -1,106 +1,101 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
-  <!-- ============================================================
-       ÎLOT « NSI & NUMÉRIQUE » — EDUQUEST
-       Tours de serveurs, circuit imprimé néon, hologramme </> et cristal binaire.
-       ============================================================ -->
   <defs>
-    <linearGradient id="nsiRockDeep" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#1e1e38"/>
-      <stop offset="0.6" stop-color="#101026"/>
-      <stop offset="1" stop-color="#070714"/>
-    </linearGradient>
-    <linearGradient id="nsiRockTop" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#3b3b6d"/>
-      <stop offset="0.6" stop-color="#232347"/>
-      <stop offset="1" stop-color="#14142b"/>
-    </linearGradient>
-    <linearGradient id="nsiPlatform" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#00f2fe"/>
-      <stop offset="0.2" stop-color="#0f2b48"/>
-      <stop offset="1" stop-color="#071526"/>
-    </linearGradient>
-    <linearGradient id="nsiNeonCyan" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#4facfe"/>
-      <stop offset="1" stop-color="#00f2fe"/>
-    </linearGradient>
-    <linearGradient id="nsiNeonPink" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#f857a6"/>
-      <stop offset="1" stop-color="#ff5858"/>
-    </linearGradient>
-    <radialGradient id="nsiHalo" cx="0.5" cy="0.45" r="0.6">
-      <stop offset="0" stop-color="#00f2fe" stop-opacity="0.35"/>
-      <stop offset="0.5" stop-color="#7b2cbf" stop-opacity="0.18"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    <radialGradient id="insiHalo" cx="0.5" cy="0.44" r="0.52">
+      <stop offset="0" stop-color="#06b6d4" stop-opacity="0.34"/>
+      <stop offset="0.58" stop-color="#c8a84b" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#070b1a" stop-opacity="0"/>
     </radialGradient>
-    <filter id="nsiGlow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="4" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-    <filter id="nsiShadow" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="10" stdDeviation="7" flood-color="#000" flood-opacity="0.6"/>
+    <linearGradient id="insiRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c3e68"/>
+      <stop offset="0.55" stop-color="#192544"/>
+      <stop offset="1" stop-color="#0d1428"/>
+    </linearGradient>
+    <linearGradient id="insiRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#18223d"/>
+      <stop offset="1" stop-color="#080d1b"/>
+    </linearGradient>
+    <linearGradient id="insiPlateau" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#133754"/>
+      <stop offset="1" stop-color="#091b2e"/>
+    </linearGradient>
+    <linearGradient id="insiGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7e29c"/>
+      <stop offset="0.5" stop-color="#c8a84b"/>
+      <stop offset="1" stop-color="#8b661d"/>
+    </linearGradient>
+    <linearGradient id="insiAccent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#67e8f9"/>
+      <stop offset="1" stop-color="#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="insiBanner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c2a4f"/>
+      <stop offset="1" stop-color="#0c1328"/>
+    </linearGradient>
+    <filter id="insiShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="9" stdDeviation="7" flood-color="#000000" flood-opacity="0.52"/>
     </filter>
   </defs>
 
-  <!-- Halo d'énergie cybernétique -->
-  <circle cx="210" cy="190" r="150" fill="url(#nsiHalo)"/>
+  <!-- Halo astral unifié -->
+  <circle cx="210" cy="195" r="185" fill="url(#insiHalo)"/>
 
-  <!-- Base flottante (rocher cybernétique sombre) -->
-  <g filter="url(#nsiShadow)">
-    <path d="M 75 250 Q 210 275 345 250 Q 375 295 320 345 Q 210 400 100 345 Q 45 295 75 250 Z" fill="url(#nsiRockDeep)"/>
-    <path d="M 85 245 Q 210 268 335 245 Q 360 280 320 315 Q 210 370 100 315 Q 60 280 85 245 Z" fill="url(#nsiRockTop)"/>
-
-    <!-- Pistes de circuit imprimé lumineuses gravées dans le rocher -->
-    <path d="M 120 285 L 145 320 L 170 320 L 195 350" stroke="#00f2fe" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.75" filter="url(#nsiGlow)"/>
-    <circle cx="195" cy="350" r="3" fill="#00f2fe" filter="url(#nsiGlow)"/>
-    <path d="M 300 285 L 275 320 L 250 320 L 225 355" stroke="#f857a6" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.75" filter="url(#nsiGlow)"/>
-    <circle cx="225" cy="355" r="3" fill="#f857a6" filter="url(#nsiGlow)"/>
-
-    <!-- Plateau cybernétique hexagonal/arrondi -->
-    <ellipse cx="210" cy="245" rx="140" ry="42" fill="url(#nsiPlatform)"/>
-    <ellipse cx="210" cy="242" rx="132" ry="34" fill="none" stroke="#00f2fe" stroke-width="1.8" opacity="0.85" filter="url(#nsiGlow)"/>
-    <ellipse cx="210" cy="242" rx="90" ry="22" fill="none" stroke="#f857a6" stroke-width="1.2" opacity="0.6"/>
+  <!-- Étoiles astrales dorées (grille signature EDUQUEST) -->
+  <g fill="#f2dc96">
+    <path d="M52 94 l2.6 6 6 2.6 -6 2.6 -2.6 6 -2.6 -6 -6 -2.6 6 -2.6 Z" opacity="0.88"/>
+    <path d="M368 72 l2.2 5 5 2.2 -5 2.2 -2.2 5 -2.2 -5 -5 -2.2 5 -2.2 Z" opacity="0.72"/>
+    <path d="M382 174 l1.8 4 4 1.8 -4 1.8 -1.8 4 -1.8 -4 -4 -1.8 4 -1.8 Z" opacity="0.55"/>
+    <circle cx="64" cy="210" r="2.4" fill="#67e8f9" opacity="0.65"/>
+    <circle cx="352" cy="264" r="2.6" opacity="0.5"/>
+    <circle cx="320" cy="44" r="2" fill="#67e8f9" opacity="0.6"/>
   </g>
 
-  <!-- Datacenter / Serveur principal (Tour gauche) -->
-  <g>
-    <rect x="110" y="170" width="38" height="70" rx="4" fill="#141829" stroke="#00f2fe" stroke-width="1.5"/>
-    <line x1="116" y1="185" x2="142" y2="185" stroke="#00f2fe" stroke-width="2" opacity="0.8"/>
-    <line x1="116" y1="198" x2="142" y2="198" stroke="#00f2fe" stroke-width="2" opacity="0.8"/>
-    <line x1="116" y1="211" x2="142" y2="211" stroke="#00f2fe" stroke-width="2" opacity="0.8"/>
-    <line x1="116" y1="224" x2="142" y2="224" stroke="#00f2fe" stroke-width="2" opacity="0.8"/>
-    <circle cx="120" cy="177" r="2" fill="#2ed573"/>
-    <circle cx="126" cy="177" r="2" fill="#2ed573"/>
-    <circle cx="132" cy="177" r="2" fill="#ffa502"/>
-  </g>
+  <g filter="url(#insiShadow)">
+    <!-- Socle rocheux flottant unifié -->
+    <path d="M34 232 L210 264 L386 232 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 L68 284 Z" fill="url(#insiRockTop)" stroke="#080e1d" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M68 284 L132 300 L210 308 L288 300 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 Z" fill="url(#insiRockDeep)" opacity="0.85"/>
+    <!-- Veines cristallines de la matière -->
+    <path d="M120 296 L142 324 M296 296 L278 326 M192 318 L210 356 L228 318" stroke="#67e8f9" stroke-width="2.4" stroke-linecap="round" opacity="0.5" fill="none"/>
+    <!-- Galets flottants sous l'île -->
+    <polygon points="164,376 175,382 169,394 157,388" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <polygon points="256,374 268,382 260,393 249,386" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <circle cx="210" cy="400" r="4" fill="#67e8f9" opacity="0.75"/>
 
-  <!-- Datacenter secondaire (Tour droite) -->
-  <g>
-    <rect x="272" y="180" width="34" height="60" rx="4" fill="#141829" stroke="#f857a6" stroke-width="1.5"/>
-    <line x1="278" y1="195" x2="300" y2="195" stroke="#f857a6" stroke-width="2" opacity="0.8"/>
-    <line x1="278" y1="208" x2="300" y2="208" stroke="#f857a6" stroke-width="2" opacity="0.8"/>
-    <line x1="278" y1="221" x2="300" y2="221" stroke="#f857a6" stroke-width="2" opacity="0.8"/>
-    <circle cx="282" cy="188" r="2" fill="#2ed573"/>
-    <circle cx="288" cy="188" r="2" fill="#00f2fe"/>
-  </g>
+    <!-- Plateau insulaire cerclé d'or -->
+    <ellipse cx="210" cy="236" rx="176" ry="54" fill="url(#insiPlateau)" stroke="url(#insiGold)" stroke-width="3.5"/>
+    <ellipse cx="210" cy="232" rx="158" ry="43" fill="none" stroke="#67e8f9" stroke-width="1.5" stroke-opacity="0.45"/>
 
-  <!-- Écran hologramme central flottant </> -->
-  <g filter="url(#nsiGlow)">
-    <rect x="165" y="125" width="90" height="65" rx="8" fill="#0b1b33" fill-opacity="0.85" stroke="url(#nsiNeonCyan)" stroke-width="2.5"/>
-    <!-- Symbole de code </> -->
-    <path d="M 185 158 L 175 168 L 185 178" fill="none" stroke="#00f2fe" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M 235 158 L 245 168 L 235 178" fill="none" stroke="#00f2fe" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-    <line x1="216" y1="152" x2="204" y2="184" stroke="#f857a6" stroke-width="3" stroke-linecap="round"/>
-    <!-- Socle projecteur de l'hologramme -->
-    <ellipse cx="210" cy="225" rx="24" ry="8" fill="#1e293b" stroke="#00f2fe" stroke-width="1.5"/>
-    <polygon points="186,225 234,225 240,195 180,195" fill="url(#nsiNeonCyan)" opacity="0.15"/>
-  </g>
+    <!-- Scène dédiée à la matière -->
+    
+      <!-- Écran holographique </> + Serveurs jumeaux + Binaire -->
+      <g transform="translate(210 148)">
+        <ellipse cx="0" cy="80" rx="80" ry="14" fill="#091326" opacity="0.45"/>
+        <!-- Tour serveur gauche -->
+        <rect x="-88" y="2" width="34" height="66" rx="4" fill="#0f172a" stroke="#22d3ee" stroke-width="2.5"/>
+        <line x1="-80" y1="18" x2="-62" y2="18" stroke="#22d3ee" stroke-width="2.5"/><line x1="-80" y1="32" x2="-62" y2="32" stroke="#22d3ee" stroke-width="2.5"/>
+        <circle cx="-78" cy="10" r="2.5" fill="#4ade80"/>
+        <!-- Tour serveur droite -->
+        <rect x="54" y="8" width="34" height="60" rx="4" fill="#0f172a" stroke="#c8a84b" stroke-width="2.5"/>
+        <line x1="62" y1="24" x2="80" y2="24" stroke="#f5de8a" stroke-width="2.5"/><line x1="62" y1="38" x2="80" y2="38" stroke="#f5de8a" stroke-width="2.5"/>
+        <circle cx="64" cy="16" r="2.5" fill="#22d3ee"/>
+        <!-- Écran holographique central -->
+        <rect x="-48" y="-44" width="96" height="68" rx="10" fill="#0b1f3a" stroke="url(#insiAccent)" stroke-width="3.5"/>
+        <path d="M-24 -22 L-36 -10 L-24 2 M24 -22 L36 -10 L24 2 M6 -26 L-6 6" fill="none" stroke="url(#insiGold)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="-18" y="24" width="36" height="10" rx="3" fill="url(#insiGold)"/>
+        <rect x="-32" y="34" width="64" height="7" rx="3" fill="#22d3ee"/>
+      </g>
 
-  <!-- Particules binaires flottantes 0 & 1 -->
-  <text x="140" y="140" fill="#00f2fe" font-family="monospace" font-size="14" font-weight="bold" opacity="0.75" filter="url(#nsiGlow)">01</text>
-  <text x="270" y="145" fill="#f857a6" font-family="monospace" font-size="13" font-weight="bold" opacity="0.75" filter="url(#nsiGlow)">10</text>
-  <text x="200" y="105" fill="#00f2fe" font-family="monospace" font-size="12" font-weight="bold" opacity="0.6">Python</text>
-  <text x="120" y="270" fill="#7bed9f" font-family="monospace" font-size="11" font-weight="bold" opacity="0.8">{ ; }</text>
+    <!-- Bannière astrale dorée unifiée -->
+    <g transform="translate(210 336)">
+      <path d="M-90 -19 L90 -19 L78 19 L-78 19 Z"
+            fill="url(#insiBanner)" stroke="url(#insiGold)" stroke-width="3" stroke-linejoin="round"/>
+      <g fill="#f5de8a">
+        <circle cx="-74" cy="-9" r="2.4"/>
+        <circle cx="74" cy="-9" r="2.4"/>
+        <circle cx="-68" cy="10" r="2.4"/>
+        <circle cx="68" cy="10" r="2.4"/>
+      </g>
+      <text x="0" y="7" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="24" font-weight="700"
+            fill="#f4de94" letter-spacing="2">NSI</text>
+    </g>
+  </g>
 </svg>

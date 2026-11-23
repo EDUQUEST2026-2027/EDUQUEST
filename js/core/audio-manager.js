@@ -42,6 +42,9 @@
     let currentTrack = 0;
     let isPlaying = false;
     let internalPause = false;
+    let internalPauseTimer = null;
+    let lastSavedTrack = -1;
+    let lastSavedTime = -1;
     let userPausedByBrowser = false;
     let wasPlayingBeforeHide = false;
     let gestureListenersAttached = false;
@@ -156,12 +159,15 @@
 
     /* ================= PERSISTANCE TIMECODE ================= */
 
-    function saveState() {
+    function saveState(force) {
         if (!audioEl) return;
         try {
             const db = root && root.DB;
             if (db && typeof db.setMusicState === 'function') {
                 const t = Number.isFinite(audioEl.currentTime) ? audioEl.currentTime : 0;
+                if (!force && currentTrack === lastSavedTrack && Math.abs(t - lastSavedTime) < 0.5) return;
+                lastSavedTrack = currentTrack;
+                lastSavedTime = t;
                 db.setMusicState(currentTrack, t);
             }
         } catch { /* ignore */ }
@@ -252,7 +258,14 @@
         const active = isGlobalSoundEnabled() && isMusicOptionEnabled() && !isManuallyMuted() && !userPausedByBrowser;
         btn.classList.toggle('is-muted', !active);
         btn.classList.toggle('is-playing', active && isPlaying);
-        btn.textContent = active ? '🔊' : '🔇';
+        const icons = root && root.EduIcons;
+        if (icons && typeof icons.svg === 'function') {
+            btn.innerHTML = icons.svg(active ? 'volumeOn' : 'volumeOff', { size: 20, tone: active ? 'gold' : 'muted' });
+        } else {
+            btn.innerHTML = active
+                ? '<svg class="eq-icon eq-icon--gold" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4V5z" fill="currentColor" fill-opacity="0.22"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>'
+                : '<svg class="eq-icon eq-icon--muted" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4V5z" fill="currentColor" fill-opacity="0.18"/><path d="M22 9l-6 6M16 9l6 6"/></svg>';
+        }
         btn.title = active
             ? 'Couper la musique (actif sur tout le site)'
             : 'Réactiver la musique';
@@ -262,12 +275,19 @@
 
     function pauseInternal(preserveIntent) {
         if (!audioEl) return;
-        if (isPlaying) saveState();
+        if (isPlaying) saveState(true);
         internalPause = true;
+        if (internalPauseTimer) {
+            clearTimeout(internalPauseTimer);
+            internalPauseTimer = null;
+        }
         try { audioEl.pause(); } catch { /* ignore */ }
         isPlaying = false;
         if (!preserveIntent) detachGestureListeners();
-        setTimeout(() => { internalPause = false; }, 0);
+        internalPauseTimer = setTimeout(() => {
+            internalPause = false;
+            internalPauseTimer = null;
+        }, 0);
         updateQuickToggleUI();
     }
 
@@ -587,8 +607,8 @@
         // Sauvegarde périodique de la position (continuité fluide entre index → dashboard → map)
         if (saveTimer) clearInterval(saveTimer);
         saveTimer = setInterval(() => {
-            if (isPlaying && !isDocumentHidden()) saveState();
-        }, 1500);
+            if (isPlaying && !isDocumentHidden()) saveState(false);
+        }, 2500);
         if (saveTimer && typeof saveTimer.unref === 'function') saveTimer.unref();
 
         mountQuickToggle();

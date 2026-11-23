@@ -1,0 +1,130 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 340" width="520" height="340">
+  <defs>
+    <radialGradient id="lgHalo" cx="0.5" cy="0.46" r="0.52">
+      <stop offset="0" stop-color="#4cc9f0" stop-opacity="0.34"/>
+      <stop offset="0.55" stop-color="#c8a84b" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#070b1a" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="lgOrb" cx="0.35" cy="0.3" r="0.72">
+      <stop offset="0" stop-color="#6ee7f9"/>
+      <stop offset="0.45" stop-color="#1e6f8c"/>
+      <stop offset="0.82" stop-color="#0e3352"/>
+      <stop offset="1" stop-color="#081b30"/>
+    </radialGradient>
+    <linearGradient id="lgGem" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff4b8"/>
+      <stop offset="0.4" stop-color="#f6c445"/>
+      <stop offset="1" stop-color="#c97214"/>
+    </linearGradient>
+    <linearGradient id="lgGrass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8be068"/>
+      <stop offset="0.55" stop-color="#499838"/>
+      <stop offset="1" stop-color="#295f24"/>
+    </linearGradient>
+    <linearGradient id="lgRock" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c3e68"/>
+      <stop offset="0.45" stop-color="#192442"/>
+      <stop offset="1" stop-color="#0c1224"/>
+    </linearGradient>
+    <linearGradient id="lgGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff0b8"/>
+      <stop offset="0.45" stop-color="#e2be64"/>
+      <stop offset="1" stop-color="#9e7422"/>
+    </linearGradient>
+    <linearGradient id="lgPlaque" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c2a4d"/>
+      <stop offset="1" stop-color="#0d152b"/>
+    </linearGradient>
+    <filter id="lgShadow" x="-15%" y="-15%" width="130%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+    <filter id="lgGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Halo cosmique -->
+  <ellipse cx="260" cy="155" rx="225" ry="145" fill="url(#lgHalo)"/>
+
+  <!-- Étoiles astrales dorées -->
+  <g fill="#f5e3a4">
+    <path d="M72 68 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3 Z" opacity="0.9"/>
+    <path d="M448 58 l2.8 6.5 6.5 2.8 -6.5 2.8 -2.8 6.5 -2.8 -6.5 -6.5 -2.8 6.5 -2.8 Z" opacity="0.85"/>
+    <path d="M466 146 l2 4.5 4.5 2 -4.5 2 -2 4.5 -2 -4.5 -4.5 -2 4.5 -2 Z" opacity="0.65"/>
+    <path d="M56 154 l2 4.5 4.5 2 -4.5 2 -2 4.5 -2 -4.5 -4.5 -2 4.5 -2 Z" opacity="0.65"/>
+    <circle cx="142" cy="40" r="2.6" opacity="0.7"/>
+    <circle cx="384" cy="36" r="2.2" opacity="0.65"/>
+    <circle cx="260" cy="18" r="2.8" fill="#6ee7f9" opacity="0.8"/>
+  </g>
+
+  <!-- Anneau orbital doré -->
+  <ellipse cx="260" cy="134" rx="142" ry="34" fill="none" stroke="url(#lgGold)" stroke-width="2" stroke-dasharray="8 6" opacity="0.45" transform="rotate(-8 260 134)"/>
+
+  <g filter="url(#lgShadow)">
+    <!-- Sphère céleste du savoir -->
+    <circle cx="260" cy="142" r="96" fill="url(#lgOrb)" stroke="url(#lgGold)" stroke-width="4"/>
+    <!-- Méridiens cosmiques -->
+    <g fill="none" stroke="#6ee7f9" stroke-opacity="0.22" stroke-width="1.6">
+      <ellipse cx="260" cy="142" rx="92" ry="34"/>
+      <ellipse cx="260" cy="142" rx="44" ry="92"/>
+    </g>
+    <!-- Reflet stellaire sur la sphère -->
+    <ellipse cx="222" cy="96" rx="28" ry="13" fill="#ffffff" opacity="0.22" transform="rotate(-28 222 96)"/>
+
+    <!-- Gemme dorée centrale (Losange du Savoir) -->
+    <g transform="translate(260 124)" filter="url(#lgGlow)">
+      <polygon points="0,-36 30,0 0,36 -30,0" fill="url(#lgGem)" stroke="#4c2506" stroke-width="3.5" stroke-linejoin="round"/>
+      <polygon points="0,-24 19,0 0,24 -19,0" fill="#ffe98f" opacity="0.55"/>
+      <polygon points="0,-24 19,0 0,-3 -19,0" fill="#ffffff" opacity="0.45"/>
+    </g>
+
+    <!-- Arbre gauche (Îlot du Savoir) -->
+    <g transform="translate(108 148)">
+      <path d="M-4 32 L-4 8 L-14 -4 M4 32 L4 10 L13 -1" stroke="#6b3e22" stroke-width="6.5" stroke-linecap="round" fill="none"/>
+      <circle cx="0" cy="-16" r="24" fill="#2d6e26" stroke="#183d15" stroke-width="2.2"/>
+      <circle cx="-17" cy="-6" r="16" fill="#3c8731" stroke="#183d15" stroke-width="2"/>
+      <circle cx="16" cy="-5" r="15" fill="#3c8731" stroke="#183d15" stroke-width="2"/>
+      <circle cx="-4" cy="-22" r="14" fill="#6cc750"/>
+      <circle cx="10" cy="-12" r="9" fill="#8be068" opacity="0.75"/>
+    </g>
+
+    <!-- Arbre droit -->
+    <g transform="translate(412 146)">
+      <path d="M-4 34 L-4 8 L-13 -4 M4 34 L4 12 L13 0" stroke="#6b3e22" stroke-width="6.5" stroke-linecap="round" fill="none"/>
+      <circle cx="0" cy="-18" r="25" fill="#2d6e26" stroke="#183d15" stroke-width="2.2"/>
+      <circle cx="-16" cy="-7" r="16" fill="#3c8731" stroke="#183d15" stroke-width="2"/>
+      <circle cx="17" cy="-5" r="16" fill="#3c8731" stroke="#183d15" stroke-width="2"/>
+      <circle cx="-3" cy="-24" r="15" fill="#6cc750"/>
+      <circle cx="11" cy="-12" r="9" fill="#8be068" opacity="0.75"/>
+    </g>
+
+    <!-- Socle insulaire flottant sous le cartouche -->
+    <path d="M56 186 L464 186 L444 252 L392 276 L342 268 L302 296 L260 310 L218 296 L178 268 L128 276 L76 252 Z"
+          fill="url(#lgRock)" stroke="#080e1d" stroke-width="3" stroke-linejoin="round"/>
+    <!-- Veines dorées dans la roche -->
+    <path d="M134 256 L170 264 M386 256 L350 264 M236 286 L260 298 L284 286" stroke="#c8a84b" stroke-width="2.2" stroke-linecap="round" opacity="0.55" fill="none"/>
+    <!-- Galets flottants -->
+    <circle cx="182" cy="306" r="5" fill="#23345a" stroke="#c8a84b" stroke-width="1.2"/>
+    <circle cx="338" cy="304" r="4.5" fill="#23345a" stroke="#c8a84b" stroke-width="1.2"/>
+    <circle cx="260" cy="324" r="4" fill="#c8a84b" opacity="0.8"/>
+
+    <!-- Bordure d'herbe luxuriante au sommet du socle -->
+    <path d="M46 184 Q88 164 134 176 Q176 164 218 176 Q260 162 302 176 Q344 164 386 176 Q432 164 474 184 L468 198 Q426 190 384 198 Q322 190 260 198 Q198 190 136 198 Q94 190 52 198 Z"
+          fill="url(#lgGrass)" stroke="#173d14" stroke-width="2.5" stroke-linejoin="round"/>
+
+    <!-- Cartouche principal « EDUQUEST » -->
+    <rect x="44" y="190" width="432" height="74" rx="14" fill="url(#lgPlaque)" stroke="url(#lgGold)" stroke-width="4"/>
+    <rect x="52" y="198" width="416" height="58" rx="9" fill="none" stroke="#c8a84b" stroke-width="1.2" stroke-opacity="0.45"/>
+    <!-- Rivets dorés -->
+    <g fill="#f3d67d">
+      <circle cx="64" cy="210" r="3.2"/>
+      <circle cx="456" cy="210" r="3.2"/>
+      <circle cx="64" cy="244" r="3.2"/>
+      <circle cx="456" cy="244" r="3.2"/>
+    </g>
+    <!-- Titre EDUQUEST -->
+    <text x="260" y="242" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="48" font-weight="900"
+          fill="url(#lgGold)" stroke="#080e1d" stroke-width="3" paint-order="stroke" letter-spacing="4">EDUQUEST</text>
+  </g>
+</svg>

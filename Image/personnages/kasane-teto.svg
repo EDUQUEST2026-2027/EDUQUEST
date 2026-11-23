@@ -1,36 +1,42 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
   <defs>
-    <radialGradient id="bg" cx="35%" cy="30%" r="75%">
-      <stop offset="0%" stop-color="#ff4d6d"/>
-      <stop offset="100%" stop-color="#1b0e24"/>
+    <radialGradient id="avkasanetetoBg" cx="50%" cy="34%" r="72%">
+      <stop offset="0%" stop-color="#fda4af" stop-opacity="0.92"/>
+      <stop offset="48%" stop-color="#e11d48" stop-opacity="0.72"/>
+      <stop offset="100%" stop-color="#091126"/>
     </radialGradient>
+    <linearGradient id="avkasanetetoGold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fce9a6"/>
+      <stop offset="100%" stop-color="#b88d32"/>
+    </linearGradient>
+    <clipPath id="avkasanetetoClip"><circle cx="60" cy="60" r="56"/></clipPath>
   </defs>
-  <rect width="120" height="120" fill="url(#bg)"/>
-  <!-- Twin Drill Tails (Gauche & Droite) -->
-  <g fill="#e11d48" stroke="#881337" stroke-width="2">
-    <polygon points="16,40 34,44 30,58 14,54"/>
-    <polygon points="14,56 31,60 27,74 13,70"/>
-    <polygon points="15,72 28,76 22,94 14,88"/>
-    <polygon points="104,40 86,44 90,58 106,54"/>
-    <polygon points="106,56 89,60 93,74 107,70"/>
-    <polygon points="105,72 92,76 98,94 106,88"/>
+  <rect width="120" height="120" fill="#091126"/>
+  <g clip-path="url(#avkasanetetoClip)">
+    <rect width="120" height="120" fill="url(#avkasanetetoBg)"/>
+    <!-- Constellation astrale de fond -->
+    <circle cx="60" cy="60" r="49" fill="none" stroke="url(#avkasanetetoGold)" stroke-width="1" stroke-dasharray="4 5" opacity="0.35"/>
+    <g fill="#f7e7ae" opacity="0.8">
+      <path d="M22 26 l1.4 3.2 3.2 1.4 -3.2 1.4 -1.4 3.2 -1.4 -3.2 -3.2 -1.4 3.2 -1.4 Z"/>
+      <circle cx="98" cy="28" r="1.8"/>
+      <circle cx="18" cy="64" r="1.4" opacity="0.6"/>
+      <circle cx="102" cy="58" r="1.6" opacity="0.7"/>
+    </g>
+    
+    <!-- Couettes spirales rouges -->
+    <path d="M36 42 C18 42 16 64 26 84 C32 76 38 64 38 48 Z" fill="#e11d48" stroke="#881337" stroke-width="1.8"/>
+    <path d="M84 42 C102 42 104 64 94 84 C88 76 82 64 82 48 Z" fill="#e11d48" stroke="#881337" stroke-width="1.8"/>
+    <!-- Uniforme sombre bordé or -->
+    <path d="M24 118 L32 82 Q60 76 88 82 L96 118 Z" fill="#1e293b" stroke="url(#avkasanetetoGold)" stroke-width="2"/>
+    <polygon points="52,82 60,96 68,82" fill="#e11d48"/>
+    <!-- Visage & frange -->
+    <rect x="42" y="38" width="36" height="42" rx="17" fill="#fce1d0" stroke="#a6735b" stroke-width="1.8"/>
+    <path d="M39 48 Q40 24 60 24 Q80 24 81 48 L72 38 L66 46 L60 36 L54 46 L48 38 Z" fill="#e11d48" stroke="#881337" stroke-width="1.6"/>
+    <circle cx="51" cy="56" r="3.4" fill="#be123c"/><circle cx="69" cy="56" r="3.4" fill="#be123c"/>
+    <circle cx="50" cy="54.5" r="1.2" fill="#ffffff"/><circle cx="68" cy="54.5" r="1.2" fill="#ffffff"/>
+    <path d="M55 68 Q60 72 65 68" fill="none" stroke="#be123c" stroke-width="1.8" stroke-linecap="round"/>
+  
   </g>
-  <!-- Dark Gray Uniform with Pink/Red Trim -->
-  <path d="M30 120 L36 86 L84 86 L90 120 Z" fill="#27272a" stroke="#e11d48" stroke-width="2.5"/>
-  <!-- Red Tie -->
-  <polygon points="60,86 55,108 60,115 65,108" fill="#e11d48"/>
-  <!-- Head -->
-  <rect x="40" y="38" width="40" height="42" rx="18" fill="#ffe5d9" stroke="#d4a373" stroke-width="2"/>
-  <!-- Eyes (Crimson) -->
-  <ellipse cx="50" cy="58" rx="4" ry="5" fill="#be123c"/>
-  <ellipse cx="70" cy="58" rx="4" ry="5" fill="#be123c"/>
-  <circle cx="49" cy="56" r="1.5" fill="#fff"/>
-  <circle cx="69" cy="56" r="1.5" fill="#fff"/>
-  <!-- Smile -->
-  <path d="M55 70 Q60 75 65 70" fill="none" stroke="#be123c" stroke-width="2" stroke-linecap="round"/>
-  <!-- Hair Bangs & Ahoge -->
-  <path d="M36 48 Q40 28 60 28 Q80 28 84 48 L78 52 L72 42 L64 52 L60 41 L54 52 L46 42 L40 52 Z" fill="#e11d48" stroke="#881337" stroke-width="2"/>
-  <!-- Headset -->
-  <rect x="34" y="52" width="6" height="12" rx="2" fill="#18181b" stroke="#00f5d4" stroke-width="1.5"/>
-  <rect x="80" y="52" width="6" height="12" rx="2" fill="#18181b" stroke="#00f5d4" stroke-width="1.5"/>
+  <!-- Cadre médaillon doré unifié -->
+  <circle cx="60" cy="60" r="56" fill="none" stroke="url(#avkasanetetoGold)" stroke-width="3.2"/>
 </svg>

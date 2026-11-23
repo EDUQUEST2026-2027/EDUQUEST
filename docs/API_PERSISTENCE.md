@@ -1,4 +1,4 @@
-# Guide de Persistance & Schéma des Données — EDUQUEST (v1.29.1)
+# Guide de Persistance & Schéma des Données — EDUQUEST (v1.30.0)
 
 EDUQUEST implémente une couche d'accès aux données unifiée (`js/db.js`) capable de fonctionner dans deux modes transparents pour l'application :
 1. **Mode Local (par défaut) :** Persistance 100 % hors-ligne dans le `localStorage` du navigateur avec isolation complète par profil d'élève.
@@ -25,7 +25,7 @@ Toutes les clés sont préfixées par `eduquest_` pour éviter tout conflit avec
 | `eduquest_attempts_<scope>` | `Object` | Suivi anti-triche par niveau (erreurs persistées, bouclier consommé, sel de réinitialisation, signatures ratées) |
 | `eduquest_adaptive_<scope>` | `Object` | Historique anti-répétition (jusqu'à 240 signatures FIFO) et palier adaptatif par matière et par classe |
 | `eduquest_audio_manual_mute` | `String` | État de coupure audio manuelle (`'true'` / `'false'`) empêchant toute réactivation parasite |
-| `eduquest_audio_state` | `Object` | Piste musicale et position temporelle pour la continuité inter-pages |
+| `eduquest_current_track` / `eduquest_music_time` | `String` | Piste musicale et position temporelle pour la continuité inter-pages |
 | `eduquest_admin_data` | `Object` | Configuration globale, niveaux, filières, matières, leçons, boutique, succès, quêtes, pool Multi-IA et crédits (`AdminStore`) |
 | `eduquest_cookie_consent` | `Object` | Choix de consentement RGPD/CNIL (durée de validité 12 mois) |
 
@@ -72,11 +72,11 @@ Toutes les clés sont préfixées par `eduquest_` pour éviter tout conflit avec
     "announcement": "",
     "defaultNiveau": "6eme",
     "defaultFiliere": "generale",
-    "quizTimerSeconds": 30,
+    "quizTimerSeconds": 45,
     "xpMultiplier": 1.0,
     "coinMultiplier": 1.0,
-    "sfxVolume": 0.6,
-    "musicVolume": 0.35,
+    "defaultSfxVolume": 60,
+    "defaultBgmVolume": 35,
     "soundEnabledByDefault": true,
     "allowRegistration": true,
     "enableShop": true,

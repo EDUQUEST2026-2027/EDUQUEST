@@ -1,79 +1,105 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
-  <!-- ILOT I2D INNOVATION ET DEVELOPPEMENT DURABLE - EDUQUEST -->
   <defs>
-    <linearGradient id="i2RockDeep" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#1b4332"/>
-      <stop offset="0.6" stop-color="#0d2818"/>
-      <stop offset="1" stop-color="#05140b"/>
-    </linearGradient>
-    <linearGradient id="i2RockTop" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#2d6a4f"/>
-      <stop offset="0.6" stop-color="#1b4332"/>
-      <stop offset="1" stop-color="#0d2818"/>
-    </linearGradient>
-    <linearGradient id="i2Grass" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#52b788"/>
-      <stop offset="0.6" stop-color="#2d6a4f"/>
-      <stop offset="1" stop-color="#1b4332"/>
-    </linearGradient>
-    <linearGradient id="i2Solar" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#38bdf8"/>
-      <stop offset="1" stop-color="#1e3a8a"/>
-    </linearGradient>
-    <radialGradient id="i2Halo" cx="0.5" cy="0.4" r="0.6">
-      <stop offset="0" stop-color="#4ade80" stop-opacity="0.34"/>
-      <stop offset="0.55" stop-color="#38bdf8" stop-opacity="0.18"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    <radialGradient id="ii2dHalo" cx="0.5" cy="0.44" r="0.52">
+      <stop offset="0" stop-color="#22c55e" stop-opacity="0.34"/>
+      <stop offset="0.58" stop-color="#c8a84b" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#070b1a" stop-opacity="0"/>
     </radialGradient>
-    <filter id="i2Shadow" x="-25%" y="-25%" width="150%" height="150%">
-      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.5"/>
-    </filter>
-    <filter id="i2Glow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="4" result="b"/>
-      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    <linearGradient id="ii2dRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c3e68"/>
+      <stop offset="0.55" stop-color="#192544"/>
+      <stop offset="1" stop-color="#0d1428"/>
+    </linearGradient>
+    <linearGradient id="ii2dRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#18223d"/>
+      <stop offset="1" stop-color="#080d1b"/>
+    </linearGradient>
+    <linearGradient id="ii2dPlateau" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b4f3a"/>
+      <stop offset="1" stop-color="#0d291e"/>
+    </linearGradient>
+    <linearGradient id="ii2dGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7e29c"/>
+      <stop offset="0.5" stop-color="#c8a84b"/>
+      <stop offset="1" stop-color="#8b661d"/>
+    </linearGradient>
+    <linearGradient id="ii2dAccent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#86efac"/>
+      <stop offset="1" stop-color="#22c55e"/>
+    </linearGradient>
+    <linearGradient id="ii2dBanner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c2a4f"/>
+      <stop offset="1" stop-color="#0c1328"/>
+    </linearGradient>
+    <filter id="ii2dShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="9" stdDeviation="7" flood-color="#000000" flood-opacity="0.52"/>
     </filter>
   </defs>
 
-  <circle cx="210" cy="182" r="150" fill="url(#i2Halo)"/>
+  <!-- Halo astral unifié -->
+  <circle cx="210" cy="195" r="185" fill="url(#ii2dHalo)"/>
 
-  <!-- Base rocheuse verdoyante -->
-  <g filter="url(#i2Shadow)">
-    <path d="M 75 250 Q 210 275 345 250 Q 372 294 320 344 Q 210 398 100 344 Q 48 294 75 250 Z" fill="url(#i2RockDeep)"/>
-    <path d="M 85 245 Q 210 268 335 245 Q 358 278 320 314 Q 210 368 100 314 Q 62 278 85 245 Z" fill="url(#i2RockTop)"/>
-    <ellipse cx="210" cy="245" rx="140" ry="42" fill="url(#i2Grass)"/>
-    <ellipse cx="210" cy="242" rx="126" ry="32" fill="#95d5b2" fill-opacity="0.28"/>
+  <!-- Étoiles astrales dorées (grille signature EDUQUEST) -->
+  <g fill="#f2dc96">
+    <path d="M52 94 l2.6 6 6 2.6 -6 2.6 -2.6 6 -2.6 -6 -6 -2.6 6 -2.6 Z" opacity="0.88"/>
+    <path d="M368 72 l2.2 5 5 2.2 -5 2.2 -2.2 5 -2.2 -5 -5 -2.2 5 -2.2 Z" opacity="0.72"/>
+    <path d="M382 174 l1.8 4 4 1.8 -4 1.8 -1.8 4 -1.8 -4 -4 -1.8 4 -1.8 Z" opacity="0.55"/>
+    <circle cx="64" cy="210" r="2.4" fill="#86efac" opacity="0.65"/>
+    <circle cx="352" cy="264" r="2.6" opacity="0.5"/>
+    <circle cx="320" cy="44" r="2" fill="#86efac" opacity="0.6"/>
   </g>
 
-  <!-- Éolienne centrale -->
-  <g filter="url(#i2Shadow)">
-    <polygon points="154,242 166,242 162,134 158,134" fill="#f1f5f9"/>
-    <g transform="translate(160, 134)">
-      <path d="M 0 0 L -5 -58 Q 0 -64 6 -56 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
-      <path d="M 0 0 L -5 -58 Q 0 -64 6 -56 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" transform="rotate(120)"/>
-      <path d="M 0 0 L -5 -58 Q 0 -64 6 -56 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" transform="rotate(240)"/>
-      <circle cx="0" cy="0" r="8" fill="#38bdf8" stroke="#fff" stroke-width="2"/>
+  <g filter="url(#ii2dShadow)">
+    <!-- Socle rocheux flottant unifié -->
+    <path d="M34 232 L210 264 L386 232 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 L68 284 Z" fill="url(#ii2dRockTop)" stroke="#080e1d" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M68 284 L132 300 L210 308 L288 300 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 Z" fill="url(#ii2dRockDeep)" opacity="0.85"/>
+    <!-- Veines cristallines de la matière -->
+    <path d="M120 296 L142 324 M296 296 L278 326 M192 318 L210 356 L228 318" stroke="#86efac" stroke-width="2.4" stroke-linecap="round" opacity="0.5" fill="none"/>
+    <!-- Galets flottants sous l'île -->
+    <polygon points="164,376 175,382 169,394 157,388" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <polygon points="256,374 268,382 260,393 249,386" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <circle cx="210" cy="400" r="4" fill="#86efac" opacity="0.75"/>
+
+    <!-- Plateau insulaire cerclé d'or -->
+    <ellipse cx="210" cy="236" rx="176" ry="54" fill="url(#ii2dPlateau)" stroke="url(#ii2dGold)" stroke-width="3.5"/>
+    <ellipse cx="210" cy="232" rx="158" ry="43" fill="none" stroke="#86efac" stroke-width="1.5" stroke-opacity="0.45"/>
+
+    <!-- Scène dédiée à la matière -->
+    
+      <!-- Éolienne + Panneau solaire + Feuille éco-conception -->
+      <g transform="translate(210 150)">
+        <ellipse cx="0" cy="78" rx="80" ry="14" fill="#091326" opacity="0.45"/>
+        <!-- Mât éolienne -->
+        <rect x="-5" y="-26" width="10" height="92" rx="3" fill="#e2e8f0" stroke="#0c1830" stroke-width="2"/>
+        <!-- Pales -->
+        <g transform="translate(0 -26)">
+          <path d="M0 0 L-8 -56 L8 -52 Z" fill="#f8fafc" stroke="#0c1830" stroke-width="2"/>
+          <path d="M0 0 L52 22 L42 34 Z" fill="#f8fafc" stroke="#0c1830" stroke-width="2"/>
+          <path d="M0 0 L-46 32 L-54 18 Z" fill="#f8fafc" stroke="#0c1830" stroke-width="2"/>
+          <circle r="9" fill="url(#ii2dGold)" stroke="#0c1830" stroke-width="2"/>
+        </g>
+        <!-- Panneau solaire droite -->
+        <g transform="translate(60 36) skewX(-14)">
+          <rect x="-32" y="-22" width="64" height="40" rx="4" fill="#1d4ed8" stroke="url(#ii2dGold)" stroke-width="3"/>
+          <line x1="-10" y1="-22" x2="-10" y2="18" stroke="#93c5fd" stroke-width="1.8"/><line x1="10" y1="-22" x2="10" y2="18" stroke="#93c5fd" stroke-width="1.8"/>
+          <line x1="-32" y1="-2" x2="32" y2="-2" stroke="#93c5fd" stroke-width="1.8"/>
+        </g>
+        <!-- Feuille verte gauche -->
+        <path d="M-74 60 C-86 24 -64 4 -34 10 C-36 38 -52 54 -74 60 Z" fill="url(#ii2dAccent)" stroke="#0c1830" stroke-width="2"/>
+      </g>
+
+    <!-- Bannière astrale dorée unifiée -->
+    <g transform="translate(210 336)">
+      <path d="M-90 -19 L90 -19 L78 19 L-78 19 Z"
+            fill="url(#ii2dBanner)" stroke="url(#ii2dGold)" stroke-width="3" stroke-linejoin="round"/>
+      <g fill="#f5de8a">
+        <circle cx="-74" cy="-9" r="2.4"/>
+        <circle cx="74" cy="-9" r="2.4"/>
+        <circle cx="-68" cy="10" r="2.4"/>
+        <circle cx="68" cy="10" r="2.4"/>
+      </g>
+      <text x="0" y="7" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="24" font-weight="700"
+            fill="#f4de94" letter-spacing="2">I2D</text>
     </g>
   </g>
-
-  <!-- Panneau solaire photovoltaïque à droite -->
-  <g filter="url(#i2Shadow)">
-    <rect x="242" y="218" width="10" height="24" fill="#94a3b8"/>
-    <polygon points="208,216 284,216 300,174 224,174" fill="url(#i2Solar)" stroke="#e2e8f0" stroke-width="3"/>
-    <line x1="234" y1="174" x2="218" y2="216" stroke="#bae6fd" stroke-width="1.5" opacity="0.7"/>
-    <line x1="258" y1="174" x2="242" y2="216" stroke="#bae6fd" stroke-width="1.5" opacity="0.7"/>
-    <line x1="280" y1="174" x2="264" y2="216" stroke="#bae6fd" stroke-width="1.5" opacity="0.7"/>
-    <line x1="216" y1="195" x2="292" y2="195" stroke="#bae6fd" stroke-width="1.5" opacity="0.7"/>
-  </g>
-
-  <!-- Feuille éco-conception lumineuse -->
-  <g transform="translate(274, 118)" filter="url(#i2Glow)">
-    <path d="M -18 16 C -22 -14 4 -28 24 -22 C 26 2 8 24 -18 16 Z" fill="#4ade80" stroke="#dcfce7" stroke-width="2"/>
-    <path d="M -18 16 Q 0 0 18 -14" fill="none" stroke="#065f46" stroke-width="2.5" stroke-linecap="round"/>
-  </g>
-
-  <!-- Écusson énergie verte -->
-  <g filter="url(#i2Glow)">
-    <text x="108" y="220" fill="#fef08a" font-family="sans-serif" font-size="13" font-weight="bold">ACV</text>
-  </g>
 </svg>
-

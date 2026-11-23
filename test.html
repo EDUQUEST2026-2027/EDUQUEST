@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EDUQUEST — Banc de Tests Automatisés &amp; Outil QA (v1.29.1)</title>
-    <link rel="icon" href="Image/logo.webp" type="image/webp">
+    <title>EDUQUEST — Banc de Tests Automatisés &amp; Outil QA (v1.30.0)</title>
+    <link rel="icon" href="Image/logo.svg" type="image/svg+xml">
     <link rel="stylesheet" href="css/global.css">
     <style>
         :root {
@@ -471,7 +471,7 @@
         <header class="qa-header">
             <div class="title-group">
                 <h1>🛡️ EDUQUEST — Suite QA & Banc de Tests</h1>
-                <p>Outil d'automatisation, validation unitaire, régression & stress tests (v1.29.1 - Zero Dependency)</p>
+                <p>Outil d'automatisation, validation unitaire, régression & stress tests (v1.30.0 - Zero Dependency)</p>
             </div>
             <div class="header-actions">
                 <a href="index.html" class="btn">← Menu Principal</a>
@@ -527,7 +527,7 @@
         <main id="suites-container"></main>
 
         <footer class="test-runner-footer">
-            EDUQUEST v1.29.1 • Banc de validation Vanilla ES6+ 100% hors-ligne & compatible double-clic <code>file:///</code><br>
+            EDUQUEST v1.30.0 • Banc de validation Vanilla ES6+ 100% hors-ligne & compatible double-clic <code>file:///</code><br>
             Les tests s'exécutent dans une mémoire isolée : vos données de joueur et comptes enregistrés sur cet appareil ne sont jamais altérés.
         </footer>
     </div>
@@ -535,6 +535,7 @@
     <div id="qa-toast" class="qa-toast"></div>
 
     <!-- Chargement de l'ensemble des modules EDUQUEST -->
+    <script src="js/core/icons.js"></script>
     <script src="js/db.js"></script>
     <script src="js/quiz-engine.js"></script>
     <script src="js/question-bank.js"></script>
@@ -1198,8 +1199,8 @@
             });
         });
 
-        // --- SUITE 13 : 18 FILIÈRES, BTS 1/2, 36 MATIÈRES, 97 ARTICLES & 78 SUCCÈS (v1.29.1) ---
-        describe('18 Filières, BTS 1/2, 36 Matières, Boutique & Succès (v1.29.1)', function (it) {
+        // --- SUITE 13 : 18 FILIÈRES, BTS 1/2, 36 MATIÈRES, 98 ARTICLES, 78 SUCCÈS & SVG ASTRAL (v1.30.0) ---
+        describe('18 Filières, BTS 1/2, 36 Matières, Boutique, Succès & SVG Astral (v1.30.0)', function (it) {
             it('DB.getFiliere / setFiliere persiste la filière choisie', function () {
                 DB.setFiliere('ciel');
                 assert.strictEqual(DB.getFiliere(), 'ciel');
@@ -1246,6 +1247,15 @@
             it('Boutique (98 articles dont thème Rubis) et Succès (78 badges) cohérents', function () {
                 assert.strictEqual(AdminStore.DEFAULT_SHOP_ITEMS.length, 98);
                 assert.strictEqual(AdminStore.DEFAULT_BADGES.length, 78);
+            });
+
+            it('EduIcons : bibliothèque SVG Astral & Or chargée, 100 % vectorielle et sécurisée', function () {
+                assert.ok(window.EduIcons && typeof EduIcons.svg === 'function');
+                assert.includes(EduIcons.svg('trophy'), '<svg');
+                assert.includes(EduIcons.fromEmoji('🏆'), '<svg');
+                assert.includes(EduIcons.stars(2, 3), 'eq-stars-row');
+                assert.strictEqual(EduIcons.stripLeadingEmoji('🏆 Champion'), 'Champion');
+                assert.strictEqual(AdminStore.DEFAULT_SHOP_ITEMS.filter(i => i.img && i.img.endsWith('.webp')).length, 0);
             });
         });
 
@@ -1465,7 +1475,7 @@
             const pass = lastResults.filter(r => r.passed).length;
             const fail = total - pass;
             const md = [
-                `# 🛡️ EDUQUEST — Rapport QA v1.29.1`,
+                `# 🛡️ EDUQUEST — Rapport QA v1.30.0`,
                 `- **Date :** ${new Date().toISOString()}`,
                 `- **Total :** ${total} | **Succès :** ${pass} | **Échecs :** ${fail}`,
                 `- **Statut :** ${fail === 0 ? '✅ 100% PASSANT' : '⚠️ ' + fail + ' ÉCHECS'}`,
@@ -1484,7 +1494,7 @@
 
         document.getElementById('btn-export-json').addEventListener('click', () => {
             const report = {
-                version: '1.29.1',
+                version: '1.30.0',
                 timestamp: new Date().toISOString(),
                 summary: {
                     total: lastResults.length,

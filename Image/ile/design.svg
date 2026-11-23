@@ -1,49 +1,100 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
-  <!-- ILOT DESIGN & ARTS APPLIQUES (STD2A) - EDUQUEST -->
   <defs>
-    <linearGradient id="dsRockDeep" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#3b1647"/>
-      <stop offset="0.6" stop-color="#220c2b"/>
-      <stop offset="1" stop-color="#110516"/>
-    </linearGradient>
-    <linearGradient id="dsRockTop" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#6d287d"/>
-      <stop offset="0.6" stop-color="#481857"/>
-      <stop offset="1" stop-color="#290d33"/>
-    </linearGradient>
-    <linearGradient id="dsAccent" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#f472b6"/>
-      <stop offset="0.5" stop-color="#a855f7"/>
-      <stop offset="1" stop-color="#38bdf8"/>
-    </linearGradient>
-    <radialGradient id="dsHalo" cx="0.5" cy="0.4" r="0.6">
-      <stop offset="0" stop-color="#f472b6" stop-opacity="0.36"/>
-      <stop offset="0.6" stop-color="#8b5cf6" stop-opacity="0.16"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    <radialGradient id="idesignHalo" cx="0.5" cy="0.44" r="0.52">
+      <stop offset="0" stop-color="#e879f9" stop-opacity="0.34"/>
+      <stop offset="0.58" stop-color="#c8a84b" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#070b1a" stop-opacity="0"/>
     </radialGradient>
-    <filter id="dsShadow" x="-25%" y="-25%" width="150%" height="150%">
-      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.55"/>
+    <linearGradient id="idesignRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c3e68"/>
+      <stop offset="0.55" stop-color="#192544"/>
+      <stop offset="1" stop-color="#0d1428"/>
+    </linearGradient>
+    <linearGradient id="idesignRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#18223d"/>
+      <stop offset="1" stop-color="#080d1b"/>
+    </linearGradient>
+    <linearGradient id="idesignPlateau" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#471d54"/>
+      <stop offset="1" stop-color="#240d2b"/>
+    </linearGradient>
+    <linearGradient id="idesignGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7e29c"/>
+      <stop offset="0.5" stop-color="#c8a84b"/>
+      <stop offset="1" stop-color="#8b661d"/>
+    </linearGradient>
+    <linearGradient id="idesignAccent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f5d0fe"/>
+      <stop offset="1" stop-color="#e879f9"/>
+    </linearGradient>
+    <linearGradient id="idesignBanner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c2a4f"/>
+      <stop offset="1" stop-color="#0c1328"/>
+    </linearGradient>
+    <filter id="idesignShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="9" stdDeviation="7" flood-color="#000000" flood-opacity="0.52"/>
     </filter>
   </defs>
-  <circle cx="210" cy="182" r="148" fill="url(#dsHalo)"/>
-  <g filter="url(#dsShadow)">
-    <path d="M 74 250 Q 210 276 346 250 Q 372 294 318 345 Q 210 398 102 345 Q 48 294 74 250 Z" fill="url(#dsRockDeep)"/>
-    <path d="M 86 244 Q 210 268 334 244 Q 356 278 318 314 Q 210 366 102 314 Q 64 278 86 244 Z" fill="url(#dsRockTop)"/>
-    <ellipse cx="210" cy="244" rx="138" ry="40" fill="#250b30"/>
-    <ellipse cx="210" cy="240" rx="126" ry="32" fill="none" stroke="#f472b6" stroke-width="2.2"/>
+
+  <!-- Halo astral unifié -->
+  <circle cx="210" cy="195" r="185" fill="url(#idesignHalo)"/>
+
+  <!-- Étoiles astrales dorées (grille signature EDUQUEST) -->
+  <g fill="#f2dc96">
+    <path d="M52 94 l2.6 6 6 2.6 -6 2.6 -2.6 6 -2.6 -6 -6 -2.6 6 -2.6 Z" opacity="0.88"/>
+    <path d="M368 72 l2.2 5 5 2.2 -5 2.2 -2.2 5 -2.2 -5 -5 -2.2 5 -2.2 Z" opacity="0.72"/>
+    <path d="M382 174 l1.8 4 4 1.8 -4 1.8 -1.8 4 -1.8 -4 -4 -1.8 4 -1.8 Z" opacity="0.55"/>
+    <circle cx="64" cy="210" r="2.4" fill="#f5d0fe" opacity="0.65"/>
+    <circle cx="352" cy="264" r="2.6" opacity="0.5"/>
+    <circle cx="320" cy="44" r="2" fill="#f5d0fe" opacity="0.6"/>
   </g>
-  <!-- Équerre architecturale + Planche couleurs + Stylet -->
-  <g filter="url(#dsShadow)">
-    <polygon points="122,232 238,232 122,108" fill="#1e1b4b" stroke="#38bdf8" stroke-width="3"/>
-    <polygon points="142,214 198,214 142,154" fill="#250b30" stroke="#7dd3fc" stroke-width="2"/>
-    <!-- Nuancier Pantone / Design -->
-    <rect x="218" y="126" width="54" height="106" rx="10" fill="#f43f5e" transform="rotate(-12 245 180)" stroke="#fff" stroke-width="2"/>
-    <rect x="242" y="130" width="54" height="106" rx="10" fill="#facc15" transform="rotate(4 268 182)" stroke="#fff" stroke-width="2"/>
-    <rect x="264" y="138" width="54" height="102" rx="10" fill="url(#dsAccent)" transform="rotate(18 290 188)" stroke="#fff" stroke-width="2"/>
-    <circle cx="244" cy="214" r="6" fill="#1e1b4b"/>
-    <!-- Cercle chromatique & plume vectorielle -->
-    <circle cx="196" cy="144" r="24" fill="url(#dsAccent)" stroke="#fef08a" stroke-width="3"/>
-    <polygon points="196,126 208,150 196,162 184,150" fill="#ffffff"/>
-    <circle cx="196" cy="146" r="3.5" fill="#1e1b4b"/>
+
+  <g filter="url(#idesignShadow)">
+    <!-- Socle rocheux flottant unifié -->
+    <path d="M34 232 L210 264 L386 232 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 L68 284 Z" fill="url(#idesignRockTop)" stroke="#080e1d" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M68 284 L132 300 L210 308 L288 300 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 Z" fill="url(#idesignRockDeep)" opacity="0.85"/>
+    <!-- Veines cristallines de la matière -->
+    <path d="M120 296 L142 324 M296 296 L278 326 M192 318 L210 356 L228 318" stroke="#f5d0fe" stroke-width="2.4" stroke-linecap="round" opacity="0.5" fill="none"/>
+    <!-- Galets flottants sous l'île -->
+    <polygon points="164,376 175,382 169,394 157,388" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <polygon points="256,374 268,382 260,393 249,386" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <circle cx="210" cy="400" r="4" fill="#f5d0fe" opacity="0.75"/>
+
+    <!-- Plateau insulaire cerclé d'or -->
+    <ellipse cx="210" cy="236" rx="176" ry="54" fill="url(#idesignPlateau)" stroke="url(#idesignGold)" stroke-width="3.5"/>
+    <ellipse cx="210" cy="232" rx="158" ry="43" fill="none" stroke="#f5d0fe" stroke-width="1.5" stroke-opacity="0.45"/>
+
+    <!-- Scène dédiée à la matière -->
+    
+      <!-- Spirale du Nombre d'Or + Nuancier + Stylet -->
+      <g transform="translate(210 148)">
+        <ellipse cx="0" cy="80" rx="80" ry="14" fill="#091326" opacity="0.45"/>
+        <!-- Nuancier éventail -->
+        <g transform="translate(-26 24)">
+          <rect x="-16" y="-66" width="32" height="82" rx="6" fill="#38bdf8" stroke="#0c1830" stroke-width="2.5" transform="rotate(-28 0 16)"/>
+          <rect x="-16" y="-66" width="32" height="82" rx="6" fill="#facc15" stroke="#0c1830" stroke-width="2.5" transform="rotate(-8 0 16)"/>
+          <rect x="-16" y="-66" width="32" height="82" rx="6" fill="#e879f9" stroke="#0c1830" stroke-width="2.5" transform="rotate(14 0 16)"/>
+          <circle cx="0" cy="12" r="7" fill="url(#idesignGold)"/>
+        </g>
+        <!-- Rectangle d'or + spirale -->
+        <g transform="translate(46 2)">
+          <rect x="-38" y="-32" width="76" height="58" rx="4" fill="#181230" stroke="url(#idesignGold)" stroke-width="3"/>
+          <path d="M-38 26 A58 58 0 0 1 20 -32 A36 36 0 0 1 38 4 A22 22 0 0 1 16 26" fill="none" stroke="#f5d0fe" stroke-width="3.5" stroke-linecap="round"/>
+        </g>
+      </g>
+
+    <!-- Bannière astrale dorée unifiée -->
+    <g transform="translate(210 336)">
+      <path d="M-90 -19 L90 -19 L78 19 L-78 19 Z"
+            fill="url(#idesignBanner)" stroke="url(#idesignGold)" stroke-width="3" stroke-linejoin="round"/>
+      <g fill="#f5de8a">
+        <circle cx="-74" cy="-9" r="2.4"/>
+        <circle cx="74" cy="-9" r="2.4"/>
+        <circle cx="-68" cy="10" r="2.4"/>
+        <circle cx="68" cy="10" r="2.4"/>
+      </g>
+      <text x="0" y="7" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="22" font-weight="700"
+            fill="#f4de94" letter-spacing="2">DESIGN</text>
+    </g>
   </g>
 </svg>

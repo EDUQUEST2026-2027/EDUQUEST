@@ -1,47 +1,95 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
-  <!-- ILOT HOTELLERIE & GASTRONOMIE (STHR) - EDUQUEST -->
   <defs>
-    <linearGradient id="hrRockDeep" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#4a1d0b"/>
-      <stop offset="0.6" stop-color="#2b1006"/>
-      <stop offset="1" stop-color="#140702"/>
-    </linearGradient>
-    <linearGradient id="hrRockTop" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#8a3817"/>
-      <stop offset="0.6" stop-color="#5c240d"/>
-      <stop offset="1" stop-color="#331307"/>
-    </linearGradient>
-    <linearGradient id="hrGold" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#fef08a"/>
-      <stop offset="0.5" stop-color="#f59e0b"/>
-      <stop offset="1" stop-color="#b45309"/>
-    </linearGradient>
-    <radialGradient id="hrHalo" cx="0.5" cy="0.4" r="0.6">
-      <stop offset="0" stop-color="#fb923c" stop-opacity="0.38"/>
-      <stop offset="0.6" stop-color="#f59e0b" stop-opacity="0.16"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    <radialGradient id="ihotellerieHalo" cx="0.5" cy="0.44" r="0.52">
+      <stop offset="0" stop-color="#f97316" stop-opacity="0.34"/>
+      <stop offset="0.58" stop-color="#c8a84b" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#070b1a" stop-opacity="0"/>
     </radialGradient>
-    <filter id="hrShadow" x="-25%" y="-25%" width="150%" height="150%">
-      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.55"/>
+    <linearGradient id="ihotellerieRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c3e68"/>
+      <stop offset="0.55" stop-color="#192544"/>
+      <stop offset="1" stop-color="#0d1428"/>
+    </linearGradient>
+    <linearGradient id="ihotellerieRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#18223d"/>
+      <stop offset="1" stop-color="#080d1b"/>
+    </linearGradient>
+    <linearGradient id="ihotelleriePlateau" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#542619"/>
+      <stop offset="1" stop-color="#2b120b"/>
+    </linearGradient>
+    <linearGradient id="ihotellerieGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7e29c"/>
+      <stop offset="0.5" stop-color="#c8a84b"/>
+      <stop offset="1" stop-color="#8b661d"/>
+    </linearGradient>
+    <linearGradient id="ihotellerieAccent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fed7aa"/>
+      <stop offset="1" stop-color="#f97316"/>
+    </linearGradient>
+    <linearGradient id="ihotellerieBanner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c2a4f"/>
+      <stop offset="1" stop-color="#0c1328"/>
+    </linearGradient>
+    <filter id="ihotellerieShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="9" stdDeviation="7" flood-color="#000000" flood-opacity="0.52"/>
     </filter>
   </defs>
-  <circle cx="210" cy="182" r="148" fill="url(#hrHalo)"/>
-  <g filter="url(#hrShadow)">
-    <path d="M 74 250 Q 210 276 346 250 Q 372 294 318 345 Q 210 398 102 345 Q 48 294 74 250 Z" fill="url(#hrRockDeep)"/>
-    <path d="M 86 244 Q 210 268 334 244 Q 356 278 318 314 Q 210 366 102 314 Q 64 278 86 244 Z" fill="url(#hrRockTop)"/>
-    <ellipse cx="210" cy="244" rx="138" ry="40" fill="#3a1608"/>
-    <ellipse cx="210" cy="240" rx="126" ry="32" fill="none" stroke="#fbbf24" stroke-width="2.2"/>
+
+  <!-- Halo astral unifié -->
+  <circle cx="210" cy="195" r="185" fill="url(#ihotellerieHalo)"/>
+
+  <!-- Étoiles astrales dorées (grille signature EDUQUEST) -->
+  <g fill="#f2dc96">
+    <path d="M52 94 l2.6 6 6 2.6 -6 2.6 -2.6 6 -2.6 -6 -6 -2.6 6 -2.6 Z" opacity="0.88"/>
+    <path d="M368 72 l2.2 5 5 2.2 -5 2.2 -2.2 5 -2.2 -5 -5 -2.2 5 -2.2 Z" opacity="0.72"/>
+    <path d="M382 174 l1.8 4 4 1.8 -4 1.8 -1.8 4 -1.8 -4 -4 -1.8 4 -1.8 Z" opacity="0.55"/>
+    <circle cx="64" cy="210" r="2.4" fill="#fed7aa" opacity="0.65"/>
+    <circle cx="352" cy="264" r="2.6" opacity="0.5"/>
+    <circle cx="320" cy="44" r="2" fill="#fed7aa" opacity="0.6"/>
   </g>
-  <!-- Cloche gastronomique dorée + Toque de chef + Étoiles -->
-  <g filter="url(#hrShadow)">
-    <path d="M 122 224 A 88 74 0 0 1 298 224 Z" fill="url(#hrGold)" stroke="#fef9c3" stroke-width="3"/>
-    <rect x="110" y="224" width="200" height="14" rx="7" fill="#fde68a" stroke="#92400e" stroke-width="2"/>
-    <circle cx="210" cy="144" r="12" fill="#fef08a" stroke="#92400e" stroke-width="2"/>
-    <!-- Toque blanche au-dessus -->
-    <path d="M 176 132 C 160 120 168 94 190 96 C 198 80 222 80 230 96 C 252 94 260 120 244 132 Z" fill="#ffffff" stroke="#e2e8f0" stroke-width="2.5"/>
-    <rect x="180" y="128" width="60" height="16" rx="4" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
-    <!-- Étoiles gastronomie -->
-    <polygon points="122,130 126,140 137,140 128,147 131,158 122,151 113,158 116,147 107,140 118,140" fill="#fde047"/>
-    <polygon points="298,130 302,140 313,140 304,147 307,158 298,151 289,158 292,147 283,140 294,140" fill="#fde047"/>
+
+  <g filter="url(#ihotellerieShadow)">
+    <!-- Socle rocheux flottant unifié -->
+    <path d="M34 232 L210 264 L386 232 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 L68 284 Z" fill="url(#ihotellerieRockTop)" stroke="#080e1d" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M68 284 L132 300 L210 308 L288 300 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 Z" fill="url(#ihotellerieRockDeep)" opacity="0.85"/>
+    <!-- Veines cristallines de la matière -->
+    <path d="M120 296 L142 324 M296 296 L278 326 M192 318 L210 356 L228 318" stroke="#fed7aa" stroke-width="2.4" stroke-linecap="round" opacity="0.5" fill="none"/>
+    <!-- Galets flottants sous l'île -->
+    <polygon points="164,376 175,382 169,394 157,388" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <polygon points="256,374 268,382 260,393 249,386" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <circle cx="210" cy="400" r="4" fill="#fed7aa" opacity="0.75"/>
+
+    <!-- Plateau insulaire cerclé d'or -->
+    <ellipse cx="210" cy="236" rx="176" ry="54" fill="url(#ihotelleriePlateau)" stroke="url(#ihotellerieGold)" stroke-width="3.5"/>
+    <ellipse cx="210" cy="232" rx="158" ry="43" fill="none" stroke="#fed7aa" stroke-width="1.5" stroke-opacity="0.45"/>
+
+    <!-- Scène dédiée à la matière -->
+    
+      <!-- Cloche gastronomique argent & or + Toque de chef + Étoile -->
+      <g transform="translate(210 152)">
+        <ellipse cx="0" cy="76" rx="82" ry="14" fill="#091326" opacity="0.45"/>
+        <!-- Cloche de service -->
+        <path d="M-76 54 A76 68 0 0 1 76 54 Z" fill="#cbd5e1" stroke="url(#ihotellerieGold)" stroke-width="3.5"/>
+        <path d="M-46 12 Q-28 -10 0 -12" stroke="#ffffff" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.7"/>
+        <circle cx="0" cy="-22" r="11" fill="url(#ihotellerieGold)" stroke="#0c1830" stroke-width="2.5"/>
+        <rect x="-86" y="52" width="172" height="12" rx="6" fill="url(#ihotellerieGold)" stroke="#0c1830" stroke-width="2.5"/>
+        <!-- Étoile gastronomique au sommet -->
+        <polygon points="0,-78 6,-62 24,-62 10,-52 15,-36 0,-46 -15,-36 -10,-52 -24,-62 -6,-62" fill="#fde047" stroke="#0c1830" stroke-width="2"/>
+      </g>
+
+    <!-- Bannière astrale dorée unifiée -->
+    <g transform="translate(210 336)">
+      <path d="M-90 -19 L90 -19 L78 19 L-78 19 Z"
+            fill="url(#ihotellerieBanner)" stroke="url(#ihotellerieGold)" stroke-width="3" stroke-linejoin="round"/>
+      <g fill="#f5de8a">
+        <circle cx="-74" cy="-9" r="2.4"/>
+        <circle cx="74" cy="-9" r="2.4"/>
+        <circle cx="-68" cy="10" r="2.4"/>
+        <circle cx="68" cy="10" r="2.4"/>
+      </g>
+      <text x="0" y="7" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="19" font-weight="700"
+            fill="#f4de94" letter-spacing="2">HÔTELLERIE</text>
+    </g>
   </g>
 </svg>

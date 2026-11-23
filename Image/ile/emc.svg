@@ -1,112 +1,104 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
-  <!-- ============================================================
-       ÎLOT « EMC » (Éducation Morale et Civique) — EDUQUEST
-       Temple républicain, colonnes de la loi, balance de la justice,
-       arbre de la liberté et halo civique.
-       ============================================================ -->
   <defs>
-    <linearGradient id="emcRockTop" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#7a5230"/>
-      <stop offset="0.5" stop-color="#54331d"/>
-      <stop offset="1" stop-color="#341c0e"/>
-    </linearGradient>
-    <linearGradient id="emcRockDeep" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#442614"/>
-      <stop offset="1" stop-color="#1f1006"/>
-    </linearGradient>
-    <linearGradient id="emcGrass" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#78c96c"/>
-      <stop offset="1" stop-color="#3e7a2b"/>
-    </linearGradient>
-    <linearGradient id="emcMarble" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="0.6" stop-color="#e8ecf4"/>
-      <stop offset="1" stop-color="#c2c7d4"/>
-    </linearGradient>
-    <linearGradient id="emcGold" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ffeaa7"/>
-      <stop offset="0.5" stop-color="#fdcb6e"/>
-      <stop offset="1" stop-color="#e17055"/>
-    </linearGradient>
-    <radialGradient id="emcHalo" cx="0.5" cy="0.4" r="0.6">
-      <stop offset="0" stop-color="#48dbfb" stop-opacity="0.3"/>
-      <stop offset="0.6" stop-color="#feca57" stop-opacity="0.15"/>
-      <stop offset="1" stop-color="#ffd32a" stop-opacity="0"/>
+    <radialGradient id="iemcHalo" cx="0.5" cy="0.44" r="0.52">
+      <stop offset="0" stop-color="#60a5fa" stop-opacity="0.34"/>
+      <stop offset="0.58" stop-color="#c8a84b" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#070b1a" stop-opacity="0"/>
     </radialGradient>
-    <filter id="emcShadow" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.45"/>
+    <linearGradient id="iemcRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c3e68"/>
+      <stop offset="0.55" stop-color="#192544"/>
+      <stop offset="1" stop-color="#0d1428"/>
+    </linearGradient>
+    <linearGradient id="iemcRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#18223d"/>
+      <stop offset="1" stop-color="#080d1b"/>
+    </linearGradient>
+    <linearGradient id="iemcPlateau" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#243a68"/>
+      <stop offset="1" stop-color="#121f3d"/>
+    </linearGradient>
+    <linearGradient id="iemcGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7e29c"/>
+      <stop offset="0.5" stop-color="#c8a84b"/>
+      <stop offset="1" stop-color="#8b661d"/>
+    </linearGradient>
+    <linearGradient id="iemcAccent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#93c5fd"/>
+      <stop offset="1" stop-color="#60a5fa"/>
+    </linearGradient>
+    <linearGradient id="iemcBanner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c2a4f"/>
+      <stop offset="1" stop-color="#0c1328"/>
+    </linearGradient>
+    <filter id="iemcShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="9" stdDeviation="7" flood-color="#000000" flood-opacity="0.52"/>
     </filter>
   </defs>
 
-  <!-- Halo républicain -->
-  <circle cx="210" cy="180" r="140" fill="url(#emcHalo)"/>
+  <!-- Halo astral unifié -->
+  <circle cx="210" cy="195" r="185" fill="url(#iemcHalo)"/>
 
-  <!-- Base flottante (rocher) -->
-  <g filter="url(#emcShadow)">
-    <path d="M 75 250 Q 210 275 345 250 Q 370 290 320 340 Q 210 395 100 340 Q 50 290 75 250 Z" fill="url(#emcRockDeep)"/>
-    <path d="M 85 245 Q 210 268 335 245 Q 360 275 320 310 Q 210 365 100 310 Q 60 275 85 245 Z" fill="url(#emcRockTop)"/>
-    <!-- Plateau verdoyant -->
-    <ellipse cx="210" cy="245" rx="140" ry="42" fill="url(#emcGrass)"/>
-    <ellipse cx="210" cy="242" rx="130" ry="34" fill="#9de286" fill-opacity="0.4"/>
+  <!-- Étoiles astrales dorées (grille signature EDUQUEST) -->
+  <g fill="#f2dc96">
+    <path d="M52 94 l2.6 6 6 2.6 -6 2.6 -2.6 6 -2.6 -6 -6 -2.6 6 -2.6 Z" opacity="0.88"/>
+    <path d="M368 72 l2.2 5 5 2.2 -5 2.2 -2.2 5 -2.2 -5 -5 -2.2 5 -2.2 Z" opacity="0.72"/>
+    <path d="M382 174 l1.8 4 4 1.8 -4 1.8 -1.8 4 -1.8 -4 -4 -1.8 4 -1.8 Z" opacity="0.55"/>
+    <circle cx="64" cy="210" r="2.4" fill="#93c5fd" opacity="0.65"/>
+    <circle cx="352" cy="264" r="2.6" opacity="0.5"/>
+    <circle cx="320" cy="44" r="2" fill="#93c5fd" opacity="0.6"/>
   </g>
 
-  <!-- Arbre de la liberté (gauche) -->
-  <g>
-    <path d="M 110 240 Q 112 205 118 185" stroke="#5a381e" stroke-width="7" stroke-linecap="round"/>
-    <circle cx="118" cy="165" r="28" fill="#489b33"/>
-    <circle cx="132" cy="155" r="22" fill="#60b746"/>
-    <circle cx="106" cy="150" r="20" fill="#75c75c"/>
-  </g>
+  <g filter="url(#iemcShadow)">
+    <!-- Socle rocheux flottant unifié -->
+    <path d="M34 232 L210 264 L386 232 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 L68 284 Z" fill="url(#iemcRockTop)" stroke="#080e1d" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M68 284 L132 300 L210 308 L288 300 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 Z" fill="url(#iemcRockDeep)" opacity="0.85"/>
+    <!-- Veines cristallines de la matière -->
+    <path d="M120 296 L142 324 M296 296 L278 326 M192 318 L210 356 L228 318" stroke="#93c5fd" stroke-width="2.4" stroke-linecap="round" opacity="0.5" fill="none"/>
+    <!-- Galets flottants sous l'île -->
+    <polygon points="164,376 175,382 169,394 157,388" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <polygon points="256,374 268,382 260,393 249,386" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <circle cx="210" cy="400" r="4" fill="#93c5fd" opacity="0.75"/>
 
-  <!-- Temple de la République / Assemblée -->
-  <g id="temple">
-    <!-- Marches du socle -->
-    <rect x="140" y="222" width="140" height="8" rx="2" fill="url(#emcMarble)"/>
-    <rect x="146" y="216" width="128" height="6" rx="2" fill="url(#emcMarble)"/>
-    <!-- 4 Colonnes -->
-    <rect x="154" y="152" width="10" height="64" rx="2" fill="url(#emcMarble)"/>
-    <rect x="186" y="152" width="10" height="64" rx="2" fill="url(#emcMarble)"/>
-    <rect x="224" y="152" width="10" height="64" rx="2" fill="url(#emcMarble)"/>
-    <rect x="256" y="152" width="10" height="64" rx="2" fill="url(#emcMarble)"/>
-    <!-- Entablement -->
-    <rect x="146" y="146" width="128" height="7" rx="2" fill="url(#emcMarble)"/>
-    <!-- Fronton triangulaire -->
-    <polygon points="144,146 210,105 276,146" fill="url(#emcMarble)"/>
-    <!-- Devise sculptée RF -->
-    <circle cx="210" cy="130" r="10" fill="url(#emcGold)"/>
-    <text x="210" y="134" font-family="'Cinzel', serif" font-weight="bold" font-size="9" fill="#2c3e50" text-anchor="middle">RF</text>
-  </g>
+    <!-- Plateau insulaire cerclé d'or -->
+    <ellipse cx="210" cy="236" rx="176" ry="54" fill="url(#iemcPlateau)" stroke="url(#iemcGold)" stroke-width="3.5"/>
+    <ellipse cx="210" cy="232" rx="158" ry="43" fill="none" stroke="#93c5fd" stroke-width="1.5" stroke-opacity="0.45"/>
 
-  <!-- Balance de la Justice en avant-plan (dorée) -->
-  <g id="balance" transform="translate(210, 195)">
-    <!-- Pylône central -->
-    <line x1="0" y1="-28" x2="0" y2="28" stroke="url(#emcGold)" stroke-width="4" stroke-linecap="round"/>
-    <circle cx="0" cy="-28" r="4" fill="url(#emcGold)"/>
-    <circle cx="0" cy="28" r="7" fill="url(#emcGold)"/>
-    <!-- Fléau horizontal -->
-    <line x1="-36" y1="-20" x2="36" y2="-20" stroke="url(#emcGold)" stroke-width="3" stroke-linecap="round"/>
-    <!-- Plateau gauche -->
-    <line x1="-36" y1="-20" x2="-45" y2="-2" stroke="#d4a373" stroke-width="1.5"/>
-    <line x1="-36" y1="-20" x2="-27" y2="-2" stroke="#d4a373" stroke-width="1.5"/>
-    <path d="M -48 -2 Q -36 8 -24 -2 Z" fill="url(#emcGold)"/>
-    <!-- Plateau droit -->
-    <line x1="36" y1="-20" x2="27" y2="-2" stroke="#d4a373" stroke-width="1.5"/>
-    <line x1="36" y1="-20" x2="45" y2="-2" stroke="#d4a373" stroke-width="1.5"/>
-    <path d="M 24 -2 Q 36 8 48 -2 Z" fill="url(#emcGold)"/>
-  </g>
+    <!-- Scène dédiée à la matière -->
+    
+      <!-- Temple républicain + Balance de justice + Ruban tricolore -->
+      <g transform="translate(210 150)">
+        <ellipse cx="0" cy="78" rx="82" ry="14" fill="#091326" opacity="0.45"/>
+        <!-- Colonnes & Fronton -->
+        <rect x="-74" y="54" width="148" height="14" rx="3" fill="#e2e8f0" stroke="#0c1830" stroke-width="2.5"/>
+        <rect x="-58" y="-12" width="14" height="66" fill="#f1f5f9" stroke="#334155" stroke-width="2"/>
+        <rect x="-22" y="-12" width="14" height="66" fill="#f1f5f9" stroke="#334155" stroke-width="2"/>
+        <rect x="8" y="-12" width="14" height="66" fill="#f1f5f9" stroke="#334155" stroke-width="2"/>
+        <rect x="44" y="-12" width="14" height="66" fill="#f1f5f9" stroke="#334155" stroke-width="2"/>
+        <polygon points="-82,-12 0,-60 82,-12" fill="#f8fafc" stroke="url(#iemcGold)" stroke-width="3.5" stroke-linejoin="round"/>
+        <!-- Cocarde tricolore dans le fronton -->
+        <circle cx="0" cy="-28" r="12" fill="#ef4444"/><circle cx="0" cy="-28" r="8" fill="#ffffff"/><circle cx="0" cy="-28" r="4" fill="#2563eb"/>
+        <!-- Balance dorée au premier plan -->
+        <g transform="translate(0 28)">
+          <line x1="0" y1="-26" x2="0" y2="34" stroke="url(#iemcGold)" stroke-width="5" stroke-linecap="round"/>
+          <line x1="-42" y1="-16" x2="42" y2="-16" stroke="url(#iemcGold)" stroke-width="4" stroke-linecap="round"/>
+          <path d="M-56 10 Q-42 22 -28 10 Z M28 10 Q42 22 56 10 Z" fill="url(#iemcGold)"/>
+          <path d="M-42 -16 L-52 10 M-42 -16 L-32 10 M42 -16 L32 10 M42 -16 L52 10" stroke="#f5de8a" stroke-width="1.8"/>
+        </g>
+      </g>
 
-  <!-- Bannière tricolore discrète au vent -->
-  <g transform="translate(290, 185)">
-    <line x1="0" y1="0" x2="0" y2="45" stroke="#7f8c8d" stroke-width="2"/>
-    <polygon points="0,0 24,6 0,13" fill="#2e86de"/>
-    <polygon points="0,6 24,12 0,19" fill="#ffffff"/>
-    <polygon points="0,13 24,19 0,26" fill="#ee5253"/>
-  </g>
-
-  <!-- Nuages flottants au pied de l'île -->
-  <g opacity="0.85">
-    <ellipse cx="90" cy="310" rx="36" ry="16" fill="#ffffff" opacity="0.6"/>
-    <ellipse cx="330" cy="295" rx="42" ry="18" fill="#ffffff" opacity="0.6"/>
-    <ellipse cx="210" cy="370" rx="55" ry="20" fill="#ffffff" opacity="0.75"/>
+    <!-- Bannière astrale dorée unifiée -->
+    <g transform="translate(210 336)">
+      <path d="M-90 -19 L90 -19 L78 19 L-78 19 Z"
+            fill="url(#iemcBanner)" stroke="url(#iemcGold)" stroke-width="3" stroke-linejoin="round"/>
+      <g fill="#f5de8a">
+        <circle cx="-74" cy="-9" r="2.4"/>
+        <circle cx="74" cy="-9" r="2.4"/>
+        <circle cx="-68" cy="10" r="2.4"/>
+        <circle cx="68" cy="10" r="2.4"/>
+      </g>
+      <text x="0" y="7" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="24" font-weight="700"
+            fill="#f4de94" letter-spacing="2">EMC</text>
+    </g>
   </g>
 </svg>

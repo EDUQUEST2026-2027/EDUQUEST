@@ -298,15 +298,35 @@
         return { system, user };
     }
 
-    function validateReturnedLesson(lesson, levelIndex) {
+    function validateReturnedLesson(lesson, levelIndex, allowServerValidation = false) {
         if (!lesson || typeof lesson !== 'object') return null;
+        const rawType = String(lesson.type || 'qcm').trim() || 'qcm';
+        const isServerValidatedQcm = Boolean(
+            allowServerValidation &&
+            rawType === 'qcm' &&
+            lesson.correct == null &&
+            Array.isArray(lesson.opts) &&
+            lesson.opts.length >= 2 &&
+            lesson.q
+        );
+
+        // Empêche normalizeLesson de convertir un index correct manquant/invalide en 0
+        if (rawType === 'qcm' && !isServerValidatedQcm) {
+            if (lesson.correct == null || lesson.correct === '' || typeof lesson.correct === 'boolean') return null;
+            const rawCorrect = Number(lesson.correct);
+            if (!Number.isInteger(rawCorrect) || !Array.isArray(lesson.opts) || rawCorrect < 0 || rawCorrect >= lesson.opts.length) {
+                return null;
+            }
+        }
+
         const store = getAdminStore();
         const normalized = (store && typeof store.normalizeLesson === 'function')
             ? store.normalizeLesson({ ...lesson, title: lesson.title || ('Niveau ' + (levelIndex + 1)) })
-            : { ...lesson, type: lesson.type || 'qcm', title: lesson.title || ('Niveau ' + (levelIndex + 1)) };
+            : { ...lesson, type: rawType, title: lesson.title || ('Niveau ' + (levelIndex + 1)) };
 
-        // Cas Make sécurisé où la bonne réponse reste côté serveur (questionId fourni, pas de `correct`)
-        if (normalized.type === 'qcm' && Array.isArray(normalized.opts) && normalized.opts.length >= 2 && normalized.q && normalized.correct == null) {
+        // Cas Make sécurisé où la bonne réponse reste côté serveur (uniquement si un endpoint de validation serveur existe)
+        if (isServerValidatedQcm) {
+            normalized.correct = null;
             return normalized;
         }
 
@@ -340,10 +360,15 @@
                 salt: ctx.salt,
             }, timeoutMs);
             const rawLesson = (data && data.lesson) ? data.lesson : data;
-            const lesson = validateReturnedLesson(rawLesson, ctx.index);
-            if (!lesson) throw new Error('Leçon Make invalide');
             const questionId = (data && data.questionId) ? String(data.questionId) : null;
+            const hasServerValidation = Boolean(questionId && (provider.validateEndpoint || getConfig().validateWebhookUrl));
+            const lesson = validateReturnedLesson(rawLesson, ctx.index, hasServerValidation);
+            if (!lesson) throw new Error('Leçon Make invalide');
             if (questionId && provider.validateEndpoint) {
+                if (validationEndpointsByQuestionId.size >= 200) {
+                    const oldestKey = validationEndpointsByQuestionId.keys().next().value;
+                    if (oldestKey !== undefined) validationEndpointsByQuestionId.delete(oldestKey);
+                }
                 validationEndpointsByQuestionId.set(questionId, provider.validateEndpoint);
             }
             return { lesson, questionId };
@@ -547,6 +572,7 @@
             try {
                 const data = await postJSON(validateUrl, { questionId, answer: rawAnswer }, conf.timeout);
                 if (data && typeof data.isCorrect === 'boolean') {
+                    validationEndpointsByQuestionId.delete(questionId);
                     return { isCorrect: data.isCorrect, explanation: data.explanation || '', answerKey: data.answerKey || {} };
                 }
             } catch (err) {

@@ -1,10 +1,10 @@
 {
   "name": "eduquest-advanced",
-  "version": "1.29.1",
+  "version": "1.30.0",
   "description": "EDUQUEST — application française de révision gamifiée (Collège, Lycée & BTS · 18 filières · 36 matières officielles)",
   "private": true,
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "check": "node --check js/app.js js/db.js js/quiz-engine.js js/question-bank.js js/admin.js js/admin-store.js js/ai-provider.js js/cookies.js js/core/audio-manager.js js/core/quiz-timer.js js/core/adaptive-engine.js js/core/game-rules.js js/core/quiz-session.js js/features/daily-quests.js service-worker.js"
+    "check": "node --check js/core/icons.js js/app.js js/db.js js/quiz-engine.js js/question-bank.js js/admin.js js/admin-store.js js/ai-provider.js js/cookies.js js/core/audio-manager.js js/core/quiz-timer.js js/core/adaptive-engine.js js/core/game-rules.js js/core/quiz-session.js js/features/daily-quests.js service-worker.js"
   }
 }

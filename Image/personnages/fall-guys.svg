@@ -1,23 +1,38 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
   <defs>
-    <radialGradient id="bg" cx="35%" cy="30%" r="75%">
-      <stop offset="0%" stop-color="#ff66b2"/>
-      <stop offset="100%" stop-color="#1a103c"/>
+    <radialGradient id="avfallguysBg" cx="50%" cy="34%" r="72%">
+      <stop offset="0%" stop-color="#f9a8d4" stop-opacity="0.92"/>
+      <stop offset="48%" stop-color="#ec4899" stop-opacity="0.72"/>
+      <stop offset="100%" stop-color="#091126"/>
     </radialGradient>
+    <linearGradient id="avfallguysGold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fce9a6"/>
+      <stop offset="100%" stop-color="#b88d32"/>
+    </linearGradient>
+    <clipPath id="avfallguysClip"><circle cx="60" cy="60" r="56"/></clipPath>
   </defs>
-  <rect width="120" height="120" fill="url(#bg)"/>
-  <!-- Golden Winner Crown -->
-  <polygon points="36,34 42,16 52,27 60,13 68,27 78,16 84,34" fill="#ffd700" stroke="#b8860b" stroke-width="2.5" stroke-linejoin="round"/>
-  <circle cx="48" cy="28" r="2.5" fill="#e63946"/>
-  <circle cx="60" cy="26" r="3" fill="#00b4d8"/>
-  <circle cx="72" cy="28" r="2.5" fill="#e63946"/>
-  <!-- Pink Bean Body -->
-  <rect x="28" y="32" width="64" height="86" rx="32" fill="#ff3e9d" stroke="#b51763" stroke-width="3"/>
-  <!-- White Faceplate -->
-  <ellipse cx="60" cy="60" rx="21" ry="18" fill="#ffffff" stroke="#d9d9d9" stroke-width="2"/>
-  <!-- Bean Pill Eyes -->
-  <rect x="49" y="52" width="6" height="14" rx="3" fill="#1d1e2c"/>
-  <rect x="65" y="52" width="6" height="14" rx="3" fill="#1d1e2c"/>
-  <circle cx="51" cy="55" r="1.5" fill="#fff"/>
-  <circle cx="67" cy="55" r="1.5" fill="#fff"/>
+  <rect width="120" height="120" fill="#091126"/>
+  <g clip-path="url(#avfallguysClip)">
+    <rect width="120" height="120" fill="url(#avfallguysBg)"/>
+    <!-- Constellation astrale de fond -->
+    <circle cx="60" cy="60" r="49" fill="none" stroke="url(#avfallguysGold)" stroke-width="1" stroke-dasharray="4 5" opacity="0.35"/>
+    <g fill="#f7e7ae" opacity="0.8">
+      <path d="M22 26 l1.4 3.2 3.2 1.4 -3.2 1.4 -1.4 3.2 -1.4 -3.2 -3.2 -1.4 3.2 -1.4 Z"/>
+      <circle cx="98" cy="28" r="1.8"/>
+      <circle cx="18" cy="64" r="1.4" opacity="0.6"/>
+      <circle cx="102" cy="58" r="1.6" opacity="0.7"/>
+    </g>
+    
+    <!-- Couronne victoire -->
+    <polygon points="44,30 47,16 54,23 60,13 66,23 73,16 76,30" fill="url(#avfallguysGold)" stroke="#0e172a" stroke-width="1.8" stroke-linejoin="round"/>
+    <!-- Corps haricot rose -->
+    <path d="M30 118 V66 C30 34 42 26 60 26 C78 26 90 34 90 66 V118 Z" fill="#ff3e9d" stroke="#0e172a" stroke-width="2.2"/>
+    <!-- Plaque visage blanche -->
+    <ellipse cx="60" cy="58" rx="20" ry="16" fill="#fff7fb" stroke="#be185d" stroke-width="2"/>
+    <ellipse cx="53" cy="57" rx="3" ry="6" fill="#0f172a"/><ellipse cx="67" cy="57" rx="3" ry="6" fill="#0f172a"/>
+    <circle cx="52" cy="54" r="1.4" fill="#ffffff"/><circle cx="66" cy="54" r="1.4" fill="#ffffff"/>
+  
+  </g>
+  <!-- Cadre médaillon doré unifié -->
+  <circle cx="60" cy="60" r="56" fill="none" stroke="url(#avfallguysGold)" stroke-width="3.2"/>
 </svg>

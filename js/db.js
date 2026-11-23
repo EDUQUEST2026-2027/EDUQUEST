@@ -105,11 +105,16 @@ const DB = (() => {
                 headers,
                 body: body ? JSON.stringify(body) : undefined, // body uniquement si fourni
             });
-            const data = await res.json();
+            let data = null;
+            try {
+                if (res.status !== 204) data = await res.json();
+            } catch {
+                data = null;
+            }
             return {
                 ok: res.ok,                                          // true si HTTP 200-299
                 data,                                                // réponse JSON du serveur
-                error: res.ok ? null : (data.message || 'Erreur serveur')
+                error: res.ok ? null : ((data && data.message) || ('Erreur serveur (HTTP ' + res.status + ')'))
             };
         } catch (e) {
             // Erreur réseau : serveur inaccessible ou pas de connexion internet
@@ -152,12 +157,12 @@ const DB = (() => {
         if (session) {
             // Connexion : on sauvegarde le token et les infos du joueur
             const serialized = JSON.stringify(session);
-            localStorage.setItem(KEYS.SESSION, serialized);
+            try { localStorage.setItem(KEYS.SESSION, serialized); } catch { }
             _sessionCacheRaw = serialized;
             _sessionCacheVal = { ...session };
         } else {
             // Déconnexion : on supprime la session du localStorage
-            localStorage.removeItem(KEYS.SESSION);
+            try { localStorage.removeItem(KEYS.SESSION); } catch { }
             _sessionCacheRaw = null;
             _sessionCacheVal = null;
         }
@@ -593,27 +598,29 @@ const DB = (() => {
      *   }
      */
     async function login(email, password) {
+        const cleanEmail = String(email || '').trim().toLowerCase();
         if (USE_API) {
-            const res = await apiRequest('POST', '/auth/login', { email, password });
-            if (res.ok && res.data.token) {
-                // Sauvegarde de la session : token + infos du joueur
-                _setSession({ token: res.data.token, username: res.data.username, email });
+            const res = await apiRequest('POST', '/auth/login', { email: cleanEmail, password });
+            if (res.ok && res.data && res.data.token) {
+                // Sauvegarde de la session : token + infos du joueur (avec rôle serveur)
+                _setSession({ token: res.data.token, username: res.data.username, email: cleanEmail, role: _normalizeRole(res.data.role) });
                 // Chargement des options personnalisées depuis le serveur
                 await syncOptionsFromServer();
             }
             return res.ok
-                ? { ok: true, username: res.data.username }
+                ? { ok: true, username: res.data && res.data.username }
                 : { ok: false, error: res.error };
         }
 
-        // Mode local : vérification dans le localStorage (avec migration SHA-256)
+        // Mode local : vérification dans le localStorage (insensible à la casse sur l'email, migration SHA-256)
         const users = _getLocalUsers();
         const inputHash = await _secureHash(password);
-        let user = users.find(u => u.email === email && u.password === inputHash);
+        const matchEmail = (u) => String(u && u.email || '').trim().toLowerCase() === cleanEmail;
+        let user = users.find(u => matchEmail(u) && u.password === inputHash);
 
         // Migration transparente : si pas trouvé avec SHA-256, essayer l'ancien hash
         if (!user) {
-            const legacyCandidate = users.find(u => u.email === email && u.password === _legacyHash(password));
+            const legacyCandidate = users.find(u => matchEmail(u) && u.password === _legacyHash(password));
             if (legacyCandidate) {
                 // Re-hasher le mot de passe en SHA-256 et sauvegarder
                 legacyCandidate.password = inputHash;
@@ -647,26 +654,37 @@ const DB = (() => {
      * @returns {Promise<{ok: boolean, username?: string, error?: string}>}
      */
     async function register(email, username, password) {
+        const cleanEmail = String(email || '').trim().toLowerCase();
+        const cleanUser = String(username || '').trim();
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(cleanEmail)) {
+            return { ok: false, error: 'Adresse e-mail invalide.' };
+        }
+        if (!cleanUser) {
+            return { ok: false, error: 'Le pseudo ne peut pas être vide.' };
+        }
+        if (String(password || '').length < 6) {
+            return { ok: false, error: 'Le mot de passe doit contenir au moins 6 caractères.' };
+        }
         if (USE_API) {
-            const res = await apiRequest('POST', '/auth/register', { email, username, password });
-            if (res.ok && res.data.token) {
+            const res = await apiRequest('POST', '/auth/register', { email: cleanEmail, username: cleanUser, password });
+            if (res.ok && res.data && res.data.token) {
                 // Connexion automatique après inscription réussie
-                _setSession({ token: res.data.token, username, email });
+                _setSession({ token: res.data.token, username: cleanUser, email: cleanEmail, role: _normalizeRole(res.data.role) });
             }
             return res.ok
-                ? { ok: true, username }
+                ? { ok: true, username: cleanUser }
                 : { ok: false, error: res.error };
         }
 
-        // Mode local : création simplifiée dans le localStorage
+        // Mode local : création simplifiée dans le localStorage (email normalisé insensible à la casse)
         const users = _getLocalUsers();
-        if (users.find(u => u.email === email)) {
+        if (users.some(u => String(u && u.email || '').trim().toLowerCase() === cleanEmail)) {
             return { ok: false, error: 'Cet email est déjà utilisé.' };
         }
-        users.push({ email, username, password: await _secureHash(password), role: 'eleve', created: new Date().toISOString() });
+        users.push({ email: cleanEmail, username: cleanUser, password: await _secureHash(password), role: 'eleve', created: new Date().toISOString() });
         _setLocalUsers(users);
-        _setSession({ token: 'local_' + Date.now(), username, email, role: 'eleve' });
-        return { ok: true, username };
+        _setSession({ token: 'local_' + Date.now(), username: cleanUser, email: cleanEmail, role: 'eleve' });
+        return { ok: true, username: cleanUser };
     }
 
     /**
@@ -785,10 +803,11 @@ const DB = (() => {
 
     function _recordBoosterHistory(type, id, count = 1) {
         try {
+            const num = parseInt(count, 10);
+            if (!Number.isFinite(num) || num <= 0) return;
             const h = getBoostersHistory();
             if (!h.acquired) h.acquired = {};
             if (!h.used) h.used = {};
-            const num = parseInt(count, 10) || 1;
             if (type === 'acquired') {
                 h.acquired[id] = (h.acquired[id] || 0) + num;
             } else if (type === 'used') {
@@ -804,9 +823,11 @@ const DB = (() => {
 
     function addBooster(id, count = 1) {
         const b = getBoosters();
-        b[id] = Math.max(0, (b[id] || 0) + (parseInt(count, 10) || 1));
+        const delta = parseInt(count, 10);
+        if (!Number.isFinite(delta) || delta <= 0) return b[id] || 0;
+        b[id] = Math.max(0, (b[id] || 0) + delta);
         try { localStorage.setItem(_boostersKey(), JSON.stringify(b)); } catch { }
-        _recordBoosterHistory('acquired', id, count);
+        _recordBoosterHistory('acquired', id, delta);
         return b[id];
     }
 
@@ -874,9 +895,9 @@ const DB = (() => {
         const s = getStreakData();
         if (protectedByShield) {
             return {
-                combo: s.combo || 1,
+                combo: s.combo || 0,
                 streak: s.count || 0,
-                multiplier: getMultiplier(s.combo || 1),
+                multiplier: getMultiplier(s.combo || 0),
                 shieldSaved: true
             };
         }
@@ -1016,12 +1037,39 @@ const DB = (() => {
         };
     }
 
+    function _purgeLocalScope(scope, includeOptions = true) {
+        try {
+            const remove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (!k) continue;
+                const isProgressOrData =
+                    k.startsWith('eduquest_prog_' + scope) ||
+                    k.startsWith('eduquest_attempts_' + scope) ||
+                    k.startsWith('eduquest_adaptive_' + scope) ||
+                    k === 'eduquest_streak_' + scope ||
+                    k === 'eduquest_quests_' + scope ||
+                    k === 'eduquest_boosters_' + scope ||
+                    k === 'eduquest_boosters_history_' + scope;
+                const isAccountMeta = includeOptions && (
+                    k === 'eduquest_opts_' + scope ||
+                    k === 'eduquest_niveau_' + scope ||
+                    k === 'eduquest_filiere_' + scope
+                );
+                if (isProgressOrData || isAccountMeta) remove.push(k);
+            }
+            remove.forEach(k => localStorage.removeItem(k));
+        } catch { }
+    }
+
     /** Met à jour la classe, la filière, l'XP ou les pièces d'un compte local (panneau admin). */
     function updateLocalMemberData(email, patch = {}) {
         if (USE_API) return { ok: false, error: 'Mode API SQL : gérez les données depuis votre backend.' };
+        const cleanMail = String(email || '').trim().toLowerCase();
         const users = _getLocalUsers();
-        if (!users.some(u => u.email === email)) return { ok: false, error: 'Compte introuvable.' };
-        const scope = _scopeForEmail(email);
+        const target = users.find(u => String(u && u.email || '').trim().toLowerCase() === cleanMail);
+        if (!target) return { ok: false, error: 'Compte introuvable.' };
+        const scope = _scopeForEmail(target.email);
         try {
             if (typeof patch.niveau === 'string' && patch.niveau.trim()) {
                 localStorage.setItem('eduquest_niveau_' + scope, patch.niveau.trim());
@@ -1037,15 +1085,7 @@ const DB = (() => {
                     opts.dash_xp = '0';
                     opts.dash_coins = '30';
                     opts.dash_badges = '[]';
-                    // Supprime les clés de progression associées à ce compte
-                    const remove = [];
-                    for (let i = 0; i < localStorage.length; i++) {
-                        const k = localStorage.key(i);
-                        if (k && (k.startsWith('eduquest_prog_' + scope) || k.startsWith('eduquest_attempts_' + scope) || k.startsWith('eduquest_adaptive_' + scope) || k === 'eduquest_streak_' + scope || k === 'eduquest_quests_' + scope)) {
-                            remove.push(k);
-                        }
-                    }
-                    remove.forEach(k => localStorage.removeItem(k));
+                    _purgeLocalScope(scope, false);
                 } else {
                     if (patch.xp !== undefined) opts.dash_xp = String(Math.max(0, parseInt(patch.xp, 10) || 0));
                     if (patch.coins !== undefined) opts.dash_coins = String(Math.max(0, parseInt(patch.coins, 10) || 0));
@@ -1055,7 +1095,7 @@ const DB = (() => {
         } catch {
             return { ok: false, error: 'Impossible de modifier le stockage local.' };
         }
-        return { ok: true, stats: getLocalMemberStats(email) };
+        return { ok: true, stats: getLocalMemberStats(target.email) };
     }
 
     /** Liste des comptes locaux (sans le mot de passe, avec rôle, création et statistiques). */
@@ -1096,8 +1136,9 @@ const DB = (() => {
     /** Modifie un compte local (pseudo, mot de passe, rôle). email = identifiant. */
     async function updateLocalMember(email, patch = {}) {
         if (USE_API) return { ok: false, error: 'Mode API SQL : gérez les membres depuis votre backend.' };
+        const cleanMail = String(email || '').trim().toLowerCase();
         const users = _getLocalUsers();
-        const idx = users.findIndex(u => u.email === email);
+        const idx = users.findIndex(u => String(u && u.email || '').trim().toLowerCase() === cleanMail);
         if (idx === -1) return { ok: false, error: 'Compte introuvable.' };
         const user = users[idx];
         if (patch.username !== undefined) {
@@ -1122,20 +1163,24 @@ const DB = (() => {
         return { ok: true, data: { email: user.email, username: user.username, role: user.role || 'eleve' } };
     }
 
-    /** Supprime un compte local (protège le dernier administrateur). */
+    /** Supprime un compte local et purge ses données locales (RGPD — droit à l'effacement). */
     async function deleteLocalMember(email) {
         if (USE_API) return { ok: false, error: 'Mode API SQL : gérez les membres depuis votre backend.' };
+        const cleanMail = String(email || '').trim().toLowerCase();
         const users = _getLocalUsers();
-        const idx = users.findIndex(u => u.email === email);
+        const idx = users.findIndex(u => String(u && u.email || '').trim().toLowerCase() === cleanMail);
         if (idx === -1) return { ok: false, error: 'Compte introuvable.' };
         if ((users[idx].role || 'eleve') === 'admin' && _countAdmins(users) <= 1) {
             return { ok: false, error: 'Impossible de supprimer le dernier administrateur.' };
         }
+        const removedEmail = users[idx].email;
         users.splice(idx, 1);
         _setLocalUsers(users);
+        // Effacement RGPD complet des données locales du compte supprimé
+        _purgeLocalScope(_scopeForEmail(removedEmail), true);
         // Si le compte supprimé était celui connecté sur cet appareil, on coupe la session
         const session = _getSession();
-        if (session && session.email === email) _setSession(null);
+        if (session && String(session.email || '').trim().toLowerCase() === cleanMail) _setSession(null);
         return { ok: true };
     }
 
@@ -1182,10 +1227,14 @@ const DB = (() => {
      *   - time  : position en secondes dans la piste
      */
     function getMusicState() {
-        return {
-            track: parseInt(localStorage.getItem(KEYS.TRACK) || '0', 10),
-            time: parseFloat(localStorage.getItem(KEYS.MUSIC_TIME) || '0'),
-        };
+        try {
+            return {
+                track: parseInt(localStorage.getItem(KEYS.TRACK) || '0', 10) || 0,
+                time: parseFloat(localStorage.getItem(KEYS.MUSIC_TIME) || '0') || 0,
+            };
+        } catch {
+            return { track: 0, time: 0 };
+        }
     }
 
     /**
@@ -1196,8 +1245,10 @@ const DB = (() => {
      * @param {number} time  - Position en secondes dans la piste courante
      */
     function setMusicState(track, time) {
-        localStorage.setItem(KEYS.TRACK, track);
-        localStorage.setItem(KEYS.MUSIC_TIME, time);
+        try {
+            localStorage.setItem(KEYS.TRACK, String(track));
+            localStorage.setItem(KEYS.MUSIC_TIME, String(time));
+        } catch { }
     }
 
     /* -----------------------------------------------------------------------

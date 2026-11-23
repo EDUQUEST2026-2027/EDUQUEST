@@ -1,65 +1,98 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
-  <!-- ILOT STSS SANTE ET SOCIAL ST2S - EDUQUEST -->
   <defs>
-    <linearGradient id="stRockDeep" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#134e4a"/>
-      <stop offset="0.6" stop-color="#0b2e2c"/>
-      <stop offset="1" stop-color="#051716"/>
-    </linearGradient>
-    <linearGradient id="stRockTop" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#1f7a73"/>
-      <stop offset="0.6" stop-color="#134e4a"/>
-      <stop offset="1" stop-color="#0a2e2c"/>
-    </linearGradient>
-    <linearGradient id="stHeart" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ff758f"/>
-      <stop offset="0.55" stop-color="#ef4444"/>
-      <stop offset="1" stop-color="#b91c1c"/>
-    </linearGradient>
-    <radialGradient id="stHalo" cx="0.5" cy="0.4" r="0.6">
-      <stop offset="0" stop-color="#2dd4bf" stop-opacity="0.36"/>
-      <stop offset="0.55" stop-color="#fb7185" stop-opacity="0.18"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    <radialGradient id="istssHalo" cx="0.5" cy="0.44" r="0.52">
+      <stop offset="0" stop-color="#14b8a6" stop-opacity="0.34"/>
+      <stop offset="0.58" stop-color="#c8a84b" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#070b1a" stop-opacity="0"/>
     </radialGradient>
-    <filter id="stShadow" x="-25%" y="-25%" width="150%" height="150%">
-      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.5"/>
-    </filter>
-    <filter id="stGlow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="4" result="b"/>
-      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    <linearGradient id="istssRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c3e68"/>
+      <stop offset="0.55" stop-color="#192544"/>
+      <stop offset="1" stop-color="#0d1428"/>
+    </linearGradient>
+    <linearGradient id="istssRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#18223d"/>
+      <stop offset="1" stop-color="#080d1b"/>
+    </linearGradient>
+    <linearGradient id="istssPlateau" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#164d4e"/>
+      <stop offset="1" stop-color="#0a292a"/>
+    </linearGradient>
+    <linearGradient id="istssGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7e29c"/>
+      <stop offset="0.5" stop-color="#c8a84b"/>
+      <stop offset="1" stop-color="#8b661d"/>
+    </linearGradient>
+    <linearGradient id="istssAccent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5eead4"/>
+      <stop offset="1" stop-color="#14b8a6"/>
+    </linearGradient>
+    <linearGradient id="istssBanner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c2a4f"/>
+      <stop offset="1" stop-color="#0c1328"/>
+    </linearGradient>
+    <filter id="istssShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="9" stdDeviation="7" flood-color="#000000" flood-opacity="0.52"/>
     </filter>
   </defs>
 
-  <circle cx="210" cy="182" r="150" fill="url(#stHalo)"/>
+  <!-- Halo astral unifié -->
+  <circle cx="210" cy="195" r="185" fill="url(#istssHalo)"/>
 
-  <!-- Base rocheuse flottante -->
-  <g filter="url(#stShadow)">
-    <path d="M 75 250 Q 210 275 345 250 Q 372 294 320 344 Q 210 398 100 344 Q 48 294 75 250 Z" fill="url(#stRockDeep)"/>
-    <path d="M 85 245 Q 210 268 335 245 Q 358 278 320 314 Q 210 368 100 314 Q 62 278 85 245 Z" fill="url(#stRockTop)"/>
-    <ellipse cx="210" cy="245" rx="140" ry="42" fill="#0f766e"/>
-    <ellipse cx="210" cy="242" rx="128" ry="33" fill="#5eead4" fill-opacity="0.25"/>
+  <!-- Étoiles astrales dorées (grille signature EDUQUEST) -->
+  <g fill="#f2dc96">
+    <path d="M52 94 l2.6 6 6 2.6 -6 2.6 -2.6 6 -2.6 -6 -6 -2.6 6 -2.6 Z" opacity="0.88"/>
+    <path d="M368 72 l2.2 5 5 2.2 -5 2.2 -2.2 5 -2.2 -5 -5 -2.2 5 -2.2 Z" opacity="0.72"/>
+    <path d="M382 174 l1.8 4 4 1.8 -4 1.8 -1.8 4 -1.8 -4 -4 -1.8 4 -1.8 Z" opacity="0.55"/>
+    <circle cx="64" cy="210" r="2.4" fill="#5eead4" opacity="0.65"/>
+    <circle cx="352" cy="264" r="2.6" opacity="0.5"/>
+    <circle cx="320" cy="44" r="2" fill="#5eead4" opacity="0.6"/>
   </g>
 
-  <!-- Cœur médical central avec tracé ECG -->
-  <g filter="url(#stShadow)">
-    <path d="M 210 232 C 210 232 134 192 134 146 C 134 120 156 104 180 104 C 195 104 205 112 210 122 C 215 112 225 104 240 104 C 264 104 286 120 286 146 C 286 192 210 232 210 232 Z" fill="url(#stHeart)" stroke="#fecdd3" stroke-width="2.5"/>
-    <!-- Ligne ECG lumineuse -->
-    <path d="M 148 164 L 180 164 L 192 138 L 204 188 L 218 148 L 228 164 L 272 164" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" filter="url(#stGlow)"/>
-  </g>
+  <g filter="url(#istssShadow)">
+    <!-- Socle rocheux flottant unifié -->
+    <path d="M34 232 L210 264 L386 232 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 L68 284 Z" fill="url(#istssRockTop)" stroke="#080e1d" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M68 284 L132 300 L210 308 L288 300 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 Z" fill="url(#istssRockDeep)" opacity="0.85"/>
+    <!-- Veines cristallines de la matière -->
+    <path d="M120 296 L142 324 M296 296 L278 326 M192 318 L210 356 L228 318" stroke="#5eead4" stroke-width="2.4" stroke-linecap="round" opacity="0.5" fill="none"/>
+    <!-- Galets flottants sous l'île -->
+    <polygon points="164,376 175,382 169,394 157,388" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <polygon points="256,374 268,382 260,393 249,386" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <circle cx="210" cy="400" r="4" fill="#5eead4" opacity="0.75"/>
 
-  <!-- Croix médicale lumineuse à gauche -->
-  <g transform="translate(114, 206)" filter="url(#stShadow)">
-    <circle cx="0" cy="0" r="22" fill="#f0fdfa" stroke="#2dd4bf" stroke-width="2.5"/>
-    <rect x="-5" y="-13" width="10" height="26" rx="2" fill="#0d9488"/>
-    <rect x="-13" y="-5" width="26" height="10" rx="2" fill="#0d9488"/>
-  </g>
+    <!-- Plateau insulaire cerclé d'or -->
+    <ellipse cx="210" cy="236" rx="176" ry="54" fill="url(#istssPlateau)" stroke="url(#istssGold)" stroke-width="3.5"/>
+    <ellipse cx="210" cy="232" rx="158" ry="43" fill="none" stroke="#5eead4" stroke-width="1.5" stroke-opacity="0.45"/>
 
-  <!-- Silhouettes solidaires (Action sociale) à droite -->
-  <g transform="translate(300, 210)" filter="url(#stShadow)">
-    <circle cx="0" cy="0" r="22" fill="#134e4a" stroke="#5eead4" stroke-width="2.5"/>
-    <circle cx="-6" cy="-5" r="4.5" fill="#fef08a"/>
-    <circle cx="6" cy="-5" r="4.5" fill="#5eead4"/>
-    <path d="M -13 10 Q -6 2 0 10 Q 6 2 13 10" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+    <!-- Scène dédiée à la matière -->
+    
+      <!-- Cœur santé + Tracé ECG lumineux + Croix médicale -->
+      <g transform="translate(210 148)">
+        <ellipse cx="0" cy="80" rx="76" ry="14" fill="#091326" opacity="0.45"/>
+        <!-- Cœur -->
+        <path d="M0 64 C-68 20 -78 -36 -38 -52 C-16 -60 0 -42 0 -28 C0 -42 16 -60 38 -52 C78 -36 68 20 0 64 Z"
+              fill="url(#istssAccent)" stroke="url(#istssGold)" stroke-width="4"/>
+        <!-- Courbe ECG blanche -->
+        <path d="M-54 -4 H-24 L-12 -30 L4 22 L18 -14 L28 -4 H54" fill="none" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- Médaillon croix -->
+        <g transform="translate(64 46)">
+          <circle r="22" fill="#0f2f33" stroke="url(#istssGold)" stroke-width="3"/>
+          <path d="M0 -11 V11 M-11 0 H11" stroke="#5eead4" stroke-width="6" stroke-linecap="round"/>
+        </g>
+      </g>
+
+    <!-- Bannière astrale dorée unifiée -->
+    <g transform="translate(210 336)">
+      <path d="M-90 -19 L90 -19 L78 19 L-78 19 Z"
+            fill="url(#istssBanner)" stroke="url(#istssGold)" stroke-width="3" stroke-linejoin="round"/>
+      <g fill="#f5de8a">
+        <circle cx="-74" cy="-9" r="2.4"/>
+        <circle cx="74" cy="-9" r="2.4"/>
+        <circle cx="-68" cy="10" r="2.4"/>
+        <circle cx="68" cy="10" r="2.4"/>
+      </g>
+      <text x="0" y="7" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="24" font-weight="700"
+            fill="#f4de94" letter-spacing="2">STSS</text>
+    </g>
   </g>
 </svg>
-
