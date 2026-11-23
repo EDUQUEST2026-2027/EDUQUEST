@@ -4,20 +4,27 @@
   INDEX.HTML — EDUQUEST v1.29.1
   Page d'accueil : navigation principale, modales Options (classe, 18 filières, apparence), Connexion & Quitter.
 -->
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EDUQUEST — Le jeu de révision Collège, Lycée &amp; BTS</title>
-    <meta name="description" content="Apprends en t'amusant : 36 matières du programme officiel (Collège, Lycée & BTS, 18 filières), 100 niveaux, quiz variés, XP, 78 succès et 27 avatars. 100 % gratuit, sans publicité.">
+    <meta name="description"
+        content="Apprends en t'amusant : 36 matières du programme officiel (Collège, Lycée & BTS, 18 filières), 100 niveaux, quiz variés, XP, 78 succès et 27 avatars. 100 % gratuit, sans publicité.">
     <meta name="theme-color" content="#0d1330">
     <meta name="robots" content="index, follow">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="EDUQUEST">
     <meta property="og:title" content="EDUQUEST — Le jeu de révision Collège, Lycée & BTS">
-    <meta property="og:description" content="Gravis les 36 îles du savoir (18 filières) : 100 niveaux par matière, XP, 78 succès et boutique de 97 articles. Gratuit et sans publicité.">
+    <meta property="og:description"
+        content="Gravis les 36 îles du savoir (18 filières) : 100 niveaux par matière, XP, 78 succès et boutique de 97 articles. Gratuit et sans publicité.">
     <meta property="og:image" content="Image/logo.webp">
     <meta name="twitter:card" content="summary_large_image">
     <link rel="icon" type="image/webp" href="Image/logo.webp">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap">
     <link rel="stylesheet" href="css/global.css">
     <link rel="stylesheet" href="css/style.css">
     <link rel="manifest" href="manifest.webmanifest">
@@ -29,7 +36,7 @@
          Ces divs sont vides au chargement. JavaScript (createEnvironment)
          y injecte dynamiquement les étoiles et les nuages animés.
     ================================================================ -->
-    <div class="background"></div>       <!-- Fond dégradé statique (CSS pure) -->
+    <div class="background"></div> <!-- Fond dégradé statique (CSS pure) -->
     <div class="stars" id="stars"></div> <!-- Conteneur des étoiles (rempli par JS) -->
     <div class="clouds" id="clouds"></div> <!-- Conteneur des nuages (rempli par JS) -->
 
@@ -46,7 +53,7 @@
         <!-- Logo animé du jeu -->
         <!-- Image officielle du logo (Image/logo.webp), avec halo animé en CSS (.logo-image, keyframe logoImagePulse) -->
         <div class="logo">
-            <img src="Image/logo.webp" alt="EDUQUEST" class="logo-image">
+            <img src="Image/logo.webp" alt="EDUQUEST" class="logo-image" decoding="async" fetchpriority="high">
         </div>
 
         <!-- Menu de navigation principal -->
@@ -54,16 +61,23 @@
         <!-- Voir global.css → .menu-button et ses variantes -->
         <nav class="menu" aria-label="Menu principal">
             <!-- Lien vers le tableau de bord (matières, quiz, boutique) -->
-            <a class="menu-button primary" href="dashboard.html"><span class="menu-btn-icon" aria-hidden="true">⚔</span><span class="menu-btn-text">JOUER</span></a>
+            <a class="menu-button primary" href="dashboard.html"><span class="menu-btn-icon"
+                    aria-hidden="true">⚔</span><span class="menu-btn-text">JOUER</span></a>
 
             <!-- Lien vers les préférences du jeu -->
-            <button type="button" class="menu-button" id="openOptionsBtn" onclick="window._openOptionsModal ? window._openOptionsModal() : (document.getElementById('modalOptions').hidden = false);"><span class="menu-btn-icon" aria-hidden="true">⚙</span><span class="menu-btn-text">OPTIONS</span></button>
+            <button type="button" class="menu-button" id="openOptionsBtn"
+                onclick="window._openOptionsModal ? window._openOptionsModal() : (document.getElementById('modalOptions').hidden = false);"><span
+                    class="menu-btn-icon" aria-hidden="true">⚙</span><span class="menu-btn-text">OPTIONS</span></button>
 
             <!-- Lien vers la page de connexion/inscription -->
-            <button type="button" class="menu-button secondary" id="openLoginBtn" onclick="window._openLoginModal ? window._openLoginModal() : (document.getElementById('modalLogin').hidden = false);"><span class="menu-btn-icon" aria-hidden="true">👤</span><span class="menu-btn-text">SE CONNECTER</span></button>
+            <button type="button" class="menu-button secondary" id="openLoginBtn"
+                onclick="window._openLoginModal ? window._openLoginModal() : (document.getElementById('modalLogin').hidden = false);"><span
+                    class="menu-btn-icon" aria-hidden="true">👤</span><span class="menu-btn-text">SE
+                    CONNECTER</span></button>
 
             <!-- Bouton Quitter : géré par JS (initAccueil → #quitButton) -->
-            <button type="button" class="menu-button danger" id="quitButton"><span class="menu-btn-icon" aria-hidden="true">✕</span><span class="menu-btn-text">QUITTER</span></button>
+            <button type="button" class="menu-button danger" id="quitButton"><span class="menu-btn-icon"
+                    aria-hidden="true">✕</span><span class="menu-btn-text">QUITTER</span></button>
         </nav>
 
     </main>
@@ -84,16 +98,19 @@
 
     <footer>
         <div class="footer">Version 1.29.1</div>
-        <div class="legal-links"><a href="legal.html">Mentions légales</a> · <a href="legal.html#cookies" onclick="window.dispatchEvent(new Event('eduquest:cookie-reopen'))">Cookies</a></div>
+        <div class="legal-links"><a href="legal.html">Mentions légales</a> · <a href="legal.html#cookies"
+                onclick="window.dispatchEvent(new Event('eduquest:cookie-reopen'))">Cookies</a></div>
     </footer>
 
     <!-- Accès discret au panneau d'administration -->
-    <a class="admin-panel-link" href="admin.html" title="Panneau d'administration : gérer les membres, les niveaux et les contenus">🔐 Administration</a>
+    <a class="admin-panel-link" href="admin.html"
+        title="Panneau d'administration : gérer les membres, les niveaux et les contenus">🔐 Administration</a>
 
     <!-- MODALS -->
     <div id="modalOptions" class="modal-overlay" hidden>
-<section class="options-container" role="dialog" aria-modal="true" aria-labelledby="optionsModalTitle">
-            <button type="button" class="modal-top-close" id="closeOptionsX" aria-label="Fermer les options" title="Fermer">✕</button>
+        <section class="options-container" role="dialog" aria-modal="true" aria-labelledby="optionsModalTitle">
+            <button type="button" class="modal-top-close" id="closeOptionsX" aria-label="Fermer les options"
+                title="Fermer">✕</button>
             <h1 class="options-header" id="optionsModalTitle">⚙ OPTIONS</h1>
 
             <!-- ============================================================
@@ -213,7 +230,8 @@
                         <input type="checkbox" id="modeChrono" checked>
                         <span class="checkbox-mark">✓</span>
                     </span>
-                    <span class="option-label">⏱ Mode Défi Chronométré (<span id="chronoDurationLabel">45s</span>)</span>
+                    <span class="option-label">⏱ Mode Défi Chronométré (<span
+                            id="chronoDurationLabel">45s</span>)</span>
                 </label>
             </div>
 
@@ -316,56 +334,88 @@
 
             <!-- Section Apparence : Couleur de l'interface, Couleur des boutons, Luminosité des boutons (pilotable en admin) -->
             <div id="optionsAppearanceSection">
-            <div class="options-section-title">🎨 Apparence &amp; Confort Visuel</div>
+                <div class="options-section-title">🎨 Apparence &amp; Confort Visuel</div>
 
-            <div class="option-group">
-                <label class="option-label" for="uiColorPicker">🌌 Couleur de l'interface</label>
-                <div class="color-presets-row" id="uiColorPresets" role="group" aria-label="Préréglages couleur de l'interface">
-                    <button type="button" class="color-swatch" data-ui-preset="default" data-bg="#0d1f3a" data-accent="#c8a84b" style="background: linear-gradient(135deg, #0d1f3a 55%, #c8a84b 100%);" title="Astral (Défaut)"></button>
-                    <button type="button" class="color-swatch" data-ui-preset="emeraude" data-bg="#0d2b1f" data-accent="#6bca82" style="background: linear-gradient(135deg, #0d2b1f 55%, #6bca82 100%);" title="Forêt Émeraude"></button>
-                    <button type="button" class="color-swatch" data-ui-preset="amethyste" data-bg="#22123c" data-accent="#c77dff" style="background: linear-gradient(135deg, #22123c 55%, #c77dff 100%);" title="Nébuleuse Améthyste"></button>
-                    <button type="button" class="color-swatch" data-ui-preset="ocean" data-bg="#0b2c3d" data-accent="#48cae4" style="background: linear-gradient(135deg, #0b2c3d 55%, #48cae4 100%);" title="Océan Profond"></button>
-                    <button type="button" class="color-swatch" data-ui-preset="rubis" data-bg="#35121c" data-accent="#ff758f" style="background: linear-gradient(135deg, #35121c 55%, #ff758f 100%);" title="Rubis Nocturne"></button>
-                    <button type="button" class="color-swatch" data-ui-preset="ambre" data-bg="#2e200c" data-accent="#ffb703" style="background: linear-gradient(135deg, #2e200c 55%, #ffb703 100%);" title="Palais d'Ambre"></button>
-                    <label class="color-picker-wrap">
-                        <span>Libre :</span>
-                        <input type="color" id="uiColorPicker" class="color-picker-input" value="#0d1f3a" aria-label="Couleur personnalisée de l'interface">
-                    </label>
+                <div class="option-group">
+                    <label class="option-label" for="uiColorPicker">🌌 Couleur de l'interface</label>
+                    <div class="color-presets-row" id="uiColorPresets" role="group"
+                        aria-label="Préréglages couleur de l'interface">
+                        <button type="button" class="color-swatch" data-ui-preset="default" data-bg="#0d1f3a"
+                            data-accent="#c8a84b"
+                            style="background: linear-gradient(135deg, #0d1f3a 55%, #c8a84b 100%);"
+                            title="Astral (Défaut)"></button>
+                        <button type="button" class="color-swatch" data-ui-preset="emeraude" data-bg="#0d2b1f"
+                            data-accent="#6bca82"
+                            style="background: linear-gradient(135deg, #0d2b1f 55%, #6bca82 100%);"
+                            title="Forêt Émeraude"></button>
+                        <button type="button" class="color-swatch" data-ui-preset="amethyste" data-bg="#22123c"
+                            data-accent="#c77dff"
+                            style="background: linear-gradient(135deg, #22123c 55%, #c77dff 100%);"
+                            title="Nébuleuse Améthyste"></button>
+                        <button type="button" class="color-swatch" data-ui-preset="ocean" data-bg="#0b2c3d"
+                            data-accent="#48cae4"
+                            style="background: linear-gradient(135deg, #0b2c3d 55%, #48cae4 100%);"
+                            title="Océan Profond"></button>
+                        <button type="button" class="color-swatch" data-ui-preset="rubis" data-bg="#35121c"
+                            data-accent="#ff758f"
+                            style="background: linear-gradient(135deg, #35121c 55%, #ff758f 100%);"
+                            title="Rubis Nocturne"></button>
+                        <button type="button" class="color-swatch" data-ui-preset="ambre" data-bg="#2e200c"
+                            data-accent="#ffb703"
+                            style="background: linear-gradient(135deg, #2e200c 55%, #ffb703 100%);"
+                            title="Palais d'Ambre"></button>
+                        <label class="color-picker-wrap">
+                            <span>Libre :</span>
+                            <input type="color" id="uiColorPicker" class="color-picker-input" value="#0d1f3a"
+                                aria-label="Couleur personnalisée de l'interface">
+                        </label>
+                    </div>
                 </div>
-            </div>
 
-            <div class="option-group">
-                <label class="option-label" for="btnColorPicker">🎛️ Couleur des boutons</label>
-                <div class="color-presets-row" id="btnColorPresets" role="group" aria-label="Préréglages couleur des boutons">
-                    <button type="button" class="color-swatch" data-btn-preset="default" data-btn="#24354f" style="background: #24354f;" title="Acier nocturne (Défaut)"></button>
-                    <button type="button" class="color-swatch" data-btn-preset="foret" data-btn="#234730" style="background: #234730;" title="Vert forêt"></button>
-                    <button type="button" class="color-swatch" data-btn-preset="or" data-btn="#5c451c" style="background: #5c451c;" title="Bronze doré"></button>
-                    <button type="button" class="color-swatch" data-btn-preset="cobalt" data-btn="#1d3c6a" style="background: #1d3c6a;" title="Bleu cobalt"></button>
-                    <button type="button" class="color-swatch" data-btn-preset="prune" data-btn="#49245c" style="background: #49245c;" title="Prune cosmique"></button>
-                    <button type="button" class="color-swatch" data-btn-preset="ardoise" data-btn="#2d3748" style="background: #2d3748;" title="Ardoise douce"></button>
-                    <label class="color-picker-wrap">
-                        <span>Libre :</span>
-                        <input type="color" id="btnColorPicker" class="color-picker-input" value="#24354f" aria-label="Couleur personnalisée des boutons">
-                    </label>
+                <div class="option-group">
+                    <label class="option-label" for="btnColorPicker">🎛️ Couleur des boutons</label>
+                    <div class="color-presets-row" id="btnColorPresets" role="group"
+                        aria-label="Préréglages couleur des boutons">
+                        <button type="button" class="color-swatch" data-btn-preset="default" data-btn="#24354f"
+                            style="background: #24354f;" title="Acier nocturne (Défaut)"></button>
+                        <button type="button" class="color-swatch" data-btn-preset="foret" data-btn="#234730"
+                            style="background: #234730;" title="Vert forêt"></button>
+                        <button type="button" class="color-swatch" data-btn-preset="or" data-btn="#5c451c"
+                            style="background: #5c451c;" title="Bronze doré"></button>
+                        <button type="button" class="color-swatch" data-btn-preset="cobalt" data-btn="#1d3c6a"
+                            style="background: #1d3c6a;" title="Bleu cobalt"></button>
+                        <button type="button" class="color-swatch" data-btn-preset="prune" data-btn="#49245c"
+                            style="background: #49245c;" title="Prune cosmique"></button>
+                        <button type="button" class="color-swatch" data-btn-preset="ardoise" data-btn="#2d3748"
+                            style="background: #2d3748;" title="Ardoise douce"></button>
+                        <label class="color-picker-wrap">
+                            <span>Libre :</span>
+                            <input type="color" id="btnColorPicker" class="color-picker-input" value="#24354f"
+                                aria-label="Couleur personnalisée des boutons">
+                        </label>
+                    </div>
                 </div>
-            </div>
 
-            <div class="option-group">
-                <label class="option-label" for="btnBrightness">🔅 Luminosité des boutons</label>
-                <div class="slider-container">
-                    <input type="range" min="45" max="110" value="80" class="slider" id="btnBrightness">
-                    <span class="volume-value" id="valueBtnBrightnessDisplay">80%</span>
+                <div class="option-group">
+                    <label class="option-label" for="btnBrightness">🔅 Luminosité des boutons</label>
+                    <div class="slider-container">
+                        <input type="range" min="45" max="110" value="80" class="slider" id="btnBrightness">
+                        <span class="volume-value" id="valueBtnBrightnessDisplay">80%</span>
+                    </div>
+                    <div class="appearance-reset-row">
+                        <button type="button" class="btn-appearance-reset" id="resetAppearanceBtn">↺ Réinitialiser
+                            l'apparence</button>
+                    </div>
                 </div>
-                <div class="appearance-reset-row">
-                    <button type="button" class="btn-appearance-reset" id="resetAppearanceBtn">↺ Réinitialiser l'apparence</button>
-                </div>
-            </div>
             </div><!-- fin #optionsAppearanceSection -->
 
             <!-- Section GitHub & Projet Open Source (Étape 11) -->
-            <div class="options-project-info" style="margin-top: 10px; margin-bottom: 12px; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); text-align: center; font-size: 13px; color: var(--muted, #94a3b8);">
-                <span>✨ Projet EDUQUEST</span> · 
-                <a href="https://github.com/EDUQUEST2026-2027/EDUQUEST" target="_blank" rel="noopener" id="optionsGithubLink" style="color: var(--cyan, #38bdf8); text-decoration: none; font-weight: 600;">🐙 Dépôt GitHub</a>
+            <div class="options-project-info"
+                style="margin-top: 10px; margin-bottom: 12px; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); text-align: center; font-size: 13px; color: var(--muted, #94a3b8);">
+                <span>✨ Projet EDUQUEST</span> ·
+                <a href="https://github.com/EDUQUEST2026-2027/EDUQUEST" target="_blank" rel="noopener"
+                    id="optionsGithubLink"
+                    style="color: var(--cyan, #38bdf8); text-decoration: none; font-weight: 600;">🐙 Dépôt GitHub</a>
             </div>
 
             <!-- Boutons d'action -->
@@ -377,11 +427,13 @@
             </div>
 
         </section>
-</div>
+    </div>
 
-<div id="modalLogin" class="modal-overlay" hidden>
-<section class="login-container" role="dialog" aria-modal="true" aria-labelledby="loginModalTitle">
-            <button type="button" class="modal-top-close" id="closeLoginX" onclick="document.getElementById('modalLogin').hidden = true;" aria-label="Fermer" title="Fermer">✕</button>
+    <div id="modalLogin" class="modal-overlay" hidden>
+        <section class="login-container" role="dialog" aria-modal="true" aria-labelledby="loginModalTitle">
+            <button type="button" class="modal-top-close" id="closeLoginX"
+                onclick="document.getElementById('modalLogin').hidden = true;" aria-label="Fermer"
+                title="Fermer">✕</button>
 
             <!-- Titre de la page -->
             <h1 class="options-header" id="loginModalTitle">🔐 COMPTE</h1>
@@ -436,17 +488,20 @@
 
                 <!-- Champ email de connexion -->
                 <!-- autocomplete="email" : aide le navigateur à proposer des emails mémorisés -->
-                <input type="email"    id="loginEmail"    placeholder="📧 votre@email.com" class="login-input" autocomplete="email">
+                <input type="email" id="loginEmail" placeholder="📧 votre@email.com" class="login-input"
+                    autocomplete="email">
 
                 <!-- Champ mot de passe de connexion -->
                 <!-- autocomplete="current-password" : aide le gestionnaire de mots de passe -->
-                <input type="password" id="loginPassword" placeholder="🔑 ••••••••"        class="login-input" autocomplete="current-password">
+                <input type="password" id="loginPassword" placeholder="🔑 ••••••••" class="login-input"
+                    autocomplete="current-password">
 
                 <!-- Boutons d'action -->
                 <!-- Le bouton est désactivé par JS pendant la requête DB.login() -->
                 <div class="options-buttons">
                     <button class="option-button" id="classicLogin">✓ CONNEXION</button>
-                    <button class="option-button danger" onclick="document.getElementById('modalLogin').hidden = true;">← RETOUR</button>
+                    <button class="option-button danger"
+                        onclick="document.getElementById('modalLogin').hidden = true;">← RETOUR</button>
                 </div>
 
             </div><!-- fin #panelLogin -->
@@ -465,22 +520,27 @@
 
                 <!-- Pseudo du joueur (affiché dans le jeu) -->
                 <!-- autocomplete="username" : aide le gestionnaire de mots de passe -->
-                <input type="text"     id="regUsername" placeholder="🧙 Pseudo affiché"   class="login-input" autocomplete="username">
+                <input type="text" id="regUsername" placeholder="🧙 Pseudo affiché" class="login-input"
+                    autocomplete="username">
 
                 <!-- Email (identifiant de connexion) -->
-                <input type="email"    id="regEmail"    placeholder="📧 votre@email.com"   class="login-input" autocomplete="email">
+                <input type="email" id="regEmail" placeholder="📧 votre@email.com" class="login-input"
+                    autocomplete="email">
 
                 <!-- Mot de passe (minimum 6 caractères — validé par JS avant envoi) -->
-                <input type="password" id="regPassword" placeholder="🔑 Mot de passe"      class="login-input" autocomplete="new-password">
+                <input type="password" id="regPassword" placeholder="🔑 Mot de passe" class="login-input"
+                    autocomplete="new-password">
 
                 <!-- Confirmation du mot de passe (doit être identique à regPassword) -->
-                <input type="password" id="regConfirm"  placeholder="🔑 Confirmer"         class="login-input" autocomplete="new-password">
+                <input type="password" id="regConfirm" placeholder="🔑 Confirmer" class="login-input"
+                    autocomplete="new-password">
 
                 <!-- Boutons d'action -->
                 <!-- Le bouton est désactivé par JS pendant la requête DB.register() -->
                 <div class="options-buttons">
                     <button class="option-button" id="registerBtn">✦ CRÉER UN COMPTE</button>
-                    <button class="option-button danger" onclick="document.getElementById('modalLogin').hidden = true;">← RETOUR</button>
+                    <button class="option-button danger"
+                        onclick="document.getElementById('modalLogin').hidden = true;">← RETOUR</button>
                 </div>
 
             </div><!-- fin #panelRegister -->
@@ -493,7 +553,8 @@
         <section class="quit-modal-card" role="dialog" aria-modal="true" aria-labelledby="quitModalTitle">
             <div class="quit-modal-icon">🚪</div>
             <h2 class="quit-modal-title" id="quitModalTitle">Quitter EDUQUEST ?</h2>
-            <p class="quit-modal-text">Ta progression est automatiquement sauvegardée. La musique sera coupée et la page va se fermer.</p>
+            <p class="quit-modal-text">Ta progression est automatiquement sauvegardée. La musique sera coupée et la page
+                va se fermer.</p>
             <div class="quit-modal-actions">
                 <button type="button" class="option-button danger" id="confirmQuitYes">✕ QUITTER MAINTENANT</button>
                 <button type="button" class="option-button" id="confirmQuitCancel">← RESTER</button>
@@ -503,12 +564,9 @@
 
     <script src="js/db.js"></script>
     <script src="js/admin-store.js"></script>
-    <script src="js/question-bank.js"></script>
     <script src="js/core/audio-manager.js"></script>
-    <script src="js/core/quiz-timer.js"></script>
-    <script src="js/core/game-rules.js"></script>
-    <script src="js/features/daily-quests.js"></script>
     <script src="js/app.js"></script>
     <script src="js/cookies.js"></script>
 </body>
+
 </html>

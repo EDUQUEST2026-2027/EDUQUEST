@@ -67,7 +67,7 @@ function setupGlobalErrorHandler() {
         `;
         document.body.appendChild(crashScreen);
         const reloadBtn = document.getElementById('eduquest-crash-reload-btn');
-        if (reloadBtn) reloadBtn.addEventListener('click', () => window.location.reload(true));
+        if (reloadBtn) reloadBtn.addEventListener('click', () => window.location.reload());
         const dismissBtn = document.getElementById('eduquest-crash-dismiss-btn');
         if (dismissBtn) dismissBtn.addEventListener('click', () => crashScreen.remove());
     }
@@ -370,9 +370,11 @@ if (typeof window !== 'undefined') {
         }
     });
     window.addEventListener('eduquest:credits-updated', refreshFooterCredits);
-    window.addEventListener('pageshow', () => {
-        applyAllRuntimeSettings();
-        if (typeof window._syncOptionsModalUI === 'function') window._syncOptionsModalUI();
+    window.addEventListener('pageshow', (e) => {
+        if (e && e.persisted) {
+            applyAllRuntimeSettings();
+            if (typeof window._syncOptionsModalUI === 'function') window._syncOptionsModalUI();
+        }
     });
     window.addEventListener('focus', () => {
         applyAllRuntimeSettings();
@@ -409,7 +411,11 @@ function currentNiveauBand() {
         const band = AdminStore.levelBand(niveau);
         if (band) return band;
     }
-    return QuestionBank.bandForNiveau(niveau || '6eme');
+    if (typeof QuestionBank !== 'undefined' && typeof QuestionBank.bandForNiveau === 'function') {
+        return QuestionBank.bandForNiveau(niveau || '6eme');
+    }
+    const clean = String(niveau || '6eme').toLowerCase().trim();
+    return ['2nde', '1ere', 'terminale', 'bts1', 'bts2'].includes(clean) ? 'lycee' : 'college';
 }
 
 function currentNiveau() {
@@ -576,14 +582,13 @@ function createEnvironment() {
 function setupCookieConsentFallback() {
     if (window.EduCookies) return;
     document.addEventListener('click', function retry() {
-        document.removeEventListener('click', retry);
         if (!window.EduCookies || !EduCookies.getConsent()) {
             const warn = document.querySelector('.footer');
             if (warn && !document.getElementById('eqck-root')) {
                 warn.title = 'Cookies : bandeau de consentement indisponible (cookies.js non chargé)';
             }
         }
-    }, true);
+    }, { capture: true, once: true });
 }
 
 /**
@@ -1037,8 +1042,11 @@ function initOptions() {
     let curBtnColor  = getOption('btnColor') || '#24354f';
 
     // 1. Durée dynamique du chrono (AdminStore.siteConfig.quizTimerSeconds)
-    if (chronoDurLabel && typeof QuizTimer !== 'undefined' && typeof QuizTimer.getConfiguredDuration === 'function') {
-        chronoDurLabel.textContent = QuizTimer.getConfiguredDuration() + 's';
+    if (chronoDurLabel) {
+        const durSec = (typeof QuizTimer !== 'undefined' && typeof QuizTimer.getConfiguredDuration === 'function')
+            ? QuizTimer.getConfiguredDuration()
+            : (parseInt(getSiteConfigSafe().quizTimerSeconds, 10) || 45);
+        chronoDurLabel.textContent = durSec + 's';
     }
 
     // 2. Peuplement dynamique du sélecteur de classe depuis AdminStore.getLevels()
@@ -1169,8 +1177,11 @@ function initOptions() {
         const appearanceSection = document.getElementById('optionsAppearanceSection');
         if (appearanceSection) appearanceSection.style.display = allowClientAppearance ? '' : 'none';
 
-        if (chronoDurLabel && typeof QuizTimer !== 'undefined' && typeof QuizTimer.getConfiguredDuration === 'function') {
-            chronoDurLabel.textContent = QuizTimer.getConfiguredDuration() + 's';
+        if (chronoDurLabel) {
+            const durSec = (typeof QuizTimer !== 'undefined' && typeof QuizTimer.getConfiguredDuration === 'function')
+                ? QuizTimer.getConfiguredDuration()
+                : (parseInt(siteCfg && siteCfg.quizTimerSeconds, 10) || 45);
+            chronoDurLabel.textContent = durSec + 's';
         }
 
         volumeMusique.value = getOption('volumeMusique') || defaultBgm;
@@ -1237,22 +1248,30 @@ function initOptions() {
     }
 
     function saveCurrentOptionsLocally() {
-        saveOption('volumeMusique', volumeMusique.value);
-        saveOption('volumeEffets', volumeEffets.value);
-        saveOption('pleinEcran', String(pleinEcran.checked));
-        saveOption('particules', String(particulesCheckbox.checked));
-        saveOption('ecoMode', String(ecoModeCheckbox.checked));
-        if (animationsCheckbox) saveOption('animationsActives', String(animationsCheckbox.checked));
-        saveOption('sonsActifs', String(sonsActifs.checked));
-        if (modeChronoCheckbox) saveOption('modeChrono', String(modeChronoCheckbox.checked));
+        const patch = {
+            volumeMusique: volumeMusique.value,
+            volumeEffets: volumeEffets.value,
+            pleinEcran: String(pleinEcran.checked),
+            particules: String(particulesCheckbox.checked),
+            ecoMode: String(ecoModeCheckbox.checked),
+            sonsActifs: String(sonsActifs.checked),
+            uiPreset: curUiPreset,
+            uiColor: curUiColor,
+            uiAccent: curUiAccent,
+            btnPreset: curBtnPreset,
+            btnColor: curBtnColor,
+            musiqueActive: sonsActifs.checked ? String(musiqueActive.checked) : String(musiqueActive.dataset.prevChecked !== 'false'),
+            effetsActifs: sonsActifs.checked ? String(effetsActifs.checked) : String(effetsActifs.dataset.prevChecked !== 'false'),
+        };
+        if (animationsCheckbox) patch.animationsActives = String(animationsCheckbox.checked);
+        if (modeChronoCheckbox) patch.modeChrono = String(modeChronoCheckbox.checked);
+        if (btnBrightness) patch.btnBrightness = String(btnBrightness.value);
 
-        // Apparence
-        saveOption('uiPreset', curUiPreset);
-        saveOption('uiColor', curUiColor);
-        saveOption('uiAccent', curUiAccent);
-        saveOption('btnPreset', curBtnPreset);
-        saveOption('btnColor', curBtnColor);
-        if (btnBrightness) saveOption('btnBrightness', String(btnBrightness.value));
+        if (typeof DB !== 'undefined' && typeof DB.saveOptions === 'function') {
+            DB.saveOptions(patch);
+        } else {
+            Object.entries(patch).forEach(([k, v]) => saveOption(k, v));
+        }
 
         if (optNiveauSelect && typeof DB !== 'undefined' && DB.setNiveau) {
             DB.setNiveau(optNiveauSelect.value);
@@ -1263,18 +1282,10 @@ function initOptions() {
         syncFiliereGroupVisibility();
 
         if (typeof _effectiveSubjectsCache !== 'undefined') _effectiveSubjectsCache.clear();
-        if (typeof getEffectiveSubjects === 'function') {
+        if (typeof getEffectiveSubjects === 'function' && (document.getElementById('dashboard-app') || document.querySelector('.map-header'))) {
             const niv = optNiveauSelect ? optNiveauSelect.value : currentNiveau();
             const fil = optFiliereSelect ? optFiliereSelect.value : currentFiliere();
             DASH_SUBJECTS = getEffectiveSubjects(niv, fil);
-        }
-
-        if (sonsActifs.checked) {
-            saveOption('musiqueActive', String(musiqueActive.checked));
-            saveOption('effetsActifs', String(effetsActifs.checked));
-        } else {
-            saveOption('musiqueActive', String(musiqueActive.dataset.prevChecked !== 'false'));
-            saveOption('effetsActifs', String(effetsActifs.dataset.prevChecked !== 'false'));
         }
 
         // Application immédiate de TOUS les paramètres visuels et de particules
@@ -1329,6 +1340,15 @@ function initOptions() {
     });
 
     /* --- Écouteurs Apparence --- */
+    let _appearanceSaveTimer = null;
+    function scheduleAppearanceSave() {
+        if (_appearanceSaveTimer) clearTimeout(_appearanceSaveTimer);
+        _appearanceSaveTimer = setTimeout(() => {
+            _appearanceSaveTimer = null;
+            saveCurrentOptionsLocally();
+        }, 120);
+    }
+
     if (uiColorPresets) {
         uiColorPresets.querySelectorAll('.color-swatch').forEach(sw => {
             sw.addEventListener('click', () => {
@@ -1345,7 +1365,15 @@ function initOptions() {
             curUiPreset = 'custom';
             curUiColor  = uiColorPicker.value;
             curUiAccent = '#c8a84b';
+            document.documentElement.setAttribute('data-ui-custom', 'true');
+            document.documentElement.style.setProperty('--ui-bg-tint', curUiColor);
+            document.documentElement.style.setProperty('--ui-accent', curUiAccent);
+            document.documentElement.style.setProperty('--c-gold', curUiAccent);
             refreshAppearanceSwatches();
+            scheduleAppearanceSave();
+        });
+        uiColorPicker.addEventListener('change', () => {
+            if (_appearanceSaveTimer) { clearTimeout(_appearanceSaveTimer); _appearanceSaveTimer = null; }
             saveCurrentOptionsLocally();
         });
     }
@@ -1363,16 +1391,27 @@ function initOptions() {
         btnColorPicker.addEventListener('input', () => {
             curBtnPreset = 'custom';
             curBtnColor  = btnColorPicker.value;
+            document.documentElement.setAttribute('data-btn-custom', 'true');
+            document.documentElement.style.setProperty('--ui-btn-bg', curBtnColor);
+            document.documentElement.style.setProperty('--ui-btn-border', curBtnColor);
+            document.documentElement.style.setProperty('--ui-btn-text', _contrastTextForHex(curBtnColor));
             refreshAppearanceSwatches();
+            scheduleAppearanceSave();
+        });
+        btnColorPicker.addEventListener('change', () => {
+            if (_appearanceSaveTimer) { clearTimeout(_appearanceSaveTimer); _appearanceSaveTimer = null; }
             saveCurrentOptionsLocally();
         });
     }
     if (btnBrightness) {
         btnBrightness.addEventListener('input', () => {
             updateBtnBrightnessDisplay();
-            saveOption('btnBrightness', String(btnBrightness.value));
+            scheduleAppearanceSave();
         });
-        btnBrightness.addEventListener('change', saveCurrentOptionsLocally);
+        btnBrightness.addEventListener('change', () => {
+            if (_appearanceSaveTimer) { clearTimeout(_appearanceSaveTimer); _appearanceSaveTimer = null; }
+            saveCurrentOptionsLocally();
+        });
     }
     if (resetAppearanceBtn) {
         resetAppearanceBtn.addEventListener('click', () => {
@@ -1503,8 +1542,13 @@ const Celebrate = (() => {
         return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     }
 
+    let needsResize = true;
+
     function ensureCanvas() {
-        if (canvas) return;
+        if (canvas) {
+            if (needsResize) resize();
+            return;
+        }
         canvas = document.createElement('canvas');
         canvas.className = 'confetti-canvas';
         canvas.setAttribute('aria-hidden', 'true');
@@ -1518,7 +1562,7 @@ const Celebrate = (() => {
         document.body.appendChild(canvas);
         ctx = canvas.getContext('2d');
         resize();
-        window.addEventListener('resize', resize);
+        window.addEventListener('resize', () => { needsResize = true; }, { passive: true });
     }
 
     function resize() {
@@ -1527,6 +1571,7 @@ const Celebrate = (() => {
         canvas.width = window.innerWidth * dpr;
         canvas.height = window.innerHeight * dpr;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        needsResize = false;
     }
 
     function clear() {
@@ -1572,6 +1617,7 @@ const Celebrate = (() => {
             clear();
             return;
         }
+        if (needsResize) resize();
         ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
         particles = particles.filter(p => p.life < p.maxLife && p.y < window.innerHeight + 36);
         for (let i = 0; i < particles.length; i++) {
@@ -1647,7 +1693,8 @@ window.Celebrate = Celebrate;
 
 /* Quêtes journalières : déplacées dans js/features/daily-quests.js (v1.26).
    Ce fichier doit être chargé AVANT app.js ; il expose window.DailyQuests. */
-if (typeof window !== 'undefined' && !window.DailyQuests) {
+if (typeof window !== 'undefined' && typeof document !== 'undefined' && !window.DailyQuests
+    && (document.getElementById('dashboard-app') || document.querySelector('.map-header'))) {
     console.error('[EDUQUEST] js/features/daily-quests.js manquant : ajoutez-le avant app.js.');
 }
 
@@ -2380,7 +2427,7 @@ function initMap() {
             btn.title = `Personnage : ${name} (cliquer pour changer)`;
             btn.setAttribute('aria-label', `Changer de personnage (actuel : ${name})`);
             if (current && isSafeAvatarImgSrc(current.img)) {
-                btn.innerHTML = `<img src="${escapeHtml(current.img)}" alt="${escapeHtml(name)}">`;
+                btn.innerHTML = `<img src="${escapeHtml(current.img)}" alt="${escapeHtml(name)}" decoding="async">`;
             } else {
                 btn.textContent = '👤';
             }
@@ -2410,7 +2457,7 @@ function initMap() {
                 const isUnlocked = isShopItemOwned(avatar, ownedList);
                 const isActive = avatar.id === activeId;
                 const imgHtml = isSafeAvatarImgSrc(avatar.img)
-                    ? `<img src="${escapeHtml(avatar.img)}" alt="${escapeHtml(avatar.name)}">`
+                    ? `<img src="${escapeHtml(avatar.img)}" alt="${escapeHtml(avatar.name)}" loading="lazy" decoding="async">`
                     : `<span class="map-skin-fallback">👤</span>`;
                 const badgeHtml = isActive
                     ? `<span class="map-skin-badge is-equipped">✓</span>`
@@ -3076,9 +3123,11 @@ function initMap() {
         if (res) renderMapHeaderStreak();
     }
 
-    document.querySelectorAll('.level-dot').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if (btn.classList.contains('locked')) return;
+    const levelTrackEl = document.getElementById('level-track');
+    if (levelTrackEl) {
+        levelTrackEl.addEventListener('click', (e) => {
+            const btn = e.target.closest('.level-dot');
+            if (!btn || btn.classList.contains('locked')) return;
             currentModalLevel = parseInt(btn.dataset.level, 10);
             positionCharacter(currentModalLevel, true);
 
@@ -3131,7 +3180,7 @@ function initMap() {
                 modal.hidden = false;
             }
         });
-    });
+    }
 
     document.querySelectorAll('.star-choice').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -3561,8 +3610,9 @@ function getEffectiveSubjects(niveau, filiere) {
         });
     }
 
+    const canExtend = typeof QuestionBank !== 'undefined' && typeof QuestionBank.extend === 'function';
     const extended = filtered.map(s => {
-        const out = s._custom ? s : QuestionBank.extend(s, 100, currentNiv);
+        const out = (s._custom || !canExtend) ? s : QuestionBank.extend(s, 100, currentNiv);
         out._isSpecialty = isFiliereUsed
             && typeof AdminStore !== 'undefined'
             && typeof AdminStore.isSubjectSpecialtyForFiliere === 'function'
@@ -3576,7 +3626,14 @@ function getEffectiveSubjects(niveau, filiere) {
     return extended;
 }
 
-let DASH_SUBJECTS = getEffectiveSubjects();
+// Initialisation paresseuse : évite de générer 100 niveaux × 36 matières sur index.html et admin.html
+let DASH_SUBJECTS = [];
+function ensureSubjectsLoaded(niveauOverride, filiereOverride) {
+    if (!Array.isArray(DASH_SUBJECTS) || DASH_SUBJECTS.length === 0) {
+        DASH_SUBJECTS = getEffectiveSubjects(niveauOverride, filiereOverride);
+    }
+    return DASH_SUBJECTS;
+}
 
 const SUBJECT_TO_MATIERE = {
     maths:         { name: 'Mathématiques',          icon: 'maths.webp' },
@@ -3724,8 +3781,9 @@ function checkBadges(extra = {}) {
     if (typeof DB === 'undefined' || !DB.getBadges || !DB.unlockBadge) return [];
     const catalog = getBadgesCatalog();
     const unlockedIds = DB.getBadges();
-    
-    const currentNiveau = (typeof DB.getNiveau === 'function' ? DB.getNiveau() : '6eme') || '6eme';
+    const unlockedSet = new Set(unlockedIds);
+
+    const currentNiveauVal = (typeof DB.getNiveau === 'function' ? DB.getNiveau() : '6eme') || '6eme';
     const xp = parseInt(DB.getOption('dash_xp') || '0', 10);
     const coins = parseInt(DB.getOption('dash_coins') || '30', 10);
     const playerLevel = Math.floor(xp / 100) + 1;
@@ -3733,23 +3791,31 @@ function checkBadges(extra = {}) {
     try { ownedSkins = JSON.parse(DB.getOption('dash_ownedSkins') || '["aurore", "robot"]'); } catch(e) {}
     const theme = DB.getOption('dash_equippedTheme') || 'default';
     const equippedAura = DB.getOption('dash_equippedAura') || DB.getOption('dash_equippedSkin') || 'aurore';
+    const equippedTitle = DB.getOption('dash_equippedTitle') || '';
+    const streakData = (typeof DB.getStreakData === 'function') ? DB.getStreakData() : { count: 0, best: 0, combo: 0, maxCombo: 0 };
+    const streakCountNow = streakData.count || 0;
+    const streakBest = Math.max(streakCountNow, streakData.best || 0);
+    const comboCountNow = streakData.combo || 0;
+    const maxComboNow = streakData.maxCombo || 0;
+    const totalScoreNow = (typeof extra.totalScore === 'number')
+        ? extra.totalScore
+        : parseInt(DB.getOption('dash_total_score') || '0', 10);
     const boosters = (typeof DB.getBoosters === 'function') ? DB.getBoosters() : {};
     const boostersHistory = (typeof DB.getBoostersHistory === 'function') ? DB.getBoostersHistory() : { acquired: {}, used: {} };
 
     const totalBoostersInStock = Object.values(boosters).reduce((sum, n) => sum + (parseInt(n, 10) || 0), 0);
     const totalBoostersAcquired = Object.values(boostersHistory.acquired || {}).reduce((sum, n) => sum + (parseInt(n, 10) || 0), 0);
-    const totalBoostersUsed = Object.values(boostersHistory.used || {}).reduce((sum, n) => sum + (parseInt(n, 10) || 0), 0);
     const hasAnyBooster = totalBoostersInStock > 0 || (boosters['boost-xp'] > 0) || (boosters['boost-shield'] > 0) || totalBoostersAcquired > 0 || !!extra.boughtBooster || !!extra.hasBooster || !!extra.boosterId;
 
     let totalCompleted = 0;
     let threeStarCount = 0;
     const completedPerSubject = {};
-    const subjects = (typeof DASH_SUBJECTS !== 'undefined') ? DASH_SUBJECTS : [];
-    
+    const subjects = ensureSubjectsLoaded(currentNiveauVal);
+
     subjects.forEach(s => {
         let count = 0;
         const prog = (typeof DB.getProgressSync === 'function')
-            ? (DB.getProgressSync(s.name, currentNiveau) || DB.getProgressSync(s.id, currentNiveau))
+            ? (DB.getProgressSync(s.name, currentNiveauVal) || DB.getProgressSync(s.id, currentNiveauVal))
             : null;
         if (prog && prog.levels) {
             for (let lvl in prog.levels) {
@@ -3770,10 +3836,14 @@ function checkBadges(extra = {}) {
     if (extra.justCompletedLevel) totalCompleted = Math.max(totalCompleted, 1);
     if (extra.starsEarned === 3) threeStarCount = Math.max(threeStarCount, 1);
 
+    const allSubjectsStartedNow = subjects.length > 0 && subjects.every(s => (completedPerSubject[s.id] || 0) >= 1);
+    const oneSubjectAdvancedNow = Object.values(completedPerSubject).some(c => c >= 5);
+    let genericCtx = null;
+
     const newlyUnlocked = [];
 
     catalog.forEach(b => {
-        if (unlockedIds.includes(b.id)) return;
+        if (unlockedSet.has(b.id)) return;
         let pass = false;
         switch (b.id) {
             case 'premier_quiz':
@@ -3786,25 +3856,25 @@ function checkBadges(extra = {}) {
                 pass = threeStarCount >= 1 || extra.starsEarned === 3;
                 break;
             case 'streak_3':
-                pass = (extra.streakCount >= 3) || (typeof DB !== 'undefined' && DB.getStreak && DB.getStreak() >= 3);
+                pass = (extra.streakCount >= 3) || streakCountNow >= 3;
                 break;
             case 'streak_5':
-                pass = (extra.streakCount >= 5) || (typeof DB !== 'undefined' && DB.getStreak && DB.getStreak() >= 5);
+                pass = (extra.streakCount >= 5) || streakCountNow >= 5;
                 break;
             case 'streak_10':
-                pass = (extra.streakCount >= 10) || (typeof DB !== 'undefined' && DB.getStreakData && Math.max(DB.getStreakData().count || 0, DB.getStreakData().best || 0) >= 10);
+                pass = (extra.streakCount >= 10) || streakBest >= 10;
                 break;
             case 'streak_20':
-                pass = (extra.streakCount >= 20) || (typeof DB !== 'undefined' && DB.getStreakData && Math.max(DB.getStreakData().count || 0, DB.getStreakData().best || 0) >= 20);
+                pass = (extra.streakCount >= 20) || streakBest >= 20;
                 break;
             case 'combo_5':
-                pass = (extra.comboCount >= 5) || (extra.maxCombo >= 5) || (typeof DB !== 'undefined' && DB.getStreakData && DB.getStreakData().maxCombo >= 5);
+                pass = (extra.comboCount >= 5) || (extra.maxCombo >= 5) || maxComboNow >= 5;
                 break;
             case 'combo_10':
-                pass = (extra.comboCount >= 10) || (extra.maxCombo >= 10) || (typeof DB !== 'undefined' && DB.getStreakData && DB.getStreakData().maxCombo >= 10);
+                pass = (extra.comboCount >= 10) || (extra.maxCombo >= 10) || maxComboNow >= 10;
                 break;
             case 'toutes_matieres':
-                pass = (subjects.length > 0 && subjects.every(s => (completedPerSubject[s.id] || 0) >= 1)) || !!extra.allSubjectsStarted;
+                pass = allSubjectsStartedNow || !!extra.allSubjectsStarted;
                 break;
             case 'cinq_niveaux':
                 pass = totalCompleted >= 5;
@@ -3819,7 +3889,7 @@ function checkBadges(extra = {}) {
                 pass = totalCompleted >= 50;
                 break;
             case 'matiere_complete':
-                pass = Object.values(completedPerSubject).some(c => c >= 5) || !!extra.oneSubjectAdvanced;
+                pass = oneSubjectAdvancedNow || !!extra.oneSubjectAdvanced;
                 break;
             case 'cent_niveaux':
                 pass = totalCompleted >= 100;
@@ -3849,7 +3919,7 @@ function checkBadges(extra = {}) {
                 pass = (theme && theme !== 'default') || (extra.theme && extra.theme !== 'default') || !!extra.themeEquipped;
                 break;
             case 'titre_equipe':
-                pass = Boolean(DB.getOption('dash_equippedTitle')) || !!extra.titleEquipped;
+                pass = Boolean(equippedTitle) || !!extra.titleEquipped;
                 break;
             case 'niveau_5':
                 pass = playerLevel >= 5;
@@ -4039,74 +4109,76 @@ function checkBadges(extra = {}) {
             else if (cond === 'justAnsweredFirstTry' && (!!extra.justAnsweredFirstTry || extra.starsEarned === 3)) pass = true;
             else if (cond === 'auraEquipped' && ((equippedAura && equippedAura !== 'aurore') || !!extra.auraEquipped || !!extra.boughtSkin)) pass = true;
             else if (cond === 'themeEquipped' && ((theme && theme !== 'default') || (extra.theme && extra.theme !== 'default') || !!extra.themeEquipped)) pass = true;
-            else if (cond === 'titleEquipped' && (Boolean(DB.getOption('dash_equippedTitle')) || !!extra.titleEquipped)) pass = true;
-            else if (cond === 'allSubjectsStarted' && subjects.length > 0 && subjects.every(s => (completedPerSubject[s.id] || 0) >= 1)) pass = true;
-            else if (cond === 'oneSubjectAdvanced' && Object.values(completedPerSubject).some(c => c >= 5)) pass = true;
+            else if (cond === 'titleEquipped' && (Boolean(equippedTitle) || !!extra.titleEquipped)) pass = true;
+            else if (cond === 'allSubjectsStarted' && allSubjectsStartedNow) pass = true;
+            else if (cond === 'oneSubjectAdvanced' && oneSubjectAdvancedNow) pass = true;
             else {
-                const ctx = {
-                    totalCompleted,
-                    threeStarCount,
-                    xp,
-                    coins,
-                    playerLevel,
-                    ownedSkins: ownedSkins.length,
-                    mathsLevel: completedPerSubject['maths'] || 0,
-                    francaisLevel: completedPerSubject['francais'] || 0,
-                    histoireLevel: completedPerSubject['histoire'] || 0,
-                    geoLevel: completedPerSubject['geo'] || 0,
-                    scienceLevel: Math.max(completedPerSubject['svt'] || 0, completedPerSubject['physique'] || 0, completedPerSubject['chimie'] || 0),
-                    sciencesSpeLevel: Math.max(completedPerSubject['maths'] || 0, completedPerSubject['physique'] || 0, completedPerSubject['chimie'] || 0, completedPerSubject['svt'] || 0),
-                    philoLevel: completedPerSubject['philo'] || 0,
-                    anglaisLevel: completedPerSubject['anglais'] || 0,
-                    espagnolLevel: completedPerSubject['espagnol'] || 0,
-                    artsLevel: completedPerSubject['arts'] || 0,
-                    emcLevel: completedPerSubject['emc'] || 0,
-                    technoLevel: completedPerSubject['techno'] || 0,
-                    nsiLevel: completedPerSubject['nsi'] || 0,
-                    sesLevel: completedPerSubject['ses'] || 0,
-                    hggspLevel: completedPerSubject['hggsp'] || 0,
-                    siLevel: completedPerSubject['si'] || 0,
-                    msgnLevel: completedPerSubject['msgn'] || 0,
-                    droitEcoLevel: completedPerSubject['droit_eco'] || 0,
-                    mercatiqueLevel: completedPerSubject['mercatique'] || 0,
-                    i2dLevel: completedPerSubject['i2d'] || 0,
-                    sinLevel: completedPerSubject['sin'] || 0,
-                    cyberLevel: completedPerSubject['cybersecurite'] || 0,
-                    reseauxLevel: completedPerSubject['reseaux'] || 0,
-                    electroniqueLevel: completedPerSubject['electronique'] || 0,
-                    stmgLevel: Math.max(completedPerSubject['msgn'] || 0, completedPerSubject['droit_eco'] || 0, completedPerSubject['mercatique'] || 0),
-                    sti2dLevel: Math.max(completedPerSubject['i2d'] || 0, completedPerSubject['sin'] || 0, completedPerSubject['si'] || 0),
-                    cielLevel: Math.max(completedPerSubject['cybersecurite'] || 0, completedPerSubject['reseaux'] || 0, completedPerSubject['electronique'] || 0),
-                    stssLevel: completedPerSubject['stss'] || 0,
-                    biotechLevel: completedPerSubject['biotech'] || 0,
-                    stlLevel: Math.max(completedPerSubject['biotech'] || 0, completedPerSubject['chimie'] || 0),
-                    asspLevel: Math.max(completedPerSubject['stss'] || 0, completedPerSubject['biotech'] || 0),
-                    designLevel: completedPerSubject['design'] || 0,
-                    hotellerieLevel: completedPerSubject['hotellerie'] || 0,
-                    agronomieLevel: completedPerSubject['agronomie'] || 0,
-                    spectacleLevel: completedPerSubject['spectacle'] || 0,
-                    hlpLevel: completedPerSubject['hlp'] || 0,
-                    devBddLevel: completedPerSubject['dev_bdd'] || 0,
-                    commerceLevel: completedPerSubject['commerce'] || 0,
-                    comptabiliteLevel: completedPerSubject['comptabilite'] || 0,
-                    electrotechLevel: completedPerSubject['electrotech'] || 0,
-                    hasBooster: hasAnyBooster ? 1 : 0,
-                    usedDoubleXp: (extra.usedDoubleXp || extra.usedBooster === 'boost-xp') ? 1 : 0,
-                    usedDoubleCoins: (extra.usedDoubleCoins || extra.usedBooster === 'boost-coins') ? 1 : 0,
-                    usedShield: (extra.usedShield || extra.usedBooster === 'boost-shield') ? 1 : 0,
-                    streakCount: (typeof extra.streakCount === 'number') ? extra.streakCount : ((typeof DB !== 'undefined' && DB.getStreak) ? DB.getStreak() : 0),
-                    comboCount: (typeof extra.comboCount === 'number') ? extra.comboCount : ((typeof DB !== 'undefined' && DB.getCombo) ? DB.getCombo() : 0),
-                    maxCombo: (typeof extra.maxCombo === 'number') ? extra.maxCombo : ((typeof DB !== 'undefined' && DB.getStreakData) ? DB.getStreakData().maxCombo : 0),
-                    totalScore: (typeof extra.totalScore === 'number') ? extra.totalScore : parseInt((typeof DB !== 'undefined' && DB.getOption) ? (DB.getOption('dash_total_score') || '0') : '0', 10)
-                };
-                // Supporte aussi toute matière personnalisée via <subjectId>Level
-                Object.keys(completedPerSubject).forEach(sid => {
-                    const k = sid + 'Level';
-                    if (!(k in ctx)) ctx[k] = completedPerSubject[sid] || 0;
-                });
+                if (!genericCtx) {
+                    genericCtx = {
+                        totalCompleted,
+                        threeStarCount,
+                        xp,
+                        coins,
+                        playerLevel,
+                        ownedSkins: ownedSkins.length,
+                        mathsLevel: completedPerSubject['maths'] || 0,
+                        francaisLevel: completedPerSubject['francais'] || 0,
+                        histoireLevel: completedPerSubject['histoire'] || 0,
+                        geoLevel: completedPerSubject['geo'] || 0,
+                        scienceLevel: Math.max(completedPerSubject['svt'] || 0, completedPerSubject['physique'] || 0, completedPerSubject['chimie'] || 0),
+                        sciencesSpeLevel: Math.max(completedPerSubject['maths'] || 0, completedPerSubject['physique'] || 0, completedPerSubject['chimie'] || 0, completedPerSubject['svt'] || 0),
+                        philoLevel: completedPerSubject['philo'] || 0,
+                        anglaisLevel: completedPerSubject['anglais'] || 0,
+                        espagnolLevel: completedPerSubject['espagnol'] || 0,
+                        artsLevel: completedPerSubject['arts'] || 0,
+                        emcLevel: completedPerSubject['emc'] || 0,
+                        technoLevel: completedPerSubject['techno'] || 0,
+                        nsiLevel: completedPerSubject['nsi'] || 0,
+                        sesLevel: completedPerSubject['ses'] || 0,
+                        hggspLevel: completedPerSubject['hggsp'] || 0,
+                        siLevel: completedPerSubject['si'] || 0,
+                        msgnLevel: completedPerSubject['msgn'] || 0,
+                        droitEcoLevel: completedPerSubject['droit_eco'] || 0,
+                        mercatiqueLevel: completedPerSubject['mercatique'] || 0,
+                        i2dLevel: completedPerSubject['i2d'] || 0,
+                        sinLevel: completedPerSubject['sin'] || 0,
+                        cyberLevel: completedPerSubject['cybersecurite'] || 0,
+                        reseauxLevel: completedPerSubject['reseaux'] || 0,
+                        electroniqueLevel: completedPerSubject['electronique'] || 0,
+                        stmgLevel: Math.max(completedPerSubject['msgn'] || 0, completedPerSubject['droit_eco'] || 0, completedPerSubject['mercatique'] || 0),
+                        sti2dLevel: Math.max(completedPerSubject['i2d'] || 0, completedPerSubject['sin'] || 0, completedPerSubject['si'] || 0),
+                        cielLevel: Math.max(completedPerSubject['cybersecurite'] || 0, completedPerSubject['reseaux'] || 0, completedPerSubject['electronique'] || 0),
+                        stssLevel: completedPerSubject['stss'] || 0,
+                        biotechLevel: completedPerSubject['biotech'] || 0,
+                        stlLevel: Math.max(completedPerSubject['biotech'] || 0, completedPerSubject['chimie'] || 0),
+                        asspLevel: Math.max(completedPerSubject['stss'] || 0, completedPerSubject['biotech'] || 0),
+                        designLevel: completedPerSubject['design'] || 0,
+                        hotellerieLevel: completedPerSubject['hotellerie'] || 0,
+                        agronomieLevel: completedPerSubject['agronomie'] || 0,
+                        spectacleLevel: completedPerSubject['spectacle'] || 0,
+                        hlpLevel: completedPerSubject['hlp'] || 0,
+                        devBddLevel: completedPerSubject['dev_bdd'] || 0,
+                        commerceLevel: completedPerSubject['commerce'] || 0,
+                        comptabiliteLevel: completedPerSubject['comptabilite'] || 0,
+                        electrotechLevel: completedPerSubject['electrotech'] || 0,
+                        hasBooster: hasAnyBooster ? 1 : 0,
+                        usedDoubleXp: (extra.usedDoubleXp || extra.usedBooster === 'boost-xp') ? 1 : 0,
+                        usedDoubleCoins: (extra.usedDoubleCoins || extra.usedBooster === 'boost-coins') ? 1 : 0,
+                        usedShield: (extra.usedShield || extra.usedBooster === 'boost-shield') ? 1 : 0,
+                        streakCount: (typeof extra.streakCount === 'number') ? extra.streakCount : streakCountNow,
+                        comboCount: (typeof extra.comboCount === 'number') ? extra.comboCount : comboCountNow,
+                        maxCombo: (typeof extra.maxCombo === 'number') ? extra.maxCombo : maxComboNow,
+                        totalScore: totalScoreNow,
+                    };
+                    // Supporte aussi toute matière personnalisée via <subjectId>Level
+                    Object.keys(completedPerSubject).forEach(sid => {
+                        const k = sid + 'Level';
+                        if (!(k in genericCtx)) genericCtx[k] = completedPerSubject[sid] || 0;
+                    });
+                }
                 const m = cond.match(/^([a-zA-Z0-9_]+)\s*(>=|<=|>|<|===|==)\s*([0-9]+)$/);
                 if (m) {
-                    const varVal = ctx[m[1]] ?? 0;
+                    const varVal = genericCtx[m[1]] ?? 0;
                     const op = m[2];
                     const num = parseInt(m[3], 10);
                     if (op === '>=' && varVal >= num) pass = true;
@@ -4121,6 +4193,7 @@ function checkBadges(extra = {}) {
         if (pass) {
             DB.unlockBadge(b.id);
             unlockedIds.push(b.id);
+            unlockedSet.add(b.id);
             newlyUnlocked.push(b);
         }
     });
@@ -4146,6 +4219,8 @@ window.checkBadges = checkBadges;
 function initDashboard() {
     const dashApp = document.getElementById('dashboard-app');
     if (!dashApp) return; // Pas sur la page dashboard.html → on sort
+
+    DASH_SUBJECTS = getEffectiveSubjects();
 
     function getShopCatalog() {
         return getShopCatalogSafe();
@@ -4203,17 +4278,24 @@ function initDashboard() {
         };
     }
 
-    /** Sauvegarde l'état modifiable dans localStorage via DB. */
+    /** Sauvegarde l'état modifiable dans localStorage via DB (écriture groupée). */
     function persistState() {
-        saveOption('dash_coins',          String(state.coins));
-        saveOption('dash_xp',             String(state.xp));
-        saveOption('dash_equippedSkin',   state.equippedSkin || 'aurore');
-        saveOption('dash_equippedAura',   state.equippedAura || 'aurore');
-        saveOption('dash_equippedAvatar', state.equippedAvatar || 'robot');
-        saveOption('dash_equippedTitle',  state.equippedTitle || '');
-        saveOption('dash_equippedTheme',  state.equippedTheme || 'default');
-        saveOption('dash_ownedSkins',     JSON.stringify(state.ownedSkins));
-        saveOption('dash_progress',       JSON.stringify(state.progress));
+        const patch = {
+            dash_coins:          String(state.coins),
+            dash_xp:             String(state.xp),
+            dash_equippedSkin:   state.equippedSkin || 'aurore',
+            dash_equippedAura:   state.equippedAura || 'aurore',
+            dash_equippedAvatar: state.equippedAvatar || 'robot',
+            dash_equippedTitle:  state.equippedTitle || '',
+            dash_equippedTheme:  state.equippedTheme || 'default',
+            dash_ownedSkins:     JSON.stringify(state.ownedSkins),
+            dash_progress:       JSON.stringify(state.progress),
+        };
+        if (typeof DB !== 'undefined' && typeof DB.saveOptions === 'function') {
+            DB.saveOptions(patch);
+        } else {
+            Object.entries(patch).forEach(([k, v]) => saveOption(k, v));
+        }
     }
 
     let state = loadState();
@@ -4372,7 +4454,7 @@ function initDashboard() {
 
         const hudAvatarImg = skinImage(state.equippedAvatar);
         return `<div class="dash-hud">
-            <div class="dash-avatar" style="--dash-skin:${escapeHtml(skinColor(state.equippedAura))}">${hudAvatarImg ? `<img src="${escapeHtml(hudAvatarImg)}" alt="Avatar">` : `N${level()}`}</div>
+            <div class="dash-avatar" style="--dash-skin:${escapeHtml(skinColor(state.equippedAura))}">${hudAvatarImg ? `<img src="${escapeHtml(hudAvatarImg)}" alt="Avatar" decoding="async">` : `N${level()}`}</div>
             <div class="dash-hud-mid">
                 <div class="dash-hud-level">Niveau ${level()} <span class="mono">· ${pct}/100 XP</span> ${titleBadge}</div>
                 <div class="dash-xp-track"><div class="dash-xp-fill" style="width:${pct}%"></div></div>
@@ -4450,6 +4532,7 @@ function initDashboard() {
     function renderBadges() {
         const unlockedIds = (typeof DB !== 'undefined' && DB.getBadges) ? DB.getBadges() : state.badges;
         state.badges = unlockedIds;
+        const unlockedSet = new Set(unlockedIds);
         const catalog = getBadgesCatalog();
         const curNiv = currentNiveau();
         const curFil = currentFiliere();
@@ -4466,75 +4549,76 @@ function initDashboard() {
             ? `${filObj.icon || '🧭'} ${filObj.shortLabel || filObj.label}`
             : `🏫 ${nivLabel}`;
 
-        const myTrackBadges = catalog.filter(b => isBadgeForCurrentTrack(b, curNiv, curFil));
-        const myUnlockedCount = myTrackBadges.filter(b => unlockedIds.includes(b.id)).length;
-        const globalUnlockedCount = catalog.filter(b => unlockedIds.includes(b.id)).length;
+        let myTrackCount = 0;
+        let myUnlockedCount = 0;
+        let globalUnlockedCount = 0;
+        const filiereCounts = Object.create(null);
+        const enriched = catalog.map(b => {
+            const allowedFil = Array.isArray(b.allowedFilieres) && b.allowedFilieres.length ? b.allowedFilieres : ['all'];
+            const band = b.band || 'all';
+            const unlocked = unlockedSet.has(b.id);
+            const mine = isBadgeForCurrentTrack(b, curNiv, curFil);
+            const specific = !allowedFil.includes('all') || (band && band !== 'all');
+            if (unlocked) globalUnlockedCount++;
+            if (mine) {
+                myTrackCount++;
+                if (unlocked) myUnlockedCount++;
+            }
+            if (band !== 'college' && !allowedFil.includes('all')) {
+                for (let i = 0; i < allowedFil.length; i++) {
+                    const fid = allowedFil[i];
+                    filiereCounts[fid] = (filiereCounts[fid] || 0) + 1;
+                }
+            }
+            return { badge: b, allowedFil, band, unlocked, mine, specific, scopeLbl: '' };
+        });
 
         const showAll = Boolean(state.badgeShowAll);
         const filFilter = state.badgeFiliereFilter || (showAll ? 'all' : 'mine');
         const statusFilter = state.badgeStatusFilter || 'all';
         const sortMode = state.badgeSort || 'relevance';
 
-        // 1. Filtrage par filière / portée
-        let list = catalog.filter(b => {
-            const allowedFil = Array.isArray(b.allowedFilieres) && b.allowedFilieres.length ? b.allowedFilieres : ['all'];
-            const band = b.band || 'all';
-            if (filFilter === 'mine') {
-                return isBadgeForCurrentTrack(b, curNiv, curFil);
-            }
-            if (filFilter === 'all') {
-                return true;
-            }
-            if (filFilter === 'universal') {
-                return band === 'all' && allowedFil.includes('all');
-            }
-            if (filFilter === 'college') {
-                return band === 'college';
-            }
-            // Filière spécifique (ex: 'ciel', 'stmg', 'sti2d', 'nsi_spe', 'st2s', 'generale')
-            return band !== 'college' && (allowedFil.includes(filFilter) && !allowedFil.includes('all'));
+        // 1. Filtrage par filière / portée & 2. Filtrage par statut
+        let list = enriched.filter(item => {
+            if (statusFilter === 'unlocked' && !item.unlocked) return false;
+            if (statusFilter === 'locked' && item.unlocked) return false;
+            if (filFilter === 'mine') return item.mine;
+            if (filFilter === 'all') return true;
+            if (filFilter === 'universal') return item.band === 'all' && item.allowedFil.includes('all');
+            if (filFilter === 'college') return item.band === 'college';
+            return item.band !== 'college' && item.allowedFil.includes(filFilter) && !item.allowedFil.includes('all');
         });
 
-        // 2. Filtrage par statut (débloqué / verrouillé)
-        if (statusFilter === 'unlocked') {
-            list = list.filter(b => unlockedIds.includes(b.id));
-        } else if (statusFilter === 'locked') {
-            list = list.filter(b => !unlockedIds.includes(b.id));
+        // 3. Précalcul du libellé de portée + Tri configurable
+        const hasScopeFn = typeof AdminStore !== 'undefined' && typeof AdminStore.getBadgeScopeLabel === 'function';
+        for (let i = 0; i < list.length; i++) {
+            list[i].scopeLbl = hasScopeFn ? AdminStore.getBadgeScopeLabel(list[i].badge) : '🌐 Tous';
         }
 
-        // 3. Tri configurable
-        const scopeText = b => (typeof AdminStore !== 'undefined' && typeof AdminStore.getBadgeScopeLabel === 'function')
-            ? AdminStore.getBadgeScopeLabel(b)
-            : '🌐 Tous';
-        const isTrackSpecific = b => {
-            const allowed = Array.isArray(b.allowedFilieres) ? b.allowedFilieres : ['all'];
-            return !allowed.includes('all') || (b.band && b.band !== 'all');
-        };
-
-        list = list.slice().sort((a, b) => {
-            const aUn = unlockedIds.includes(a.id) ? 1 : 0;
-            const bUn = unlockedIds.includes(b.id) ? 1 : 0;
+        list.sort((a, b) => {
+            const aUn = a.unlocked ? 1 : 0;
+            const bUn = b.unlocked ? 1 : 0;
             if (sortMode === 'unlocked_first') {
                 if (bUn !== aUn) return bUn - aUn;
-                return String(a.name || '').localeCompare(String(b.name || ''), 'fr');
+                return String(a.badge.name || '').localeCompare(String(b.badge.name || ''), 'fr');
             }
             if (sortMode === 'locked_first') {
                 if (aUn !== bUn) return aUn - bUn;
-                return String(a.name || '').localeCompare(String(b.name || ''), 'fr');
+                return String(a.badge.name || '').localeCompare(String(b.badge.name || ''), 'fr');
             }
             if (sortMode === 'filiere') {
-                const cmp = scopeText(a).localeCompare(scopeText(b), 'fr');
-                return cmp !== 0 ? cmp : String(a.name || '').localeCompare(String(b.name || ''), 'fr');
+                const cmp = a.scopeLbl.localeCompare(b.scopeLbl, 'fr');
+                return cmp !== 0 ? cmp : String(a.badge.name || '').localeCompare(String(b.badge.name || ''), 'fr');
             }
             if (sortMode === 'alpha') {
-                return String(a.name || '').localeCompare(String(b.name || ''), 'fr');
+                return String(a.badge.name || '').localeCompare(String(b.badge.name || ''), 'fr');
             }
             // 'relevance' : succès dédiés à ma filière d'abord, puis débloqués, puis universels
-            const aMine = isBadgeForCurrentTrack(a, curNiv, curFil) ? 1 : 0;
-            const bMine = isBadgeForCurrentTrack(b, curNiv, curFil) ? 1 : 0;
+            const aMine = a.mine ? 1 : 0;
+            const bMine = b.mine ? 1 : 0;
             if (bMine !== aMine) return bMine - aMine;
-            const aSpec = (aMine && isTrackSpecific(a)) ? 1 : 0;
-            const bSpec = (bMine && isTrackSpecific(b)) ? 1 : 0;
+            const aSpec = (aMine && a.specific) ? 1 : 0;
+            const bSpec = (bMine && b.specific) ? 1 : 0;
             if (bSpec !== aSpec) return bSpec - aSpec;
             if (bUn !== aUn) return bUn - aUn;
             return 0;
@@ -4545,21 +4629,19 @@ function initDashboard() {
             : [];
 
         const filiereOptionsHtml = [
-            `<option value="mine"${filFilter === 'mine' ? ' selected' : ''}>🎯 Ma filière (${escapeHtml(trackLabel)} · ${myTrackBadges.length})</option>`,
+            `<option value="mine"${filFilter === 'mine' ? ' selected' : ''}>🎯 Ma filière (${escapeHtml(trackLabel)} · ${myTrackCount})</option>`,
             `<option value="all"${filFilter === 'all' ? ' selected' : ''}>👁️ Toutes les filières (${catalog.length})</option>`,
             `<option value="universal"${filFilter === 'universal' ? ' selected' : ''}>🌐 Succès universels uniquement</option>`,
             `<option value="college"${filFilter === 'college' ? ' selected' : ''}>🏫 Collège uniquement</option>`,
             ...allFilieres.map(f => {
-                const cnt = catalog.filter(b => b.band !== 'college' && Array.isArray(b.allowedFilieres) && b.allowedFilieres.includes(f.id) && !b.allowedFilieres.includes('all')).length;
+                const cnt = filiereCounts[f.id] || 0;
                 return `<option value="${escapeHtml(f.id)}"${filFilter === f.id ? ' selected' : ''}>${escapeHtml(f.icon || '🧭')} Spé ${escapeHtml(f.shortLabel || f.label)} (${cnt})</option>`;
             }),
         ].join('');
 
-        const cards = list.map(badge => {
-            const unlocked = unlockedIds.includes(badge.id);
-            const mine = isBadgeForCurrentTrack(badge, curNiv, curFil);
-            const scopeLbl = scopeText(badge);
-            const isGlobalScope = !isTrackSpecific(badge);
+        const cards = list.map(item => {
+            const { badge, unlocked, mine, specific, scopeLbl } = item;
+            const isGlobalScope = !specific;
             return `<div class="dash-skin-card dash-badge-card ${unlocked ? 'is-unlocked' : 'locked'} ${!mine ? 'is-other-filiere' : ''}">
                 <span class="dash-badge-scope-pill ${isGlobalScope ? 'is-global' : ''}">${escapeHtml(scopeLbl)}</span>
                 <div class="dash-badge-icon">${unlocked ? badge.icon : '🔒'}</div>
@@ -4571,13 +4653,13 @@ function initDashboard() {
             </div>`;
         }).join('');
 
-        const hiddenCount = Math.max(0, catalog.length - myTrackBadges.length);
+        const hiddenCount = Math.max(0, catalog.length - myTrackCount);
 
         return `<section class="dash-section">
             <div class="dash-badges-head">
                 <div>
                     <div class="dash-eyebrow">Succès · ${escapeHtml(trackLabel)}</div>
-                    <h2 class="dash-section-title">Tes accomplissements (${filFilter === 'all' ? `${globalUnlockedCount}/${catalog.length}` : `${myUnlockedCount}/${myTrackBadges.length}`})</h2>
+                    <h2 class="dash-section-title">Tes accomplissements (${filFilter === 'all' ? `${globalUnlockedCount}/${catalog.length}` : `${myUnlockedCount}/${myTrackCount}`})</h2>
                     <div class="dash-badges-subtitle">
                         ${filFilter === 'mine'
                             ? `Affichage adapté à ton parcours (${hiddenCount} succès d'autres filières masqués).`
@@ -4585,7 +4667,7 @@ function initDashboard() {
                     </div>
                 </div>
                 <button type="button" class="dash-badge-filter-btn show-all-btn ${filFilter === 'all' ? 'active' : ''}" id="dashBadgesToggleAllBtn" onclick="window._dashToggleBadgesShowAll(${filFilter === 'all' ? 'false' : 'true'})">
-                    ${filFilter === 'all' ? `🎯 Filtrer sur ma filière (${myTrackBadges.length})` : `👁️ Tout voir (${catalog.length})`}
+                    ${filFilter === 'all' ? `🎯 Filtrer sur ma filière (${myTrackCount})` : `👁️ Tout voir (${catalog.length})`}
                 </button>
             </div>
 
@@ -4650,7 +4732,7 @@ function initDashboard() {
             const islandSrc = getSubjectIslandSrc(s);
             const iconHtml = islandSrc
                 ? `<div class="dash-subject-island-wrap">
-                     <img src="${escapeHtml(islandSrc)}" alt="${escapeHtml(s.name)}" class="dash-subject-island" loading="lazy">
+                     <img src="${escapeHtml(islandSrc)}" alt="${escapeHtml(s.name)}" class="dash-subject-island" loading="lazy" decoding="async">
                    </div>`
                 : `<div class="dash-subject-icon">${escapeHtml(s.icon || '📘')}</div>`;
             const specBadge = s._isSpecialty
@@ -4818,7 +4900,7 @@ function initDashboard() {
 
         const islandSrc = getSubjectIslandSrc(subject);
         const eyebrowIcon = islandSrc
-            ? `<img src="${escapeHtml(islandSrc)}" alt="" style="width:1.3em;height:1.3em;vertical-align:middle;object-fit:contain;margin-right:6px;">`
+            ? `<img src="${escapeHtml(islandSrc)}" alt="" decoding="async" style="width:1.3em;height:1.3em;vertical-align:middle;object-fit:contain;margin-right:6px;">`
             : `${escapeHtml(subject.icon || '📘')} `;
 
         return `<section>
@@ -4840,7 +4922,13 @@ function initDashboard() {
     function renderShop() {
         const catalog = getShopCatalog();
         const activeCategory = state.shopCategory || 'all';
+        const catCounts = { all: catalog.length };
+        for (let i = 0; i < catalog.length; i++) {
+            const c = catalog[i].category || 'aura';
+            catCounts[c] = (catCounts[c] || 0) + 1;
+        }
         const filtered = activeCategory === 'all' ? catalog : catalog.filter(item => (item.category || 'aura') === activeCategory);
+        const boostersMap = (typeof DB !== 'undefined' && DB.getBoosters) ? DB.getBoosters() : {};
 
         const categoryFilters = [
             { id: 'all', label: 'Tous', icon: '✨' },
@@ -4850,7 +4938,7 @@ function initDashboard() {
             { id: 'theme', label: 'Thèmes', icon: '🎨' },
             { id: 'booster', label: 'Boosters', icon: '⚡' },
         ].map(cat => {
-            const count = cat.id === 'all' ? catalog.length : catalog.filter(i => (i.category || 'aura') === cat.id).length;
+            const count = catCounts[cat.id] || 0;
             const active = activeCategory === cat.id ? 'active' : '';
             return `<button class="dash-shop-filter-btn ${active}" onclick="window._dashSetShopCategory('${cat.id}')">${cat.icon} ${cat.label} <span class="dash-shop-badge">${count}</span></button>`;
         }).join('');
@@ -4863,7 +4951,7 @@ function initDashboard() {
             const isTheme = cat === 'theme';
             const isBooster = cat === 'booster';
 
-            const boosterStock = (typeof DB !== 'undefined' && DB.getBoosters) ? (DB.getBoosters()[s.id] || 0) : 0;
+            const boosterStock = boostersMap[s.id] || 0;
             const owned = isBooster ? (boosterStock > 0) : isShopItemOwned(s, state.ownedSkins);
             const isEquipped = isAura
                 ? (state.equippedAura === s.id)
@@ -4877,7 +4965,7 @@ function initDashboard() {
 
             let visualHtml = '';
             if (isSafeAvatarImgSrc(s.img)) {
-                visualHtml = `<div class="dash-skin-orb" style="--sc:${escapeHtml(s.color || '#4fd8c4')}"><img src="${escapeHtml(s.img)}" alt="${escapeHtml(s.name)}"></div>`;
+                visualHtml = `<div class="dash-skin-orb" style="--sc:${escapeHtml(s.color || '#4fd8c4')}"><img src="${escapeHtml(s.img)}" alt="${escapeHtml(s.name)}" loading="lazy" decoding="async"></div>`;
             } else if (isTitle) {
                 visualHtml = `<div class="dash-shop-title-preview" style="color:${s.color || '#ffd166'}; border: 1px dashed ${s.color || '#ffd166'}88; background: rgba(0,0,0,0.3); border-radius: 4px; padding: 10px 6px; margin: 0 auto 12px; max-width: 140px; font-weight: 700; font-size: 13px;">${escapeHtml(s.name)}</div>`;
             } else if (isTheme) {
@@ -4927,7 +5015,7 @@ function initDashboard() {
         return `<section>
             <div class="dash-eyebrow">Boutique & Personnalisation</div>
             <h2 style="font-family:'Cinzel',serif; font-size:22px; color:#fff; text-shadow:0 0 10px rgba(200,168,75,0.4), 2px 2px 6px rgba(0,0,0,0.7); letter-spacing:1px;">Personnalise ton héros</h2>
-            <div class="dash-shop-filters" style="display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 18px 0;">${categoryFilters}</div>
+            <div class="dash-shop-filters">${categoryFilters}</div>
             <div class="dash-skins-grid">${cards}</div>
         </section>`;
     }
@@ -5293,6 +5381,25 @@ function initDashboard() {
         saveOption('mobile_bottom_nav_hidden', String(state.bottomNavHidden));
         if (document.body) {
             document.body.classList.toggle('bnav-collapsed', state.bottomNavHidden);
+        }
+        const nav = dashApp.querySelector('.dash-bottom-nav');
+        if (nav) {
+            nav.classList.toggle('is-collapsed', state.bottomNavHidden);
+            if (state.bottomNavHidden) nav.setAttribute('aria-hidden', 'true');
+            else nav.removeAttribute('aria-hidden');
+            const existingReopen = dashApp.querySelector('.dash-bnav-reopen-btn');
+            if (state.bottomNavHidden && !existingReopen) {
+                const reopenBtn = document.createElement('button');
+                reopenBtn.type = 'button';
+                reopenBtn.className = 'dash-bnav-reopen-btn';
+                reopenBtn.setAttribute('aria-label', 'Afficher le menu du bas');
+                reopenBtn.textContent = '☰ Menu';
+                reopenBtn.onclick = () => window._dashToggleBottomNav(false);
+                nav.insertAdjacentElement('afterend', reopenBtn);
+            } else if (!state.bottomNavHidden && existingReopen) {
+                existingReopen.remove();
+            }
+            return;
         }
         render();
     };

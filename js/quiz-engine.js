@@ -189,12 +189,17 @@ const QuizEngine = (() => {
             <input type="text" class="dash-short-input" placeholder="Ta réponse…" autocomplete="off">
             <button class="dash-btn-primary dash-short-submit" type="button">Valider</button>`;
     }
+    function isCoarseTouchDevice() {
+        return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+            && window.matchMedia('(pointer: coarse)').matches;
+    }
+
     function bindReponseCourte(container, question, quizState, onSubmit) {
         const input = container.querySelector('.dash-short-input');
         const submit = () => { if (input.value.trim()) onSubmit(input.value.trim()); };
         container.querySelector('.dash-short-submit').addEventListener('click', submit);
         input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
-        input.focus();
+        if (!isCoarseTouchDevice()) input.focus();
     }
     function gradeReponseCourte(question, submitted) {
         return question.accepted.some(a => isFuzzyMatch(a, submitted));
@@ -305,7 +310,7 @@ const QuizEngine = (() => {
         const submit = () => onSubmit(inputs.map(i => i.value.trim()));
         container.querySelector('.dash-blanks-submit').addEventListener('click', submit);
         inputs.forEach(i => i.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); }));
-        if (inputs[0]) inputs[0].focus();
+        if (inputs[0] && !isCoarseTouchDevice()) inputs[0].focus();
     }
 
     function gradeTexteATrous(question, submitted) {

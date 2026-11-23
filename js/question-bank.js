@@ -3547,12 +3547,14 @@ const QuestionBank = (() => {
      * d'éliminer les répétitions rapides sans jamais mélanger collège et lycée.
      */
     function getQuestionsForNiveau(subjectId, niveau) {
-        const fullBank = FACT_BANKS[subjectId] || [];
         const norm = normalizeNiveau(niveau);
+        const cacheKey = subjectId + '::' + norm;
+        const cached = _niveauBankCache.get(cacheKey);
+        if (cached) return cached;
+
+        const fullBank = FACT_BANKS[subjectId] || [];
         const band = bandForNiveau(norm);
-        const collegeSet = new Set(['6eme', '5eme', '4eme', '3eme']);
-        const lyceeSet = new Set(['2nde', '1ere', 'terminale', 'bts1', 'bts2']);
-        const sameCycleSet = band === 'lycee' ? lyceeSet : collegeSet;
+        const sameCycleSet = band === 'lycee' ? LYCEE_LEVEL_SET : COLLEGE_LEVEL_SET;
 
         const hasLevel = (q, target) => Array.isArray(q.levels) ? q.levels.includes(target) : q.level === target;
         const inSameCycle = (q) => {
@@ -3564,16 +3566,24 @@ const QuestionBank = (() => {
 
         // 1. Questions correspondant exactement à la classe
         const exact = fullBank.filter(q => hasLevel(q, norm));
-        if (exact.length >= 18) return exact;
-
-        // 2. Compléter avec les questions du même cycle (jamais l'autre cycle !) pour éviter les boucles de 3 questions
-        const sameCycleExtras = fullBank.filter(q => !hasLevel(q, norm) && inSameCycle(q));
-        const combined = exact.concat(sameCycleExtras);
-        if (combined.length >= 4) return combined;
-
-        // 3. Repli si la matière n'a pas de découpage fin pour ce cycle
-        return combined.length > 0 ? combined : fullBank;
+        let res;
+        if (exact.length >= 18) {
+            res = exact;
+        } else {
+            // 2. Compléter avec les questions du même cycle (jamais l'autre cycle !) pour éviter les boucles de 3 questions
+            const sameCycleExtras = fullBank.filter(q => !hasLevel(q, norm) && inSameCycle(q));
+            const combined = exact.concat(sameCycleExtras);
+            // 3. Repli si la matière n'a pas de découpage fin pour ce cycle
+            res = combined.length >= 4 ? combined : (combined.length > 0 ? combined : fullBank);
+        }
+        _niveauBankCache.set(cacheKey, res);
+        return res;
     }
+
+    const COLLEGE_LEVEL_SET = new Set(['6eme', '5eme', '4eme', '3eme']);
+    const LYCEE_LEVEL_SET = new Set(['2nde', '1ere', 'terminale', 'bts1', 'bts2']);
+    const _niveauBankCache = new Map();
+    const _shuffledDeckCache = new Map();
 
     /** Calcule une signature normalisée unique d'une question pour éviter les répétitions. */
     function questionSignature(lesson) {
@@ -3652,7 +3662,13 @@ const QuestionBank = (() => {
         const stride = bank.length > 5 ? 5 : 1;
         const slot = Math.floor(index / 2) + variant * stride;
         const pass = Math.floor(slot / bank.length);
-        const deck = seededShuffle(bank, `${subjectId}:${norm}:bankdeck:${pass}`);
+        const deckSeed = `${subjectId}:${norm}:bankdeck:${pass}`;
+        let deck = _shuffledDeckCache.get(deckSeed);
+        if (!deck) {
+            deck = seededShuffle(bank, deckSeed);
+            if (_shuffledDeckCache.size >= 500) _shuffledDeckCache.clear();
+            _shuffledDeckCache.set(deckSeed, deck);
+        }
         const fact = deck[slot % deck.length];
 
         if (fact.type === 'vrai_faux') {

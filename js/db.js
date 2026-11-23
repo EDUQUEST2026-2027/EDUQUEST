@@ -129,19 +129,37 @@ const DB = (() => {
        _getSession()        → retourne l'objet session ou null si non connecté
        _setSession(session) → sauvegarde la session (null = déconnexion)
     ----------------------------------------------------------------------- */
+    let _sessionCacheRaw = undefined;
+    let _sessionCacheVal = null;
+
     function _getSession() {
         try {
-            return JSON.parse(localStorage.getItem(KEYS.SESSION) || 'null');
-        } catch { return null; }
+            const raw = localStorage.getItem(KEYS.SESSION);
+            if (raw === _sessionCacheRaw) {
+                return _sessionCacheVal ? { ..._sessionCacheVal } : null;
+            }
+            _sessionCacheRaw = raw;
+            _sessionCacheVal = raw ? JSON.parse(raw) : null;
+            return _sessionCacheVal ? { ..._sessionCacheVal } : null;
+        } catch {
+            _sessionCacheRaw = undefined;
+            _sessionCacheVal = null;
+            return null;
+        }
     }
 
     function _setSession(session) {
         if (session) {
             // Connexion : on sauvegarde le token et les infos du joueur
-            localStorage.setItem(KEYS.SESSION, JSON.stringify(session));
+            const serialized = JSON.stringify(session);
+            localStorage.setItem(KEYS.SESSION, serialized);
+            _sessionCacheRaw = serialized;
+            _sessionCacheVal = { ...session };
         } else {
             // Déconnexion : on supprime la session du localStorage
             localStorage.removeItem(KEYS.SESSION);
+            _sessionCacheRaw = null;
+            _sessionCacheVal = null;
         }
     }
 
@@ -190,22 +208,36 @@ const DB = (() => {
         return 'eduquest_opts_' + _userScope();
     }
 
+    let _optsCacheKey = null;
+    let _optsCacheRaw = undefined;
+    let _optsCacheObj = null;
+
+    function _readLocalOptions(key) {
+        let raw = localStorage.getItem(key);
+        if (!raw && _userScope() === 'guest') {
+            const legacy = localStorage.getItem(KEYS.OPTIONS);
+            if (legacy) {
+                try { localStorage.setItem(key, legacy); } catch { }
+                raw = legacy;
+            }
+        }
+        if (key === _optsCacheKey && raw === _optsCacheRaw && _optsCacheObj) {
+            return _optsCacheObj;
+        }
+        const parsed = JSON.parse(raw || '{}') || {};
+        _optsCacheKey = key;
+        _optsCacheRaw = raw;
+        _optsCacheObj = parsed;
+        return parsed;
+    }
+
     function getOption(name) {
         if (USE_API) {
             const cache = _getOptionsCache();
             return (cache && Object.prototype.hasOwnProperty.call(cache, name)) ? cache[name] : null;
         }
         try {
-            const key = _optionsKey();
-            let raw = localStorage.getItem(key);
-            if (!raw && _userScope() === 'guest') {
-                const legacy = localStorage.getItem(KEYS.OPTIONS);
-                if (legacy) {
-                    try { localStorage.setItem(key, legacy); } catch { }
-                    raw = legacy;
-                }
-            }
-            const options = JSON.parse(raw || '{}');
+            const options = _readLocalOptions(_optionsKey());
             return Object.prototype.hasOwnProperty.call(options, name) ? options[name] : null;
         } catch { return null; }
     }
@@ -225,9 +257,42 @@ const DB = (() => {
         }
         try {
             const key = _optionsKey();
-            const options = JSON.parse(localStorage.getItem(key) || '{}');
+            const options = { ..._readLocalOptions(key) };
             options[name] = value;
-            localStorage.setItem(key, JSON.stringify(options));
+            const serialized = JSON.stringify(options);
+            localStorage.setItem(key, serialized);
+            _optsCacheKey = key;
+            _optsCacheRaw = serialized;
+            _optsCacheObj = options;
+        } catch { }
+    }
+
+    /**
+     * Sauvegarde plusieurs options en une seule lecture/écriture localStorage.
+     * @param {Record<string, string>} patch
+     */
+    function saveOptions(patch) {
+        if (!patch || typeof patch !== 'object') return;
+        const entries = Object.entries(patch);
+        if (entries.length === 0) return;
+        if (USE_API) {
+            const cache = _getOptionsCache();
+            entries.forEach(([k, v]) => {
+                cache[k] = v;
+                saveOptionAsync(k, v).catch(() => { });
+            });
+            _setOptionsCache(cache);
+            return;
+        }
+        try {
+            const key = _optionsKey();
+            const options = { ..._readLocalOptions(key) };
+            entries.forEach(([k, v]) => { options[k] = v; });
+            const serialized = JSON.stringify(options);
+            localStorage.setItem(key, serialized);
+            _optsCacheKey = key;
+            _optsCacheRaw = serialized;
+            _optsCacheObj = options;
         } catch { }
     }
 
@@ -1194,9 +1259,7 @@ const DB = (() => {
         try { localStorage.setItem(_attemptsKey(), JSON.stringify(map || {})); } catch { }
     }
 
-    function getLevelAttempt(subjectKey, niveau, levelNum) {
-        const map = _readAttemptsMap();
-        const entry = map[_attemptSlot(subjectKey, niveau, levelNum)];
+    function _parseAttemptEntry(entry) {
         if (!entry || typeof entry !== 'object') {
             return { fails: 0, usedShield: false, questionSalt: 0, failedSignatures: [], lastFailedSig: null, lastProviderId: null };
         }
@@ -1213,10 +1276,15 @@ const DB = (() => {
         };
     }
 
+    function getLevelAttempt(subjectKey, niveau, levelNum) {
+        const map = _readAttemptsMap();
+        return _parseAttemptEntry(map[_attemptSlot(subjectKey, niveau, levelNum)]);
+    }
+
     function recordLevelFailure(subjectKey, niveau, levelNum, opts = {}) {
         const map = _readAttemptsMap();
         const slot = _attemptSlot(subjectKey, niveau, levelNum);
-        const cur = getLevelAttempt(subjectKey, niveau, levelNum);
+        const cur = _parseAttemptEntry(map[slot]);
         const newSig = opts.failedSignature || opts.questionSig || '';
         const sigs = cur.failedSignatures.slice();
         if (newSig && !sigs.includes(newSig)) {
@@ -1282,6 +1350,7 @@ const DB = (() => {
         // --- Options du jeu ---
         getOption,              // Lecture synchrone (utilise le cache)
         saveOption,             // Écriture synchrone (+ sync API en arrière-plan)
+        saveOptions,            // Écriture groupée en un seul cycle localStorage
         getOptionAsync,         // Lecture asynchrone (depuis le serveur)
         saveOptionAsync,        // Écriture asynchrone (attend la confirmation serveur)
         syncOptionsFromServer,  // Télécharge toutes les options depuis le serveur

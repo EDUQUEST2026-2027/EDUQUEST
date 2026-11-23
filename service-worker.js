@@ -1,14 +1,13 @@
-/* SERVICE-WORKER.JS — EDUQUEST v1.29.1 (PWA hors-ligne, 93 ressources pré-cachées) */
+/* SERVICE-WORKER.JS — EDUQUEST v1.29.1 (PWA hors-ligne, pré-cache résilient cœur + médias) */
 const CACHE_NAME = 'eduquest-cache-v1.29.1';
 
-const PRECACHE_URLS = [
+const CORE_PRECACHE_URLS = [
   './',
   'index.html',
   'admin.html',
   'dashboard.html',
   'map.html',
   'legal.html',
-  'test.html',
   'css/global.css',
   'css/style.css',
   'css/quests.css',
@@ -31,7 +30,10 @@ const PRECACHE_URLS = [
   'fonts/PressStart2P-Regular.woff2',
   'fonts/Silkscreen-Regular.woff2',
   'fonts/Silkscreen-Bold.woff2',
-  'Image/logo.webp',
+  'Image/logo.webp'
+];
+
+const MEDIA_PRECACHE_URLS = [
   'Image/personnages/robot.webp',
   'Image/personnages/david-martinez.svg',
   'Image/personnages/fall-guys.svg',
@@ -97,10 +99,15 @@ const PRECACHE_URLS = [
   'Image/ile/electrotech.svg'
 ];
 
+const PRECACHE_URLS = CORE_PRECACHE_URLS.concat(MEDIA_PRECACHE_URLS);
+
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(PRECACHE_URLS))
+      .then(cache =>
+        cache.addAll(CORE_PRECACHE_URLS)
+          .then(() => Promise.allSettled(MEDIA_PRECACHE_URLS.map(url => cache.add(url))))
+      )
       .then(() => self.skipWaiting())
   );
 });

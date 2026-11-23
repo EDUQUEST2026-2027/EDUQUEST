@@ -84,7 +84,12 @@ const EduCookies = (() => {
 .eqck-toggle b{display:block;font-size:14px;}
 .eqck-toggle span{font-size:13px;color:#9aa7d8;}
 .eqck-toggle.locked{opacity:.75;}
-@media (max-width:520px){.eqck-actions .eqck-btn{flex:1 1 auto;text-align:center;}}
+@media (max-width:520px){
+  .eqck-card{padding:16px 14px;font-size:14px;border-radius:14px;}
+  .eqck-close{width:38px;height:38px;top:8px;right:8px;font-size:15px;}
+  .eqck-title{padding-right:42px;font-size:15px;}
+  .eqck-actions .eqck-btn{flex:1 1 auto;text-align:center;min-height:44px;padding:10px 14px;}
+}
 `;
 
     function injectStyles() {

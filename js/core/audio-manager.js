@@ -45,6 +45,7 @@
     let userPausedByBrowser = false;
     let wasPlayingBeforeHide = false;
     let gestureListenersAttached = false;
+    let globalListenersAttached = false;
     let saveTimer = null;
     let initialized = false;
     let stoppedByQuit = false;
@@ -207,14 +208,18 @@
 
     function detachGestureListeners() {
         if (!gestureListenersAttached || typeof document === 'undefined') return;
-        GESTURE_EVENTS.forEach(ev => document.removeEventListener(ev, onUserGesture, true));
+        GESTURE_EVENTS.forEach(ev => {
+            document.removeEventListener(ev, onUserGesture, ev === 'touchstart' ? { capture: true, passive: true } : true);
+        });
         gestureListenersAttached = false;
     }
 
     function attachGestureListeners() {
         if (gestureListenersAttached || typeof document === 'undefined') return;
         if (!canPlayMusic()) return;
-        GESTURE_EVENTS.forEach(ev => document.addEventListener(ev, onUserGesture, true));
+        GESTURE_EVENTS.forEach(ev => {
+            document.addEventListener(ev, onUserGesture, ev === 'touchstart' ? { capture: true, passive: true } : true);
+        });
         gestureListenersAttached = true;
     }
 
@@ -406,8 +411,6 @@
             if (sfxCtx.state === 'suspended') sfxCtx.resume().catch(() => {});
 
             const now = sfxCtx.currentTime;
-            const gain = sfxCtx.createGain();
-            gain.connect(sfxCtx.destination);
             const peak = Math.min(0.25, vol * 0.22);
 
             const tone = (freq, startOffset, duration, type) => {
@@ -420,6 +423,9 @@
                 g.gain.exponentialRampToValueAtTime(0.0001, now + startOffset + duration);
                 osc.connect(g);
                 g.connect(sfxCtx.destination);
+                osc.onended = () => {
+                    try { osc.disconnect(); g.disconnect(); } catch { /* ignore */ }
+                };
                 osc.start(now + startOffset);
                 osc.stop(now + startOffset + duration + 0.02);
             };
@@ -502,10 +508,13 @@
         audioEl = customAudio || (typeof Audio !== 'undefined' ? new Audio() : null);
         if (!audioEl) return;
 
+        const allowedNow = canPlayMusic();
         audioEl.loop = false;
-        audioEl.preload = 'auto';
+        audioEl.preload = allowedNow ? 'metadata' : 'none';
         audioEl.volume = getMusicVolume();
-        restoreTrackAndTime();
+        if (allowedNow) {
+            restoreTrackAndTime();
+        }
 
         // Fin de piste → piste suivante UNIQUEMENT si la musique est toujours autorisée
         audioEl.addEventListener('ended', () => {
@@ -542,34 +551,37 @@
             updateQuickToggleUI();
         });
 
-        if (typeof document !== 'undefined') {
-            document.addEventListener('visibilitychange', () => {
-                if (document.hidden) {
-                    wasPlayingBeforeHide = isPlaying;
-                    if (isPlaying) pauseInternal(true);
-                } else {
-                    // Ne reprendre QUE si elle jouait avant masquage ET reste autorisée
-                    if (wasPlayingBeforeHide && canPlayMusic()) {
-                        attemptPlay(false);
+        if (!globalListenersAttached) {
+            globalListenersAttached = true;
+            if (typeof document !== 'undefined') {
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        wasPlayingBeforeHide = isPlaying;
+                        if (isPlaying) pauseInternal(true);
+                    } else {
+                        // Ne reprendre QUE si elle jouait avant masquage ET reste autorisée
+                        if (wasPlayingBeforeHide && canPlayMusic()) {
+                            attemptPlay(false);
+                        }
+                        wasPlayingBeforeHide = false;
+                        updateQuickToggleUI();
                     }
-                    wasPlayingBeforeHide = false;
-                    updateQuickToggleUI();
-                }
-            });
-        }
+                });
+            }
 
-        if (typeof window !== 'undefined') {
-            const onLeave = () => { if (isPlaying) saveState(); };
-            window.addEventListener('pagehide', onLeave);
-            window.addEventListener('beforeunload', onLeave);
+            if (typeof window !== 'undefined') {
+                const onLeave = () => { if (isPlaying) saveState(); };
+                window.addEventListener('pagehide', onLeave);
+                window.addEventListener('beforeunload', onLeave);
 
-            // Synchronisation multi-onglets (si coupé dans un autre onglet)
-            window.addEventListener('storage', (e) => {
-                if (!e || !e.key) return;
-                if (e.key === MANUAL_MUTE_KEY || e.key.startsWith('eduquest_opts_') || e.key === 'eduquest_options') {
-                    syncWithOptions(false);
-                }
-            });
+                // Synchronisation multi-onglets (si coupé dans un autre onglet)
+                window.addEventListener('storage', (e) => {
+                    if (!e || !e.key) return;
+                    if (e.key === MANUAL_MUTE_KEY || e.key.startsWith('eduquest_opts_') || e.key === 'eduquest_options') {
+                        syncWithOptions(false);
+                    }
+                });
+            }
         }
 
         // Sauvegarde périodique de la position (continuité fluide entre index → dashboard → map)

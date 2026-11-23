@@ -156,12 +156,10 @@
         return { ...TIER_META[tier], consecutiveWins: bucket.consecutiveWins, consecutiveFails: bucket.consecutiveFails };
     }
 
-    function markSeen(subjectId, niveau, lesson) {
+    function _markSeenOnState(state, bucket, lesson, precomputedSig) {
         if (!lesson) return '';
-        const sig = signatureOf(lesson);
+        const sig = precomputedSig || signatureOf(lesson);
         if (!sig) return '';
-        const state = loadAllState();
-        const bucket = ensureBucket(state, subjectId, niveau);
 
         bucket.seenSignatures = bucket.seenSignatures.filter(s => s !== sig);
         bucket.seenSignatures.push(sig);
@@ -188,6 +186,15 @@
         };
         saveAllState(state);
         return sig;
+    }
+
+    function markSeen(subjectId, niveau, lesson) {
+        if (!lesson) return '';
+        const sig = signatureOf(lesson);
+        if (!sig) return '';
+        const state = loadAllState();
+        const bucket = ensureBucket(state, subjectId, niveau);
+        return _markSeenOnState(state, bucket, lesson, sig);
     }
 
     function recordOutcome(subjectId, niveau, { isCorrect = false, firstTry = false } = {}) {
@@ -261,8 +268,8 @@
         const baseIdx = Math.max(0, Number(levelIndex) || 0);
         const cleanSalt = Math.max(0, Number(salt) || 0);
 
-        const wrapLesson = (lesson) => {
-            const sig = markSeen(sid, norm, lesson);
+        const wrapLesson = (lesson, precomputedSig) => {
+            const sig = _markSeenOnState(state, bucket, lesson, precomputedSig);
             return {
                 lesson: { ...lesson, title: lesson.title || ('Niveau ' + (baseIdx + 1)) },
                 signature: sig,
@@ -279,7 +286,7 @@
             const hand = subject.lessons[baseIdx];
             const handSig = signatureOf(hand);
             if (handSig && !hardExcluded.has(handSig) && !seenSet.has(handSig)) {
-                return wrapLesson(hand);
+                return wrapLesson(hand, handSig);
             }
         }
 
@@ -290,21 +297,41 @@
             else if (tier === 'approfondissement') tierIndexShift = 3;
         }
 
-        // Construit un vivier de candidats générés (variantes + décalages d'indices)
-        const candidates = [];
+        // Construit le vivier à la volée avec sortie rapide dès qu'un candidat inédit optimal est trouvé (Passe 1 intégrée)
+        const candidates = []; // { lesson, sig }
+        let fallbackUnseen = null;
+
+        const considerCandidate = (cand, preSig) => {
+            const sig = preSig || signatureOf(cand);
+            if (!sig) return null;
+            candidates.push({ lesson: cand, sig });
+            if (hardExcluded.has(sig) || seenSet.has(sig)) return null;
+            if (tier === 'remediation') {
+                if (cand.type === 'qcm' || cand.type === 'vrai_faux') {
+                    return wrapLesson(cand, sig);
+                }
+                if (!fallbackUnseen) fallbackUnseen = { lesson: cand, sig };
+                return null;
+            }
+            return wrapLesson(cand, sig);
+        };
+
         if (qb && typeof qb.generateOne === 'function') {
             // Inclure les variantes déjà attachées à la leçon si présentes
             if (subject && Array.isArray(subject.lessons) && subject.lessons[baseIdx]) {
                 const baseLesson = subject.lessons[baseIdx];
                 if (Array.isArray(baseLesson.variants)) {
                     for (const v of baseLesson.variants) {
-                        if (v) candidates.push(v);
+                        if (v) {
+                            const hit = considerCandidate(v);
+                            if (hit) return hit;
+                        }
                     }
                 }
             }
 
-            // Générer jusqu'à 96 candidats distincts en explorant largement banque + variantes procédurales
-            const candidateSigs = new Set();
+            // Explorer jusqu'à 96 candidats distincts (s'arrête dès le premier inédit optimal)
+            const candidateSigs = new Set(candidates.map(c => c.sig));
             for (let attempt = 0; attempt < 96; attempt++) {
                 const variant = cleanSalt + (attempt % 7) + (tier === 'approfondissement' ? 2 : 0);
                 const idxOffset = attempt < 6 ? attempt : (attempt * 3 + Math.floor(attempt / 5));
@@ -314,10 +341,12 @@
                     const gSig = signatureOf(generated);
                     if (gSig && !candidateSigs.has(gSig)) {
                         candidateSigs.add(gSig);
-                        candidates.push({
+                        const cand = {
                             ...generated,
                             title: 'Niveau ' + (baseIdx + 1),
-                        });
+                        };
+                        const hit = considerCandidate(cand, gSig);
+                        if (hit) return hit;
                     }
                 }
             }
@@ -325,52 +354,44 @@
             return wrapLesson(subject.lessons[baseIdx]);
         }
 
-        // Passe 1 : strictement inédite (ni dans hardExcluded, ni dans seenSet)
-        // En mode remédiation, on préfère légèrement QCM/Vrai-Faux si disponible dans les 6 premiers inédits
-        let fallbackUnseen = null;
-        for (const cand of candidates) {
-            const sig = signatureOf(cand);
-            if (!sig || hardExcluded.has(sig) || seenSet.has(sig)) continue;
-            if (tier === 'remediation' && (cand.type === 'qcm' || cand.type === 'vrai_faux')) {
-                return wrapLesson(cand);
-            }
-            if (!fallbackUnseen) fallbackUnseen = cand;
-            if (tier !== 'remediation') return wrapLesson(cand);
+        if (fallbackUnseen) return wrapLesson(fallbackUnseen.lesson, fallbackUnseen.sig);
+
+        // Index O(1) des signatures déjà vues pour les passes 2 et 3
+        const seenPosMap = new Map();
+        for (let i = 0; i < bucket.seenSignatures.length; i++) {
+            seenPosMap.set(bucket.seenSignatures[i], i);
         }
-        if (fallbackUnseen) return wrapLesson(fallbackUnseen);
 
         // Passe 2 : si tout le vivier a déjà été vu, choisir la question vue le PLUS ANCIENNEMENT (FIFO)
         // en évitant strictement hardExcluded et les plus récentes.
         let oldestCand = null;
         let oldestPos = Infinity;
-        for (const cand of candidates) {
-            const sig = signatureOf(cand);
-            if (!sig || hardExcluded.has(sig) || veryRecentSet.has(sig)) continue;
-            const pos = bucket.seenSignatures.indexOf(sig);
+        for (const item of candidates) {
+            if (hardExcluded.has(item.sig) || veryRecentSet.has(item.sig)) continue;
+            const pos = seenPosMap.has(item.sig) ? seenPosMap.get(item.sig) : -1;
             if (pos < oldestPos) {
                 oldestPos = pos;
-                oldestCand = cand;
+                oldestCand = item;
             }
         }
-        if (oldestCand) return wrapLesson(oldestCand);
+        if (oldestCand) return wrapLesson(oldestCand.lesson, oldestCand.sig);
 
         // Passe 3 : dernier recours — la plus ancienne différente de hardExcluded
         let fallbackOldest = null;
         let fallbackPos = Infinity;
-        for (const cand of candidates) {
-            const sig = signatureOf(cand);
-            if (sig && !hardExcluded.has(sig)) {
-                const pos = bucket.seenSignatures.indexOf(sig);
+        for (const item of candidates) {
+            if (!hardExcluded.has(item.sig)) {
+                const pos = seenPosMap.has(item.sig) ? seenPosMap.get(item.sig) : -1;
                 if (pos < fallbackPos) {
                     fallbackPos = pos;
-                    fallbackOldest = cand;
+                    fallbackOldest = item;
                 }
             }
         }
-        if (fallbackOldest) return wrapLesson(fallbackOldest);
+        if (fallbackOldest) return wrapLesson(fallbackOldest.lesson, fallbackOldest.sig);
 
         // Ultime repli
-        const finalLesson = candidates[0] || {
+        const finalLesson = (candidates[0] && candidates[0].lesson) || {
             type: 'qcm',
             title: 'Niveau ' + (baseIdx + 1),
             q: 'Question de révision',

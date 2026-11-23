@@ -476,9 +476,19 @@
         width: auto;
         flex-shrink: 0;
     }
+    .quest-toggle-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+    .quest-chest {
+        min-height: 38px;
+        padding: 6px 10px;
+    }
     .quest-claim-btn {
         width: auto;
-        padding: 7px 11px;
+        min-height: 38px;
+        padding: 7px 12px;
         font-size: 12px;
     }
     .quest-progress-label {

@@ -87,7 +87,7 @@
             if (!src.startsWith('http') && !src.startsWith('data:') && !src.startsWith('/') && !src.startsWith('Image/')) {
                 src = 'Image/ile/' + src;
             }
-            return `<img src="${esc(src)}" alt="${esc(altText)}" class="adm-subj-img ${extraClass}" onerror="this.onerror=null;this.replaceWith(document.createTextNode('📘'));">`;
+            return `<img src="${esc(src)}" alt="${esc(altText)}" class="adm-subj-img ${extraClass}" loading="lazy" decoding="async" onerror="this.onerror=null;this.replaceWith(document.createTextNode('📘'));">`;
         }
         return `<span class="adm-subj-emoji ${extraClass}">${esc(raw || '📘')}</span>`;
     }
@@ -863,7 +863,7 @@
             interactiveHtml = `
                 <div style="margin:16px 0;">
                     <label class="adm-hint" style="display:block; margin-bottom:6px;">Saisissez votre réponse :</label>
-                    <input class="adm-input" id="admTestShortInput" value="${esc(S.testModalAnswer || '')}" placeholder="Tapez votre réponse ici..." oninput="ADM.selectTestAnswer(this.value)" style="font-size:1.05rem; padding:10px 14px;">
+                    <input class="adm-input" id="admTestShortInput" value="${esc(S.testModalAnswer || '')}" placeholder="Tapez votre réponse ici..." oninput="ADM.setTestTextAnswer(this.value)" style="font-size:1.05rem; padding:10px 14px;">
                 </div>`;
         } else if (type === 'texte_a_trous' || type === 'texte_a_choix') {
             const text = q.textWithBlanks || q.q || '';
@@ -875,7 +875,7 @@
                     <p style="background:rgba(255,255,255,0.03); padding:10px; border-radius:8px;">${esc(text)}</p>
                     ${choicesHint}
                     <label class="adm-hint" style="display:block; margin:8px 0 4px;">Saisissez les mots choisis (séparés par une virgule) :</label>
-                    <input class="adm-input" id="admTestBlanksInput" value="${esc(Array.isArray(S.testModalAnswer) ? S.testModalAnswer.join(', ') : (S.testModalAnswer || ''))}" placeholder="ex: mot1, mot2..." oninput="ADM.selectTestAnswer(this.value.split(',').map(s=>s.trim()))">
+                    <input class="adm-input" id="admTestBlanksInput" value="${esc(Array.isArray(S.testModalAnswer) ? S.testModalAnswer.join(', ') : (S.testModalAnswer || ''))}" placeholder="ex: mot1, mot2..." oninput="ADM.setTestTextAnswer(this.value.split(',').map(s=>s.trim()))">
                 </div>`;
         } else { // drag_and_drop
             const items = q.items || [];
@@ -1287,6 +1287,11 @@
     function renderShop() {
         const cat = S.shopCategory || 'all';
         const allItems = (typeof AdminStore !== 'undefined') ? AdminStore.getShopItems() : [];
+        const catCounts = { all: allItems.length };
+        for (let i = 0; i < allItems.length; i++) {
+            const c = allItems[i].category;
+            catCounts[c] = (catCounts[c] || 0) + 1;
+        }
         const filtered = cat === 'all' ? allItems : allItems.filter(it => it.category === cat);
 
         const editor = S.editingShopItem ? renderShopItemEditor(S.editingShopItem) : '';
@@ -1296,7 +1301,7 @@
                 <div class="adm-shop-card ${item.disabled ? 'disabled' : ''}">
                     <div class="adm-shop-card-head">
                         <div class="adm-shop-orb" style="--sc:${esc(item.color || '#c8a84b')}">
-                            ${item.img ? `<img src="${esc(item.img)}" alt="">` : esc(item.icon || '✨')}
+                            ${item.img ? `<img src="${esc(item.img)}" alt="" loading="lazy" decoding="async">` : esc(item.icon || '✨')}
                         </div>
                         <div class="adm-shop-meta">
                             <div class="adm-shop-title">
@@ -1329,7 +1334,7 @@
                 <div class="adm-shop-filter-tabs">
                     ${Object.keys(SHOP_CATEGORY_LABELS).map(k => `
                         <button class="adm-shop-filter-btn ${cat === k ? 'active' : ''}" onclick="ADM.setShopCategory('${k}')">
-                            ${SHOP_CATEGORY_LABELS[k]} (${k === 'all' ? allItems.length : allItems.filter(i => i.category === k).length})
+                            ${SHOP_CATEGORY_LABELS[k]} (${catCounts[k] || 0})
                         </button>
                     `).join('')}
                 </div>
@@ -1411,7 +1416,7 @@
                         <div style="font-size:12px; color:var(--muted); margin-bottom:6px; text-transform:uppercase;">Aperçu dans la boutique :</div>
                         <div id="admShopLivePreview" style="display:inline-flex; align-items:center; gap:14px; background: rgba(13,19,48,0.9); padding:12px 18px; border-radius:12px; border:1px solid rgba(200,168,75,0.4);">
                             <div class="adm-shop-orb" id="admPreviewOrb" style="--sc:${item.color || '#c8a84b'}; width:50px; height:50px; margin:0;">
-                                ${item.img ? `<img id="admPreviewImg" src="${esc(item.img)}" alt="">` : '<span id="admPreviewIcon">✨</span>'}
+                                ${item.img ? `<img id="admPreviewImg" src="${esc(item.img)}" alt="" loading="lazy" decoding="async">` : '<span id="admPreviewIcon">✨</span>'}
                             </div>
                             <div>
                                 <div id="admPreviewTitle" style="font-weight:700; color:#fff;">${esc(item.name || 'Nom de l\'article')}</div>
@@ -2518,6 +2523,9 @@
         selectTestAnswer(ans) {
             S.testModalAnswer = ans;
             renderTabContent();
+        },
+        setTestTextAnswer(ans) {
+            S.testModalAnswer = ans;
         },
         submitTestAnswer() {
             const q = S.testModalQuestion;

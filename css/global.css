@@ -26,9 +26,8 @@
 
 /* --------------------------------------------------------------------------
    POLICES — Cinzel & Rajdhani (v1.26.0)
-   Import Google Fonts avec repli fluide sur les polices système.
+   Chargées en parallèle via <link> dans les pages HTML (évite @import bloquant).
    -------------------------------------------------------------------------- */
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap');
 
 /* --------------------------------------------------------------------------
    1. RÉINITIALISATION CSS
@@ -612,80 +611,104 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
    sur petit écran. Les adaptations par page restent dans style.css/admin.css.
    -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
+    body {
+        min-height: 100dvh;
+    }
+
+    /* Allègement GPU mobile : évite un blur animé coûteux sur les nuages */
+    .cloud {
+        filter: none;
+    }
+
     .options-wheel.floating {
-        top: 10px;
-        right: 10px;
+        top: 12px;
+        right: 12px;
         width: 40px;
         height: 40px;
         font-size: 1.2rem;
     }
 
+    /* Position uniforme en haut à droite sur toutes les pages mobiles (options-wheel flottante masquée/absente) */
     .audio-toggle-fab:not(.in-header) {
-        top: 10px;
-        right: 58px;
+        top: calc(12px + env(safe-area-inset-top, 0px));
+        right: 12px;
         width: 40px;
         height: 40px;
         font-size: 1.05rem;
+        z-index: 850;
     }
 
-    /* Sur le dashboard mobile, .options-wheel.floating est masquée : on colle le bouton audio à droite */
-    body:has(#dashboardPage) .audio-toggle-fab:not(.in-header) {
-        right: 12px;
-        top: 12px;
+    /* Hiérarchie z-index mobile : jamais au-dessus des modales (.modal-overlay / .dash-overlay = 10050) */
+    .admin-panel-link,
+    .legal-links,
+    .footer.footer-with-links {
+        z-index: 450;
     }
 
-    /* Notifications en haut sur mobile pour ne jamais masquer la barre de navigation du bas */
+    /* Notifications en haut sur mobile, au-dessus des modales sans masquer la barre basse */
     .notification {
-        top: 14px;
+        top: max(14px, env(safe-area-inset-top, 14px));
         bottom: auto;
         left: 12px;
         right: 12px;
         padding: 12px 16px;
         font-size: 0.92rem;
         text-align: center;
+        z-index: 10100;
     }
 
-    /* Sur dashboard et carte mobile, on retire la position fixe du footer et des liens légaux
-       pour éviter tout chevauchement avec le bandeau du bas ou la piste des niveaux */
+    /* Dashboard mobile : footer dans le flux avec dégagement complet au-dessus de la barre de navigation basse */
     body:has(#dashboardPage) .footer,
-    body:has(#dashboardPage) .legal-links,
-    body:has(.subject-page) .footer,
-    body:has(.subject-page) .legal-links {
+    body:has(#dashboardPage) .legal-links {
         position: static;
         transform: none;
         left: auto;
         right: auto;
         bottom: auto;
         display: block;
-        margin: 8px auto 12px;
+        margin: 6px auto 10px;
         text-align: center;
+    }
+    body:has(#dashboardPage) > footer {
+        padding: 4px 12px calc(76px + env(safe-area-inset-bottom, 0px));
+    }
+    body:has(#dashboardPage).bnav-collapsed > footer {
+        padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Carte mobile (.level-map plein écran fixed) : masque le footer inaccessible sous la carte */
+    body:has(.subject-page) > footer {
+        display: none;
     }
 }
 
 @media (max-width: 600px) {
-    /* Pied de page « crédits » sur l'accueil : pleine largeur en bas de l'écran, au-dessus
-       des liens légaux — ne recouvre plus les boutons. */
-    .footer.footer-with-links {
+    /* Pied de page sur l'accueil (avec ou sans crédits) : au-dessus des liens Admin & Légaux, sans collision */
+    body:not(:has(#dashboardPage)):not(:has(.subject-page)) .footer {
         left: 8px;
         right: 8px;
         transform: none;
-        bottom: 36px;
+        bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+        max-width: none;
         font-size: 11px;
-        padding: 5px 10px;
         text-align: center;
+    }
+
+    .footer.footer-with-links {
+        padding: 5px 10px;
     }
 
     .legal-links {
         left: auto;
         right: 8px;
-        bottom: 8px;
+        bottom: calc(8px + env(safe-area-inset-bottom, 0px));
         text-align: right;
         font-size: 11.5px;
     }
 
     .admin-panel-link {
         left: 8px;
-        bottom: 8px;
+        bottom: calc(8px + env(safe-area-inset-bottom, 0px));
         font-size: 11px;
         padding: 5px 10px;
     }

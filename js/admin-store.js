@@ -609,11 +609,14 @@ const AdminStore = (() => {
        NIVEAUX SCOLAIRES
        ----------------------------------------------------------------------- */
 
+    function _rawLevels() {
+        const stored = _data().levels;
+        return (Array.isArray(stored) && stored.length > 0) ? stored : DEFAULT_LEVELS;
+    }
+
     /** Liste effective des niveaux scolaires (config admin OU valeurs par défaut). */
     function getLevels() {
-        const stored = _data().levels;
-        const list = stored ? _clone(stored) : _clone(DEFAULT_LEVELS);
-        return list.map(l => ({
+        return _rawLevels().map(l => ({
             id: l.id,
             label: l.label || l.name || l.id,
             name: l.label || l.name || l.id,
@@ -629,14 +632,14 @@ const AdminStore = (() => {
     /** Bande de contenu ('college' | 'lycee') d'un id de niveau, ou null. */
     function levelBand(niveauId) {
         if (!niveauId) return null;
-        const found = getLevels().find(l => l.id === niveauId);
+        const found = _rawLevels().find(l => l.id === niveauId);
         return found ? (found.band === 'lycee' ? 'lycee' : 'college') : null;
     }
 
     /** Label affiché d'un id de niveau (ou l'id si inconnu). */
     function levelLabel(niveauId) {
         if (!niveauId) return '';
-        const found = getLevels().find(l => l.id === niveauId);
+        const found = _rawLevels().find(l => l.id === niveauId);
         return found ? (found.label || found.name || found.id) : niveauId;
     }
 
@@ -686,11 +689,11 @@ const AdminStore = (() => {
 
     const CREDIT_TEXT_FIELDS = ['studioName', 'tagline', 'creatorName', 'contactEmail', 'website', 'githubUrl', 'extraNote'];
 
-    function cloneDefaults() { return _clone(DEFAULT_CREDITS); }
+    function cloneDefaults() { return { ...DEFAULT_CREDITS }; }
 
     /** Crédits effectifs (personnalisés par-dessus les valeurs par défaut). */
     function getCredits() {
-        return Object.assign(cloneDefaults(), (_data().credits || {}));
+        return Object.assign({}, DEFAULT_CREDITS, _data().credits || {});
     }
 
     /** true si au moins un champ de crédit a été personnalisé. */
@@ -741,27 +744,31 @@ const AdminStore = (() => {
 
     /** Classes autorisées par défaut pour une matière (strictement cohérent Collège / Lycée). */
     function defaultAllowedNiveauxForSubject(subject) {
-        if (!subject) return getLevels().map(l => l.id);
+        const levels = _rawLevels();
+        if (!subject) return levels.map(l => l.id);
         if (Array.isArray(subject.allowedNiveaux) && subject.allowedNiveaux.length > 0) {
             return subject.allowedNiveaux.slice();
         }
         const id = typeof subject === 'string' ? subject : subject.id;
         if (SUBJECT_DEFAULT_RULES[id]) {
             const ruleLevels = SUBJECT_DEFAULT_RULES[id].allowedNiveaux;
-            const existingIds = new Set(getLevels().map(l => l.id));
+            const existingIds = new Set(levels.map(l => l.id));
             const matching = ruleLevels.filter(nid => existingIds.has(nid));
             if (matching.length > 0) return matching;
         }
         const band = defaultBandForSubject(subject);
-        if (band === 'all') return getLevels().map(l => l.id);
-        return getLevels().filter(l => l.band === band).map(l => l.id);
+        if (band === 'all') return levels.map(l => l.id);
+        return levels.filter(l => (l.band || 'college') === band).map(l => l.id);
+    }
+
+    function _rawFilieres() {
+        const stored = _data().filieres;
+        return (Array.isArray(stored) && stored.length > 0) ? stored : DEFAULT_FILIERES;
     }
 
     /** Retourne la liste complète des filières (config admin ou valeurs par défaut). */
     function getFilieres() {
-        const stored = _data().filieres;
-        const list = (Array.isArray(stored) && stored.length > 0) ? _clone(stored) : _clone(DEFAULT_FILIERES);
-        return list.map(f => ({
+        return _rawFilieres().map(f => ({
             id: String(f.id || '').trim().toLowerCase(),
             label: String(f.label || f.id || '').trim(),
             shortLabel: String(f.shortLabel || f.label || f.id || '').trim(),
@@ -889,8 +896,9 @@ const AdminStore = (() => {
         const norm = (typeof QuestionBank !== 'undefined' && typeof QuestionBank.normalizeNiveau === 'function')
             ? QuestionBank.normalizeNiveau(niveauId)
             : String(niveauId || '6eme').toLowerCase().trim();
-        const siteCfg = getSiteConfig();
-        if (siteCfg.strictCollegeSubjects !== false && COLLEGE_LEVEL_IDS.includes(norm) && _isStrictLyceeSubject(subject)) {
+        const storedSiteCfg = _data().siteConfig;
+        const strictCollege = !storedSiteCfg || storedSiteCfg.strictCollegeSubjects !== false;
+        if (strictCollege && COLLEGE_LEVEL_IDS.includes(norm) && _isStrictLyceeSubject(subject)) {
             return false;
         }
         const allowed = Array.isArray(subject.allowedNiveaux) && subject.allowedNiveaux.length > 0
@@ -1261,18 +1269,23 @@ const AdminStore = (() => {
         const overrides = (data.shop && data.shop.overrides) ? data.shop.overrides : {};
         const customs = (data.shop && Array.isArray(data.shop.customs)) ? data.shop.customs : [];
 
-        const merged = DEFAULT_SHOP_ITEMS.map(def => {
+        const merged = [];
+        for (let i = 0; i < DEFAULT_SHOP_ITEMS.length; i++) {
+            const def = DEFAULT_SHOP_ITEMS[i];
             const ov = overrides[def.id];
-            if (!ov) return _clone(def);
-            if (ov.deleted) return null; // Article système masqué/supprimé
-            return Object.assign(_clone(def), ov);
-        }).filter(Boolean);
-
-        customs.forEach(c => {
-            if (!c.deleted) {
-                merged.push(Object.assign(_clone(c), { _custom: true }));
+            if (!ov) {
+                merged.push({ ...def });
+            } else if (!ov.deleted) {
+                merged.push({ ...def, ...ov });
             }
-        });
+        }
+
+        for (let i = 0; i < customs.length; i++) {
+            const c = customs[i];
+            if (!c.deleted) {
+                merged.push({ ...c, _custom: true });
+            }
+        }
 
         return merged;
     }
@@ -1348,7 +1361,7 @@ const AdminStore = (() => {
     /** Configuration effective des récompenses (personnalisée ou par défaut). */
     function getRewardsConfig() {
         const data = _data();
-        return Object.assign(_clone(DEFAULT_REWARDS), data.rewards || {});
+        return Object.assign({}, DEFAULT_REWARDS, data.rewards || {});
     }
 
     /** Sauvegarde la configuration des récompenses. */
@@ -1384,7 +1397,7 @@ const AdminStore = (() => {
     /** Retourne le pool de quêtes quotidiennes (personnalisé ou par défaut). */
     function getQuestPool() {
         const stored = _data().quests;
-        const list = (Array.isArray(stored) && stored.length > 0) ? _clone(stored) : _clone(DEFAULT_QUEST_POOL);
+        const list = (Array.isArray(stored) && stored.length > 0) ? stored : DEFAULT_QUEST_POOL;
         return list.map(q => ({
             type: VALID_QUEST_TYPES.includes(q.type) ? q.type : 'levels',
             icon: String(q.icon || '🎯').trim() || '🎯',
@@ -1451,23 +1464,28 @@ const AdminStore = (() => {
     function getBadges() {
         const data = _data();
         const store = data.badges || { overrides: {}, customs: [] };
-        const list = DEFAULT_BADGES.map(b => {
-            const ov = store.overrides ? store.overrides[b.id] : null;
-            const merged = ov ? { ..._clone(b), ...ov } : _clone(b);
+        const overrides = store.overrides || {};
+        const list = [];
+        for (let i = 0; i < DEFAULT_BADGES.length; i++) {
+            const b = DEFAULT_BADGES[i];
+            const ov = overrides[b.id];
+            if (ov && ov._deleted) continue;
+            const merged = ov ? { ...b, ...ov } : { ...b };
             merged.band = _normalizeBadgeBand(merged.band);
             merged.allowedFilieres = _normalizeBadgeFilieres(merged.allowedFilieres);
-            return merged;
-        }).filter(b => !b._deleted);
+            list.push(merged);
+        }
 
         if (Array.isArray(store.customs)) {
-            store.customs.forEach(c => {
+            for (let i = 0; i < store.customs.length; i++) {
+                const c = store.customs[i];
                 if (!c._deleted) {
-                    const item = _clone(c);
+                    const item = { ...c };
                     item.band = _normalizeBadgeBand(item.band);
                     item.allowedFilieres = _normalizeBadgeFilieres(item.allowedFilieres);
                     list.push(item);
                 }
-            });
+            }
         }
         return list;
     }
@@ -1508,9 +1526,9 @@ const AdminStore = (() => {
         if (allowedFil.includes('all')) {
             return band === 'lycee' ? '🏛️ Lycée & BTS' : '🌐 Tous';
         }
-        const filieres = getFilieres();
+        const filieres = _rawFilieres();
         const labels = allowedFil.map(fid => {
-            const f = filieres.find(x => x.id === fid);
+            const f = filieres.find(x => String(x.id || '').trim().toLowerCase() === fid);
             return f ? `${f.icon || ''} ${f.shortLabel || f.label}`.trim() : fid.toUpperCase();
         });
         if (labels.length <= 2) return labels.join(' · ');
@@ -1585,7 +1603,7 @@ const AdminStore = (() => {
     /** Configuration effective du site (paramètres généraux, chrono, multiplicateurs, modules). */
     function getSiteConfig() {
         const data = _data();
-        return Object.assign(_clone(DEFAULT_SITE_CONFIG), data.siteConfig || {});
+        return Object.assign({}, DEFAULT_SITE_CONFIG, data.siteConfig || {});
     }
 
     /** Sauvegarde la configuration globale du site. */

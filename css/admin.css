@@ -1,6 +1,5 @@
 /* admin.css — EDUQUEST v1.29.1 (feuille autonome, n'importe pas global.css) */
-/* Polices : Cinzel et Rajdhani via Google Fonts avec repli système */
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap');
+/* Polices : Cinzel et Rajdhani chargées via <link> dans le HTML (évite @import bloquant) */
 
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -370,7 +369,7 @@ body > * { position: relative; z-index: 1; }
 
 /* Toast */
 .adm-toast {
-    position: fixed; bottom: 22px; right: 22px; z-index: 100;
+    position: fixed; bottom: 22px; right: 22px; z-index: 10100;
     background: rgba(13, 19, 48, 0.95); border: 1px solid var(--gold);
     color: var(--ink); padding: 12px 18px; border-radius: 12px; font-size: 15px;
     box-shadow: var(--shadow); max-width: 340px;
@@ -400,7 +399,7 @@ body > * { position: relative; z-index: 1; }
         gap: 10px;
         padding: 14px 14px 12px;
     }
-    .adm-top-right { margin-left: 0; }
+    .adm-top-right { margin-left: 0; width: 100%; justify-content: space-between; flex-wrap: wrap; }
 
     /* Corps : marges réduites mais respirantes */
     .adm-main { padding: 18px 12px 90px; }
@@ -462,6 +461,10 @@ body > * { position: relative; z-index: 1; }
        « ✔ bonne réponse » et des boutons quand la place manque. */
     .adm-opt-row { flex-wrap: wrap; }
     .adm-opt-row .adm-btn { width: 100%; }
+    .adm-shop-grid { grid-template-columns: 1fr; gap: 10px; }
+    .adm-q-choices { grid-template-columns: 1fr; }
+    .adm-modal-backdrop { padding: 10px; }
+    .adm-modal-card { padding: 16px 14px; border-radius: 14px; max-height: 92dvh; }
 }
 
 /* ==========================================================================

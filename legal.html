@@ -17,6 +17,9 @@
     <meta property="og:image" content="Image/logo.webp">
     <meta name="twitter:card" content="summary_large_image">
     <link rel="icon" type="image/webp" href="Image/logo.webp">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap">
     <link rel="stylesheet" href="css/admin.css">
     <style>
         /* Ajustements propres à la page légale (admin.css fournit la base) */
@@ -45,10 +48,18 @@
         /* v1.21 — mobile : les tableaux défilent au doigt au lieu de faire
            déborder la page (testé à 360px, page sans scroll horizontal). */
         @media (max-width: 700px) {
-            .legal-card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .legal-main { padding: 18px 12px calc(72px + env(safe-area-inset-bottom, 0px)); }
+            .legal-card { padding: 16px 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
             .legal-table { min-width: 520px; }
-            .legal-toc { gap: 6px; }
-            .legal-toc a { font-size: 12px; padding: 6px 10px; }
+            .legal-toc {
+                flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
+                scrollbar-width: none; gap: 6px; padding-bottom: 4px;
+            }
+            .legal-toc::-webkit-scrollbar { display: none; }
+            .legal-toc a {
+                flex-shrink: 0; white-space: nowrap; font-size: 12.5px; padding: 8px 12px;
+                min-height: 38px; display: inline-flex; align-items: center;
+            }
         }
         .legal-toc { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
         .legal-toc a {
