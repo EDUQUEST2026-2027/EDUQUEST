@@ -84,16 +84,17 @@ biopathologie, SPCL, RH, architecture, PSE, apprentissage gamifié, streak, comb
 
 | Route | Description |
 |-------|-------------|
-| `index.html` | Accueil — menu principal, modales Options (classe, 18 filières filtrées par niveau, audio, particules, apparence, mode chrono, éco-énergie), connexion/inscription et confirmation Quitter |
-| `dashboard.html` | Tableau de bord élève : sélecteurs classe & filière cohérents, HUD Série / Combo, missions quotidiennes repliables, 43 matières filtrables par spécialités, boutique (98 articles), 79 succès filtrés par filière |
-| `map.html` | Carte de la matière : parcours des îles (niveaux 1 à 100), sélecteur d'avatar, badge classe/filière en lecture seule, expulsion hors programme, quiz adaptatif |
+| `index.html` | Accueil — menu principal, modales Options (classe, 18 filières filtrées par niveau, audio, particules, thèmes débloqués via la Boutique, mode chrono, éco-énergie), connexion/inscription et confirmation Quitter |
+| `dashboard.html` | Tableau de bord élève : sélecteurs classe & filière cohérents, Options sur place (sans retour accueil), HUD Série / Combo, missions quotidiennes repliables, 43 matières filtrables par spécialités, boutique (98 articles), 79 succès filtrés par filière |
+| `map.html` | Carte de la matière : parcours des îles (niveaux 1 à 100), Options sur place, sélecteur d'avatar, badge classe/filière en lecture seule, expulsion hors programme, quiz adaptatif |
+| `credits.html` | Page dédiée aux 7 créateurs d'EDUQUEST (cartes Astral & Or dynamiques synchronisées avec `AdminStore`) |
 | `legal.html` | Mentions légales, politique de confidentialité et gestion des cookies |
 
 ## Pages et outils internes
 
 | Route | Rôle |
 |-------|------|
-| `admin.html` | Panneau d'administration unifié (membres avec filtrage classe↔filière, 9 niveaux 6e → BTS, 18 filières + niveaux autorisés, 43 matières, leçons manuelles & procédurales, boutique 98 articles, 79 succès, pool 9 quêtes, feature flags, pool Multi-IA & crédits) |
+| `admin.html` | Panneau d'administration sécurisé (PBKDF2-SHA256 salé, session d'onglet `sessionStorage`, verrouillage auto, anti-force brute, code PIN optionnel, journal d'audit ; gestion des membres, 9 niveaux 6e → BTS, 18 filières + niveaux autorisés, 43 matières, boutique, 79 succès, quêtes, Multi-IA & équipe des 7 créateurs) |
 | `test.html` | Banc de tests navigateur autonome (13 suites QA) avec runner visuel, benchmark et test interactif en direct |
 
 ## Architecture technique
@@ -101,8 +102,8 @@ biopathologie, SPCL, RH, architecture, PSE, apprentissage gamifié, streak, comb
 | Fichier / Dossier | Rôle |
 |-------------------|------|
 | `js/core/icons.js` | Bibliothèque unifiée de 70+ icônes SVG duotone (*Astral & Or*, `window.EduIcons`) |
-| `js/app.js` | Contrôleur principal, vues, apparence, particules, HUD Série/Combo, boutique (équipement/retrait), 79 succès, confettis Canvas calibrés |
-| `js/db.js` | Persistance isolée par compte (`localStorage` / API SQL optionnelle) : progression, classe, filière, boosters, tentatives anti-triche, profil adaptatif |
+| `js/app.js` | Contrôleur principal, modale Options sur place (`ensureOptionsModal`), thèmes Boutique→Options, HUD Série/Combo, boutique, 79 succès, confettis Canvas |
+| `js/db.js` | Persistance isolée par compte + sécurité admin (PBKDF2-SHA256, `verifyAdminSession`, verrouillage d'onglet, anti-force brute, PIN, journal d'audit) |
 | `js/question-bank.js` | Banque officielle des 43 matières (dont Allemand complet) et générateurs procéduraux déterministes (100 niveaux/matière, lazy variants) |
 | `js/quiz-engine.js` | Moteur de rendu et validation des 6 types de questions avec tolérance Levenshtein et association réversible sans collision |
 | `js/core/audio-manager.js` | Gestionnaire audio global continu inter-pages, placement en en-tête, coupure manuelle persistée et bruitages Web Audio |
@@ -112,11 +113,11 @@ biopathologie, SPCL, RH, architecture, PSE, apprentissage gamifié, streak, comb
 | `js/core/quiz-session.js` | Pipeline unifié de soumission des quiz et consommation sécurisée des boosters |
 | `js/features/daily-quests.js` | Quêtes journalières déterministes (PRNG Mulberry32, tirage Fisher-Yates, renouvellement minuit) |
 | `js/ai-provider.js` | Orchestrateur Multi-IA (Make, OpenAI-compatible, Gemini) avec bascule en cascade et repli local |
-| `js/admin-store.js` | Configuration centrale : 9 niveaux, 18 filières + `allowedNiveaux`, règles officielles des 43 matières, 98 articles boutique, 79 badges, 9 quêtes & IA |
-| `js/admin.js` | Interface et moteur du panneau d'administration (pilotage intégral) |
+| `js/admin-store.js` | Configuration centrale : 9 niveaux, 18 filières + `allowedNiveaux`, règles officielles des 43 matières, 98 articles boutique, 79 badges, 9 quêtes, 7 créateurs & IA |
+| `js/admin.js` | Interface et moteur du panneau d'administration sécurisé (pilotage intégral + photos équipe + sécurité/audit) |
 | `js/cookies.js` | Bandeau de consentement RGPD/CNIL avec fermeture rapide (mémorisation 12 mois) |
-| `css/` | `global.css` (dont 16 thèmes visuels & fiabilisation hitboxes), `style.css` (dont 27 avatars SVG & checkboxes accessibles), `quests.css`, `admin.css` |
-| `service-worker.js` | PWA et pré-cache hors-ligne intégral (`eduquest-cache-v1.30.1` — 94 ressources 100 % SVG) |
+| `css/` | `global.css` (dont 16 thèmes visuels & fiabilisation hitboxes), `style.css` (dont 27 avatars SVG, grille thèmes Options & checkboxes accessibles), `quests.css`, `admin.css` |
+| `service-worker.js` | PWA et pré-cache hors-ligne intégral (`eduquest-cache-v1.30.2` — 96 ressources dont `credits.html` et `Image/team/clement-amisse.jpg`) |
 | `schema.sql` | Schéma relationnel SQL (joueurs, paramètres, 43 matières SVG + 18 filières cohérentes, leçons, progression, quêtes, inventaire) |
 | `tests/` | Suite de tests unitaires natifs Node.js (`node --test tests/*.test.js`) |
 

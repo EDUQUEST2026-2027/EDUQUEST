@@ -217,37 +217,84 @@
 
     /* ============================== CONNEXION / PREMIER ADMIN ============================== */
 
-    function renderGate() {
+    let _lockoutInterval = null;
+    function stopLockoutCountdown() {
+        if (_lockoutInterval) { clearInterval(_lockoutInterval); _lockoutInterval = null; }
+    }
+
+    function applyHashTabIfValid() {
+        const rawHash = (typeof window !== 'undefined' && window.location && window.location.hash)
+            ? window.location.hash.replace(/^#/, '').trim().toLowerCase()
+            : '';
+        if (rawHash && TABS.some(t => t.id === rawHash)) {
+            S.tab = rawHash;
+        }
+    }
+
+    function isAdminAuthorized() {
+        if (!S.authed) return false;
+        if (typeof DB !== 'undefined' && typeof DB.checkAdminPanelSession === 'function') {
+            const check = DB.checkAdminPanelSession();
+            if (!check.ok) {
+                S.authed = false;
+                S.gate = S.hasAnyAdmin ? 'login' : 'setup';
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function renderGate(noticeMsg = '') {
+        stopLockoutCountdown();
         const isSetup = S.gate === 'setup' && !S.hasAnyAdmin;
         const showSetupLink = !isSetup && !S.hasAnyAdmin;
         const showLoginLink = isSetup;
+        const lockout = (typeof DB !== 'undefined' && typeof DB.getAdminLockoutStatus === 'function')
+            ? DB.getAdminLockoutStatus()
+            : { locked: false, remainingMs: 0, attempts: 0, maxAttempts: 5 };
+        const secCfg = (typeof DB !== 'undefined' && typeof DB.getAdminSecurityConfig === 'function')
+            ? DB.getAdminSecurityConfig()
+            : { pinEnabled: false, inactivityMinutes: 15 };
+        const remSec = Math.ceil((lockout.remainingMs || 0) / 1000);
+
         app.innerHTML = `
             <div class="adm-gate">
                 <div class="adm-card">
-                    <h2>${ico('shield', 20, 'gold')} ${isSetup ? 'Créer le premier administrateur' : 'Accès administrateur'}</h2>
+                    <h2>${ico('shield', 20, 'gold')} ${isSetup ? 'Initialiser le premier administrateur' : 'Accès administrateur sécurisé'}</h2>
                     <p class="adm-gate-sub">${isSetup
-                ? 'Aucun compte administrateur n\'existe encore. Créez-le pour ouvrir le panneau.'
-                : 'Connectez-vous avec un compte dont le rôle est « admin ».'}</p>
+                ? 'Aucun compte administrateur n\'existe encore sur cet appareil. Créez un compte protégé par un mot de passe robuste.'
+                : 'Authentification requise par session d\'onglet (verrouillage automatique à la fermeture et après ' + secCfg.inactivityMinutes + ' min d\'inactivité).'}</p>
+                    ${noticeMsg ? `<div class="adm-note warn" style="margin-bottom:12px;">${esc(noticeMsg)}</div>` : ''}
+                    ${lockout.locked ? `<div class="adm-note warn" id="admLockoutBanner" style="margin-bottom:12px; border-color:rgba(248,113,113,0.5);">🔒 Trop de tentatives échouées. Accès temporairement bloqué (<b id="admLockoutSec">${remSec}s</b>).</div>` : ''}
 
                     ${isSetup ? `
                         <form class="adm-form" onsubmit="event.preventDefault(); ADM.setupFirst();">
-                            <div class="adm-field"><label>Adresse e-mail</label>
+                            <div class="adm-field"><label>Adresse e-mail administrateur</label>
                                 <input class="adm-input" id="admSetEmail" type="email" autocomplete="username" placeholder="admin@ecole.fr" required></div>
                             <div class="adm-field"><label>Pseudo</label>
                                 <input class="adm-input" id="admSetPseudo" autocomplete="nickname" placeholder="Administrateur" required></div>
-                            <div class="adm-field"><label>Mot de passe (6 caractères min.)</label>
-                                <input class="adm-input" id="admSetPass" type="password" autocomplete="new-password" minlength="6" required></div>
+                            <div class="adm-field"><label>Mot de passe robuste (8 car. min., lettre + chiffre)</label>
+                                <input class="adm-input" id="admSetPass" type="password" autocomplete="new-password" minlength="8" required></div>
+                            <div class="adm-field"><label>Confirmer le mot de passe</label>
+                                <input class="adm-input" id="admSetPassConfirm" type="password" autocomplete="new-password" minlength="8" required></div>
+                            <label class="adm-feature-toggle" style="margin:4px 0 6px;">
+                                <input type="checkbox" id="admSetConfirmAuth" required>
+                                Je confirme être administrateur ou enseignant autorisé
+                            </label>
                             <div class="adm-error" id="admSetErr"></div>
-                            <button type="submit" class="adm-btn">Créer et ouvrir le panneau</button>
+                            <button type="submit" class="adm-btn">Créer et déverrouiller le panneau</button>
                         </form>
                     ` : `
                         <form class="adm-form" onsubmit="event.preventDefault(); ADM.login();">
                             <div class="adm-field"><label>Adresse e-mail</label>
-                                <input class="adm-input" id="admLoginEmail" type="email" autocomplete="username" placeholder="admin@ecole.fr" required></div>
+                                <input class="adm-input" id="admLoginEmail" type="email" autocomplete="username" placeholder="admin@ecole.fr" ${lockout.locked ? 'disabled' : ''} required></div>
                             <div class="adm-field"><label>Mot de passe</label>
-                                <input class="adm-input" id="admLoginPass" type="password" autocomplete="current-password" required></div>
+                                <input class="adm-input" id="admLoginPass" type="password" autocomplete="current-password" ${lockout.locked ? 'disabled' : ''} required></div>
+                            ${secCfg.pinEnabled ? `
+                            <div class="adm-field"><label>🔐 Code PIN d'accès administrateur</label>
+                                <input class="adm-input" id="admLoginPin" type="password" autocomplete="one-time-code" placeholder="Code PIN requis" ${lockout.locked ? 'disabled' : ''} required></div>` : ''}
                             <div class="adm-error" id="admLoginErr"></div>
-                            <button type="submit" class="adm-btn">Ouvrir le panneau</button>
+                            <button type="submit" class="adm-btn" ${lockout.locked ? 'disabled' : ''}>Déverrouiller le panneau</button>
                         </form>
                     `}
                     ${(showSetupLink || showLoginLink) ? `
@@ -257,6 +304,19 @@
                     </div>` : ''}
                 </div>
             </div>`;
+
+        if (lockout.locked) {
+            _lockoutInterval = setInterval(() => {
+                const st = DB.getAdminLockoutStatus();
+                const secEl = document.getElementById('admLockoutSec');
+                if (!st.locked) {
+                    stopLockoutCountdown();
+                    renderGate();
+                } else if (secEl) {
+                    secEl.textContent = Math.ceil(st.remainingMs / 1000) + 's';
+                }
+            }, 1000);
+        }
     }
 
     function setError(id, msg) {
@@ -292,12 +352,14 @@
             <div class="adm-tabs" role="tablist">
                 ${TABS.map(t => `
                     <button type="button" role="tab" aria-selected="${S.tab === t.id ? 'true' : 'false'}" class="adm-tab${S.tab === t.id ? ' active' : ''}" onclick="ADM.tab('${t.id}')">${ico(t.icon, 16)} ${t.label}</button>`).join('')}
-                <button type="button" class="adm-tab adm-tab-logout" style="margin-left:auto;" onclick="ADM.logout()" title="Déconnecter ${esc(me && me.username ? me.username : 'l\'administrateur')}">${ico('exit', 15)} Déconnexion</button>
+                <button type="button" class="adm-tab" style="margin-left:auto;" onclick="ADM.lockPanel()" title="Verrouiller immédiatement l'accès au panneau sans déconnecter le jeu">🔒 Verrouiller</button>
+                <button type="button" class="adm-tab adm-tab-logout" onclick="ADM.logout()" title="Déconnecter ${esc(me && me.username ? me.username : 'l\'administrateur')}">${ico('exit', 15)} Déconnexion</button>
             </div>
             <div id="admTab">${renderTab()}</div>
             <div id="admModalWrap">${S.testModalQuestion ? renderTestModal() : ''}</div>
             <p class="adm-hint" style="margin-top:18px; text-align:center;">
                 Rechargez la page du jeu (F5) pour voir vos modifications appliquées.<br>
+                <a href="credits.html" target="_blank" rel="noopener noreferrer">Crédits &amp; Équipe</a> ·
                 <a href="legal.html" target="_blank" rel="noopener noreferrer">Mentions légales, confidentialité &amp; cookies</a>
             </p>`;
         refreshStats();
@@ -2123,6 +2185,52 @@
                 </div>
             </div>
 
+            <div class="adm-card" style="border-color: rgba(56,189,248,0.35);">
+                <h2>${ico('shield', 18, 'gold')} Sécurité d'accès du panneau &amp; Journal d'audit</h2>
+                <p class="adm-hint">L'accès au panneau est protégé par hachage <b>PBKDF2-SHA256 salé</b>, session isolée à l'onglet (verrouillage automatique à la fermeture), blocage progressif anti-force brute après 5 échecs, et délai d'inactivité paramétrable.</p>
+                ${(() => {
+                    const secCfg = (typeof DB !== 'undefined' && DB.getAdminSecurityConfig)
+                        ? DB.getAdminSecurityConfig()
+                        : { pinEnabled: false, inactivityMinutes: 15 };
+                    const audit = (typeof DB !== 'undefined' && DB.getAdminAuditLog) ? DB.getAdminAuditLog().slice(0, 12) : [];
+                    return `
+                        <div class="adm-grid-2" style="margin-top:12px;">
+                            <div class="adm-field">
+                                <label>Verrouillage automatique après inactivité</label>
+                                <div style="display:flex; gap:8px; align-items:center;">
+                                    <select class="adm-select" id="admSecTimeout">
+                                        ${[5, 10, 15, 30, 60].map(m => `<option value="${m}"${secCfg.inactivityMinutes === m ? ' selected' : ''}>${m} minutes</option>`).join('')}
+                                    </select>
+                                    <button type="button" class="adm-btn adm-btn-ok" onclick="ADM.saveAdminTimeout()">Appliquer</button>
+                                </div>
+                            </div>
+                            <div class="adm-field">
+                                <label>Double vérification par Code PIN (${secCfg.pinEnabled ? '<span style="color:#6bca82;">Actif</span>' : '<span style="color:var(--muted);">Désactivé</span>'})</label>
+                                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                    <input class="adm-input" type="password" id="admSecPinInput" placeholder="${secCfg.pinEnabled ? 'Nouveau code PIN (4+ car.)' : 'Définir un code PIN (4+ car.)'}" style="flex:1; min-width:150px;">
+                                    <button type="button" class="adm-btn" onclick="ADM.saveAdminPin()">🔐 ${secCfg.pinEnabled ? 'Modifier PIN' : 'Activer PIN'}</button>
+                                    ${secCfg.pinEnabled ? `<button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.disableAdminPin()">Désactiver</button>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <div style="margin-top:14px;">
+                            <div class="adm-toolbar" style="margin-bottom:6px;">
+                                <span style="font-size:13px; font-weight:700; color:var(--gold-soft);">📜 Derniers événements de sécurité (${audit.length})</span>
+                                ${audit.length ? `<button type="button" class="adm-btn adm-btn-ghost" style="padding:4px 10px; font-size:0.8rem;" onclick="ADM.clearSecurityAudit()">Vider le journal</button>` : ''}
+                            </div>
+                            <div style="max-height:180px; overflow-y:auto; background:rgba(8,14,28,0.65); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:8px 10px; font-size:12.5px;">
+                                ${audit.length ? audit.map(ev => `<div style="padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; gap:8px; flex-wrap:wrap;">
+                                    <span style="color:var(--muted); font-family:monospace;">${esc((ev.ts || '').replace('T', ' ').slice(0, 19))}</span>
+                                    <span style="color:var(--cyan); font-weight:700;">[${esc(ev.action)}]</span>
+                                    <span>${esc(ev.detail || '')}</span>
+                                    <span style="color:var(--muted); margin-left:auto;">${esc(ev.actor || '')}</span>
+                                </div>`).join('') : '<div class="adm-hint">Aucun événement enregistré pour le moment.</div>'}
+                            </div>
+                        </div>
+                    `;
+                })()}
+            </div>
+
             <div class="adm-card">
                 <h2 style="color:#ffab91;">☢️ Zone sensible &amp; Réinitialisations</h2>
                 <p class="adm-hint">Réinitialisez des modules individuels ou effacez les caches locaux de cet appareil.</p>
@@ -2139,25 +2247,88 @@
             </div>`;
     }
 
-    /* ============================== ONGLET : CRÉDITS (v1.20) ============================== */
+    /* ============================== ONGLET : CRÉDITS & ÉQUIPE DES CRÉATEURS ============================== */
 
     function renderCredits() {
         const c = AdminStore.getCredits();
+        const team = Array.isArray(c.team) ? c.team : [];
+
         return `
             <div class="adm-card">
-                <h2>✨ Crédits du créateur</h2>
-                <p class="adm-hint">Ces informations apparaissent dans le <b>pied de page de toutes les
-                pages du jeu</b> et dans la <a href="legal.html" target="_blank" rel="noopener noreferrer"><b>page légale</b></a>
-                (mentions légales, confidentialité, cookies). Laissez un champ vide pour masquer
-                l'élément correspondant.</p>
+                <h2>✨ Équipe des Créateurs d'EDUQUEST</h2>
+                <p class="adm-hint">Voici les 7 créateurs d'EDUQUEST. Personnalisez le rôle, la biographie et <b>ajoutez ou modifiez la photo</b> de chaque membre (chemin local <code>Image/team/...</code>, URL web ou import direct 📁 Fichier). Une page dédiée <a href="credits.html" target="_blank" rel="noopener noreferrer"><b>credits.html</b></a> leur est consacrée.</p>
+
+                <div class="adm-team-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:16px; margin:16px 0;">
+                    ${team.map((m, idx) => `
+                        <div class="adm-team-card" style="background:rgba(26,37,82,0.55); border:1px solid rgba(200,168,75,0.3); border-radius:var(--radius); padding:14px; position:relative;">
+                            <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+                                <div class="adm-team-avatar-preview" id="preview-avatar-${idx}" style="width:52px; height:52px; border-radius:50%; border:2px solid var(--gold); overflow:hidden; display:flex; align-items:center; justify-content:center; background:rgba(13,19,48,0.8); flex-shrink:0;">
+                                    ${(m.avatar && isSafeImgUrl(m.avatar)) ? `<img src="${esc(m.avatar)}" alt="${esc(m.name)}" style="width:100%; height:100%; object-fit:cover;" onerror="this.onerror=null; this.parentElement.innerHTML='👤';">` : `<span style="font-size:24px;">👤</span>`}
+                                </div>
+                                <div style="flex:1; min-width:0;">
+                                    <h3 style="font-size:15px; color:var(--gold-soft); margin:0 0 2px 0;">${esc(m.name)}</h3>
+                                    <span style="font-size:12px; color:var(--cyan); font-family:var(--font-mono, monospace);">${esc(m.id)}</span>
+                                </div>
+                            </div>
+
+                            <div class="adm-field" style="margin-bottom:8px;">
+                                <label style="font-size:12px;">Nom complet</label>
+                                <input class="adm-input" id="admTeamName_${idx}" data-idx="${idx}" value="${esc(m.name)}" placeholder="Nom et prénom">
+                            </div>
+
+                            <div class="adm-field" style="margin-bottom:8px;">
+                                <label style="font-size:12px;">Rôle / Titre</label>
+                                <input class="adm-input" id="admTeamRole_${idx}" data-idx="${idx}" value="${esc(m.role || '')}" placeholder="Ex: Créateur & Développeur">
+                            </div>
+
+                            <div class="adm-field" style="margin-bottom:8px;">
+                                <label style="font-size:12px;">Image / Photo (Chemin relatif ou URL)</label>
+                                <div style="display:flex; gap:6px;">
+                                    <input class="adm-input" id="admTeamAvatar_${idx}" data-idx="${idx}" value="${esc(m.avatar || '')}" placeholder="Image/team/... ou https://..." oninput="ADM.updateTeamAvatarPreview(${idx}, this.value)">
+                                    <label class="adm-btn adm-btn-ghost" style="cursor:pointer; padding:4px 8px; font-size:12px; display:inline-flex; align-items:center; white-space:nowrap;" title="Importer un fichier image local">
+                                        📁 Fichier
+                                        <input type="file" accept="image/*" style="display:none;" onchange="ADM.handleTeamImageUpload(${idx}, event)">
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="adm-field" style="margin-bottom:8px;">
+                                <label style="font-size:12px;">Biographie / Description</label>
+                                <textarea class="adm-textarea" id="admTeamBio_${idx}" rows="2" style="font-size:13px;" placeholder="Quelques mots sur la contribution...">${esc(m.bio || '')}</textarea>
+                            </div>
+
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                                <div class="adm-field" style="margin-bottom:0;">
+                                    <label style="font-size:11px;">GitHub (optionnel)</label>
+                                    <input class="adm-input" id="admTeamGithub_${idx}" style="font-size:12px;" value="${esc(m.github || '')}" placeholder="https://github.com/...">
+                                </div>
+                                <div class="adm-field" style="margin-bottom:0;">
+                                    <label style="font-size:11px;">Lien web (optionnel)</label>
+                                    <input class="adm-input" id="admTeamLinks_${idx}" style="font-size:12px;" value="${esc(m.links || '')}" placeholder="https://...">
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="adm-toolbar">
+                    <button type="button" class="adm-btn adm-btn-ok" onclick="ADM.creditsSave()">💾 Enregistrer l'équipe et les crédits</button>
+                    <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.creditsReset()">Rétablir les 7 créateurs par défaut</button>
+                    <a class="adm-btn adm-btn-ghost" href="credits.html" target="_blank" rel="noopener noreferrer">🌟 Ouvrir la page des crédits (credits.html)</a>
+                </div>
+            </div>
+
+            <div class="adm-card">
+                <h2>✨ Paramètres généraux des crédits &amp; Mentions</h2>
+                <p class="adm-hint">Ces informations textuelles apparaissent également dans le <b>pied de page de toutes les pages</b> et dans la page légale.</p>
 
                 <div class="adm-form">
                     <div class="adm-field"><label>Nom du studio / du projet</label>
                         <input class="adm-input" id="admCrStudio" maxlength="120" value="${esc(c.studioName)}" placeholder="EDUQUEST"></div>
                     <div class="adm-field"><label>Accroche (tagline)</label>
                         <input class="adm-input" id="admCrTagline" maxlength="120" value="${esc(c.tagline)}" placeholder="Apprendre en s'amusant"></div>
-                    <div class="adm-field"><label>Créateur / équipe (affiché « Créé par … »)</label>
-                        <input class="adm-input" id="admCrCreator" maxlength="120" value="${esc(c.creatorName)}" placeholder="Votre nom ou votre équipe"></div>
+                    <div class="adm-field"><label>Créateurs résumé (affiché dans le pied de page)</label>
+                        <input class="adm-input" id="admCrCreator" maxlength="250" value="${esc(c.creatorName)}" placeholder="Liste des créateurs"></div>
                     <div class="adm-field"><label>Site web (optionnel)</label>
                         <input class="adm-input" id="admCrWebsite" maxlength="200" value="${esc(c.website)}" placeholder="mon-site.fr"></div>
                     <div class="adm-field"><label>Dépôt GitHub du projet (optionnel)</label>
@@ -2172,16 +2343,13 @@
                     <button type="button" class="adm-btn adm-btn-ok" onclick="ADM.creditsSave()">💾 Enregistrer les crédits</button>
                     <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.creditsReset()">Rétablir les valeurs par défaut</button>
                 </div>
-                <p class="adm-hint" style="margin-top:8px;">Après enregistrement, rechargez la page du
-                jeu (F5) pour voir les crédits à jour dans le pied de page.</p>
             </div>
 
             <div class="adm-card">
                 <h2>${ico('scales', 18, 'gold')} Informations légales</h2>
-                <p class="adm-hint">Le site est accompagné d'une <a href="legal.html" target="_blank" rel="noopener noreferrer">page
-                légale</a> alimentée automatiquement par ces crédits, et d'un <b>bandeau de consentement
-                aux cookies</b> (RGPD) affiché à la première visite du site.</p>
+                <p class="adm-hint">Le site est accompagné d'une <a href="legal.html" target="_blank" rel="noopener noreferrer">page légale</a>, d'une page <a href="credits.html" target="_blank" rel="noopener noreferrer">crédits</a> et d'un <b>bandeau de consentement aux cookies</b> (RGPD).</p>
                 <div class="adm-toolbar">
+                    <a class="adm-btn adm-btn-ghost" href="credits.html" target="_blank" rel="noopener noreferrer">🌟 Voir la page des Crédits</a>
                     <a class="adm-btn adm-btn-ghost" href="legal.html" target="_blank" rel="noopener noreferrer">Ouvrir la page légale</a>
                     <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.openCookieBanner()">${ico('cookie', 15, 'gold')} Afficher le bandeau cookies</button>
                 </div>
@@ -2221,26 +2389,59 @@
             render();
         },
 
-        /* ----- Connexion / premier admin ----- */
+        /* ----- Connexion / premier admin (sécurisés) ----- */
         async login() {
             setError('admLoginErr', '');
+            if (typeof DB.getAdminLockoutStatus === 'function') {
+                const lockSt = DB.getAdminLockoutStatus();
+                if (lockSt.locked) {
+                    renderGate();
+                    return;
+                }
+            }
             const email = ((document.getElementById('admLoginEmail') || {}).value || '').trim();
             const pass = (document.getElementById('admLoginPass') || {}).value || '';
+            const pin = (document.getElementById('admLoginPin') || {}).value || '';
             if (!email || !pass) { setError('admLoginErr', 'Renseignez l\'e-mail et le mot de passe.'); return; }
+
             const r = await DB.login(email, pass);
-            if (!r.ok) { setError('admLoginErr', r.error || 'Connexion impossible.'); return; }
-            const me = DB.getCurrentUser();
-            if (!me || me.role !== 'admin') {
+            if (!r.ok) {
+                const st = DB.recordAdminLoginFailure ? DB.recordAdminLoginFailure(email) : null;
+                await new Promise(res => setTimeout(res, 300));
+                if (st && st.locked) { renderGate(); return; }
+                const left = st ? Math.max(0, st.maxAttempts - st.attempts) : 0;
+                setError('admLoginErr', (r.error || 'Connexion impossible.') + (st ? ` (${left} tentative(s) restante(s))` : ''));
+                return;
+            }
+            const verified = DB.verifyAdminSession ? DB.verifyAdminSession() : { ok: Boolean(DB.getCurrentUser() && DB.getCurrentUser().role === 'admin') };
+            if (!verified.ok) {
                 await DB.logout();
+                const st = DB.recordAdminLoginFailure ? DB.recordAdminLoginFailure(email) : null;
+                if (st && st.locked) { renderGate(); return; }
                 setError('admLoginErr', 'Ce compte n\'est pas administrateur (rôle « admin » requis).');
                 return;
             }
+            if (DB.getAdminSecurityConfig && DB.getAdminSecurityConfig().pinEnabled) {
+                const pinCheck = await DB.verifyAdminPin(pin);
+                if (!pinCheck.ok) {
+                    await DB.logout();
+                    const st = DB.recordAdminLoginFailure ? DB.recordAdminLoginFailure(email) : null;
+                    await new Promise(res => setTimeout(res, 300));
+                    if (st && st.locked) { renderGate(); return; }
+                    setError('admLoginErr', 'Code PIN administrateur incorrect.');
+                    return;
+                }
+            }
+            if (DB.clearAdminLoginFailures) DB.clearAdminLoginFailures();
+            if (DB.openAdminPanelSession) DB.openAdminPanelSession();
+            if (DB.appendAdminAudit) DB.appendAdminAudit('login_ok', 'Ouverture sécurisée du panneau administrateur');
             S.hasAnyAdmin = true;
             S.authed = true;
+            applyHashTabIfValid();
             try { await refreshMembers(); } catch { }
             updateModeBadge();
             render();
-            toast('Bienvenue dans le panneau d\'administration.', 'ok');
+            toast('Panneau d\'administration déverrouillé ✔', 'ok');
         },
 
         async setupFirst() {
@@ -2261,21 +2462,43 @@
             const email = ((document.getElementById('admSetEmail') || {}).value || '').trim();
             const pseudo = ((document.getElementById('admSetPseudo') || {}).value || '').trim();
             const pass = (document.getElementById('admSetPass') || {}).value || '';
+            const passConfirm = (document.getElementById('admSetPassConfirm') || {}).value || '';
+            const confirmAuth = Boolean((document.getElementById('admSetConfirmAuth') || {}).checked);
             if (!email || !pseudo || !pass) { setError('admSetErr', 'Tous les champs sont requis.'); return; }
+            if (!confirmAuth) { setError('admSetErr', 'Veuillez confirmer être administrateur autorisé.'); return; }
+            if (pass !== passConfirm) { setError('admSetErr', 'Les deux mots de passe ne correspondent pas.'); return; }
+            if (DB.validateAdminPassword) {
+                const pwCheck = DB.validateAdminPassword(pass);
+                if (!pwCheck.ok) { setError('admSetErr', pwCheck.error); return; }
+            }
             const r = await DB.createLocalMember(email, pseudo, pass, 'admin');
             if (!r.ok) { setError('admSetErr', r.error || 'Création impossible.'); return; }
             const login = await DB.login(email, pass);
             if (!login.ok) { setError('admSetErr', 'Compte créé, mais connexion impossible.'); return; }
+            if (DB.openAdminPanelSession) DB.openAdminPanelSession();
+            if (DB.appendAdminAudit) DB.appendAdminAudit('setup_first', 'Création du premier compte administrateur');
             S.hasAnyAdmin = true;
             S.authed = true;
+            applyHashTabIfValid();
             try { await refreshMembers(); } catch { }
             updateModeBadge();
             render();
-            toast('Administrateur créé. Bienvenue !', 'ok');
+            toast('Administrateur créé et panneau déverrouillé ✔', 'ok');
+        },
+
+        lockPanel() {
+            if (DB.lockAdminPanelSession) DB.lockAdminPanelSession();
+            if (DB.appendAdminAudit) DB.appendAdminAudit('lock_manual', 'Verrouillage manuel du panneau');
+            S.authed = false;
+            S.gate = S.hasAnyAdmin ? 'login' : 'setup';
+            renderGate('Panneau verrouillé. Saisissez vos identifiants pour le rouvrir.');
+            toast('Panneau administrateur verrouillé 🔒', 'ok');
         },
 
         async logout() {
+            if (DB.appendAdminAudit) DB.appendAdminAudit('logout', 'Déconnexion administrateur');
             try { await DB.logout(); } catch { }
+            if (DB.lockAdminPanelSession) DB.lockAdminPanelSession();
             S.authed = false;
             S.members = [];
             S.subjectId = null;
@@ -3076,8 +3299,13 @@
             const pseudo = (document.getElementById('admNewPseudo') || {}).value || '';
             const pass = (document.getElementById('admNewPass') || {}).value || '';
             const role = (document.getElementById('admNewRole') || {}).value || 'eleve';
+            if (role === 'admin' && DB.validateAdminPassword) {
+                const pwCheck = DB.validateAdminPassword(pass);
+                if (!pwCheck.ok) { toast(pwCheck.error, 'err'); return; }
+            }
             const r = await DB.createLocalMember(email, pseudo, pass, role);
             if (!r.ok) { toast(r.error || 'Création impossible.', 'err'); return; }
+            if (DB.appendAdminAudit) DB.appendAdminAudit('member_created', `Création du compte ${email} (${role})`);
             await refreshMembers();
             renderTabContent();
             toast('Compte « ' + pseudo + ' » créé ✔', 'ok');
@@ -3085,7 +3313,10 @@
         async setRole(email, role) {
             const r = await DB.updateLocalMember(email, { role });
             if (!r.ok) { toast(r.error || 'Changement impossible.', 'err'); }
-            else { toast('Rôle mis à jour ✔', 'ok'); }
+            else {
+                if (DB.appendAdminAudit) DB.appendAdminAudit('member_role', `Rôle de ${email} → ${role}`);
+                toast('Rôle mis à jour ✔', 'ok');
+            }
             await refreshMembers();
             renderTabContent();
         },
@@ -3137,19 +3368,29 @@
             renderTabContent();
         },
         async resetPass(email) {
-            const pw = prompt('Nouveau mot de passe pour ' + email + ' (6 caractères minimum) :');
+            const target = S.members.find(m => m.email === email);
+            const isAdminTarget = Boolean(target && target.role === 'admin');
+            const pw = prompt('Nouveau mot de passe pour ' + email + (isAdminTarget ? ' (8 car. min., lettre + chiffre) :' : ' (6 caractères minimum) :'));
             if (!pw) return;
+            if (isAdminTarget && DB.validateAdminPassword) {
+                const pwCheck = DB.validateAdminPassword(pw);
+                if (!pwCheck.ok) { toast(pwCheck.error, 'err'); return; }
+            }
             const me = DB.getCurrentUser();
             const r = me && me.email === email
                 ? await DB.updateProfile({ password: pw })
                 : await DB.updateLocalMember(email, { password: pw });
             if (!r.ok) { toast(r.error || 'Modification impossible.', 'err'); }
-            else { toast('Mot de passe réinitialisé ✔', 'ok'); }
+            else {
+                if (DB.appendAdminAudit) DB.appendAdminAudit('password_reset', `Mot de passe réinitialisé pour ${email}`);
+                toast('Mot de passe réinitialisé ✔', 'ok');
+            }
         },
         async deleteMember(email, username) {
             if (!confirm('Supprimer définitivement le compte « ' + username + ' » (' + email + ') ?')) return;
             const r = await DB.deleteLocalMember(email);
             if (!r.ok) { toast(r.error || 'Suppression impossible.', 'err'); return; }
+            if (DB.appendAdminAudit) DB.appendAdminAudit('member_deleted', `Suppression du compte ${email}`);
             await refreshMembers();
             renderTabContent();
             toast('Compte supprimé.', 'ok');
@@ -3415,6 +3656,7 @@
             if (!area || !area.value.trim()) { toast('Collez d\'abord un JSON exporté.', 'err'); return; }
             const r = AdminStore.importJson(area.value);
             if (!r.ok) { toast(r.error || 'Import impossible.', 'err'); return; }
+            if (DB.appendAdminAudit) DB.appendAdminAudit('import_json', 'Import de configuration JSON');
             area.value = '';
             S.subjectList = []; S.subjectId = null; S.levelsDraft = null; S.filieresDraft = null; S.questsDraft = null;
             renderPanel();
@@ -3424,6 +3666,7 @@
             if (!confirm('Retirer TOUTES les personnalisations (niveaux, filières, matières, leçons, boutique, quêtes, succès) ?')) return;
             if (!confirm('Confirmez : cette action est irréversible.')) return;
             AdminStore.resetAll();
+            if (DB.appendAdminAudit) DB.appendAdminAudit('reset_all', 'Réinitialisation intégrale du panneau');
             S.subjectList = []; S.subjectId = null; S.editingLesson = null; S.lessonDraft = null;
             S.editingBadge = null; S.editingShopItem = null; S.levelsDraft = null; S.filieresDraft = null; S.questsDraft = null;
             renderPanel();
@@ -3433,12 +3676,102 @@
             if (!confirm('Effacer la progression, les XP, les pièces et les badges de cet appareil ? Les comptes sont conservés.')) return;
             if (!confirm('Confirmez : cette action est irréversible.')) return;
             const n = AdminStore.clearLocalGameData();
+            if (DB.appendAdminAudit) DB.appendAdminAudit('reset_progress', `${n} donnée(s) de jeu purgée(s)`);
             toast(n + ' donnée(s) de jeu supprimée(s).', 'ok');
         },
 
-        /* ----- Crédits (v1.20) ----- */
+        /* ----- Sécurité du panneau (PIN, délai d'inactivité, journal d'audit) ----- */
+        saveAdminTimeout() {
+            const mins = parseInt((document.getElementById('admSecTimeout') || {}).value, 10) || 15;
+            if (DB.setAdminInactivityMinutes) DB.setAdminInactivityMinutes(mins);
+            renderTabContent();
+            toast(`Verrouillage automatique réglé sur ${mins} min ✔`, 'ok');
+        },
+        async saveAdminPin() {
+            const pinEl = document.getElementById('admSecPinInput');
+            const pin = pinEl ? pinEl.value : '';
+            if (!DB.setAdminPin) return;
+            const r = await DB.setAdminPin(pin);
+            if (!r.ok) { toast(r.error || 'Code PIN invalide.', 'err'); return; }
+            if (pinEl) pinEl.value = '';
+            renderTabContent();
+            toast('Code PIN administrateur enregistré ✔', 'ok');
+        },
+        disableAdminPin() {
+            if (!confirm('Désactiver la double vérification par Code PIN ?')) return;
+            if (DB.disableAdminPin) DB.disableAdminPin();
+            renderTabContent();
+            toast('Code PIN désactivé.', 'ok');
+        },
+        clearSecurityAudit() {
+            if (!confirm('Vider le journal d\'audit de sécurité ?')) return;
+            if (DB.clearAdminAuditLog) DB.clearAdminAuditLog();
+            renderTabContent();
+            toast('Journal d\'audit vidé.', 'ok');
+        },
+
+        /* ----- Crédits & Équipe des Créateurs ----- */
+        updateTeamAvatarPreview(idx, val) {
+            const preview = document.getElementById('preview-avatar-' + idx);
+            if (!preview) return;
+            const clean = String(val || '').trim();
+            if (clean && isSafeImgUrl(clean)) {
+                preview.innerHTML = `<img src="${esc(clean)}" alt="Avatar" style="width:100%; height:100%; object-fit:cover;" onerror="this.onerror=null; this.parentElement.innerHTML='👤';">`;
+            } else {
+                preview.innerHTML = '<span style="font-size:24px;">👤</span>';
+            }
+        },
+        handleTeamImageUpload(idx, event) {
+            const file = event && event.target && event.target.files && event.target.files[0];
+            if (!file) return;
+            if (!file.type || !file.type.startsWith('image/')) {
+                toast('Veuillez sélectionner un fichier image valide.', 'err');
+                return;
+            }
+            if (file.size > 2 * 1024 * 1024) {
+                toast('L\'image est trop lourde (max 2 Mo). Privilégiez une image compressée.', 'err');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const dataUrl = e && e.target ? e.target.result : '';
+                if (!isSafeImgUrl(dataUrl)) {
+                    toast('Format d\'image non autorisé.', 'err');
+                    return;
+                }
+                const input = document.getElementById('admTeamAvatar_' + idx);
+                if (input) {
+                    input.value = dataUrl;
+                    ADM.updateTeamAvatarPreview(idx, dataUrl);
+                }
+                toast('Image chargée localement ✔ N\'oubliez pas d\'enregistrer les crédits.', 'ok');
+            };
+            reader.readAsDataURL(file);
+        },
         creditsSave() {
             const val = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
+            const currentCredits = AdminStore.getCredits();
+            const currentTeam = Array.isArray(currentCredits.team) ? currentCredits.team : [];
+
+            const updatedTeam = currentTeam.map((m, idx) => {
+                const nameEl = document.getElementById('admTeamName_' + idx);
+                const roleEl = document.getElementById('admTeamRole_' + idx);
+                const avatarEl = document.getElementById('admTeamAvatar_' + idx);
+                const bioEl = document.getElementById('admTeamBio_' + idx);
+                const githubEl = document.getElementById('admTeamGithub_' + idx);
+                const linksEl = document.getElementById('admTeamLinks_' + idx);
+
+                return {
+                    id: m.id,
+                    name: nameEl ? nameEl.value.trim() : m.name,
+                    role: roleEl ? roleEl.value.trim() : (m.role || ''),
+                    avatar: avatarEl ? avatarEl.value.trim() : (m.avatar || ''),
+                    bio: bioEl ? bioEl.value.trim() : (m.bio || ''),
+                    github: githubEl ? githubEl.value.trim() : (m.github || ''),
+                    links: linksEl ? linksEl.value.trim() : (m.links || '')
+                };
+            });
+
             const r = AdminStore.saveCredits({
                 studioName: val('admCrStudio'),
                 tagline: val('admCrTagline'),
@@ -3447,16 +3780,19 @@
                 githubUrl: val('admCrGithub'),
                 contactEmail: val('admCrEmail'),
                 extraNote: val('admCrNote'),
+                team: updatedTeam,
             });
             if (!r.ok) { toast(r.error || 'Enregistrement impossible.', 'err'); return; }
+            window.dispatchEvent(new Event('eduquest:credits-updated'));
             renderTabContent();
-            toast('Crédits enregistrés ✔ — rechargez le jeu (F5) pour le pied de page.', 'ok');
+            toast('Crédits et photos d\'équipe enregistrés ✔', 'ok');
         },
         creditsReset() {
-            if (!confirm('Restaurer les crédits par défaut ?')) return;
+            if (!confirm('Restaurer les crédits et l\'équipe des 7 créateurs par défaut ?')) return;
             AdminStore.resetCredits();
+            window.dispatchEvent(new Event('eduquest:credits-updated'));
             renderTabContent();
-            toast('Crédits réinitialisés.', 'ok');
+            toast('Crédits et équipe réinitialisés.', 'ok');
         },
         openCookieBanner() {
             const zone = document.getElementById('admCrConsent');
@@ -3603,9 +3939,13 @@
         const fn = ADM[key];
         safeADM[key] = (typeof fn === 'function' && !PUBLIC_ADM_ACTIONS.has(key))
             ? function (...args) {
-                if (!S.authed) {
+                if (!isAdminAuthorized()) {
+                    renderGate('Session administrateur expirée ou verrouillée. Veuillez vous reconnecter.');
                     toast('Authentification administrateur requise.', 'err');
                     return;
+                }
+                if (typeof DB !== 'undefined' && typeof DB.touchAdminPanelSession === 'function') {
+                    DB.touchAdminPanelSession();
                 }
                 return fn.apply(this, args);
             }
@@ -3624,10 +3964,56 @@
         refreshStats();
     }
 
-    /* ============================== DÉMARRAGE ============================== */
+    /* ============================== DÉMARRAGE & SURVEILLANCE SESSION ============================== */
+
+    function setupSecurityWatchdog() {
+        const touch = () => {
+            if (S.authed && typeof DB !== 'undefined' && typeof DB.touchAdminPanelSession === 'function') {
+                DB.touchAdminPanelSession();
+            }
+        };
+        ['click', 'keydown', 'pointerdown'].forEach(ev => {
+            document.addEventListener(ev, touch, { passive: true });
+        });
+
+        // Contrôle périodique d'inactivité et d'intégrité de session (toutes les 20s)
+        setInterval(() => {
+            if (!S.authed) return;
+            if (!isAdminAuthorized()) {
+                renderGate('Session verrouillée automatiquement après inactivité.');
+                toast('Session administrateur verrouillée 🔒', 'err');
+            }
+        }, 20000);
+
+        // Verrouillage instantané si un autre onglet déconnecte ou modifie le compte admin
+        window.addEventListener('storage', (e) => {
+            if (!S.authed) return;
+            if (e.key === 'eduquest_session' || e.key === 'eduquest_local_users') {
+                if (!isAdminAuthorized()) {
+                    renderGate('La session administrateur a été modifiée ou fermée dans un autre onglet.');
+                }
+            }
+        });
+    }
 
     async function boot() {
         updateModeBadge();
+
+        // Protection anti-clickjacking : interdit l'affichage du panneau admin dans une iframe externe
+        try {
+            if (window.top !== window.self) {
+                app.innerHTML = `<div class="adm-gate"><div class="adm-card">
+                    <h2>${ico('shield', 20, 'gold')} Accès bloqué</h2>
+                    <p class="adm-error">Pour des raisons de sécurité, le panneau d'administration ne peut pas être affiché à l'intérieur d'un cadre externe.</p>
+                </div></div>`;
+                return;
+            }
+        } catch {
+            return;
+        }
+
+        setupSecurityWatchdog();
+
         if (typeof DB !== 'undefined' && DB.useApi) {
             const curApiUser = DB.getCurrentUser();
             if (!curApiUser || curApiUser.role !== 'admin') {
@@ -3648,15 +4034,21 @@
         } catch { }
         S.hasAnyAdmin = admins.length > 0;
 
-        // 1) Vérifier si la session courante est admin
-        const currentUser = (typeof DB !== 'undefined') ? DB.getCurrentUser() : null;
-        if (currentUser && currentUser.role === 'admin') {
+        // Exige une session panneau valide ET isolée à cet onglet (sessionStorage) + preuve d'intégrité
+        const panelCheck = (typeof DB !== 'undefined' && typeof DB.checkAdminPanelSession === 'function')
+            ? DB.checkAdminPanelSession()
+            : { ok: false, reason: 'locked' };
+        if (panelCheck.ok) {
             S.authed = true;
             S.hasAnyAdmin = true;
+            applyHashTabIfValid();
         } else {
             S.gate = S.hasAnyAdmin ? 'login' : 'setup';
             S.authed = false;
-            render();
+            const msg = panelCheck.reason === 'expired'
+                ? 'Session expirée par inactivité. Veuillez vous reconnecter.'
+                : '';
+            renderGate(msg);
             return;
         }
 

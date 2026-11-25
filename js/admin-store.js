@@ -761,23 +761,38 @@ const AdminStore = (() => {
 
     // Valeurs par défaut : l'objet gardé en mémoire est écrasé par les valeurs
     // personnalisées, mais resetCredits() restaure ces références d'origine.
+    const DEFAULT_TEAM_MEMBERS = [
+        { id: 'clement-amisse', name: 'Clément Amisse', role: 'Créateur & Développeur', bio: 'Conception, développement et architecture globale d’EDUQUEST.', avatar: 'Image/team/clement-amisse.jpg', github: '', links: '' },
+        { id: 'raphael-grados', name: 'Raphaël Grados', role: 'Créateur & Développeur', bio: 'Architecture pédagogique, intégration technique et filières.', avatar: '', github: '', links: '' },
+        { id: 'sacha-siegel', name: 'Sacha Siegel', role: 'Créateur & Concepteur', bio: 'Conception des mécaniques de jeu, logique et parcours.', avatar: '', github: '', links: '' },
+        { id: 'francois-lucas', name: 'François Lucas', role: 'Créateur & Concepteur', bio: 'Conception des contenus, questions et équilibrage.', avatar: '', github: '', links: '' },
+        { id: 'lucas-delferriere', name: 'Lucas Delferriere', role: 'Créateur & Concepteur', bio: 'Design interactif, expérience utilisateur et contenus.', avatar: '', github: '', links: '' },
+        { id: 'theo-piou', name: 'Théo Piou', role: 'Créateur & Concepteur', bio: 'Conception pédagogique, multimédia et immersion.', avatar: '', github: '', links: '' },
+        { id: 'aimane-toure', name: 'Aimane Toure', role: 'Créateur & Concepteur', bio: 'Gestion des banques de données et validation des épreuves.', avatar: '', github: '', links: '' }
+    ];
+
     const DEFAULT_CREDITS = {
         studioName: 'EDUQUEST',
         tagline: 'Apprendre en s\u2019amusant',
-        creatorName: 'L\u2019\u00e9quipe EDUQUEST',
+        creatorName: 'Clément Amisse, Raphaël Grados, Sacha Siegel, François Lucas, Lucas Delferriere, Théo Piou & Aimane Toure',
         contactEmail: '',
         website: '',
         githubUrl: 'https://github.com/EDUQUEST2026-2027/EDUQUEST',
-        extraNote: '',
+        extraNote: 'Site conçu et développé avec passion pour la réussite scolaire de la 6e au BTS.',
+        team: DEFAULT_TEAM_MEMBERS,
     };
 
     const CREDIT_TEXT_FIELDS = ['studioName', 'tagline', 'creatorName', 'contactEmail', 'website', 'githubUrl', 'extraNote'];
 
-    function cloneDefaults() { return { ...DEFAULT_CREDITS }; }
+    function cloneDefaults() { return _clone(DEFAULT_CREDITS); }
 
     /** Crédits effectifs (personnalisés par-dessus les valeurs par défaut). */
     function getCredits() {
-        return Object.assign({}, DEFAULT_CREDITS, _data().credits || {});
+        const stored = _data().credits || {};
+        const teamMerged = Array.isArray(stored.team) && stored.team.length > 0
+            ? _clone(stored.team)
+            : _clone(DEFAULT_TEAM_MEMBERS);
+        return Object.assign({}, DEFAULT_CREDITS, stored, { team: teamMerged });
     }
 
     /** true si au moins un champ de crédit a été personnalisé. */
@@ -801,6 +816,27 @@ const AdminStore = (() => {
                     return { ok: false, error: 'URL invalide ou non sécurisée pour « ' + key + ' ».' };
                 }
                 clean[key] = v;
+            }
+        }
+        if (Array.isArray(values.team)) {
+            const cleanTeam = [];
+            for (const member of values.team) {
+                if (!member || typeof member !== 'object') continue;
+                const id = String(member.id || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '')
+                    || ('m-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6));
+                const name = String(member.name || '').trim();
+                if (!name) continue;
+                const role = String(member.role || 'Créateur').trim().slice(0, 100);
+                const bio = String(member.bio || '').trim().slice(0, 300);
+                const avatar = _safeMediaUrl(member.avatar || '');
+                const rawGh = String(member.github || '').trim().slice(0, 200);
+                const rawLink = String(member.links || '').trim().slice(0, 200);
+                const github = rawGh && _isSafeWebUrl(rawGh) ? rawGh : '';
+                const links = rawLink && _isSafeWebUrl(rawLink) ? rawLink : '';
+                cleanTeam.push({ id, name: name.slice(0, 100), role, bio, avatar, github, links });
+            }
+            if (cleanTeam.length > 0) {
+                clean.team = cleanTeam;
             }
         }
         return { ok: true, clean };
@@ -2212,7 +2248,10 @@ const AdminStore = (() => {
      */
     function clearLocalGameData() {
         const remove = [];
-        const preserved = new Set(['eduquest_local_users', 'eduquest_session', 'eduquest_admin_data', 'eduquest_cookie_consent']);
+        const preserved = new Set([
+            'eduquest_local_users', 'eduquest_session', 'eduquest_admin_data', 'eduquest_cookie_consent',
+            'eduquest_admin_lockout', 'eduquest_admin_security', 'eduquest_admin_audit'
+        ]);
         try {
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
@@ -2286,12 +2325,13 @@ const AdminStore = (() => {
         saveLevels,
         resetLevels,
 
-        // Crédits du créateur
+        // Crédits du créateur & équipe
         getCredits,
         creditsModified,
         saveCredits,
         resetCredits,
         DEFAULT_CREDITS: cloneDefaults(),
+        DEFAULT_TEAM_MEMBERS: _clone(DEFAULT_TEAM_MEMBERS),
 
         // Registre des défauts (app.js)
         registerDefaults,

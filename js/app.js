@@ -262,10 +262,23 @@ function applyAppearanceSettings() {
     const cfg = getSiteConfigSafe();
     const allowClient = cfg.allowClientAppearance !== false;
 
-    // 1. Thème de la boutique (data-theme) appliqué partout (index, dashboard, map)
+    // 1. Thème de la boutique (data-theme) appliqué partout (vérifie la possession du thème)
     const adminTheme = cfg.defaultTheme || 'default';
     const clientTheme = getOption('dash_equippedTheme');
-    const shopTheme = allowClient ? (clientTheme || adminTheme) : adminTheme;
+    let resolvedClientTheme = adminTheme;
+    if (clientTheme) {
+        if (clientTheme === 'default' || clientTheme === adminTheme) {
+            resolvedClientTheme = clientTheme;
+        } else {
+            const themeObj = (typeof getShopCatalogSafe === 'function')
+                ? getShopCatalogSafe().find(it => it && it.category === 'theme' && it.id === clientTheme && !it.disabled)
+                : null;
+            resolvedClientTheme = (themeObj && typeof isShopItemOwned === 'function' && isShopItemOwned(themeObj, getOwnedSkinsSafe()))
+                ? clientTheme
+                : adminTheme;
+        }
+    }
+    const shopTheme = allowClient ? resolvedClientTheme : adminTheme;
     root.setAttribute('data-theme', shopTheme);
 
     // 2. Luminosité des boutons (défaut pilotable en admin, 80 % par défaut)
@@ -736,6 +749,27 @@ function initAccueil() {
     const quitModal = document.getElementById('modalQuitConfirm');
     const confirmYes = document.getElementById('confirmQuitYes');
     const confirmCancel = document.getElementById('confirmQuitCancel');
+    const adminLink = document.getElementById('adminPanelLink');
+
+    // Masquer le bouton d'administration aux comptes élèves connectés (sécurisation de l'accès)
+    function syncAdminLinkVisibility() {
+        if (!adminLink || typeof DB === 'undefined' || typeof DB.getCurrentUser !== 'function') return;
+        const user = DB.getCurrentUser();
+        const isStudent = Boolean(user && user.role !== 'admin');
+        adminLink.hidden = isStudent;
+    }
+    syncAdminLinkVisibility();
+    window.addEventListener('storage', syncAdminLinkVisibility);
+
+    // Raccourci clavier discret (Ctrl+Shift+A) sur l'accueil pour ouvrir le panneau admin sécurisé
+    if (document.getElementById('mainPage')) {
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.shiftKey && String(e.key || '').toLowerCase() === 'a') {
+                e.preventDefault();
+                window.location.href = 'admin.html';
+            }
+        });
+    }
 
     function performQuitExpulsion() {
         const cfg = getSiteConfigSafe();
@@ -1017,11 +1051,216 @@ function initConnexion() {
 }
 
 /* ==========================================================================
-   5. GESTION DES OPTIONS & APPARENCE (Modale #modalOptions — v1.28.0)
+   5. GESTION DES OPTIONS & APPARENCE (Modale #modalOptions — v1.30.0)
+   Disponible en overlay sur TOUTES les pages de jeu (index, dashboard, map)
+   sans jamais rediriger le joueur vers l'accueil.
    ========================================================================== */
 let _optionsOpenedFromHash = false;
 
+/**
+ * Monte automatiquement la modale #modalOptions sur dashboard.html et map.html
+ * (si absente du HTML initial) afin d'ouvrir les Options sur place sans quitter la page.
+ */
+function ensureOptionsModal() {
+    const existing = document.getElementById('modalOptions');
+    if (existing) return existing;
+    if (typeof document === 'undefined' || !document.body) return null;
+    if (document.getElementById('admApp')) return null; // Jamais injecter sur admin.html
+    const hasTrigger = document.querySelector('.options-wheel, #openOptionsBtn, #dashboard-app, .map-header');
+    if (!hasTrigger) return null;
+
+    const modal = document.createElement('div');
+    modal.id = 'modalOptions';
+    modal.className = 'modal-overlay';
+    modal.hidden = true;
+    modal.innerHTML = `
+        <section class="options-container" role="dialog" aria-modal="true" aria-labelledby="optionsModalTitle">
+            <button type="button" class="modal-top-close" id="closeOptionsX" aria-label="Fermer les options" title="Fermer">${eqIcon('close', 16)}</button>
+            <h1 class="options-header" id="optionsModalTitle">${eqIcon('settings', 26, 'gold')} OPTIONS</h1>
+
+            <div class="option-group">
+                <label class="checkbox-container">
+                    <span class="checkbox">
+                        <input type="checkbox" id="sonsActifs" checked>
+                        <span class="checkbox-mark">✓</span>
+                    </span>
+                    <span class="option-label">${eqIcon('volume', 17, 'gold')} Sons globaux (musique et bruitages)</span>
+                </label>
+            </div>
+
+            <div class="option-group">
+                <label class="checkbox-container">
+                    <span class="checkbox">
+                        <input type="checkbox" id="musiqueActive" checked>
+                        <span class="checkbox-mark">✓</span>
+                    </span>
+                    <span class="option-label">${eqIcon('music', 17, 'cyan')} Musique de fond</span>
+                </label>
+            </div>
+
+            <div class="option-group">
+                <label class="checkbox-container">
+                    <span class="checkbox">
+                        <input type="checkbox" id="effetsActifs" checked>
+                        <span class="checkbox-mark">✓</span>
+                    </span>
+                    <span class="option-label">${eqIcon('bell', 17, 'gold')} Bruitages et effets sonores</span>
+                </label>
+            </div>
+
+            <div class="option-group">
+                <label class="option-label" for="volumeMusique">${eqIcon('volume', 17, 'gold')} Volume Musique</label>
+                <div class="slider-container">
+                    <input type="range" min="0" max="100" value="75" class="slider" id="volumeMusique">
+                    <span class="volume-value" id="valueMusiqueDisplay">75%</span>
+                </div>
+            </div>
+
+            <div class="option-group">
+                <label class="option-label" for="volumeEffets">${eqIcon('volume', 17, 'cyan')} Volume Effets Sonores</label>
+                <div class="slider-container">
+                    <input type="range" min="0" max="100" value="80" class="slider" id="volumeEffets">
+                    <span class="volume-value" id="valueEffetsDisplay">80%</span>
+                </div>
+            </div>
+
+            <div class="option-group" id="optionsChronoGroup">
+                <label class="checkbox-container">
+                    <span class="checkbox">
+                        <input type="checkbox" id="modeChrono" checked>
+                        <span class="checkbox-mark">✓</span>
+                    </span>
+                    <span class="option-label">${eqIcon('timer', 17, 'gold')} Mode Défi Chronométré (<span id="chronoDurationLabel">45s</span>)</span>
+                </label>
+            </div>
+
+            <div class="option-group">
+                <label class="checkbox-container">
+                    <span class="checkbox">
+                        <input type="checkbox" id="particules" checked>
+                        <span class="checkbox-mark">✓</span>
+                    </span>
+                    <span class="option-label">${eqIcon('sparkle', 17, 'gold')} Effets de particules</span>
+                </label>
+            </div>
+
+            <div class="option-group">
+                <label class="checkbox-container">
+                    <span class="checkbox">
+                        <input type="checkbox" id="animationsActives" checked>
+                        <span class="checkbox-mark">✓</span>
+                    </span>
+                    <span class="option-label">${eqIcon('palette', 17, 'violet')} Animations esthétiques de l'interface</span>
+                </label>
+                <p class="adm-hint" style="margin-top: 4px; padding-left: 36px;">
+                    Désactive les ondulations, flottements d'îles et pulsations décoratives.
+                </p>
+            </div>
+
+            <div class="option-group">
+                <label class="checkbox-container">
+                    <span class="checkbox">
+                        <input type="checkbox" id="ecoMode">
+                        <span class="checkbox-mark">✓</span>
+                    </span>
+                    <span class="option-label">${eqIcon('battery', 17, 'emerald')} Économie d'énergie</span>
+                </label>
+                <p class="adm-hint" style="margin-top: 4px; padding-left: 36px;">
+                    Désactive les animations d'arrière-plan pour économiser la batterie.
+                </p>
+            </div>
+
+            <div class="option-group">
+                <label class="option-label" for="optionsNiveauSelect">${eqIcon('gradCap', 17, 'gold')} Classe / Niveau scolaire</label>
+                <div style="margin-top: 8px;">
+                    <select class="dash-grade-select" id="optionsNiveauSelect" style="width: 100%; max-width: 100%;"></select>
+                </div>
+                <p class="adm-hint" id="optionsNiveauHint" style="margin-top: 4px; padding-left: 4px;">
+                    Adapte automatiquement les matières et questions aux programmes officiels.
+                </p>
+            </div>
+
+            <div class="option-group" id="optionsFiliereGroup">
+                <label class="option-label" for="optionsFiliereSelect">${eqIcon('compass', 17, 'cyan')} Filière / Spécialité (Lycée &amp; BTS)</label>
+                <div style="margin-top: 8px;">
+                    <select class="dash-grade-select" id="optionsFiliereSelect" style="width: 100%; max-width: 100%;"></select>
+                </div>
+                <p class="adm-hint" style="margin-top: 4px; padding-left: 4px;">
+                    Débloque les matières officielles propres à ta filière.
+                </p>
+            </div>
+
+            <div id="optionsAppearanceSection">
+                <div class="options-section-title">${eqIcon('palette', 18, 'gold')} Apparence &amp; Thèmes</div>
+
+                <div class="option-group" id="optionsThemeGroup">
+                    <div class="options-theme-header">
+                        <span class="option-label">${eqIcon('planet', 17, 'cyan')} Thèmes visuels <span class="options-theme-count" id="optionsThemeCount"></span></span>
+                        <button type="button" class="options-theme-shop-link" id="optionsOpenThemeShop">Boutique Thèmes →</button>
+                    </div>
+                    <div class="options-theme-grid" id="optionsThemeGrid" role="radiogroup" aria-label="Sélection du thème visuel"></div>
+                    <p class="adm-hint" style="margin-top: 6px; padding-left: 4px;">
+                        Achète de nouveaux thèmes dans la Boutique pour les débloquer ici.
+                    </p>
+                </div>
+
+                <div class="option-group">
+                    <label class="option-label" for="btnColorPicker">${eqIcon('sliders', 17, 'gold')} Couleur des boutons</label>
+                    <div class="color-presets-row" id="btnColorPresets" role="group" aria-label="Préréglages couleur des boutons">
+                        <button type="button" class="color-swatch" data-btn-preset="default" data-btn="#24354f" style="background: #24354f;" title="Acier nocturne (Défaut)"></button>
+                        <button type="button" class="color-swatch" data-btn-preset="foret" data-btn="#234730" style="background: #234730;" title="Vert forêt"></button>
+                        <button type="button" class="color-swatch" data-btn-preset="or" data-btn="#5c451c" style="background: #5c451c;" title="Bronze doré"></button>
+                        <button type="button" class="color-swatch" data-btn-preset="cobalt" data-btn="#1d3c6a" style="background: #1d3c6a;" title="Bleu cobalt"></button>
+                        <button type="button" class="color-swatch" data-btn-preset="prune" data-btn="#49245c" style="background: #49245c;" title="Prune cosmique"></button>
+                        <button type="button" class="color-swatch" data-btn-preset="ardoise" data-btn="#2d3748" style="background: #2d3748;" title="Ardoise douce"></button>
+                        <label class="color-picker-wrap">
+                            <span>Libre :</span>
+                            <input type="color" id="btnColorPicker" class="color-picker-input" value="#24354f" aria-label="Couleur personnalisée des boutons">
+                        </label>
+                    </div>
+                </div>
+
+                <div class="option-group">
+                    <label class="option-label" for="btnBrightness">${eqIcon('sun', 17, 'gold')} Luminosité des boutons</label>
+                    <div class="slider-container">
+                        <input type="range" min="45" max="110" value="80" class="slider" id="btnBrightness">
+                        <span class="volume-value" id="valueBtnBrightnessDisplay">80%</span>
+                    </div>
+                    <div class="appearance-reset-row">
+                        <button type="button" class="btn-appearance-reset" id="resetAppearanceBtn">${eqIcon('refresh', 14)} Réinitialiser l'apparence</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="options-project-info" style="margin-top: 10px; margin-bottom: 12px; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); text-align: center; font-size: 13px; color: var(--muted, #94a3b8); display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px;">
+                <span>${eqIcon('sparkle', 14, 'gold')} Projet EDUQUEST</span> ·
+                <a href="credits.html" style="color: var(--gold-soft, #f3cf7a); text-decoration: none; font-weight: 700;">✨ Les Créateurs</a> ·
+                <a href="https://github.com/EDUQUEST2026-2027/EDUQUEST" target="_blank" rel="noopener noreferrer" id="optionsGithubLink" style="color: var(--cyan, #38bdf8); text-decoration: none; font-weight: 600;">${eqIcon('github', 14, 'cyan')} Dépôt GitHub</a>
+            </div>
+
+            <div class="options-buttons">
+                <button type="button" class="option-button" id="saveOptions">${eqIcon('save', 16, 'gold')} SAUVEGARDER</button>
+                <button type="button" class="option-button danger" id="backButton">${eqIcon('arrowLeft', 16)} FERMER</button>
+            </div>
+        </section>
+    `;
+    document.body.appendChild(modal);
+    return modal;
+}
+
+/** Retourne tous les thèmes actifs du catalogue Boutique (Astral garanti en premier). */
+function getShopThemesCatalog() {
+    const catalog = (typeof getShopCatalogSafe === 'function') ? getShopCatalogSafe() : [];
+    const themes = catalog.filter(item => item && !item.disabled && item.category === 'theme');
+    if (!themes.some(t => t.id === 'default')) {
+        themes.unshift({ id: 'default', name: 'Thème Astral (Origine)', category: 'theme', color: '#c8a84b', cost: 0 });
+    }
+    return themes;
+}
+
 function initOptions() {
+    ensureOptionsModal();
+
     const volumeMusique      = document.getElementById('volumeMusique');
     const volumeEffets       = document.getElementById('volumeEffets');
     const sonsActifs         = document.getElementById('sonsActifs');
@@ -1037,17 +1276,19 @@ function initOptions() {
     const modeChronoCheckbox = document.getElementById('modeChrono');
     const chronoDurLabel     = document.getElementById('chronoDurationLabel');
     const optNiveauSelect    = document.getElementById('optionsNiveauSelect');
+    const optNiveauHint      = document.getElementById('optionsNiveauHint');
     const optFiliereGroup    = document.getElementById('optionsFiliereGroup');
     const optFiliereSelect   = document.getElementById('optionsFiliereSelect');
 
-    // Contrôles d'apparence (Couleur interface, Couleur boutons, Luminosité boutons)
-    const uiColorPresets     = document.getElementById('uiColorPresets');
-    const uiColorPicker      = document.getElementById('uiColorPicker');
-    const btnColorPresets    = document.getElementById('btnColorPresets');
-    const btnColorPicker     = document.getElementById('btnColorPicker');
-    const btnBrightness      = document.getElementById('btnBrightness');
-    const btnBrightnessDisp  = document.getElementById('valueBtnBrightnessDisplay');
-    const resetAppearanceBtn = document.getElementById('resetAppearanceBtn');
+    // Contrôles d'apparence (Thèmes débloqués depuis la Boutique, Couleur & Luminosité boutons)
+    const optionsThemeGrid     = document.getElementById('optionsThemeGrid');
+    const optionsThemeCount    = document.getElementById('optionsThemeCount');
+    const optionsOpenThemeShop = document.getElementById('optionsOpenThemeShop');
+    const btnColorPresets      = document.getElementById('btnColorPresets');
+    const btnColorPicker       = document.getElementById('btnColorPicker');
+    const btnBrightness        = document.getElementById('btnBrightness');
+    const btnBrightnessDisp    = document.getElementById('valueBtnBrightnessDisplay');
+    const resetAppearanceBtn   = document.getElementById('resetAppearanceBtn');
 
     if (!saveOptionsBtn) return;
 
@@ -1057,6 +1298,7 @@ function initOptions() {
     let curUiAccent  = getOption('uiAccent') || '#c8a84b';
     let curBtnPreset = getOption('btnPreset') || 'default';
     let curBtnColor  = getOption('btnColor') || '#24354f';
+    let curThemeId   = getOption('dash_equippedTheme') || (getSiteConfigSafe().defaultTheme || 'default');
 
     // 1. Durée dynamique du chrono (AdminStore.siteConfig.quizTimerSeconds)
     if (chronoDurLabel) {
@@ -1107,6 +1349,73 @@ function initOptions() {
         }
     }
 
+    /** Affiche la grille des thèmes (débloqués par achat en Boutique vs verrouillés). */
+    function renderOptionsThemes() {
+        if (!optionsThemeGrid) return;
+        const themes = getShopThemesCatalog();
+        const ownedList = getOwnedSkinsSafe();
+        const activeTheme = curThemeId || 'default';
+
+        const unlocked = [];
+        const locked = [];
+        themes.forEach(t => {
+            if (isShopItemOwned(t, ownedList)) unlocked.push(t);
+            else locked.push(t);
+        });
+        const ordered = unlocked.concat(locked);
+
+        if (optionsThemeCount) {
+            optionsThemeCount.textContent = `${unlocked.length}/${themes.length} débloqués`;
+        }
+
+        const shopEnabled = getSiteConfigSafe().enableShop !== false;
+        if (optionsOpenThemeShop) {
+            optionsOpenThemeShop.hidden = !shopEnabled;
+        }
+
+        optionsThemeGrid.innerHTML = ordered.map(t => {
+            const isOwned = isShopItemOwned(t, ownedList);
+            const isActive = isOwned && activeTheme === t.id;
+            const color = safeHexColor(t.color, '#c8a84b');
+            const label = eqStripEmoji(t.name).replace(/^Thème\s+/i, '');
+            const statusText = isActive
+                ? '✓ Actif'
+                : (isOwned ? 'Débloqué' : `🔒 ${t.cost} pièces`);
+            return `<button type="button" class="options-theme-card ${isActive ? 'is-active' : ''} ${isOwned ? 'is-unlocked' : 'is-locked'}" data-theme-id="${escapeHtml(t.id)}" data-owned="${isOwned ? 'true' : 'false'}" role="radio" aria-checked="${isActive ? 'true' : 'false'}" style="--tc:${color};" title="${escapeHtml(eqStripEmoji(t.name))}${isOwned ? '' : ' — À débloquer dans la Boutique'}">
+                <span class="options-theme-dot" aria-hidden="true"></span>
+                <span class="options-theme-info">
+                    <span class="options-theme-name">${escapeHtml(label)}</span>
+                    <span class="options-theme-status">${escapeHtml(statusText)}</span>
+                </span>
+            </button>`;
+        }).join('');
+    }
+
+    function selectUnlockedTheme(themeId) {
+        const themes = getShopThemesCatalog();
+        const theme = themes.find(t => t.id === themeId);
+        if (!theme) return;
+        const ownedList = getOwnedSkinsSafe();
+        if (!isShopItemOwned(theme, ownedList)) {
+            showNotification(`🔒 Achète « ${eqStripEmoji(theme.name)} » (${theme.cost} pièces) dans la Boutique pour le débloquer !`, 'error');
+            return;
+        }
+        curThemeId = theme.id;
+        curUiPreset = 'default'; // Garantit que le thème choisi s'affiche sans être masqué par une teinte custom
+        saveOption('dash_equippedTheme', curThemeId);
+        saveOption('uiPreset', 'default');
+        applyAppearanceSettings();
+        renderOptionsThemes();
+        if (typeof checkBadges === 'function') {
+            try { checkBadges({ theme: curThemeId, themeEquipped: curThemeId !== 'default' }); } catch (_) {}
+        }
+        if (typeof AudioManager !== 'undefined' && typeof AudioManager.playSfx === 'function') {
+            AudioManager.playSfx('click');
+        }
+        window.dispatchEvent(new CustomEvent('eduquest:options-updated', { detail: { theme: curThemeId } }));
+        showNotification(`🎨 Thème « ${eqStripEmoji(theme.name)} » appliqué !`);
+    }
+
     let _audioSaveTimer = null;
     function scheduleAudioSave(key, val) {
         if (_audioSaveTimer) clearTimeout(_audioSaveTimer);
@@ -1150,18 +1459,13 @@ function initOptions() {
     }
 
     function refreshAppearanceSwatches() {
-        if (uiColorPresets) {
-            uiColorPresets.querySelectorAll('.color-swatch').forEach(sw => {
-                sw.classList.toggle('active', sw.dataset.uiPreset === curUiPreset);
-            });
-        }
         if (btnColorPresets) {
             btnColorPresets.querySelectorAll('.color-swatch').forEach(sw => {
                 sw.classList.toggle('active', sw.dataset.btnPreset === curBtnPreset);
             });
         }
-        if (uiColorPicker && /^#[0-9a-f]{6}$/i.test(curUiColor)) uiColorPicker.value = curUiColor;
         if (btnColorPicker && /^#[0-9a-f]{6}$/i.test(curBtnColor)) btnColorPicker.value = curBtnColor;
+        renderOptionsThemes();
     }
 
     function updateSoundControlsState(userInitiated = false) {
@@ -1171,7 +1475,6 @@ function initOptions() {
         const effetsContainer  = effetsActifs.closest('.checkbox-container');
 
         if (!allActive) {
-            // Ne mémorise l'état précédent que si le contrôle n'était pas déjà désactivé (évite de corrompre au rechargement)
             if (!musiqueActive.disabled) musiqueActive.dataset.prevChecked = String(musiqueActive.checked);
             if (!effetsActifs.disabled)  effetsActifs.dataset.prevChecked  = String(effetsActifs.checked);
             musiqueActive.checked  = false;
@@ -1193,13 +1496,18 @@ function initOptions() {
             if (effetsContainer)  effetsContainer.classList.remove('disabled');
         }
 
-        // Ne JAMAIS déclencher de démarrage audio au chargement passif de la page !
         if (userInitiated) {
             saveCurrentOptionsLocally();
             if (typeof AudioManager !== 'undefined' && typeof AudioManager.syncWithOptions === 'function') {
                 AudioManager.syncWithOptions(true);
             }
         }
+    }
+
+    function isQuizActiveInDom() {
+        if (document.getElementById('dashQuizOverlay')) return true;
+        const mapModal = document.getElementById('level-modal');
+        return Boolean(mapModal && !mapModal.hidden);
     }
 
     function chargerOptionsUI() {
@@ -1261,23 +1569,37 @@ function initOptions() {
             : 'generale';
         syncFiliereGroupVisibility(savedFil);
 
+        // Verrouillage anti-triche du sélecteur de classe/filière pendant un exercice actif
+        const lockGrade = (!siteCfg || siteCfg.hideGradeDuringQuiz !== false) && isQuizActiveInDom();
+        if (optNiveauSelect) optNiveauSelect.disabled = lockGrade;
+        if (optFiliereSelect) optFiliereSelect.disabled = lockGrade;
+        if (optNiveauHint) {
+            optNiveauHint.textContent = lockGrade
+                ? '🔒 Changement de classe verrouillé pendant un exercice en cours.'
+                : 'Adapte automatiquement les matières et questions aux programmes officiels.';
+        }
+
         if (sonsActifs && !sonsActifs.checked && musiqueActive && effetsActifs) {
             musiqueActive.dataset.prevChecked = getOption('musiqueActive') || 'true';
             effetsActifs.dataset.prevChecked  = getOption('effetsActifs')  || 'true';
             musiqueActive.disabled = true;
             effetsActifs.disabled  = true;
         }
-        // Mise à jour visuelle UNIQUEMENT (userInitiated = false)
         updateSoundControlsState(false);
 
-        // Apparence (repli sur les valeurs par défaut pilotées depuis admin.html)
-        const adminUiPreset = (siteCfg && siteCfg.defaultUiPreset) || 'default';
-        const adminUiColor = (siteCfg && siteCfg.defaultUiColor) || '#0d1f3a';
-        const adminUiAccent = (siteCfg && siteCfg.defaultUiAccent) || '#c8a84b';
+        // Apparence (thème boutique débloqué + boutons)
+        const adminTheme     = (siteCfg && siteCfg.defaultTheme) || 'default';
+        const adminUiPreset  = (siteCfg && siteCfg.defaultUiPreset) || 'default';
+        const adminUiColor   = (siteCfg && siteCfg.defaultUiColor) || '#0d1f3a';
+        const adminUiAccent  = (siteCfg && siteCfg.defaultUiAccent) || '#c8a84b';
         const adminBtnPreset = (siteCfg && siteCfg.defaultBtnPreset) || 'default';
-        const adminBtnColor = (siteCfg && siteCfg.defaultBtnColor) || '#24354f';
+        const adminBtnColor  = (siteCfg && siteCfg.defaultBtnColor) || '#24354f';
         const adminBtnBright = (siteCfg && siteCfg.defaultBtnBrightness != null) ? String(siteCfg.defaultBtnBrightness) : '80';
 
+        const savedTheme = getOption('dash_equippedTheme') || adminTheme;
+        const ownedList = getOwnedSkinsSafe();
+        const themeObj = getShopThemesCatalog().find(t => t.id === savedTheme);
+        curThemeId   = (themeObj && isShopItemOwned(themeObj, ownedList)) ? themeObj.id : 'default';
         curUiPreset  = getOption('uiPreset') || adminUiPreset;
         curUiColor   = getOption('uiColor') || adminUiColor;
         curUiAccent  = getOption('uiAccent') || adminUiAccent;
@@ -1292,6 +1614,7 @@ function initOptions() {
 
     function saveCurrentOptionsLocally() {
         const patch = {
+            dash_equippedTheme: curThemeId || 'default',
             uiPreset: curUiPreset,
             uiColor: curUiColor,
             uiAccent: curUiAccent,
@@ -1321,54 +1644,42 @@ function initOptions() {
             Object.entries(patch).forEach(([k, v]) => saveOption(k, v));
         }
 
-        if (optNiveauSelect && typeof DB !== 'undefined' && DB.setNiveau) {
+        if (optNiveauSelect && !optNiveauSelect.disabled && typeof DB !== 'undefined' && DB.setNiveau && optNiveauSelect.value) {
             DB.setNiveau(optNiveauSelect.value);
         }
         syncFiliereGroupVisibility(optFiliereSelect ? optFiliereSelect.value : undefined);
-        if (optFiliereSelect && optFiliereGroup && !optFiliereGroup.hidden && typeof DB !== 'undefined' && DB.setFiliere && optFiliereSelect.value) {
+        if (optFiliereSelect && !optFiliereSelect.disabled && optFiliereGroup && !optFiliereGroup.hidden && typeof DB !== 'undefined' && DB.setFiliere && optFiliereSelect.value) {
             DB.setFiliere(optFiliereSelect.value);
         }
 
         if (typeof _effectiveSubjectsCache !== 'undefined') _effectiveSubjectsCache.clear();
+        const niv = currentNiveau();
+        const fil = currentFiliere(niv);
         if (typeof getEffectiveSubjects === 'function' && (document.getElementById('dashboard-app') || document.querySelector('.map-header'))) {
-            const niv = optNiveauSelect ? optNiveauSelect.value : currentNiveau();
-            const fil = optFiliereSelect ? optFiliereSelect.value : currentFiliere();
             DASH_SUBJECTS = getEffectiveSubjects(niv, fil);
         }
 
-        // Application immédiate de TOUS les paramètres visuels et de particules
         applyAppearanceSettings();
         applyParticulesSetting();
         applyEcoModeSetting();
         applyAnimationsSetting();
+
+        window.dispatchEvent(new CustomEvent('eduquest:options-updated', {
+            detail: { niveau: niv, filiere: fil, theme: curThemeId || 'default' }
+        }));
     }
 
     function closeOptionsModal() {
         if (modalOptionsEl) modalOptionsEl.hidden = true;
-        if (_optionsOpenedFromHash) {
-            _optionsOpenedFromHash = false;
-            let savedReturn = '';
-            try {
-                savedReturn = sessionStorage.getItem('eduquest_options_return') || '';
-                sessionStorage.removeItem('eduquest_options_return');
-            } catch (_) {}
-            if (savedReturn && (savedReturn.includes('dashboard.html') || savedReturn.includes('map.html'))) {
-                window.location.href = savedReturn;
-                return;
-            }
-            const ref = document.referrer || '';
-            if (ref && (ref.includes('dashboard.html') || ref.includes('map.html'))) {
-                window.history.back();
-                return;
-            }
-        }
+        _optionsOpenedFromHash = false;
         if (window.location.hash === '#options' && window.history && typeof window.history.replaceState === 'function') {
             try { window.history.replaceState(null, '', window.location.pathname + window.location.search); } catch (_) {}
         }
     }
 
-    // Exposition globale : garantit une synchro fraîche à chaque ouverture de la modale
+    // Exposition globale : ouvre/ferme les options SUR PLACE sans jamais rediriger vers l'accueil
     window._syncOptionsModalUI = chargerOptionsUI;
+    window._closeOptionsModal = closeOptionsModal;
     window._openOptionsModal = function () {
         chargerOptionsUI();
         if (modalOptionsEl) modalOptionsEl.hidden = false;
@@ -1386,7 +1697,6 @@ function initOptions() {
             }
         });
     }
-    // Correctif v1.27.0 : effetsActifs ne touche JAMAIS la musique de fond !
     if (effetsActifs) {
         effetsActifs.addEventListener('change', () => {
             saveCurrentOptionsLocally();
@@ -1412,7 +1722,7 @@ function initOptions() {
         });
     }
 
-    /* --- Écouteurs Apparence --- */
+    /* --- Écouteurs Thèmes (débloqués via Boutique) & Apparence --- */
     let _appearanceSaveTimer = null;
     function scheduleAppearanceSave() {
         if (_appearanceSaveTimer) clearTimeout(_appearanceSaveTimer);
@@ -1422,32 +1732,21 @@ function initOptions() {
         }, 120);
     }
 
-    if (uiColorPresets) {
-        uiColorPresets.querySelectorAll('.color-swatch').forEach(sw => {
-            sw.addEventListener('click', () => {
-                curUiPreset = sw.dataset.uiPreset || 'default';
-                curUiColor  = sw.dataset.bg || '#0d1f3a';
-                curUiAccent = sw.dataset.accent || '#c8a84b';
-                refreshAppearanceSwatches();
-                saveCurrentOptionsLocally();
-            });
+    if (optionsThemeGrid) {
+        optionsThemeGrid.addEventListener('click', (e) => {
+            const card = e.target.closest('.options-theme-card');
+            if (!card) return;
+            selectUnlockedTheme(card.dataset.themeId);
         });
     }
-    if (uiColorPicker) {
-        uiColorPicker.addEventListener('input', () => {
-            curUiPreset = 'custom';
-            curUiColor  = uiColorPicker.value;
-            curUiAccent = '#c8a84b';
-            document.documentElement.setAttribute('data-ui-custom', 'true');
-            document.documentElement.style.setProperty('--ui-bg-tint', curUiColor);
-            document.documentElement.style.setProperty('--ui-accent', curUiAccent);
-            document.documentElement.style.setProperty('--c-gold', curUiAccent);
-            refreshAppearanceSwatches();
-            scheduleAppearanceSave();
-        });
-        uiColorPicker.addEventListener('change', () => {
-            if (_appearanceSaveTimer) { clearTimeout(_appearanceSaveTimer); _appearanceSaveTimer = null; }
-            saveCurrentOptionsLocally();
+    if (optionsOpenThemeShop) {
+        optionsOpenThemeShop.addEventListener('click', () => {
+            if (typeof window._dashOpenThemeShop === 'function') {
+                closeOptionsModal();
+                window._dashOpenThemeShop();
+            } else {
+                window.location.href = 'dashboard.html#boutique-themes';
+            }
         });
     }
     if (btnColorPresets) {
@@ -1489,6 +1788,7 @@ function initOptions() {
     if (resetAppearanceBtn) {
         resetAppearanceBtn.addEventListener('click', () => {
             const cfg = getSiteConfigSafe();
+            curThemeId   = cfg.defaultTheme || 'default';
             curUiPreset  = cfg.defaultUiPreset || 'default';
             curUiColor   = cfg.defaultUiColor || '#0d1f3a';
             curUiAccent  = cfg.defaultUiAccent || '#c8a84b';
@@ -1517,14 +1817,14 @@ function initOptions() {
     }
     if (optFiliereSelect) optFiliereSelect.addEventListener('change', saveCurrentOptionsLocally);
 
-    /* --- Boutons Sauvegarder, Retour & Fermeture rapide --- */
+    /* --- Boutons Sauvegarder, Fermer & Fermeture rapide --- */
     saveOptionsBtn.addEventListener('click', () => {
         saveCurrentOptionsLocally();
         if (typeof AudioManager !== 'undefined' && typeof AudioManager.syncWithOptions === 'function') {
             AudioManager.syncWithOptions(true);
         }
         showNotification('Options sauvegardées et appliquées !');
-        setTimeout(closeOptionsModal, 600);
+        setTimeout(closeOptionsModal, 450);
     });
 
     if (backButton) {
@@ -2239,26 +2539,31 @@ function initMap() {
     let subject = urlParams.get('matiere');
     let icon    = urlParams.get('icon');
 
-    const niveauActuel = currentNiveau();
-    const filiereActuelle = currentFiliere();
-    const niveauLabel = (typeof AdminStore !== 'undefined' && typeof AdminStore.levelLabel === 'function')
+    let niveauActuel = currentNiveau();
+    let filiereActuelle = currentFiliere(niveauActuel);
+    let niveauLabel = (typeof AdminStore !== 'undefined' && typeof AdminStore.levelLabel === 'function')
         ? AdminStore.levelLabel(niveauActuel)
         : niveauActuel;
-    const isFiliereUsed = (typeof AdminStore !== 'undefined' && typeof AdminStore.isFiliereApplicable === 'function')
-        ? AdminStore.isFiliereApplicable(niveauActuel)
-        : false;
-    const filiereObj = (isFiliereUsed && typeof AdminStore !== 'undefined' && typeof AdminStore.getFiliere === 'function')
-        ? AdminStore.getFiliere(filiereActuelle)
-        : null;
 
-    // Affiche la classe (et la filière au lycée/BTS) en lecture seule dans l'en-tête
     const mapGradeBadge = document.getElementById('mapGradeBadge');
-    if (mapGradeBadge) {
-        const badgeTxt = filiereObj
-            ? `${niveauLabel} · ${filiereObj.shortLabel || filiereObj.label}`
-            : `${niveauLabel}`;
-        mapGradeBadge.innerHTML = `${eqIcon('gradCap', 15, 'gold')} <span>${escapeHtml(badgeTxt)}</span>`;
+    function updateMapGradeBadge() {
+        niveauLabel = (typeof AdminStore !== 'undefined' && typeof AdminStore.levelLabel === 'function')
+            ? AdminStore.levelLabel(niveauActuel)
+            : niveauActuel;
+        const isFiliereUsed = (typeof AdminStore !== 'undefined' && typeof AdminStore.isFiliereApplicable === 'function')
+            ? AdminStore.isFiliereApplicable(niveauActuel)
+            : false;
+        const filiereObj = (isFiliereUsed && typeof AdminStore !== 'undefined' && typeof AdminStore.getFiliere === 'function')
+            ? AdminStore.getFiliere(filiereActuelle)
+            : null;
+        if (mapGradeBadge) {
+            const badgeTxt = filiereObj
+                ? `${niveauLabel} · ${filiereObj.shortLabel || filiereObj.label}`
+                : `${niveauLabel}`;
+            mapGradeBadge.innerHTML = `${eqIcon('gradCap', 15, 'gold')} <span>${escapeHtml(badgeTxt)}</span>`;
+        }
     }
+    updateMapGradeBadge();
 
     /** Transition dynamique d'expulsion vers le tableau de bord si la matière est hors programme. */
     function triggerExpulsionToDashboard(reasonText) {
@@ -3341,6 +3646,28 @@ function initMap() {
         stopMapTimer();
         modal.hidden = true;
         positionCharacter(findCurrentLevel(progress), true);
+    });
+
+    // Synchronisation sur place lorsque les Options sont modifiées depuis la carte
+    window.addEventListener('eduquest:options-updated', () => {
+        const nextNiv = currentNiveau();
+        const nextFil = currentFiliere(nextNiv);
+        const gradeChanged = nextNiv !== niveauActuel || nextFil !== filiereActuelle;
+        if (!gradeChanged) return;
+        niveauActuel = nextNiv;
+        filiereActuelle = nextFil;
+        updateMapGradeBadge();
+        DASH_SUBJECTS = getEffectiveSubjects(niveauActuel, filiereActuelle);
+        const stillAllowed = DASH_SUBJECTS.some(s => (carteSubject && s.id === carteSubject.id) || s.name === subject);
+        if (!stillAllowed) {
+            if (typeof window._closeOptionsModal === 'function') window._closeOptionsModal();
+            triggerExpulsionToDashboard(`« ${subject} » ne fait pas partie du programme de ${niveauLabel}. Retour vers le tableau de bord…`);
+            return;
+        }
+        loadProgress().then(loaded => {
+            progress = loaded;
+            renderLevels(progress);
+        }).catch(() => {});
     });
 
     // Resynchronisation de la progression uniquement lors d'un retour BFCache
@@ -4502,10 +4829,12 @@ function initDashboard() {
     }
 
     let state = loadState();
-    // Lien direct vers la boutique (ex: depuis le sélecteur d'avatar de la carte)
-    if (window.location.hash === '#boutique-avatars' || window.location.hash === '#boutique' || window.location.hash === '#shop') {
+    // Lien direct vers la boutique (ex: depuis le sélecteur d'avatar de la carte ou les thèmes dans Options)
+    if (window.location.hash === '#boutique-avatars' || window.location.hash === '#boutique-themes' || window.location.hash === '#boutique' || window.location.hash === '#shop') {
         state.view = 'shop';
-        state.shopCategory = (window.location.hash === '#boutique-avatars') ? 'avatar' : 'all';
+        state.shopCategory = (window.location.hash === '#boutique-avatars')
+            ? 'avatar'
+            : (window.location.hash === '#boutique-themes' ? 'theme' : 'all');
         try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch { /* ignore */ }
     }
     // Initialise la progression pour les matières qui n'ont pas encore de données
@@ -4719,10 +5048,10 @@ function initDashboard() {
                 </span>
                 <span class="dash-bnav-label">Succès</span>
             </button>` : ''}
-            <a class="dash-bnav-item" href="index.html#options" aria-label="Options">
+            <button type="button" class="dash-bnav-item" onclick="window._openOptionsModal && window._openOptionsModal()" aria-label="Options">
                 <span class="dash-bnav-icon">${eqIcon('settings', 20)}</span>
                 <span class="dash-bnav-label">Options</span>
-            </a>
+            </button>
             <a class="dash-bnav-item" href="index.html" aria-label="Accueil">
                 <span class="dash-bnav-icon">${eqIcon('home', 20)}</span>
                 <span class="dash-bnav-label">Accueil</span>
@@ -5935,6 +6264,7 @@ function initDashboard() {
             state.equippedTitle = id;
         } else if (cat === 'theme') {
             state.equippedTheme = id;
+            saveOption('uiPreset', 'default');
             document.documentElement.setAttribute('data-theme', id);
         } else if (cat === 'avatar') {
             state.equippedAvatar = id;
@@ -5943,6 +6273,10 @@ function initDashboard() {
             state.equippedSkin = id;
         }
         persistState();
+        if (cat === 'theme') {
+            applyAppearanceSettings();
+            if (typeof window._syncOptionsModalUI === 'function') window._syncOptionsModalUI();
+        }
         triggerBadgesCheck({
             boughtSkin: true,
             skinId: id,
@@ -5951,7 +6285,9 @@ function initDashboard() {
             auraEquipped: cat === 'aura' && id !== 'aurore',
         });
         render();
-        showNotification(`« ${eqStripEmoji(item.name)} » débloqué et équipé !`);
+        showNotification(cat === 'theme'
+            ? `« ${eqStripEmoji(item.name)} » débloqué dans les Options et appliqué !`
+            : `« ${eqStripEmoji(item.name)} » débloqué et équipé !`);
     };
 
     window._dashEquipSkin = function (id) {
@@ -5974,13 +6310,19 @@ function initDashboard() {
         } else if (cat === 'theme') {
             if (id === 'default') {
                 state.equippedTheme = 'default';
+                saveOption('uiPreset', 'default');
                 document.documentElement.setAttribute('data-theme', 'default');
                 persistState();
+                applyAppearanceSettings();
+                if (typeof window._syncOptionsModalUI === 'function') window._syncOptionsModalUI();
                 showNotification(`🎨 Thème d'origine Astral rétabli !`);
             } else {
                 state.equippedTheme = (state.equippedTheme === id ? 'default' : id);
+                saveOption('uiPreset', 'default');
                 document.documentElement.setAttribute('data-theme', state.equippedTheme);
                 persistState();
+                applyAppearanceSettings();
+                if (typeof window._syncOptionsModalUI === 'function') window._syncOptionsModalUI();
                 triggerBadgesCheck({ theme: state.equippedTheme, themeEquipped: state.equippedTheme !== 'default' });
                 showNotification(state.equippedTheme === 'default'
                     ? `🎨 Thème d'origine Astral rétabli !`
@@ -6003,6 +6345,29 @@ function initDashboard() {
         }
         render();
     };
+
+    window._dashOpenThemeShop = function () {
+        state.view = 'shop';
+        state.shopCategory = 'theme';
+        render();
+    };
+
+    window.addEventListener('eduquest:options-updated', () => {
+        _effectiveSubjectsCache.clear();
+        const niv = currentNiveau();
+        const fil = currentFiliere(niv);
+        DASH_SUBJECTS = getEffectiveSubjects(niv, fil);
+        state.equippedTheme = getOption('dash_equippedTheme') || (getSiteConfigSafe().defaultTheme || 'default');
+        state.ownedSkins = getOwnedSkinsSafe();
+        DASH_SUBJECTS.forEach(s => {
+            if (!(s.id in state.progress)) state.progress[s.id] = 0;
+        });
+        if (state.view === 'map' && state.currentSubject && !DASH_SUBJECTS.some(s => s.id === state.currentSubject)) {
+            state.view = 'dashboard';
+            state.currentSubject = null;
+        }
+        render();
+    });
 
     /* ============ NAVIGATION RETOUR & SYNCHRONISATION SANS RECHARGEMENT ============ */
     window.addEventListener('popstate', (e) => {

@@ -49,8 +49,8 @@ Puis ouvrez l'URL affichée (ex. `http://localhost:8080`).
   - **Filtrage intelligent & cohérence automatique :** Sélecteurs Classe & Filière filtrés dynamiquement dans le tableau de bord, les Options et le panneau admin (`AdminStore.getFilieresForNiveau` & `resolveFiliereForNiveau`), onglets rapides (*Toutes / ★ Spécialités / Tronc commun*) et mise en avant automatique des spécialités phares.
 - **🏝️ 43 Îles flottantes illustrées 100 % SVG (100 niveaux chacune) :**
   - Chaque matière (dont la nouvelle île **Allemand** — Porte de Brandebourg & bannière dorée `Image/ile/allemand.svg`) dispose de son île **100 % SVG** (*Astral & Or*) pré-cachée hors-ligne dans `service-worker.js`, de leçons socles variées et d'un générateur procédural déterministe jusqu'à 100 niveaux (conjugaison, déclinaisons Accusatif/Datif/Génitif, Perfekt `haben`/`sein`, syntaxe et allemand professionnel BTS pour l'Allemand).
-- **🛍️ Boutique riche (98 articles), 27 Avatars SVG, 16 Thèmes & 5 Boosters fonctionnels :**
-  - **24 Auras & Halos**, **27 Personnages 100 % SVG**, **26 Titres honorifiques** (équipables et retirables en un clic), **16 Thèmes visuels CSS** (`default` + 15 thèmes `[data-theme="..."]` retirables vers le thème d'origine) et **5 Potions / Boosters** actifs en jeu :
+- **🛍️ Boutique riche (98 articles), 27 Avatars SVG, 16 Thèmes débloqués dans Options & 5 Boosters fonctionnels :**
+  - **24 Auras & Halos**, **27 Personnages 100 % SVG**, **26 Titres honorifiques** (équipables et retirables en un clic), **16 Thèmes visuels CSS** (`default` Astral offert par défaut + 15 thèmes Boutique qui se **débloquent automatiquement dans les Options** dès leur achat) et **5 Potions / Boosters** actifs en jeu :
     - 🧪 **Potion Double XP** (`boost-xp`) : double l'XP du prochain niveau réussi.
     - 🛡️ **Bouclier d'Étoile** (`boost-shield`) : absorbe la 1re erreur et préserve série + 3 étoiles.
     - 🪙 **Élixir de Fortune** (`boost-coins`) : double les pièces du prochain niveau réussi.
@@ -65,12 +65,16 @@ Puis ouvrez l'URL affichée (ex. `http://localhost:8080`).
   - **Anti-répétition renforcée (`js/core/adaptive-engine.js` & `js/question-bank.js`) :** mémoire de **240 questions vues** par matière/classe, rotation FIFO par ancienneté, vivier minimal par cycle (sans jamais mélanger collège et lycée), génération paresseuse (*lazy*) des variantes et reset vers une question différente après chaque échec.
   - **Pool Multi-IA (`js/ai-provider.js`) :** prise en charge optionnelle de plusieurs fournisseurs IA (Make.com, API compatibles OpenAI/Mistral/Groq/Ollama, Google Gemini) avec bascule en cascade et repli local 100 % hors-ligne.
 - **📱 Expérience PC & mobile soignée, épurée et accessible :**
+  - **Modale Options sur place** sur toutes les pages (`index.html`, `dashboard.html`, `map.html`) : ouvrir et fermer les Options ne renvoie plus vers l'accueil et synchronise les réglages (classe, filière, audio, thèmes débloqués) en direct.
   - Interface sans bouton plein écran ni réinitialisation accidentelle de progression côté élève (la réinitialisation d'un compte reste exclusivement réservée à la modération dans `admin.html`).
   - Hitboxes de boutons fiabilisées (`pointer-events: none` sur tous les décors), cases Options accessibles au clavier (`Tab` + `Espace`), **bandeau du bas fermable**, **missions quotidiennes repliables**, **confettis calibrés** et croix `✕` sur toutes les modales.
+- **🌟 Page dédiée Crédits & Équipe (`credits.html`) :** présente les 7 créateurs d'EDUQUEST (dont photo de Clément Amisse dans `Image/team/clement-amisse.jpg`), avec rôles, bios, liens et photos entièrement pilotables (URL ou import local `📁 Fichier`) depuis l'onglet Crédits de `admin.html`.
 - **📝 6 Types de questions & Indice pédagogique 💡 :** QCM (choix mélangés), Vrai/Faux, Réponse courte (tolérance orthographique Levenshtein), Texte à trous (`___` ou `[___]`, banque de mots cliquables), Texte à choix déroulant (`<select>`) et Association (Drag & Drop en 2 clics avec désélection et retrait de paire).
 - **🔊 Gestionnaire audio global (`js/core/audio-manager.js`) :** musique continue inter-pages (6 pistes locales), coupure manuelle strictement persistée, intégration sans chevauchement dans l'en-tête (`map.html`, `legal.html`) et bruitages Web Audio synthétisés.
 - **⏱️ Chronomètre unifié (`js/core/quiz-timer.js`) & Anti-triche étoiles :** compte à rebours à horloge réelle (`Date.now`) avec cache DOM optimisé sur tous les exercices et réessais ; erreurs persistées par niveau.
-- **🛡️ Pilotage intégral Admin (`admin.html`) :** membres (avec filtrage classe↔filière cohérent), 9 niveaux, 18 filières (avec niveaux autorisés éditables par pilules), 43 matières (préservation des saisies lors des clics sur pilules, aperçu procédural sur niveau valide), boutique (98 articles), 79 succès, pool de 9 quêtes quotidiennes, feature flags globaux, Multi-IA, export/import JSON sécurisé (redaction des clés API par défaut) et crédits.
+- **🛡️ Pilotage intégral & Accès Admin sécurisé (`admin.html`) :**
+  - **Sécurité renforcée :** hachage **PBKDF2-SHA256 salé** (100 000 itérations + migration auto des anciens comptes), politique de mot de passe robuste (≥ 8 car., lettre + chiffre), vérification croisée anti-usurpation (`DB.verifyAdminSession`), session panneau isolée à l'onglet (`sessionStorage` + bouton 🔒 Verrouiller + verrouillage auto par inactivité), limitation anti-force brute progressive après 5 échecs, **Code PIN administrateur** optionnel, protection anti-iframe (clickjacking), masquage des liens Admin aux élèves connectés et **journal d'audit**.
+  - **Pilotage complet :** membres (filtrage classe↔filière), 9 niveaux, 18 filières (niveaux autorisés éditables), 43 matières, boutique (98 articles), 79 succès, pool de 9 quêtes, feature flags, Multi-IA, export/import JSON sécurisé et équipe des 7 créateurs.
 - **🔒 Respect de la vie privée & RGPD :** zéro publicité, zéro traceur tiers, bandeau cookies conforme CNIL (`js/cookies.js`, réouverture en place sans quitter la page), purge intégrale à la suppression de compte et mentions légales complètes (`legal.html`).
 
 ---
@@ -78,30 +82,31 @@ Puis ouvrez l'URL affichée (ex. `http://localhost:8080`).
 ## 🗂️ Architecture & Organisation des fichiers
 
 ```text
-├── index.html, dashboard.html, map.html, admin.html, legal.html, test.html
+├── index.html, dashboard.html, map.html, credits.html, admin.html, legal.html, test.html
 ├── service-worker.js, manifest.webmanifest, robots.txt, sitemap.xml, llms.txt, schema.sql, package.json
 ├── css/    → global.css, style.css, quests.css, admin.css
 ├── fonts/  → Silkscreen (.woff2 / .ttf)
-├── Image/  → logo.svg, ile/ (43 îles 100 % SVG dont allemand.svg), personnages/ (27 avatars 100 % SVG)
+├── Image/  → logo.svg, ile/ (43 îles 100 % SVG dont allemand.svg), personnages/ (27 avatars 100 % SVG), team/ (photos créateurs)
 ├── Musique/→ music1.mp3 … music6.mp3
 ├── js/     → app.js, db.js, quiz-engine.js, question-bank.js, admin.js, admin-store.js, ai-provider.js, cookies.js
 │   ├── core/     → icons.js, audio-manager.js, quiz-timer.js, adaptive-engine.js, game-rules.js, quiz-session.js
 │   └── features/ → daily-quests.js
 ├── docs/   → ARCHITECTURE.md, GUIDE_CONTRIBUTION.md, API_PERSISTENCE.md
-└── tests/  → Suite complète de tests unitaires Node.js sur 12 fichiers
+└── tests/  → Suite complète de tests unitaires Node.js sur 14 fichiers
 ```
 
 | Fichier / Dossier | Rôle |
 |---|---|
-| `index.html` | Accueil : menu principal, modales Options (classe, 18 filières filtrées par niveau, audio, particules, apparence), Connexion & Quitter |
-| `dashboard.html` | Tableau de bord élève : sélecteurs classe & filière cohérents, HUD Série/Combo, missions repliables, 43 matières, boutique (98 articles), 79 succès |
-| `map.html` | Carte interactive d'une matière : parcours 1 → 100, sélecteur d'avatar, badge classe/filière, expulsion hors programme, quiz |
-| `admin.html` | **Panneau d'administration unifié** : membres, 9 niveaux, 18 filières + niveaux autorisés, 43 matières, leçons, boutique, 79 succès, quêtes, Multi-IA & crédits |
+| `index.html` | Accueil : menu principal, modales Options (classe, 18 filières, audio, thèmes débloqués, boutons), Connexion & Quitter |
+| `dashboard.html` | Tableau de bord élève : sélecteurs classe & filière cohérents, Options sur place, HUD Série/Combo, missions repliables, 43 matières, boutique (98 articles), 79 succès |
+| `map.html` | Carte interactive d'une matière : parcours 1 → 100, Options sur place, sélecteur d'avatar, badge classe/filière, expulsion hors programme, quiz |
+| `credits.html` | Page dédiée aux **7 créateurs d'EDUQUEST** (cartes Astral & Or dynamiques synchronisées avec `AdminStore`) |
+| `admin.html` | **Panneau d'administration sécurisé** : auth PBKDF2 + PIN optionnel + verrouillage inactivité + journal d'audit, pilotage intégral des contenus et équipe créateurs |
 | `legal.html` | Mentions légales, politique de confidentialité RGPD et gestion des cookies |
 | `test.html` | **Banc de tests navigateur autonome** : 13 suites QA, benchmark et test interactif |
 | `js/core/icons.js` | Bibliothèque unifiée de 70+ icônes SVG duotone (*Astral & Or*, `window.EduIcons`) |
-| `js/app.js` | Contrôleur principal, vues, apparence, particules, HUD Série/Combo, boutique (équipement/retrait), 79 succès, confettis Canvas calibrés |
-| `js/db.js` | Persistance isolée par compte (`localStorage` / API SQL optionnelle) : classe, filière, progression, boosters, tentatives anti-triche |
+| `js/app.js` | Contrôleur principal, modale Options sur place (`ensureOptionsModal`), thèmes Boutique→Options, HUD Série/Combo, boutique, 79 succès, confettis Canvas |
+| `js/db.js` | Persistance isolée par compte + sécurité admin (PBKDF2-SHA256, `verifyAdminSession`, verrouillage d'onglet `sessionStorage`, anti-force brute, PIN, journal d'audit) |
 | `js/quiz-engine.js` | Rendu et validation des 6 types de questions (`___`/`[___]`, Levenshtein, drag & drop réversible sans collision) |
 | `js/question-bank.js` | Banque officielle des 43 matières (dont Allemand complet) + générateurs procéduraux déterministes (Collège, Lycée & BTS) |
 | `js/core/audio-manager.js` | Audio global continu inter-pages, respect de coupure manuelle, placement adaptatif en en-tête et bruitages SFX Web Audio |
@@ -111,10 +116,10 @@ Puis ouvrez l'URL affichée (ex. `http://localhost:8080`).
 | `js/core/quiz-session.js` | Pipeline unifié de soumission des quiz, anti-triche et consommation sécurisée des boosters |
 | `js/features/daily-quests.js` | Quêtes journalières déterministes (PRNG Mulberry32, tirage Fisher-Yates, renouvellement minuit, pool pilotable admin) |
 | `js/ai-provider.js` | Orchestrateur Multi-IA (Make, OpenAI-compatible, Gemini) avec bascule en cascade et repli local |
-| `js/admin-store.js` | Catalogue central : 9 niveaux, 18 filières + `allowedNiveaux`, règles officielles des 43 matières, 98 articles boutique, 79 badges, 9 quêtes |
-| `js/admin.js` | Interface du panneau d'administration (pilotage intégral, cohérence classe↔filière, niveaux par filière) |
+| `js/admin-store.js` | Catalogue central : 9 niveaux, 18 filières + `allowedNiveaux`, règles officielles des 43 matières, 98 articles boutique, 79 badges, 9 quêtes, 7 créateurs |
+| `js/admin.js` | Interface du panneau d'administration sécurisé (pilotage intégral, éditeur photos créateurs, gestion PIN & journal d'audit) |
 | `js/cookies.js` | Bandeau de consentement RGPD/CNIL avec fermeture rapide (mémorisation 12 mois) |
-| `service-worker.js` | PWA `eduquest-cache-v1.30.1` (**94 ressources 100 % SVG pré-cachées**, 100 % hors-ligne) |
+| `service-worker.js` | PWA `eduquest-cache-v1.30.2` (**96 ressources pré-cachées**, 100 % hors-ligne dont `credits.html` et `Image/team/clement-amisse.jpg`) |
 | `schema.sql` | Schéma SQL complet (MySQL 8.0 / MariaDB / PostgreSQL / SQLite : 43 matières SVG + 18 filières cohérentes) |
 | `docs/` | Guides techniques : [Architecture](docs/ARCHITECTURE.md), [Guide de contribution](docs/GUIDE_CONTRIBUTION.md), [Persistance](docs/API_PERSISTENCE.md) |
 

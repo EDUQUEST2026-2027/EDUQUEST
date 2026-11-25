@@ -36,13 +36,14 @@ EDUQUEST est une application web éducative 100 % front-end développée en Vani
 
 ```text
 eduquest/
-├── index.html                  # Accueil, modales Options (classe, 18 filières filtrées par niveau, apparence), Connexion & Quitter
-├── dashboard.html              # Tableau de bord élève, sélecteurs classe & filière, missions, 43 matières, boutique (98), succès (79)
-├── map.html                    # Carte interactive d'aventure (1 → 100), personnage, badge filière et quiz
-├── admin.html                  # Console d'administration unifiée (membres, 9 niveaux, 18 filières + niveaux, 43 matières, boutique, succès, Multi-IA)
+├── index.html                  # Accueil, modales Options (classe, 18 filières, thèmes Boutique), Connexion & Quitter
+├── dashboard.html              # Tableau de bord élève, Options sur place, sélecteurs classe & filière, missions, 43 matières, boutique (98), succès (79)
+├── map.html                    # Carte interactive d'aventure (1 → 100), Options sur place, personnage, badge filière et quiz
+├── credits.html                # Page dédiée aux 7 créateurs d'EDUQUEST (design Astral & Or, photos pilotables depuis admin.html)
+├── admin.html                  # Console d'administration sécurisée (PBKDF2, verrouillage onglet/inactivité, PIN optionnel, audit, équipe créateurs & contenus)
 ├── legal.html                  # Mentions légales, RGPD et gestion des cookies
 ├── test.html                   # Banc de tests autonome pour navigateur (13 suites QA)
-├── service-worker.js           # PWA & pré-cache hors-ligne intégral (eduquest-cache-v1.30.1, 94 ressources 100 % SVG)
+├── service-worker.js           # PWA & pré-cache hors-ligne intégral (eduquest-cache-v1.30.2, 96 ressources dont credits.html & photo équipe)
 ├── manifest.webmanifest        # Manifeste PWA (icône vectorielle Image/logo.svg)
 ├── robots.txt                  # Directives moteurs de recherche et robots IA
 ├── sitemap.xml                 # Plan du site public
@@ -51,16 +52,16 @@ eduquest/
 ├── schema.sql                  # Schéma SQL relationnel (43 matières SVG, 18 filières, progression, quêtes, inventaire)
 ├── css/
 │   ├── global.css              # Design system, cosmos animé, 16 thèmes visuels (15 custom + défaut), icônes SVG .eq-icon, fiabilisation hitboxes
-│   ├── style.css               # Pages de jeu, 27 classes avatars SVG, HUD Série/Combo, bandeau mobile fermable, filtres, modales, checkboxes accessibles
+│   ├── style.css               # Pages de jeu, 27 classes avatars SVG, sélecteur thèmes Options, HUD Série/Combo, bandeau mobile fermable, modales, checkboxes accessibles
 │   ├── quests.css              # Missions quotidiennes compactes & repliables, anneau SVG isolé (.quest-ring > svg), canvas confettis
 │   └── admin.css               # Thème glassmorphism du panneau d'administration & responsive mobile
 ├── js/
-│   ├── app.js                  # Contrôleur principal, particules/options synchronisées, HUD SVG, boutique (dont retrait titre/thème), 79 succès, confettis calibrés
-│   ├── db.js                   # Couche d'accès aux données isolée par compte (niveau, filière, progression, boosters, purge RGPD)
+│   ├── app.js                  # Contrôleur principal, modale Options sur place (ensureOptionsModal), thèmes Boutique→Options, HUD SVG, boutique, 79 succès, confettis
+│   ├── db.js                   # Couche d'accès isolée par compte + sécurité admin (PBKDF2-SHA256 salé, verifyAdminSession, sessionStorage lock, anti-force brute, PIN, audit)
 │   ├── quiz-engine.js          # Moteur multi-types (6 formats, ___/[___], Levenshtein, drag & drop réversible sans collision, icônes SVG)
 │   ├── question-bank.js        # Banque officielle des 43 matières dont Allemand (Collège, Lycée, BTS), lazy variants & decks stables sans biais de parité
-│   ├── admin-store.js          # Catalogue central (9 niveaux, 18 filières + allowedNiveaux, 43 matières, 98 articles, 79 badges, 9 quêtes, IA)
-│   ├── admin.js                # Contrôleur d'interface d'administration (pilotage intégral, cohérence classe↔filière, aperçu procédural sur niveau valide)
+│   ├── admin-store.js          # Catalogue central (9 niveaux, 18 filières + allowedNiveaux, 43 matières, 98 articles, 79 badges, 9 quêtes, 7 créateurs, IA)
+│   ├── admin.js                # Contrôleur d'interface d'administration sécurisé (pilotage intégral, éditeur photos créateurs, gestion PIN & journal d'audit)
 │   ├── ai-provider.js          # Pool Multi-IA (Make, OpenAI-compatible, Gemini) avec bascule et repli adaptatif
 │   ├── cookies.js              # Bandeau de consentement conforme RGPD/CNIL avec fermeture rapide (12 mois)
 │   ├── core/
@@ -76,14 +77,16 @@ eduquest/
 ├── Image/
 │   ├── logo.svg                # Blason officiel vectoriel SVG Astral & Or
 │   ├── ile/                    # 43 îles-matières 100 % SVG vectoriels (dont allemand.svg — thème Astral & Or)
-│   └── personnages/            # 27 avatars 100 % SVG vectoriels (thème Astral & Or)
+│   ├── personnages/            # 27 avatars 100 % SVG vectoriels (thème Astral & Or)
+│   └── team/                   # Photos des créateurs (dont clement-amisse.jpg)
 ├── Musique/                    # 6 pistes audio MP3 d'ambiance
 ├── docs/                       # Documentation technique (ARCHITECTURE, GUIDE_CONTRIBUTION, API_PERSISTENCE)
-└── tests/                      # 12 suites de tests unitaires Node.js
+└── tests/                      # 14 suites de tests unitaires Node.js
     ├── adaptive-and-multi-ai.test.js
     ├── admin-store.test.js
     ├── audio-manager.test.js
     ├── cookies.test.js
+    ├── credits.test.js
     ├── daily-quests.test.js
     ├── db.test.js
     ├── filieres-and-improvements.test.js
@@ -91,6 +94,7 @@ eduquest/
     ├── question-bank.test.js
     ├── quiz-engine.test.js
     ├── quiz-timer.test.js
+    ├── security-options-themes.test.js
     ├── svg-and-audit.test.js
     └── test-helper.js
 ```

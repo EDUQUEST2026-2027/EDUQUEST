@@ -78,15 +78,15 @@
                         <circle cx="12" cy="8" r="4" fill="currentColor" fill-opacity="0.2" />
                         <path d="M5 20a7 7 0 0 1 14 0" fill="currentColor" fill-opacity="0.12" />
                     </svg></button>
-                <a class="options-wheel" href="index.html#options"
-                    onclick="try{sessionStorage.setItem('eduquest_options_return',location.href);}catch(_){}"
+                <button type="button" class="options-wheel" id="openOptionsBtn"
+                    onclick="window._openOptionsModal && window._openOptionsModal()"
                     title="Options" aria-label="Options"><svg class="eq-icon eq-icon--gold" width="20" height="20"
                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
                         stroke-linejoin="round" aria-hidden="true">
                         <circle cx="12" cy="12" r="3" fill="currentColor" fill-opacity="0.22" />
                         <path
                             d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                    </svg></a>
+                    </svg></button>
                 <a class="back-button" href="dashboard.html"><svg class="eq-icon" width="15" height="15"
                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
                         stroke-linejoin="round" aria-hidden="true">
@@ -264,7 +264,7 @@
 
     <footer>
         <div class="footer">Version 1.30.0</div>
-        <div class="legal-links"><a href="legal.html">Mentions légales</a> · <a href="legal.html#cookies"
+        <div class="legal-links"><a href="credits.html">✨ Crédits</a> · <a href="legal.html">Mentions légales</a> · <a href="legal.html#cookies"
                 onclick="if(window.EduCookies){event.preventDefault();window.dispatchEvent(new Event('eduquest:cookie-reopen'));}">Cookies</a>
         </div>
     </footer>

@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="fr">
+<!--
+  CREDITS.HTML — EDUQUEST v1.30.0
+  Page dédiée aux crédits des 7 créateurs d'EDUQUEST :
+  Clément Amisse, Raphaël Grados, Sacha Siegel, François Lucas,
+  Lucas Delferriere, Théo Piou & Aimane Toure — pilotable depuis le panel admin.
+-->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDUQUEST — Les Créateurs &amp; Crédits</title>
+    <meta name="description" content="Découvrez les 7 créateurs passionnés ayant conçu et développé la plateforme éducative EDUQUEST.">
+    <meta name="theme-color" content="#0d1330">
+    <meta name="robots" content="index, follow">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="EDUQUEST">
+    <meta property="og:title" content="Les Créateurs d'EDUQUEST — Crédits Officiels">
+    <meta property="og:image" content="Image/logo.svg">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" type="image/svg+xml" href="Image/logo.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap">
+    <link rel="stylesheet" href="css/admin.css">
+    <link rel="manifest" href="manifest.webmanifest">
+    <style>
+        body {
+            background-color: #0b0f24;
+            background-image:
+                radial-gradient(ellipse at 50% 0%, rgba(200, 168, 75, 0.15) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 80%, rgba(76, 201, 240, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 20% 70%, rgba(114, 9, 183, 0.15) 0%, transparent 50%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: #e2e8f0;
+            font-family: 'Rajdhani', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .credits-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 30px 20px 80px;
+            flex: 1;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .credits-hero {
+            text-align: center;
+            padding: 40px 20px 30px;
+            position: relative;
+        }
+
+        .credits-hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(200, 168, 75, 0.12);
+            border: 1px solid rgba(200, 168, 75, 0.4);
+            border-radius: 999px;
+            padding: 6px 18px;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--gold-soft, #f3cf7a);
+            margin-bottom: 18px;
+            box-shadow: 0 0 20px rgba(200, 168, 75, 0.2);
+        }
+
+        .credits-title {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(2rem, 4.5vw, 3.2rem);
+            font-weight: 900;
+            color: #ffffff;
+            margin: 0 0 12px 0;
+            text-shadow: 0 0 25px rgba(200, 168, 75, 0.45);
+            letter-spacing: 1.5px;
+        }
+
+        .credits-subtitle {
+            font-size: clamp(1.05rem, 2vw, 1.3rem);
+            color: #94a3b8;
+            max-width: 680px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .credits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 24px;
+            margin-top: 40px;
+        }
+
+        .creator-card {
+            background: rgba(13, 19, 48, 0.78);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(200, 168, 75, 0.28);
+            border-radius: 20px;
+            padding: 28px 22px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .creator-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, #c8a84b, #4cc9f0, transparent);
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .creator-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(200, 168, 75, 0.65);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), 0 0 25px rgba(200, 168, 75, 0.2);
+        }
+
+        .creator-card:hover::before {
+            opacity: 1;
+        }
+
+        .creator-avatar-wrap {
+            position: relative;
+            width: 104px;
+            height: 104px;
+            margin-bottom: 18px;
+        }
+
+        .creator-avatar-ring {
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            background: conic-gradient(from 180deg at 50% 50%, #c8a84b, #4cc9f0, #c8a84b);
+            animation: spinRing 12s linear infinite;
+            opacity: 0.85;
+            pointer-events: none;
+        }
+
+        @keyframes spinRing {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .creator-avatar {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: #101736;
+            border: 3px solid #0b0f24;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 42px;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.6);
+        }
+
+        .creator-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .creator-name {
+            font-family: 'Cinzel', serif;
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 0 0 6px 0;
+            letter-spacing: 0.5px;
+        }
+
+        .creator-role {
+            display: inline-block;
+            background: rgba(76, 201, 240, 0.12);
+            color: #4cc9f0;
+            border: 1px solid rgba(76, 201, 240, 0.3);
+            border-radius: 999px;
+            padding: 3px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .creator-bio {
+            color: #cbd5e1;
+            font-size: 14.5px;
+            line-height: 1.55;
+            margin: 0 0 16px 0;
+            flex-grow: 1;
+        }
+
+        .creator-links {
+            display: flex;
+            gap: 10px;
+            margin-top: auto;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .creator-link-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #e2e8f0;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .creator-link-btn:hover {
+            background: rgba(200, 168, 75, 0.2);
+            border-color: #c8a84b;
+            color: #f3cf7a;
+            transform: translateY(-2px);
+        }
+
+        .credits-banner {
+            margin-top: 48px;
+            background: rgba(26, 37, 82, 0.6);
+            border: 1px solid rgba(200, 168, 75, 0.3);
+            border-radius: 16px;
+            padding: 24px 30px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .credits-banner-text h3 {
+            font-family: 'Cinzel', serif;
+            font-size: 1.15rem;
+            color: var(--gold-soft, #f3cf7a);
+            margin: 0 0 6px 0;
+        }
+
+        .credits-banner-text p {
+            margin: 0;
+            color: #94a3b8;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .credits-banner-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .credits-banner-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #c8a84b, #967425);
+            color: #0d1330;
+            font-weight: 700;
+            font-size: 14px;
+            padding: 10px 18px;
+            border-radius: 10px;
+            text-decoration: none;
+            box-shadow: 0 4px 14px rgba(200, 168, 75, 0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .credits-banner-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(200, 168, 75, 0.45);
+        }
+
+        .credits-banner-btn.ghost {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(200, 168, 75, 0.4);
+            color: #f3cf7a;
+            box-shadow: none;
+        }
+
+        .credits-banner-btn.ghost:hover {
+            background: rgba(200, 168, 75, 0.18);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .creator-avatar-ring { animation: none; }
+        }
+
+        @media (max-width: 600px) {
+            .credits-grid {
+                grid-template-columns: 1fr;
+            }
+            .credits-banner {
+                flex-direction: column;
+                text-align: center;
+            }
+            .credits-banner-actions {
+                justify-content: center;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Barre supérieure de navigation -->
+    <header class="adm-top" style="border-bottom:1px solid rgba(200,168,75,0.25); background:rgba(13,19,48,0.85); backdrop-filter:blur(10px);">
+        <div class="adm-brand">
+            <span class="adm-logo">
+                <svg class="eq-icon eq-icon--gold" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 2l2.1 6.9L21 11l-6.9 2.1L12 20l-2.1-6.9L3 11l6.9-2.1L12 2z" fill="currentColor" fill-opacity="0.22"/>
+                </svg>
+            </span>
+            <div>
+                <h1 style="font-family:'Cinzel',serif; font-size:18px; margin:0; color:#fff;">EDUQUEST</h1>
+                <p style="font-size:12px; margin:0; color:#c8a84b;">Les Créateurs &amp; Remerciements</p>
+            </div>
+        </div>
+        <div class="adm-top-right" style="display:flex; gap:10px; align-items:center;">
+            <a class="adm-btn adm-btn-ghost" href="index.html" title="Revenir au jeu">
+                <svg class="eq-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+                Retour au jeu
+            </a>
+            <a class="adm-btn adm-btn-ghost" id="creditsAdminTopBtn" href="admin.html#credits" title="Personnaliser dans l'administration" hidden>
+                <svg class="eq-icon eq-icon--gold" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6l7-3z" fill="currentColor" fill-opacity="0.18"/></svg>
+                Panel Admin
+            </a>
+        </div>
+    </header>
+
+    <main class="credits-container">
+        <!-- Section Hero -->
+        <header class="credits-hero">
+            <div class="credits-hero-badge">✨ Artisans du Savoir</div>
+            <h1 class="credits-title" id="creditsHeroTitle">L'ÉQUIPE DE CRÉATION</h1>
+            <p class="credits-subtitle" id="creditsHeroSubtitle">
+                Découvrez les personnes passionnées ayant imaginé, développé et propulsé le projet EDUQUEST pour rendre l'apprentissage interactif et stimulant.
+            </p>
+        </header>
+
+        <!-- Grille des créateurs générée dynamiquement -->
+        <section class="credits-grid" id="creatorsGrid" aria-label="Liste des créateurs"></section>
+
+        <!-- Bannière studio & informations légales -->
+        <section class="credits-banner">
+            <div class="credits-banner-text">
+                <h3 id="studioBannerTitle">EDUQUEST</h3>
+                <p id="studioBannerTagline">Apprendre en s'amusant — Site conçu et développé avec passion pour la réussite scolaire de la 6e au BTS.</p>
+            </div>
+            <div class="credits-banner-actions">
+                <a class="credits-banner-btn ghost" href="legal.html">Mentions légales</a>
+                <a class="credits-banner-btn ghost" href="dashboard.html">Tableau de bord</a>
+                <a class="credits-banner-btn" id="creditsAdminBannerBtn" href="admin.html#credits" hidden>
+                    <svg class="eq-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    Modifier les photos dans l'Admin
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <footer style="text-align:center; padding:24px 20px; font-size:13px; color:#64748b; border-top:1px solid rgba(255,255,255,0.06);">
+        <p style="margin:0 0 6px 0;" id="creditsFooterLine">EDUQUEST © 2026-2027 — Conçu par Clément Amisse, Raphaël Grados, Sacha Siegel, François Lucas, Lucas Delferriere, Théo Piou &amp; Aimane Toure.</p>
+        <p style="margin:0;">
+            <a href="index.html" style="color:#c8a84b; text-decoration:none;">Accueil</a> ·
+            <a href="dashboard.html" style="color:#c8a84b; text-decoration:none;">Tableau de bord</a> ·
+            <a href="legal.html" style="color:#c8a84b; text-decoration:none;">Mentions légales</a> ·
+            <a href="legal.html#cookies" style="color:#c8a84b; text-decoration:none;" onclick="if(window.EduCookies){event.preventDefault();window.dispatchEvent(new Event('eduquest:cookie-reopen'));}">Cookies</a>
+        </p>
+    </footer>
+
+    <!-- Scripts de persistance, icônes et rendu dynamique -->
+    <script src="js/core/icons.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/admin-store.js"></script>
+    <script src="js/cookies.js"></script>
+    <script>
+        (function() {
+            const grid = document.getElementById('creatorsGrid');
+            if (!grid) return;
+
+            // N'afficher les raccourcis d'édition Admin que pour un administrateur vérifié
+            const isAdmin = (window.DB && typeof window.DB.verifyAdminSession === 'function')
+                ? window.DB.verifyAdminSession().ok
+                : Boolean(window.DB && window.DB.getCurrentUser && (window.DB.getCurrentUser() || {}).role === 'admin');
+            if (isAdmin) {
+                const topBtn = document.getElementById('creditsAdminTopBtn');
+                const bannerBtn = document.getElementById('creditsAdminBannerBtn');
+                if (topBtn) topBtn.hidden = false;
+                if (bannerBtn) bannerBtn.hidden = false;
+            }
+
+            const credits = (window.AdminStore && typeof window.AdminStore.getCredits === 'function')
+                ? window.AdminStore.getCredits()
+                : {
+                    studioName: 'EDUQUEST',
+                    tagline: 'Apprendre en s’amusant',
+                    extraNote: 'Site conçu et développé avec passion pour la réussite scolaire de la 6e au BTS.',
+                    team: [
+                        { id: 'clement-amisse', name: 'Clément Amisse', role: 'Créateur & Développeur', bio: 'Conception, développement et architecture globale d’EDUQUEST.', avatar: 'Image/team/clement-amisse.jpg', github: '', links: '' },
+                        { id: 'raphael-grados', name: 'Raphaël Grados', role: 'Créateur & Développeur', bio: 'Architecture pédagogique, intégration technique et filières.', avatar: '', github: '', links: '' },
+                        { id: 'sacha-siegel', name: 'Sacha Siegel', role: 'Créateur & Concepteur', bio: 'Conception des mécaniques de jeu, logique et parcours.', avatar: '', github: '', links: '' },
+                        { id: 'francois-lucas', name: 'François Lucas', role: 'Créateur & Concepteur', bio: 'Conception des contenus, questions et équilibrage.', avatar: '', github: '', links: '' },
+                        { id: 'lucas-delferriere', name: 'Lucas Delferriere', role: 'Créateur & Concepteur', bio: 'Design interactif, expérience utilisateur et contenus.', avatar: '', github: '', links: '' },
+                        { id: 'theo-piou', name: 'Théo Piou', role: 'Créateur & Concepteur', bio: 'Conception pédagogique, multimédia et immersion.', avatar: '', github: '', links: '' },
+                        { id: 'aimane-toure', name: 'Aimane Toure', role: 'Créateur & Concepteur', bio: 'Gestion des banques de données et validation des épreuves.', avatar: '', github: '', links: '' }
+                    ]
+                };
+
+            const team = Array.isArray(credits.team) ? credits.team : [];
+
+            if (credits.studioName) {
+                const sbTitle = document.getElementById('studioBannerTitle');
+                if (sbTitle) sbTitle.textContent = credits.studioName;
+            }
+            if (credits.tagline) {
+                const sbTagline = document.getElementById('studioBannerTagline');
+                if (sbTagline) sbTagline.textContent = credits.tagline + (credits.extraNote ? ' — ' + credits.extraNote : '');
+            }
+
+            function escapeHTML(str) {
+                return String(str || '').replace(/[&<>"']/g, m => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+                })[m]);
+            }
+
+            function safeWebUrl(raw) {
+                const s = String(raw || '').trim();
+                if (!s || /^(javascript|vbscript|data|file):/i.test(s) || s.startsWith('//')) return '';
+                if (/^https?:\/\/[^\s]+$/i.test(s)) return s;
+                if (!s.includes(':') && /^[a-z0-9.-]+\.[a-z]{2,}(\/[^\s]*)?$/i.test(s)) return 'https://' + s;
+                return '';
+            }
+
+            function safeAvatarUrl(raw) {
+                const s = String(raw || '').trim();
+                if (!s || s.includes('..') || s.startsWith('//') || /^(javascript|vbscript|file):/i.test(s)) return '';
+                if (/^data:/i.test(s)) {
+                    return /^data:image\/(png|webp|jpeg|jpg|gif);base64,[a-z0-9+/=\s]+$/i.test(s) ? s : '';
+                }
+                if (/^(\/?Image\/|https?:\/\/)/i.test(s)) return s;
+                return '';
+            }
+
+            const fallbackUserSvg = (window.EduIcons && typeof window.EduIcons.svg === 'function')
+                ? window.EduIcons.svg('user', { size: 42, tone: 'gold' })
+                : '<span style="font-size:38px;">👤</span>';
+
+            grid.innerHTML = team.map(m => {
+                const name = escapeHTML(m.name);
+                const role = escapeHTML(m.role || 'Créateur');
+                const bio = escapeHTML(m.bio || 'Co-créateur du projet EDUQUEST.');
+                const avatar = safeAvatarUrl(m.avatar);
+                const github = safeWebUrl(m.github);
+                const links = safeWebUrl(m.links);
+
+                return `
+                    <article class="creator-card">
+                        <div class="creator-avatar-wrap">
+                            <div class="creator-avatar-ring"></div>
+                            <div class="creator-avatar">
+                                ${avatar
+                                    ? `<img src="${escapeHTML(avatar)}" alt="${name}" loading="lazy" decoding="async">`
+                                    : fallbackUserSvg}
+                            </div>
+                        </div>
+                        <h2 class="creator-name">${name}</h2>
+                        <span class="creator-role">${role}</span>
+                        <p class="creator-bio">${bio}</p>
+                        ${(github || links) ? `
+                            <div class="creator-links">
+                                ${github ? `<a class="creator-link-btn" href="${escapeHTML(github)}" target="_blank" rel="noopener noreferrer">GitHub</a>` : ''}
+                                ${links ? `<a class="creator-link-btn" href="${escapeHTML(links)}" target="_blank" rel="noopener noreferrer">Profil</a>` : ''}
+                            </div>
+                        ` : ''}
+                    </article>
+                `;
+            }).join('');
+
+            // Repli sûr si une image d'avatar échoue au chargement (sans attribut onerror inline)
+            grid.querySelectorAll('.creator-avatar img').forEach(img => {
+                img.addEventListener('error', () => {
+                    if (img.parentElement) img.parentElement.innerHTML = fallbackUserSvg;
+                }, { once: true });
+            });
+        })();
+    </script>
+</body>
+</html>

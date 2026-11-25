@@ -9,7 +9,7 @@ Ce guide décrit l'ensemble des bonnes pratiques, flux de tests et protocoles d'
 Le projet dispose de deux environnements de tests complémentaires sans aucune dépendance npm externe.
 
 ### A. Tests Node.js (CLI)
-Exécute la suite complète de tests unitaires (12 suites) via l'exécuteur natif `node:test` :
+Exécute la suite complète de tests unitaires (14 suites) via l'exécuteur natif `node:test` :
 
 ```bash
 node --test tests/*.test.js
@@ -19,19 +19,21 @@ node --test tests/*.test.js
 npm test
 ```
 
-#### Les 12 suites de tests automatisés :
+#### Les 14 suites de tests automatisés :
 1. `tests/admin-store.test.js` : Validation des 6 types de questions, cycles scolaires (`band`), classes autorisées, avatars SVG, aperçu procédural, configuration du site et pool Multi-IA.
 2. `tests/adaptive-and-multi-ai.test.js` : Anti-triche 3 étoiles persisté, réinitialisation sur échec, moteur adaptatif non-répétitif et sélection aléatoire/cascade Multi-IA.
 3. `tests/audio-manager.test.js` : Globalisation musicale, anti-réactivation après coupure manuelle, synchronisation inter-onglets et extinction totale au clic sur Quitter.
 4. `tests/cookies.test.js` : Conformité du bandeau RGPD/CNIL, durées d'expiration (12 mois) et granularité du consentement.
-5. `tests/daily-quests.test.js` : Déterminisme du PRNG Mulberry32, tirage Fisher-Yates et renouvellement à minuit.
-6. `tests/db.test.js` : Isolation des comptes locaux, gestion des consommables, combos, bouclier d'étoile et persistance anti-triche des tentatives.
-7. `tests/filieres-and-improvements.test.js` : Isolation `DB.getFiliere`/`setFiliere`, cohérence stricte **niveau ↔ 18 filières** (2nde / 1ère-Tle / BTS 1-2), intégrité des **43 matières** (dont **Allemand**), suppression plein écran & reset joueur, anti-répétition sur 16 niveaux consécutifs, validation XML/pré-cache 100 % SVG (**logo + 43 îles + 27 avatars**, zéro fichier matriciel), pilotage admin intégral (98 articles boutique, 16 thèmes visuels, 79 succès filtrés par filière dont `germanophone`, quêtes, feature flags, export/import) et non-régression (`FACT_BANKS`, `AdminStore.hasSubjectCustomizations`, `QuizEngine`, `boost-combo`).
-8. `tests/game-rules-and-session.test.js` : Règles pures, étoiles, boosters (`boost-shield`, `boost-xp`, `boost-coins`, `boost-combo`), combos, multiplicateurs globaux et pipeline de soumission de quiz.
-9. `tests/question-bank.test.js` : Déterminisme du générateur procédural, non-répétition et respect strict des programmes Collège / Lycée / BTS.
-10. `tests/quiz-engine.test.js` : Rendu et notation des 6 formats de questions avec algorithme Levenshtein.
-11. `tests/quiz-timer.test.js` : Chronomètre fiable par horloge murale sur exercices consécutifs, réessais, icône SVG unifiée et expiration unique.
-12. `tests/svg-and-audit.test.js` : Tests unitaires de la bibliothèque `EduIcons`, non-régression de l'audit complet (couverture de parité procédurale `procIdx`, absence d'artefacts flottants IEEE-754, élisions grammaticales françaises, purge RGPD `deleteLocalMember`, atomicité `importJson`, préservation de la valeur `0`, masquage par défaut des clés API à l'export, sécurité `AiProvider`).
+5. `tests/credits.test.js` : Intégrité des 7 créateurs par défaut, photo de Clément Amisse (`Image/team/clement-amisse.jpg`), persistance dans `AdminStore` et filtrage XSS des URLs/avatars.
+6. `tests/daily-quests.test.js` : Déterminisme du PRNG Mulberry32, tirage Fisher-Yates et renouvellement à minuit.
+7. `tests/db.test.js` : Isolation des comptes locaux, gestion des consommables, combos, bouclier d'étoile et persistance anti-triche des tentatives.
+8. `tests/filieres-and-improvements.test.js` : Isolation `DB.getFiliere`/`setFiliere`, cohérence stricte **niveau ↔ 18 filières** (2nde / 1ère-Tle / BTS 1-2), intégrité des **43 matières** (dont **Allemand**), suppression plein écran & reset joueur, anti-répétition sur 16 niveaux consécutifs, validation XML/pré-cache 100 % SVG (**logo + 43 îles + 27 avatars**), pilotage admin intégral (98 articles boutique, 16 thèmes visuels, 79 succès filtrés par filière dont `germanophone`, quêtes, feature flags, export/import) et non-régression.
+9. `tests/game-rules-and-session.test.js` : Règles pures, étoiles, boosters (`boost-shield`, `boost-xp`, `boost-coins`, `boost-combo`), combos, multiplicateurs globaux et pipeline de soumission de quiz.
+10. `tests/question-bank.test.js` : Déterminisme du générateur procédural, non-répétition et respect strict des programmes Collège / Lycée / BTS.
+11. `tests/quiz-engine.test.js` : Rendu et notation des 6 formats de questions avec algorithme Levenshtein.
+12. `tests/quiz-timer.test.js` : Chronomètre fiable par horloge murale sur exercices consécutifs, réessais, icône SVG unifiée et expiration unique.
+13. `tests/security-options-themes.test.js` : Hachage PBKDF2-SHA256 salé + migration legacy, politique mot de passe admin, anti-usurpation `verifyAdminSession`, verrouillage d'onglet `sessionStorage`, blocage anti-force brute, code PIN secondaire, journal d'audit, modale Options sur place sans retour accueil et déblocage des thèmes Boutique → Options.
+14. `tests/svg-and-audit.test.js` : Tests unitaires de la bibliothèque `EduIcons`, non-régression de l'audit complet (couverture de parité procédurale `procIdx`, absence d'artefacts flottants IEEE-754, élisions grammaticales françaises, purge RGPD `deleteLocalMember`, atomicité `importJson`, préservation de la valeur `0`, masquage par défaut des clés API à l'export, sécurité `AiProvider`).
 
 ### B. Contrôle statique de syntaxe
 Valide la syntaxe de l'ensemble des modules JavaScript du projet :

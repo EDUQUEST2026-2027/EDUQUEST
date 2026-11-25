@@ -16,8 +16,12 @@ Toutes les clés sont préfixées par `eduquest_` pour éviter tout conflit avec
 | `eduquest_niveau_<scope>` *(et `eduquest_niveau` invité)* | `String` | Niveau scolaire sélectionné par l'élève (`6eme` → `terminale`, `bts1`, `bts2`) |
 | `eduquest_filiere_<scope>` *(et `eduquest_filiere` invité)* | `String` | Filière scolaire sélectionnée au lycée/BTS parmi les 18 filières officielles cohérentes avec la classe (`2nde` : 6 voies, `1ere`/`terminale` : 15 voies, `bts1`/`bts2` : 4 voies) |
 | `eduquest_prog_<scope>_<matiere>_<niveau>` | `Object` | Progression détaillée par matière et par classe (`{ levels: { "1": { unlocked, stars }, ... } }`) |
-| `eduquest_session` | `Object` | Session active (`{ token, username, email, role }`) |
-| `eduquest_local_users` | `Array` | Comptes locaux enregistrés (`{ email, username, password, role, created }`) — mots de passe hachés SHA-256 (`sh_*`) |
+| `eduquest_session` | `Object` | Session active (`{ token, username, email, role, adminProof? }`) |
+| `eduquest_local_users` | `Array` | Comptes locaux enregistrés (`{ email, username, password, role, created }`) — mots de passe hachés **PBKDF2-SHA256 salé** (`pbkdf2_*`, 100 000 itérations, migration transparente des anciens `sh_*`/`lh_*`) |
+| `eduquest_admin_panel_lock` *(sessionStorage)* | `Object` | Verrou de session admin isolé à l'onglet (`{ email, proof, token, openedAt, lastActivityAt }`), détruit automatiquement à la fermeture de l'onglet ou après inactivité |
+| `eduquest_admin_lockout` | `Object` | Compteur anti-force brute du panneau admin (blocage progressif 60 s / 5 min / 15 min après 5 échecs) |
+| `eduquest_admin_security` | `Object` | Paramètres de sécurité du panneau admin (délai d'inactivité et hash PBKDF2 du Code PIN optionnel — exclu de `AdminStore.exportJson()`) |
+| `eduquest_admin_audit` | `Array` | Journal d'audit des 50 derniers événements de sécurité du panneau admin |
 | `eduquest_quests_<scope>` *(et `eduquest_daily_quests`)* | `Object` | État des quêtes du jour et coffre bonus quotidien |
 | `eduquest_boosters_<scope>` | `Object` | Stock de potions consommables (`boost-xp`, `boost-shield`, `boost-coins`, `boost-time`, `boost-combo`) |
 | `eduquest_boosters_history_<scope>` | `Object` | Historique des potions acquises et utilisées (`{ acquired: {}, used: {} }`) pour les succès |

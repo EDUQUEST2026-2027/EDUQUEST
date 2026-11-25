@@ -84,13 +84,13 @@
 
     <footer>
         <div class="footer">Version 1.30.0</div>
-        <div class="legal-links"><a href="legal.html">Mentions légales</a> · <a href="legal.html#cookies"
+        <div class="legal-links"><a href="credits.html">✨ Crédits</a> · <a href="legal.html">Mentions légales</a> · <a href="legal.html#cookies"
                 onclick="if(window.EduCookies){event.preventDefault();window.dispatchEvent(new Event('eduquest:cookie-reopen'));}">Cookies</a></div>
     </footer>
 
-    <!-- Accès discret au panneau d'administration -->
-    <a class="admin-panel-link" href="admin.html"
-        title="Panneau d'administration : gérer les membres, les niveaux et les contenus"><svg class="eq-icon eq-icon--gold" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6l7-3z" fill="currentColor" fill-opacity="0.18"/><path d="M9.5 12l1.8 1.8 3.5-3.8"/></svg> Administration</a>
+    <!-- Accès sécurisé au panneau d'administration (masqué aux élèves connectés) -->
+    <a class="admin-panel-link" id="adminPanelLink" href="admin.html"
+        title="Panneau d'administration sécurisé : réservé aux administrateurs"><svg class="eq-icon eq-icon--gold" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6l7-3z" fill="currentColor" fill-opacity="0.18"/><path d="M9.5 12l1.8 1.8 3.5-3.8"/></svg> Administration</a>
 
     <!-- MODALS -->
     <div id="modalOptions" class="modal-overlay" hidden>
@@ -254,42 +254,17 @@
 
             <!-- Section Apparence -->
             <div id="optionsAppearanceSection">
-                <div class="options-section-title"><svg class="eq-icon eq-icon--gold" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 0 0 0 18h1.5a2.5 2.5 0 0 0 0-5H13a1.5 1.5 0 0 1 0-3h3.5A4.5 4.5 0 0 0 21 8.5 5.5 5.5 0 0 0 12 3z" fill="currentColor" fill-opacity="0.18"/><circle cx="7.5" cy="11" r="1" fill="currentColor"/><circle cx="10" cy="7.5" r="1" fill="currentColor"/></svg> Apparence &amp; Confort Visuel</div>
+                <div class="options-section-title"><svg class="eq-icon eq-icon--gold" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 0 0 0 18h1.5a2.5 2.5 0 0 0 0-5H13a1.5 1.5 0 0 1 0-3h3.5A4.5 4.5 0 0 0 21 8.5 5.5 5.5 0 0 0 12 3z" fill="currentColor" fill-opacity="0.18"/><circle cx="7.5" cy="11" r="1" fill="currentColor"/><circle cx="10" cy="7.5" r="1" fill="currentColor"/></svg> Apparence &amp; Thèmes</div>
 
-                <div class="option-group">
-                    <label class="option-label" for="uiColorPicker"><svg class="eq-icon eq-icon--cyan" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="6" fill="currentColor" fill-opacity="0.2"/><ellipse cx="12" cy="12" rx="10.5" ry="3.5" transform="rotate(-22 12 12)" fill="none"/></svg> Couleur de l'interface</label>
-                    <div class="color-presets-row" id="uiColorPresets" role="group"
-                        aria-label="Préréglages couleur de l'interface">
-                        <button type="button" class="color-swatch" data-ui-preset="default" data-bg="#0d1f3a"
-                            data-accent="#c8a84b"
-                            style="background: linear-gradient(135deg, #0d1f3a 55%, #c8a84b 100%);"
-                            title="Astral (Défaut)"></button>
-                        <button type="button" class="color-swatch" data-ui-preset="emeraude" data-bg="#0d2b1f"
-                            data-accent="#6bca82"
-                            style="background: linear-gradient(135deg, #0d2b1f 55%, #6bca82 100%);"
-                            title="Forêt Émeraude"></button>
-                        <button type="button" class="color-swatch" data-ui-preset="amethyste" data-bg="#22123c"
-                            data-accent="#c77dff"
-                            style="background: linear-gradient(135deg, #22123c 55%, #c77dff 100%);"
-                            title="Nébuleuse Améthyste"></button>
-                        <button type="button" class="color-swatch" data-ui-preset="ocean" data-bg="#0b2c3d"
-                            data-accent="#48cae4"
-                            style="background: linear-gradient(135deg, #0b2c3d 55%, #48cae4 100%);"
-                            title="Océan Profond"></button>
-                        <button type="button" class="color-swatch" data-ui-preset="rubis" data-bg="#35121c"
-                            data-accent="#ff758f"
-                            style="background: linear-gradient(135deg, #35121c 55%, #ff758f 100%);"
-                            title="Rubis Nocturne"></button>
-                        <button type="button" class="color-swatch" data-ui-preset="ambre" data-bg="#2e200c"
-                            data-accent="#ffb703"
-                            style="background: linear-gradient(135deg, #2e200c 55%, #ffb703 100%);"
-                            title="Palais d'Ambre"></button>
-                        <label class="color-picker-wrap">
-                            <span>Libre :</span>
-                            <input type="color" id="uiColorPicker" class="color-picker-input" value="#0d1f3a"
-                                aria-label="Couleur personnalisée de l'interface">
-                        </label>
+                <div class="option-group" id="optionsThemeGroup">
+                    <div class="options-theme-header">
+                        <span class="option-label"><svg class="eq-icon eq-icon--cyan" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="6" fill="currentColor" fill-opacity="0.2"/><ellipse cx="12" cy="12" rx="10.5" ry="3.5" transform="rotate(-22 12 12)" fill="none"/></svg> Thèmes visuels <span class="options-theme-count" id="optionsThemeCount"></span></span>
+                        <button type="button" class="options-theme-shop-link" id="optionsOpenThemeShop">Boutique Thèmes →</button>
                     </div>
+                    <div class="options-theme-grid" id="optionsThemeGrid" role="radiogroup" aria-label="Sélection du thème visuel"></div>
+                    <p class="adm-hint" style="margin-top: 6px; padding-left: 4px;">
+                        Achète de nouveaux thèmes dans la Boutique pour les débloquer ici.
+                    </p>
                 </div>
 
                 <div class="option-group">
@@ -329,10 +304,11 @@
                 </div>
             </div><!-- fin #optionsAppearanceSection -->
 
-            <!-- Section GitHub & Projet Open Source -->
+            <!-- Section GitHub, Crédits & Projet Open Source -->
             <div class="options-project-info"
-                style="margin-top: 10px; margin-bottom: 12px; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); text-align: center; font-size: 13px; color: var(--muted, #94a3b8);">
+                style="margin-top: 10px; margin-bottom: 12px; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); text-align: center; font-size: 13px; color: var(--muted, #94a3b8); display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px;">
                 <span><svg class="eq-icon eq-icon--gold" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2.1 6.9L21 11l-6.9 2.1L12 20l-2.1-6.9L3 11l6.9-2.1L12 2z" fill="currentColor" fill-opacity="0.24"/></svg> Projet EDUQUEST</span> ·
+                <a href="credits.html" style="color: var(--gold-soft, #f3cf7a); text-decoration: none; font-weight: 700;">✨ Les Créateurs</a> ·
                 <a href="https://github.com/EDUQUEST2026-2027/EDUQUEST" target="_blank" rel="noopener noreferrer"
                     id="optionsGithubLink"
                     style="color: var(--cyan, #38bdf8); text-decoration: none; font-weight: 600;"><svg class="eq-icon eq-icon--cyan" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21" fill="currentColor" fill-opacity="0.14"/></svg> Dépôt GitHub</a>

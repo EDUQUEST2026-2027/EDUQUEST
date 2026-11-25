@@ -1,5 +1,5 @@
-/* SERVICE-WORKER.JS — EDUQUEST v1.30.1 (PWA hors-ligne, pré-cache résilient cœur + médias 100 % SVG, 43 matières dont Allemand) */
-const CACHE_NAME = 'eduquest-cache-v1.30.1';
+/* SERVICE-WORKER.JS — EDUQUEST v1.30.2 (PWA hors-ligne, pré-cache résilient cœur + crédits + médias 100 % SVG, 43 matières dont Allemand) */
+const CACHE_NAME = 'eduquest-cache-v1.30.2';
 
 const CORE_PRECACHE_URLS = [
   './',
@@ -7,6 +7,7 @@ const CORE_PRECACHE_URLS = [
   'admin.html',
   'dashboard.html',
   'map.html',
+  'credits.html',
   'legal.html',
   'css/global.css',
   'css/style.css',
@@ -103,7 +104,8 @@ const MEDIA_PRECACHE_URLS = [
   'Image/ile/rh_comm.svg',
   'Image/ile/architecture_habitat.svg',
   'Image/ile/llce.svg',
-  'Image/ile/pse.svg'
+  'Image/ile/pse.svg',
+  'Image/team/clement-amisse.jpg'
 ];
 
 const PRECACHE_URLS = CORE_PRECACHE_URLS.concat(MEDIA_PRECACHE_URLS);

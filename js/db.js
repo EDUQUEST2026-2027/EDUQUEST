@@ -612,26 +612,36 @@ const DB = (() => {
                 : { ok: false, error: res.error };
         }
 
-        // Mode local : vérification dans le localStorage (insensible à la casse sur l'email, migration SHA-256)
+        // Mode local : vérification dans le localStorage (insensible à la casse sur l'email, PBKDF2-SHA256 + migration auto)
         const users = _getLocalUsers();
-        const inputHash = await _secureHash(password);
         const matchEmail = (u) => String(u && u.email || '').trim().toLowerCase() === cleanEmail;
-        let user = users.find(u => matchEmail(u) && u.password === inputHash);
+        const candidate = users.find(matchEmail);
+        let user = null;
 
-        // Migration transparente : si pas trouvé avec SHA-256, essayer l'ancien hash
-        if (!user) {
-            const legacyCandidate = users.find(u => matchEmail(u) && u.password === _legacyHash(password));
-            if (legacyCandidate) {
-                // Re-hasher le mot de passe en SHA-256 et sauvegarder
-                legacyCandidate.password = inputHash;
-                _setLocalUsers(users);
-                user = legacyCandidate;
+        if (candidate && candidate.password) {
+            const check = await _verifyPassword(password, candidate.password);
+            if (check.ok) {
+                if (check.needsUpgrade) {
+                    candidate.password = await _secureHash(password);
+                    _setLocalUsers(users);
+                }
+                user = candidate;
             }
         }
 
         if (user) {
-            _setSession({ token: 'local_' + Date.now(), username: user.username, email: user.email, role: user.role || 'eleve' });
-            return { ok: true, username: user.username };
+            const role = _normalizeRole(user.role);
+            const sess = {
+                token: 'local_' + _randomHex(16),
+                username: user.username,
+                email: user.email,
+                role,
+            };
+            if (role === 'admin') {
+                sess.adminProof = _computeAdminProof(user.email, user.password);
+            }
+            _setSession(sess);
+            return { ok: true, username: user.username, role };
         }
         return { ok: false, error: 'Email ou mot de passe incorrect.' };
     }
@@ -700,6 +710,7 @@ const DB = (() => {
             // Invalidation du token côté serveur (ignore les erreurs réseau)
             await apiRequest('POST', '/auth/logout').catch(() => { });
         }
+        lockAdminPanelSession();
         _setSession(null); // Suppression de la session locale
     }
 
@@ -950,23 +961,48 @@ const DB = (() => {
         try { localStorage.setItem('eduquest_local_users', JSON.stringify(users)); } catch { }
     }
 
-    /**
-     * Hash sécurisé via l'API native crypto.subtle (SHA-256).
-     * Retourne une promesse résolue avec une chaîne hex préfixée 'sh_'.
-     *
-     * @param {string} str - Chaîne à hasher (mot de passe en clair)
-     * @returns {Promise<string>} Ex: 'sh_a3f2c...'
-     */
-    async function _secureHash(str) {
+    function _randomHex(byteLen = 16) {
+        const bytes = new Uint8Array(byteLen);
+        if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+            crypto.getRandomValues(bytes);
+        } else {
+            for (let i = 0; i < byteLen; i++) bytes[i] = Math.floor(Math.random() * 256);
+        }
+        return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function _hexToBytes(hex) {
+        const clean = String(hex || '');
+        const out = new Uint8Array(Math.floor(clean.length / 2));
+        for (let i = 0; i < out.length; i++) {
+            out[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16) || 0;
+        }
+        return out;
+    }
+
+    function _constantTimeEqual(a, b) {
+        const sa = String(a || '');
+        const sb = String(b || '');
+        let diff = sa.length ^ sb.length;
+        const len = Math.max(sa.length, sb.length);
+        for (let i = 0; i < len; i++) {
+            diff |= (sa.charCodeAt(i) || 0) ^ (sb.charCodeAt(i) || 0);
+        }
+        return diff === 0;
+    }
+
+    async function _sha256Hex(str) {
         if (typeof crypto !== 'undefined' && crypto.subtle && typeof crypto.subtle.digest === 'function') {
             try {
                 const encoded = new TextEncoder().encode(String(str || ''));
                 const buf = await crypto.subtle.digest('SHA-256', encoded);
-                const hex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-                return 'sh_' + hex;
+                return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
             } catch { }
         }
-        // Repli déterministe si le navigateur est en contexte non sécurisé (HTTP local intranet)
+        return null;
+    }
+
+    function _fallbackHash(str) {
         let h1 = 0x811c9dc5, h2 = 0x6c62272e;
         const s = String(str || '');
         for (let i = 0; i < s.length; i++) {
@@ -975,6 +1011,90 @@ const DB = (() => {
             h2 = Math.imul(h2 ^ (ch + i), 0x5bd1e995);
         }
         return 'sh_fb_' + (h1 >>> 0).toString(16).padStart(8, '0') + (h2 >>> 0).toString(16).padStart(8, '0');
+    }
+
+    /**
+     * Hash sécurisé PBKDF2-SHA256 avec sel aléatoire par utilisateur (100 000 itérations).
+     * Repli propre vers SHA-256 salé / fallback en contexte HTTP non sécurisé.
+     *
+     * @param {string} str - Secret / mot de passe en clair
+     * @param {string} [explicitSaltHex] - Sel hex optionnel (pour vérification)
+     * @returns {Promise<string>} Ex: 'pbkdf2_<salt>_<derivedHex>'
+     */
+    async function _secureHash(str, explicitSaltHex = null) {
+        const saltHex = explicitSaltHex || _randomHex(16);
+        if (typeof crypto !== 'undefined' && crypto.subtle
+            && typeof crypto.subtle.importKey === 'function'
+            && typeof crypto.subtle.deriveBits === 'function') {
+            try {
+                const enc = new TextEncoder();
+                const keyMaterial = await crypto.subtle.importKey(
+                    'raw',
+                    enc.encode(String(str || '')),
+                    { name: 'PBKDF2' },
+                    false,
+                    ['deriveBits']
+                );
+                const bits = await crypto.subtle.deriveBits(
+                    { name: 'PBKDF2', salt: _hexToBytes(saltHex), iterations: 100000, hash: 'SHA-256' },
+                    keyMaterial,
+                    256
+                );
+                const hex = Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
+                return 'pbkdf2_' + saltHex + '_' + hex;
+            } catch { }
+        }
+        const sha = await _sha256Hex(saltHex + ':' + String(str || ''));
+        if (sha) return 'sh2_' + saltHex + '_' + sha;
+        return _fallbackHash(saltHex + ':' + String(str || '')).replace('sh_fb_', 'shfb2_' + saltHex + '_');
+    }
+
+    /**
+     * Vérifie un secret contre un hash stocké (PBKDF2, SHA-256 salé, SHA-256 legacy ou hash 32-bit legacy).
+     * Indique `needsUpgrade: true` si le hash provient d'un ancien format à migrer vers PBKDF2.
+     */
+    async function _verifyPassword(password, storedHash) {
+        const stored = String(storedHash || '');
+        if (!stored) return { ok: false, needsUpgrade: false };
+
+        if (stored.startsWith('pbkdf2_')) {
+            const parts = stored.split('_');
+            if (parts.length !== 3) return { ok: false, needsUpgrade: false };
+            const derived = await _secureHash(password, parts[1]);
+            return { ok: _constantTimeEqual(derived, stored), needsUpgrade: false };
+        }
+        if (stored.startsWith('sh2_')) {
+            const parts = stored.split('_');
+            if (parts.length !== 3) return { ok: false, needsUpgrade: false };
+            const sha = await _sha256Hex(parts[1] + ':' + String(password || ''));
+            return { ok: Boolean(sha && _constantTimeEqual('sh2_' + parts[1] + '_' + sha, stored)), needsUpgrade: true };
+        }
+        if (stored.startsWith('shfb2_')) {
+            const parts = stored.split('_');
+            if (parts.length !== 3) return { ok: false, needsUpgrade: false };
+            const fb = _fallbackHash(parts[1] + ':' + String(password || '')).replace('sh_fb_', 'shfb2_' + parts[1] + '_');
+            return { ok: _constantTimeEqual(fb, stored), needsUpgrade: true };
+        }
+        if (stored.startsWith('sh_fb_')) {
+            return { ok: _constantTimeEqual(_fallbackHash(password), stored), needsUpgrade: true };
+        }
+        if (stored.startsWith('sh_')) {
+            const sha = await _sha256Hex(password);
+            return { ok: Boolean(sha && _constantTimeEqual('sh_' + sha, stored)), needsUpgrade: true };
+        }
+        if (stored.startsWith('lh_')) {
+            return { ok: _constantTimeEqual(_legacyHash(password), stored), needsUpgrade: true };
+        }
+        return { ok: false, needsUpgrade: false };
+    }
+
+    /**
+     * Empreinte d'intégrité de session admin liée à l'e-mail et au hash de mot de passe stocké.
+     * Empêche l'usurpation simple de `eduquest_session` par modification de `role: "admin"` en console.
+     */
+    function _computeAdminProof(email, storedPasswordHash) {
+        const cleanEmail = String(email || '').trim().toLowerCase();
+        return _fallbackHash('eq-adm-proof::' + cleanEmail + '::' + String(storedPasswordHash || ''));
     }
 
     /**
@@ -990,6 +1110,281 @@ const DB = (() => {
             hash |= 0;
         }
         return 'lh_' + Math.abs(hash).toString(16);
+    }
+
+    /* -----------------------------------------------------------------------
+       SÉCURITÉ DU PANNEAU D'ADMINISTRATION (v1.30.1)
+       - Politique de mot de passe robuste pour les comptes admin (≥ 8 car., lettre + chiffre)
+       - Vérification croisée de la session admin (anti-usurpation localStorage)
+       - Session panneau isolée à l'onglet (sessionStorage) + verrouillage auto par inactivité
+       - Limitation anti-force brute avec blocage progressif (5 échecs → 60s / 5min / 15min)
+       - Code PIN secondaire d'administration optionnel (hashé PBKDF2, hors export AdminStore)
+       - Journal d'audit des connexions et opérations sensibles
+       ----------------------------------------------------------------------- */
+    const ADMIN_SEC_KEYS = {
+        PANEL_LOCK: 'eduquest_admin_panel_lock', // sessionStorage uniquement (verrouillé à la fermeture de l'onglet)
+        LOCKOUT: 'eduquest_admin_lockout',       // localStorage (persiste contre F5)
+        SECURITY: 'eduquest_admin_security',     // localStorage (PIN hashé + délai d'inactivité)
+        AUDIT: 'eduquest_admin_audit',           // localStorage (50 derniers événements)
+    };
+    const ADMIN_MAX_ATTEMPTS = 5;
+    let _memPanelLock = null;
+
+    function _getSessionStore() {
+        try {
+            if (typeof sessionStorage !== 'undefined' && sessionStorage) return sessionStorage;
+        } catch { }
+        return null;
+    }
+
+    function validateAdminPassword(password) {
+        const pw = String(password || '');
+        if (pw.length < 8) {
+            return { ok: false, error: 'Mot de passe administrateur trop court (8 caractères minimum).' };
+        }
+        if (!/[A-Za-zÀ-ÿ]/.test(pw) || !/[0-9]/.test(pw)) {
+            return { ok: false, error: 'Le mot de passe administrateur doit contenir au moins une lettre et un chiffre.' };
+        }
+        const weak = ['password1', 'admin123', 'admin1234', '12345678', 'azerty12', 'azerty123', 'qwerty12', 'eduquest1'];
+        if (weak.includes(pw.toLowerCase())) {
+            return { ok: false, error: 'Ce mot de passe est trop courant. Choisissez un mot de passe plus robuste.' };
+        }
+        return { ok: true };
+    }
+
+    function _readAdminSecurityRaw() {
+        try {
+            const parsed = JSON.parse(localStorage.getItem(ADMIN_SEC_KEYS.SECURITY) || '{}') || {};
+            return {
+                pinEnabled: Boolean(parsed.pinEnabled && parsed.pinHash),
+                pinHash: typeof parsed.pinHash === 'string' ? parsed.pinHash : '',
+                inactivityMinutes: Math.min(120, Math.max(1, parseInt(parsed.inactivityMinutes, 10) || 15)),
+            };
+        } catch {
+            return { pinEnabled: false, pinHash: '', inactivityMinutes: 15 };
+        }
+    }
+
+    function _writeAdminSecurityRaw(obj) {
+        try { localStorage.setItem(ADMIN_SEC_KEYS.SECURITY, JSON.stringify(obj)); } catch { }
+    }
+
+    function getAdminSecurityConfig() {
+        const raw = _readAdminSecurityRaw();
+        return {
+            pinEnabled: raw.pinEnabled,
+            inactivityMinutes: raw.inactivityMinutes,
+        };
+    }
+
+    async function setAdminPin(pin) {
+        const clean = String(pin || '').trim();
+        if (clean.length < 4 || clean.length > 32) {
+            return { ok: false, error: 'Le code PIN d’accès doit contenir entre 4 et 32 caractères.' };
+        }
+        const raw = _readAdminSecurityRaw();
+        raw.pinHash = await _secureHash(clean);
+        raw.pinEnabled = true;
+        _writeAdminSecurityRaw(raw);
+        appendAdminAudit('pin_enabled', 'Code PIN administrateur activé/mis à jour');
+        return { ok: true };
+    }
+
+    function disableAdminPin() {
+        const raw = _readAdminSecurityRaw();
+        raw.pinHash = '';
+        raw.pinEnabled = false;
+        _writeAdminSecurityRaw(raw);
+        appendAdminAudit('pin_disabled', 'Code PIN administrateur désactivé');
+        return { ok: true };
+    }
+
+    async function verifyAdminPin(pin) {
+        const raw = _readAdminSecurityRaw();
+        if (!raw.pinEnabled || !raw.pinHash) return { ok: true };
+        const res = await _verifyPassword(String(pin || '').trim(), raw.pinHash);
+        return { ok: res.ok };
+    }
+
+    function setAdminInactivityMinutes(mins) {
+        const n = Math.min(120, Math.max(1, parseInt(mins, 10) || 15));
+        const raw = _readAdminSecurityRaw();
+        raw.inactivityMinutes = n;
+        _writeAdminSecurityRaw(raw);
+        appendAdminAudit('timeout_updated', `Verrouillage automatique réglé sur ${n} min`);
+        return { ok: true, inactivityMinutes: n };
+    }
+
+    /** Vérifie de manière croisée que la session courante appartient réellement à un admin existant. */
+    function verifyAdminSession() {
+        const session = _getSession();
+        if (!session || session.role !== 'admin') {
+            return { ok: false, reason: 'not_admin' };
+        }
+        if (USE_API) {
+            if (!session.token) return { ok: false, reason: 'missing_token' };
+            return { ok: true, user: { username: session.username, email: session.email, role: 'admin' } };
+        }
+        const cleanEmail = String(session.email || '').trim().toLowerCase();
+        const users = _getLocalUsers();
+        const realUser = users.find(u => String(u && u.email || '').trim().toLowerCase() === cleanEmail);
+        if (!realUser || _normalizeRole(realUser.role) !== 'admin') {
+            return { ok: false, reason: 'invalid_account' };
+        }
+        const expectedProof = _computeAdminProof(realUser.email, realUser.password);
+        if (!session.adminProof || !_constantTimeEqual(session.adminProof, expectedProof)) {
+            return { ok: false, reason: 'invalid_proof' };
+        }
+        return { ok: true, user: { username: realUser.username, email: realUser.email, role: 'admin' }, proof: expectedProof };
+    }
+
+    function _readPanelLock() {
+        const store = _getSessionStore();
+        try {
+            const raw = store ? store.getItem(ADMIN_SEC_KEYS.PANEL_LOCK) : _memPanelLock;
+            return raw ? JSON.parse(raw) : null;
+        } catch { return null; }
+    }
+
+    function _writePanelLock(obj) {
+        const serialized = obj ? JSON.stringify(obj) : null;
+        const store = _getSessionStore();
+        _memPanelLock = serialized;
+        try {
+            if (store) {
+                if (serialized) store.setItem(ADMIN_SEC_KEYS.PANEL_LOCK, serialized);
+                else store.removeItem(ADMIN_SEC_KEYS.PANEL_LOCK);
+            }
+        } catch { }
+    }
+
+    function openAdminPanelSession() {
+        const verified = verifyAdminSession();
+        if (!verified.ok) return { ok: false, reason: verified.reason };
+        const now = Date.now();
+        _writePanelLock({
+            email: verified.user.email,
+            proof: verified.proof || 'api',
+            token: _randomHex(16),
+            openedAt: now,
+            lastActivityAt: now,
+        });
+        return { ok: true, user: verified.user };
+    }
+
+    function lockAdminPanelSession() {
+        _writePanelLock(null);
+    }
+
+    function touchAdminPanelSession() {
+        const lock = _readPanelLock();
+        if (!lock) return false;
+        lock.lastActivityAt = Date.now();
+        _writePanelLock(lock);
+        return true;
+    }
+
+    function checkAdminPanelSession() {
+        const verified = verifyAdminSession();
+        if (!verified.ok) {
+            lockAdminPanelSession();
+            return { ok: false, reason: verified.reason };
+        }
+        const lock = _readPanelLock();
+        if (!lock || String(lock.email || '').toLowerCase() !== String(verified.user.email || '').toLowerCase()) {
+            return { ok: false, reason: 'locked' };
+        }
+        if (!USE_API && (!lock.proof || !_constantTimeEqual(lock.proof, verified.proof))) {
+            lockAdminPanelSession();
+            return { ok: false, reason: 'invalid_proof' };
+        }
+        const timeoutMs = _readAdminSecurityRaw().inactivityMinutes * 60 * 1000;
+        if (Date.now() - (Number(lock.lastActivityAt) || 0) > timeoutMs) {
+            lockAdminPanelSession();
+            appendAdminAudit('lock_auto', 'Session admin verrouillée après inactivité');
+            return { ok: false, reason: 'expired' };
+        }
+        return { ok: true, user: verified.user };
+    }
+
+    function _readLockout() {
+        try {
+            const p = JSON.parse(localStorage.getItem(ADMIN_SEC_KEYS.LOCKOUT) || '{}') || {};
+            return {
+                attempts: Math.max(0, parseInt(p.attempts, 10) || 0),
+                strikes: Math.max(0, parseInt(p.strikes, 10) || 0),
+                lockedUntil: Math.max(0, parseInt(p.lockedUntil, 10) || 0),
+            };
+        } catch {
+            return { attempts: 0, strikes: 0, lockedUntil: 0 };
+        }
+    }
+
+    function _writeLockout(obj) {
+        try { localStorage.setItem(ADMIN_SEC_KEYS.LOCKOUT, JSON.stringify(obj)); } catch { }
+    }
+
+    function getAdminLockoutStatus() {
+        const st = _readLockout();
+        const now = Date.now();
+        const remainingMs = st.lockedUntil > now ? (st.lockedUntil - now) : 0;
+        return {
+            locked: remainingMs > 0,
+            remainingMs,
+            attempts: st.attempts,
+            maxAttempts: ADMIN_MAX_ATTEMPTS,
+            strikes: st.strikes,
+        };
+    }
+
+    function recordAdminLoginFailure(email = '') {
+        const st = _readLockout();
+        const now = Date.now();
+        if (st.lockedUntil > now) {
+            return getAdminLockoutStatus();
+        }
+        st.attempts += 1;
+        if (st.attempts >= ADMIN_MAX_ATTEMPTS) {
+            st.strikes += 1;
+            const durationSec = st.strikes === 1 ? 60 : (st.strikes === 2 ? 300 : 900);
+            st.lockedUntil = now + durationSec * 1000;
+            st.attempts = 0;
+            appendAdminAudit('lockout', `Blocage anti-force brute (${durationSec}s) après 5 échecs${email ? ' (' + String(email).slice(0, 60) + ')' : ''}`);
+        } else {
+            appendAdminAudit('login_fail', `Échec de connexion admin (${st.attempts}/${ADMIN_MAX_ATTEMPTS})${email ? ' — ' + String(email).slice(0, 60) : ''}`);
+        }
+        _writeLockout(st);
+        return getAdminLockoutStatus();
+    }
+
+    function clearAdminLoginFailures() {
+        try { localStorage.removeItem(ADMIN_SEC_KEYS.LOCKOUT); } catch { }
+    }
+
+    function getAdminAuditLog() {
+        try {
+            const parsed = JSON.parse(localStorage.getItem(ADMIN_SEC_KEYS.AUDIT) || '[]');
+            return Array.isArray(parsed) ? parsed : [];
+        } catch { return []; }
+    }
+
+    function appendAdminAudit(action, detail = '') {
+        try {
+            const log = getAdminAuditLog();
+            const cur = _getSession();
+            log.unshift({
+                ts: new Date().toISOString(),
+                actor: (cur && cur.email) ? String(cur.email).slice(0, 80) : 'anonyme',
+                action: String(action || 'event').slice(0, 40),
+                detail: String(detail || '').slice(0, 200),
+            });
+            if (log.length > 50) log.length = 50;
+            localStorage.setItem(ADMIN_SEC_KEYS.AUDIT, JSON.stringify(log));
+        } catch { }
+    }
+
+    function clearAdminAuditLog() {
+        try { localStorage.removeItem(ADMIN_SEC_KEYS.AUDIT); } catch { }
     }
 
     /* -----------------------------------------------------------------------
@@ -1204,8 +1599,15 @@ const DB = (() => {
             if (pw) user.password = await _secureHash(pw);
         }
         _setLocalUsers(users);
-        // Actualise la session (le token reste valide, le pseudo peut changer)
-        _setSession({ ...session, username: user.username });
+        // Actualise la session (le token reste valide, le pseudo et la preuve admin sont mis à jour)
+        const nextSess = { ...session, username: user.username };
+        if (_normalizeRole(user.role) === 'admin') {
+            nextSess.adminProof = _computeAdminProof(user.email, user.password);
+        }
+        _setSession(nextSess);
+        if (_normalizeRole(user.role) === 'admin' && _readPanelLock()) {
+            openAdminPanelSession();
+        }
         return { ok: true, data: { username: user.username, email: user.email, role: user.role || 'eleve' } };
     }
 
@@ -1474,6 +1876,25 @@ const DB = (() => {
         updateLocalMember,      // Modifie pseudo / mot de passe / rôle d'un compte
         deleteLocalMember,      // Supprime un compte (protège le dernier admin)
         updateProfile,          // Modifie le profil du membre connecté
+
+        // --- Sécurité du panneau d'administration (v1.30.1) ---
+        validateAdminPassword,
+        verifyAdminSession,
+        openAdminPanelSession,
+        lockAdminPanelSession,
+        touchAdminPanelSession,
+        checkAdminPanelSession,
+        getAdminLockoutStatus,
+        recordAdminLoginFailure,
+        clearAdminLoginFailures,
+        getAdminSecurityConfig,
+        setAdminPin,
+        disableAdminPin,
+        verifyAdminPin,
+        setAdminInactivityMinutes,
+        getAdminAuditLog,
+        appendAdminAudit,
+        clearAdminAuditLog,
 
         // --- Informations de configuration (lecture seule) ---
         get useApi() { return USE_API; },   // true si le mode API est activé
