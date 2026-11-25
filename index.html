@@ -10,14 +10,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EDUQUEST — Le jeu de révision Collège, Lycée &amp; BTS</title>
     <meta name="description"
-        content="Apprends en t'amusant : 36 matières du programme officiel (Collège, Lycée & BTS, 18 filières), 100 niveaux, quiz variés, XP, 78 succès et 27 avatars. 100 % gratuit, sans publicité.">
+        content="Apprends en t'amusant : 43 matières du programme officiel dont l'Allemand (Collège, Lycée & BTS, 18 filières), 100 niveaux, quiz variés, XP, 79 succès et 27 avatars. 100 % gratuit, sans publicité.">
     <meta name="theme-color" content="#0d1330">
     <meta name="robots" content="index, follow">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="EDUQUEST">
     <meta property="og:title" content="EDUQUEST — Le jeu de révision Collège, Lycée & BTS">
     <meta property="og:description"
-        content="Gravis les 36 îles du savoir (18 filières) : 100 niveaux par matière, XP, 78 succès et boutique de 98 articles. Gratuit et sans publicité.">
+        content="Gravis les 43 îles du savoir (18 filières) : 100 niveaux par matière, XP, 79 succès et boutique de 98 articles. Gratuit et sans publicité.">
     <meta property="og:image" content="Image/logo.svg">
     <meta name="twitter:card" content="summary_large_image">
     <link rel="icon" type="image/svg+xml" href="Image/logo.svg">
@@ -85,7 +85,7 @@
     <footer>
         <div class="footer">Version 1.30.0</div>
         <div class="legal-links"><a href="legal.html">Mentions légales</a> · <a href="legal.html#cookies"
-                onclick="window.dispatchEvent(new Event('eduquest:cookie-reopen'))">Cookies</a></div>
+                onclick="if(window.EduCookies){event.preventDefault();window.dispatchEvent(new Event('eduquest:cookie-reopen'));}">Cookies</a></div>
     </footer>
 
     <!-- Accès discret au panneau d'administration -->
@@ -150,18 +150,7 @@
                 </div>
             </div>
 
-            <!-- Option 6 : Plein écran -->
-            <div class="option-group">
-                <label class="checkbox-container">
-                    <span class="checkbox">
-                        <input type="checkbox" id="pleinEcran">
-                        <span class="checkbox-mark">✓</span>
-                    </span>
-                    <span class="option-label"><svg class="eq-icon eq-icon--cyan" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg> Plein écran</span>
-                </label>
-            </div>
-
-            <!-- Option 6.5 : Mode Défi Chronométré -->
+            <!-- Option 6 : Mode Défi Chronométré -->
             <div class="option-group" id="optionsChronoGroup">
                 <label class="checkbox-container">
                     <span class="checkbox">

@@ -39,6 +39,7 @@ describe('SVG & Production Audit Regressions (v1.30.0)', () => {
         // Emoji mapping & stripping
         assert.ok(EduIcons.fromEmoji('🏆').includes('<svg'));
         assert.ok(EduIcons.fromEmoji('🔥').includes('<svg'));
+        assert.ok(EduIcons.fromEmoji('🇩🇪').includes('<svg'));
         assert.strictEqual(EduIcons.stripLeadingEmoji('🏆 Champion Astral'), 'Champion Astral');
         assert.strictEqual(EduIcons.iconFromLabel('🏆 Champion Astral'), 'trophy');
 
@@ -49,7 +50,7 @@ describe('SVG & Production Audit Regressions (v1.30.0)', () => {
     });
 
     it('QuestionBank — procIdx reaches both even and odd branches across procedural generators without float or grammar bugs', () => {
-        const subjects = ['maths', 'francais', 'histoire', 'geo', 'svt', 'anglais', 'physique', 'chimie', 'techno', 'technologie', 'philo', 'emc', 'nsi', 'ses'];
+        const subjects = ['maths', 'francais', 'histoire', 'geo', 'svt', 'anglais', 'allemand', 'espagnol', 'physique', 'chimie', 'techno', 'technologie', 'philo', 'emc', 'nsi', 'ses'];
         const grades = ['6eme', '4eme', '2nde', 'terminale'];
         const badGrammar = /(?<![\p{L}\p{N}_])(au imparfait|de le |de les |je ai|chevauxs)(?![\p{L}\p{N}_])/iu;
         const floatBug = /\d+\.\d{5,}/;

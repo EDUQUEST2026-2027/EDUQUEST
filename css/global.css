@@ -129,6 +129,7 @@ body {
     position: absolute;
     inset: 0;
     background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.7) 100%);
+    pointer-events: none;
 }
 
 /* Texture scanlines : lignes horizontales très subtiles pour effet "écran" */
@@ -809,7 +810,18 @@ button::after,
 .btn-action::before,
 .btn-action::after,
 .dash-skin-btn::before,
-.dash-skin-btn::after {
+.dash-skin-btn::after,
+.options-container::before,
+.options-container::after,
+.login-container::before,
+.login-container::after,
+.dash-modal::before,
+.dash-modal::after,
+.checkbox-container::before,
+.dash-subject-card::before,
+.dash-back-btn::before,
+.dash-bnav-item::before,
+.quest-board::before {
     pointer-events: none !important;
 }
 

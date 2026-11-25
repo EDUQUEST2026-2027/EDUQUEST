@@ -171,8 +171,8 @@ const DB = (() => {
     /* -----------------------------------------------------------------------
        OPTIONS DU JEU
        -----------------------------------------------------------------------
-       Les options sont les préférences de l'utilisateur : volume, plein écran,
-       particules, etc. Elles sont stockées en tant que paires clé/valeur.
+       Les options sont les préférences de l'utilisateur : volume, particules,
+       apparence, mode chrono, etc. Elles sont stockées en tant que paires clé/valeur.
 
        Correspondance avec la base SQL :
          Table "parametres" → colonnes : joueur_id, cle, valeur
@@ -188,17 +188,17 @@ const DB = (() => {
     /**
      * Récupère une option par son nom (version synchrone — utilise le cache local).
      *
-     * @param {string} name - Nom de l'option (ex: 'volumeMusique', 'pleinEcran')
+     * @param {string} name - Nom de l'option (ex: 'volumeMusique', 'modeChrono')
      * @returns {string|null} La valeur de l'option (toujours une chaîne), ou null si non définie
      *
      * Exemples de noms d'options et valeurs :
      *   'volumeMusique' → '75'      (nombre entre 0 et 100, sous forme de string)
-     *   'pleinEcran'    → 'true'    (booléen sous forme de string)
+     *   'modeChrono'    → 'true'    (booléen sous forme de string)
      *   'particules'    → 'false'
      *   'sonsActifs'    → 'true'
      *   'musiqueActive' → 'true'
      *   'effetsActifs'  → 'true'
-     *   'vsync'         → 'false'
+     *   'ecoMode'       → 'false'
      *   'volumeEffets'  → '80'
      */
     function _userScope() {

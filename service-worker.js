@@ -1,5 +1,5 @@
-/* SERVICE-WORKER.JS — EDUQUEST v1.30.0 (PWA hors-ligne, pré-cache résilient cœur + médias 100 % SVG) */
-const CACHE_NAME = 'eduquest-cache-v1.30.0';
+/* SERVICE-WORKER.JS — EDUQUEST v1.30.1 (PWA hors-ligne, pré-cache résilient cœur + médias 100 % SVG, 43 matières dont Allemand) */
+const CACHE_NAME = 'eduquest-cache-v1.30.1';
 
 const CORE_PRECACHE_URLS = [
   './',
@@ -67,6 +67,7 @@ const MEDIA_PRECACHE_URLS = [
   'Image/ile/geo.svg',
   'Image/ile/svt.svg',
   'Image/ile/anglais.svg',
+  'Image/ile/allemand.svg',
   'Image/ile/physique.svg',
   'Image/ile/chimie.svg',
   'Image/ile/technologie.svg',

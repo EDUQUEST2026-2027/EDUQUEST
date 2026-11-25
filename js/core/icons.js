@@ -166,7 +166,7 @@
         '🔌': 'plug', '📡': 'signal', '📐': 'ruler', '∑': 'calculator', '⚛': 'planet',
         '⚠️': 'alert', '⚠': 'alert', '📢': 'megaphone', '🏦': 'bank',
         '👋': 'wave', '🔍': 'search', '✏️': 'edit', '✏': 'edit', '🕹️': 'monitor',
-        '🇬🇧': 'flag', '🇪🇸': 'flag', '▶': 'play',
+        '🇬🇧': 'flag', '🇪🇸': 'flag', '🇩🇪': 'flag', '▶': 'play',
     });
 
     /**

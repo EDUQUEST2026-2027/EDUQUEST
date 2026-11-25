@@ -176,5 +176,11 @@ test('DailyQuests - Multiplicateur AdminStore et configuration dynamique', async
 
     assert.equal(DailyQuests.getBonusCoins(), 100, 'La valeur du coffre bonus configurée dans AdminStore doit être respectée');
 
+    // Vérifie que 0 est bien préservé (ne retombe pas sur 50)
+    globalThis.AdminStore = {
+        getRewardsConfig: () => ({ dailyChestCoins: 0 })
+    };
+    assert.equal(DailyQuests.getBonusCoins(), 0, 'dailyChestCoins = 0 doit être préservé sans repli à 50');
+
     delete globalThis.AdminStore;
 });

@@ -4,28 +4,33 @@
   MAP.HTML — EDUQUEST v1.30.0
   Carte interactive : progression niveau par niveau (1 à 100), personnage, chronomètre et quiz adaptatif par filière.
 -->
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Explore les îles du savoir — EDUQUEST</title>
-    <meta name="description" content="Gravis les 36 îles-matières niveau par niveau : chaque victoire rapporte XP, pièces et badges.">
+    <meta name="description"
+        content="Gravis les 43 îles-matières (dont Allemand) niveau par niveau : chaque victoire rapporte XP, pièces et badges.">
     <meta name="theme-color" content="#0d1330">
     <meta name="robots" content="index, follow">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="EDUQUEST">
     <meta property="og:title" content="Explore les îles du savoir — EDUQUEST">
-    <meta property="og:description" content="100 niveaux par matière sur une carte d'aventure. Apprends en progressant !">
+    <meta property="og:description"
+        content="100 niveaux par matière sur une carte d'aventure. Apprends en progressant !">
     <meta property="og:image" content="Image/logo.svg">
     <meta name="twitter:card" content="summary_large_image">
     <link rel="icon" type="image/svg+xml" href="Image/logo.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap">
     <link rel="stylesheet" href="css/global.css">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/quests.css">
     <link rel="manifest" href="manifest.webmanifest">
 </head>
+
 <body>
     <!-- Fond animé (même que toutes les autres pages) -->
     <div class="background"></div>
@@ -46,15 +51,47 @@
         <section class="map-header" aria-label="Carte des niveaux">
             <!-- Côté gauche : icône, titre de la matière et badge classe en lecture seule -->
             <div class="map-header-left">
-                <span class="subject-icon"><svg class="eq-icon eq-icon--gold" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5V5.5z" fill="currentColor" fill-opacity="0.18"/><path d="M4 19a2 2 0 0 1 2-2h14"/></svg></span>
+                <span class="subject-icon"><svg class="eq-icon eq-icon--gold" width="28" height="28" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                        stroke-linejoin="round" aria-hidden="true">
+                        <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5V5.5z" fill="currentColor"
+                            fill-opacity="0.18" />
+                        <path d="M4 19a2 2 0 0 1 2-2h14" />
+                    </svg></span>
                 <h1>Matière</h1>
-                <span class="map-grade-badge" id="mapGradeBadge" title="Ta classe actuelle (modifiable depuis le tableau de bord ou les options)"><svg class="eq-icon eq-icon--gold" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5L2 9z" fill="currentColor" fill-opacity="0.22"/><path d="M6 11.5v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5M21 9.5V16"/></svg> 6ème</span>
+                <span class="map-grade-badge" id="mapGradeBadge"
+                    title="Ta classe actuelle (modifiable depuis le tableau de bord ou les options)"><svg
+                        class="eq-icon eq-icon--gold" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <path d="M2 9l10-5 10 5-10 5L2 9z" fill="currentColor" fill-opacity="0.22" />
+                        <path d="M6 11.5v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5M21 9.5V16" />
+                    </svg> 6ème</span>
             </div>
             <!-- Côté droit : boutons d'action -->
             <div class="map-header-actions">
-                <button id="mapSkinBtn" class="map-skin-btn" type="button" title="Changer de personnage sur la carte" aria-label="Changer de personnage" aria-haspopup="dialog" aria-expanded="false"><svg class="eq-icon eq-icon--gold" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="currentColor" fill-opacity="0.2"/><path d="M5 20a7 7 0 0 1 14 0" fill="currentColor" fill-opacity="0.12"/></svg></button>
-                <a class="options-wheel" href="index.html#options" title="Options" aria-label="Options"><svg class="eq-icon eq-icon--gold" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="currentColor" fill-opacity="0.22"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></a>
-                <a class="back-button" href="dashboard.html"><svg class="eq-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg> RETOUR</a>
+                <button id="mapSkinBtn" class="map-skin-btn" type="button" title="Changer de personnage sur la carte"
+                    aria-label="Changer de personnage" aria-haspopup="dialog" aria-expanded="false"><svg
+                        class="eq-icon eq-icon--gold" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <circle cx="12" cy="8" r="4" fill="currentColor" fill-opacity="0.2" />
+                        <path d="M5 20a7 7 0 0 1 14 0" fill="currentColor" fill-opacity="0.12" />
+                    </svg></button>
+                <a class="options-wheel" href="index.html#options"
+                    onclick="try{sessionStorage.setItem('eduquest_options_return',location.href);}catch(_){}"
+                    title="Options" aria-label="Options"><svg class="eq-icon eq-icon--gold" width="20" height="20"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                        stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="3" fill="currentColor" fill-opacity="0.22" />
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg></a>
+                <a class="back-button" href="dashboard.html"><svg class="eq-icon" width="15" height="15"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                        stroke-linejoin="round" aria-hidden="true">
+                        <path d="M19 12H5M11 6l-6 6 6 6" />
+                    </svg> RETOUR</a>
             </div>
         </section>
 
@@ -98,7 +135,7 @@
          Cachée par défaut (attribut HTML5 'hidden').
 
          Quand la matière est reconnue (voir MATIERE_TO_SUBJECT_ID dans
-         app.js → initMap — les 36 matières officielles + matières custom),
+         app.js → initMap — les 43 matières officielles + matières custom),
          cette modale affiche une vraie question via QuizEngine. Le choix
          d'étoiles reste un repli pour une matière personnalisée sans leçon.
 
@@ -107,7 +144,6 @@
            #modal-quiz-zone   → mode quiz réel (question + réponses + actions)
            #modal-stars-zone  → mode étoiles (repli, matière sans leçon)
            #modal-close       → annule sans sauvegarder (mode étoiles)
-           #reset-progress    → remet la progression de la matière à zéro
     ================================================================ -->
     <div id="level-modal" class="modal-overlay" hidden>
         <div class="modal">
@@ -138,52 +174,99 @@
                 <p class="modal-subtitle">Choisissez votre résultat :</p>
                 <div class="modal-stars-choice">
                     <button class="star-choice" data-stars="1" type="button">
-                        <span class="eq-stars-row"><svg class="eq-icon eq-icon--gold" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l2.8 5.6 6.2.9-4.5 4.4 1.1 6.1L12 17l-5.6 3 1.1-6.1L3 9.5l6.2-.9L12 3z"/></svg></span>
+                        <span class="eq-stars-row"><svg class="eq-icon eq-icon--gold" width="18" height="18"
+                                viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.6"
+                                aria-hidden="true">
+                                <path d="M12 3l2.8 5.6 6.2.9-4.5 4.4 1.1 6.1L12 17l-5.6 3 1.1-6.1L3 9.5l6.2-.9L12 3z" />
+                            </svg></span>
                         <span class="star-label">1 étoile</span>
                     </button>
                     <button class="star-choice" data-stars="2" type="button">
-                        <span class="eq-stars-row"><svg class="eq-icon eq-icon--gold" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l2.8 5.6 6.2.9-4.5 4.4 1.1 6.1L12 17l-5.6 3 1.1-6.1L3 9.5l6.2-.9L12 3z"/></svg><svg class="eq-icon eq-icon--gold" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l2.8 5.6 6.2.9-4.5 4.4 1.1 6.1L12 17l-5.6 3 1.1-6.1L3 9.5l6.2-.9L12 3z"/></svg></span>
+                        <span class="eq-stars-row"><svg class="eq-icon eq-icon--gold" width="18" height="18"
+                                viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.6"
+                                aria-hidden="true">
+                                <path d="M12 3l2.8 5.6 6.2.9-4.5 4.4 1.1 6.1L12 17l-5.6 3 1.1-6.1L3 9.5l6.2-.9L12 3z" />
+                            </svg><svg class="eq-icon eq-icon--gold" width="18" height="18" viewBox="0 0 24 24"
+                                fill="currentColor" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                <path d="M12 3l2.8 5.6 6.2.9-4.5 4.4 1.1 6.1L12 17l-5.6 3 1.1-6.1L3 9.5l6.2-.9L12 3z" />
+                            </svg></span>
                         <span class="star-label">2 étoiles</span>
                     </button>
                     <button class="star-choice" data-stars="3" type="button">
-                        <span class="eq-stars-row"><svg class="eq-icon eq-icon--gold" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l2.8 5.6 6.2.9-4.5 4.4 1.1 6.1L12 17l-5.6 3 1.1-6.1L3 9.5l6.2-.9L12 3z"/></svg><svg class="eq-icon eq-icon--gold" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l2.8 5.6 6.2.9-4.5 4.4 1.1 6.1L12 17l-5.6 3 1.1-6.1L3 9.5l6.2-.9L12 3z"/></svg><svg class="eq-icon eq-icon--gold" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l2.8 5.6 6.2.9-4.5 4.4 1.1 6.1L12 17l-5.6 3 1.1-6.1L3 9.5l6.2-.9L12 3z"/></svg></span>
+                        <span class="eq-stars-row"><svg class="eq-icon eq-icon--gold" width="18" height="18"
+                                viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.6"
+                                aria-hidden="true">
+                                <path d="M12 3l2.8 5.6 6.2.9-4.5 4.4 1.1 6.1L12 17l-5.6 3 1.1-6.1L3 9.5l6.2-.9L12 3z" />
+                            </svg><svg class="eq-icon eq-icon--gold" width="18" height="18" viewBox="0 0 24 24"
+                                fill="currentColor" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                <path d="M12 3l2.8 5.6 6.2.9-4.5 4.4 1.1 6.1L12 17l-5.6 3 1.1-6.1L3 9.5l6.2-.9L12 3z" />
+                            </svg><svg class="eq-icon eq-icon--gold" width="18" height="18" viewBox="0 0 24 24"
+                                fill="currentColor" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                <path d="M12 3l2.8 5.6 6.2.9-4.5 4.4 1.1 6.1L12 17l-5.6 3 1.1-6.1L3 9.5l6.2-.9L12 3z" />
+                            </svg></span>
                         <span class="star-label">3 étoiles</span>
                     </button>
                 </div>
                 <!-- Bouton Annuler : ferme la modale sans modifier la progression -->
                 <button id="modal-close" class="modal-close-btn" type="button">Annuler</button>
             </div>
-
-            <!-- Bouton Réinitialiser : remet toute la progression de la matière à zéro -->
-            <button id="reset-progress" class="modal-reset-btn" type="button"><svg class="eq-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg> Réinitialiser la progression</button>
         </div>
     </div>
 
     <!-- Overlay de transition dynamique d'expulsion si la matière ne correspond pas à la classe -->
     <div id="mapExpelOverlay" class="map-expel-overlay" role="alertdialog" aria-modal="true" hidden>
         <div class="map-expel-card">
-            <div class="map-expel-icon"><svg class="eq-icon eq-icon--gold" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity="0.14"/><polygon points="15.5,8.5 13.3,13.3 8.5,15.5 10.7,10.7" fill="currentColor" fill-opacity="0.35"/></svg></div>
+            <div class="map-expel-icon"><svg class="eq-icon eq-icon--gold" width="44" height="44" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                    aria-hidden="true">
+                    <circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity="0.14" />
+                    <polygon points="15.5,8.5 13.3,13.3 8.5,15.5 10.7,10.7" fill="currentColor" fill-opacity="0.35" />
+                </svg></div>
             <h2 class="map-expel-title" id="mapExpelTitle">Changement de parcours</h2>
-            <p class="map-expel-text" id="mapExpelText">Cette matière ne fait pas partie du programme de ta classe actuelle. Retour au tableau de bord…</p>
-            <div class="map-expel-bar"><div class="map-expel-bar-fill"></div></div>
+            <p class="map-expel-text" id="mapExpelText">Cette matière ne fait pas partie du programme de ta classe
+                actuelle. Retour au tableau de bord…</p>
+            <div class="map-expel-bar">
+                <div class="map-expel-bar-fill"></div>
+            </div>
         </div>
     </div>
 
     <!-- Sélecteur rapide de personnage sur la carte -->
-    <div id="mapSkinPopover" class="map-skin-popover" role="dialog" aria-label="Choisir ton personnage sur la carte" hidden>
+    <div id="mapSkinPopover" class="map-skin-popover" role="dialog" aria-label="Choisir ton personnage sur la carte"
+        hidden>
         <div class="map-skin-popover-head">
-            <span class="map-skin-popover-title"><svg class="eq-icon eq-icon--gold" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="currentColor" fill-opacity="0.2"/><path d="M5 20a7 7 0 0 1 14 0" fill="currentColor" fill-opacity="0.12"/></svg> Personnage</span>
-            <button id="mapSkinClose" class="map-skin-popover-close" type="button" aria-label="Fermer"><svg class="eq-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+            <span class="map-skin-popover-title"><svg class="eq-icon eq-icon--gold" width="16" height="16"
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                    stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="8" r="4" fill="currentColor" fill-opacity="0.2" />
+                    <path d="M5 20a7 7 0 0 1 14 0" fill="currentColor" fill-opacity="0.12" />
+                </svg> Personnage</span>
+            <button id="mapSkinClose" class="map-skin-popover-close" type="button" aria-label="Fermer"><svg
+                    class="eq-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6L6 18" />
+                </svg></button>
         </div>
         <div id="mapSkinGrid" class="map-skin-grid"></div>
         <div class="map-skin-popover-foot">
-            <a href="dashboard.html#boutique-avatars" class="map-skin-shop-link"><svg class="eq-icon eq-icon--gold" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h16l-1.5 11H5.5L4 9z" fill="currentColor" fill-opacity="0.18"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg> Débloquer plus d'avatars <svg class="eq-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            <a href="dashboard.html#boutique-avatars" class="map-skin-shop-link"><svg class="eq-icon eq-icon--gold"
+                    width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 9h16l-1.5 11H5.5L4 9z" fill="currentColor" fill-opacity="0.18" />
+                    <path d="M8 9V6a4 4 0 0 1 8 0v3" />
+                </svg> Débloquer plus d'avatars <svg class="eq-icon" width="14" height="14" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                    aria-hidden="true">
+                    <path d="M5 12h14M13 6l6 6-6 6" />
+                </svg></a>
         </div>
     </div>
 
     <footer>
         <div class="footer">Version 1.30.0</div>
-        <div class="legal-links"><a href="legal.html">Mentions légales</a> · <a href="legal.html#cookies" onclick="window.dispatchEvent(new Event('eduquest:cookie-reopen'))">Cookies</a></div>
+        <div class="legal-links"><a href="legal.html">Mentions légales</a> · <a href="legal.html#cookies"
+                onclick="if(window.EduCookies){event.preventDefault();window.dispatchEvent(new Event('eduquest:cookie-reopen'));}">Cookies</a>
+        </div>
     </footer>
 
     <script src="js/core/icons.js"></script>
@@ -201,4 +284,5 @@
     <script src="js/app.js"></script>
     <script src="js/cookies.js"></script>
 </body>
+
 </html>

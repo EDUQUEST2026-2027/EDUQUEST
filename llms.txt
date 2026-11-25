@@ -1,12 +1,13 @@
 # EDUQUEST — llms.txt
 # Documentation destinée aux agents IA et assistants conversationnels.
 # Standard : https://llmstxt.org/
-# Dernière mise à jour : 2026-11-23
+# Dernière mise à jour : 2026-11-25
 
 > EDUQUEST est une application web éducative française de révision gamifiée
 > pour les élèves du collège, du lycée et de BTS (6e → Terminale, BTS 1 & 2,
-> 18 filières officielles, 36 matières). 100 % front-end, 100 % SVG (Astral & Or),
-> 100 % gratuit, sans publicité, sans traceur, fonctionnelle hors-ligne (PWA).
+> 18 filières officielles cohérentes par niveau, 43 matières dont Allemand).
+> 100 % front-end, 100 % SVG (Astral & Or), 100 % gratuit, sans publicité,
+> sans traceur, fonctionnelle hors-ligne (PWA).
 
 ## Identité
 
@@ -21,64 +22,70 @@
 
 ## Pitch
 
-**Court** : Le jeu de révision gamifié pour le collège, le lycée et le BTS (36 matières officielles, 18 filières).
+**Court** : Le jeu de révision gamifié pour le collège, le lycée et le BTS (43 matières officielles dont Allemand, 18 filières cohérentes par niveau).
 
 **Complet** : EDUQUEST transforme les révisions en aventure : l'élève choisit
 sa classe (6e → Terminale, BTS 1ère et 2ème année) et, dès le lycée, sa filière
-parmi 18 voies officielles (Voie Générale, Spécialités NSI / HLP-LLCE / Maths-Sciences,
-STMG, STI2D, CIEL, ST2S, STL, STD2A, STHR, STAV, S2TMD, BTS SIO / MCO / CG,
-Bac Pro MELEC / ASSP), puis gravit 36 îles flottantes alignées sur les programmes
-officiels (100 niveaux chacune). 6 types de quiz interactifs (QCM à choix mélangés,
-vrai/faux, réponse courte avec tolérance Levenshtein, texte à trous avec banque
-de mots, texte à choix déroulant, association), bouton d'indice pédagogique 💡,
-moteur adaptatif anti-répétition (mémoire de 240 questions, rotation FIFO et paliers
+parmi 18 voies officielles filtrées selon son niveau exact (6 voies en 2nde,
+15 en 1ère/Terminale, 4 en BTS 1 & 2), puis gravit 43 îles flottantes alignées
+sur les programmes officiels (100 niveaux chacune, dont Allemand LV1/LV2/BTS).
+6 types de quiz interactifs (QCM à choix mélangés, vrai/faux, réponse courte
+avec tolérance Levenshtein, texte à trous avec banque de mots, texte à choix
+déroulant, association réversible), bouton d'indice pédagogique 💡, moteur
+adaptatif anti-répétition (mémoire de 240 questions, rotation FIFO et paliers
 Consolidation/Standard/Défi +) et pool Multi-IA optionnel.
-Interface claire et accessible sur PC comme sur smartphone : séparation nette entre
+Interface claire et accessible sur PC comme sur smartphone (sans bouton plein
+écran ni réinitialisation accidentelle côté élève) : séparation nette entre
 🔥 Série de victoires et ⚡ Énergie Combo (multiplicateur d'XP et score x1.0 à x2.5),
 missions quotidiennes compactes et repliables, barre de navigation mobile fermable,
 confettis calibrés respectant les options Particules / Mode Éco / Animations,
 5 potions consommables (Double XP, Bouclier d'Étoile, Élixir de Fortune, Sablier
-Temporel, Flamme Éternelle), 78 succès filtrés par filière, boutique de 98 articles
-(27 avatars SVG, 24 auras, 26 titres, 16 thèmes CSS, 5 boosters).
+Temporel, Flamme Éternelle), 79 succès filtrés par filière (dont Germanophone),
+boutique de 98 articles (27 avatars SVG, 24 auras, 26 titres équipables/retirables,
+16 thèmes CSS, 5 boosters).
 
-## Matières & Filières (36 matières officielles, 18 filières, 100 niveaux chacune)
+## Matières & Filières (43 matières officielles, 18 filières cohérentes par niveau, 100 niveaux chacune)
 
-- **Collège (6e → 3e)** : Mathématiques, Français, Histoire, Géographie, EMC, Anglais, Espagnol LV2 (dès la 5ème), SVT, Physique, Chimie, Technologie, Arts & Musique.
-- **Voie Générale** : Tronc commun + SES, NSI & Numérique, HGGSP (1ère/Tle), Sciences de l'Ingénieur, HLP (1ère/Tle), Philosophie (Tle).
-- **Spécialité NSI** : NSI & Numérique, Développement & BDD, Cybersécurité, Réseaux & Systèmes, Sciences de l'Ingénieur + tronc commun scientifique.
-- **HLP / LLCE** : Humanités & Littérature (HLP), HGGSP, Philosophie, Arts & Musique, langues vivantes.
-- **Spécialités Maths & Sciences (PC/SVT)** : Mathématiques, Physique, Chimie, SVT, Sciences de l'Ingénieur.
-- **STMG** : Management & Gestion (MSGN), Droit & Économie, Mercatique (1ère → BTS) + tronc commun.
-- **STI2D** : I2D (Innovation & Développement Durable), SIN (Systèmes d'Information & Numérique), Électronique & Systèmes, Sciences de l'Ingénieur, NSI + tronc commun.
-- **ST2S** : STSS (Santé & Social), SVT, Physique, Chimie + tronc commun.
-- **STL** : Biotechnologies & Labo, Physique, Chimie, SVT + tronc commun.
-- **STD2A** : Design & Arts Appliqués, Arts & Musique, Physique, Chimie + tronc commun.
-- **STHR** : Hôtellerie & Gastronomie, Management (MSGN), Droit & Économie, Mercatique + tronc commun.
-- **STAV** : Agronomie & Écologie, SVT, Physique, Chimie + tronc commun.
-- **S2TMD** : Arts de la Scène & Culture (Théâtre, Musique & Danse), Arts & Musique + tronc commun.
-- **CIEL (Bac Pro / BTS)** : Cybersécurité, Réseaux & Systèmes, Électronique & Systèmes, NSI & Numérique, Droit & Économie + Maths BTS / Physique / Anglais / Français.
-- **BTS SIO (SLAM / SISR)** : Développement & BDD, Cybersécurité, Réseaux & Systèmes, NSI, Management, Droit & Économie + tronc commun BTS.
-- **BTS MCO** : Relation Client & Commerce, Mercatique, Management (MSGN), Droit & Économie + tronc commun BTS.
-- **BTS CG** : Comptabilité & Finance, Management (MSGN), Droit & Économie + tronc commun BTS.
-- **Bac Pro MELEC** : Électrotechnique & Énergie, Électronique & Systèmes, SIN, Physique + tronc commun.
-- **Bac Pro ASSP** : STSS (Santé & Social), Biotechnologies & Labo, SVT, Chimie + tronc commun.
+- **Collège (6e → 3e, sans filière)** : Mathématiques, Français, Histoire, Géographie, EMC, Anglais, Allemand (dès la 6e), Espagnol LV2 (dès la 5e), SVT, Physique, Chimie, Technologie, Arts & Musique.
+- **2nde (6 voies)** : Voie Générale, STHR, S2TMD, CIEL, Bac Pro MELEC, Bac Pro ASSP.
+- **1ère & Terminale (15 voies)** :
+  - **Voie Générale** : Tronc commun + SES, NSI & Numérique, HGGSP (1ère/Tle), Sciences de l'Ingénieur, HLP (1ère/Tle), LLCE (1ère/Tle), Philosophie (Tle).
+  - **Spécialité NSI (1ère/Tle)** : NSI & Numérique, Développement & BDD, Cybersécurité, Réseaux & Systèmes, SIN, Sciences de l'Ingénieur + tronc commun scientifique.
+  - **HLP / LLCE (1ère/Tle)** : Humanités & Littérature (HLP), LLCE, HGGSP, Philosophie (Tle), Arts & Musique, langues vivantes (Anglais, Allemand, Espagnol).
+  - **Spécialités Maths & Sciences (1ère/Tle)** : Mathématiques, Physique, Chimie, SVT, Sciences de l'Ingénieur, SPCL, Biopathologie, NSI.
+  - **STMG (1ère/Tle)** : Management & Gestion (MSGN), Droit & Économie, Mercatique, Comptabilité, Commerce, RH & Comm + tronc commun.
+  - **STI2D (1ère/Tle)** : I2D (Innovation & Développement Durable), SIN, Architecture & Habitat, Électrotechnique, Électronique & Systèmes, Sciences de l'Ingénieur + tronc commun.
+  - **ST2S (1ère/Tle)** : STSS (Santé & Social), Biologie & Physiopathologie (BPH), Biotechnologies, SVT, Chimie, PSE + tronc commun.
+  - **STL (1ère/Tle)** : Biotechnologies & Labo, SPCL, Biopathologie, Physique, Chimie, SVT + tronc commun.
+  - **STD2A (1ère/Tle)** : Design & Arts Appliqués, Architecture & Habitat, Arts & Musique, I2D, Arts de la Scène + tronc commun.
+  - **STHR (2nde → Tle)** : Hôtellerie & Gastronomie, Management (MSGN), Droit & Économie, Mercatique (1ère/Tle), Commerce, Comptabilité, RH & Comm, PSE + langues.
+  - **STAV (1ère/Tle)** : Agronomie & Écologie, SVT, Biotechnologies, Chimie, I2D, Architecture & Habitat, PSE + tronc commun.
+  - **S2TMD (2nde → Tle)** : Arts de la Scène & Culture, Arts & Musique, Design, HLP/LLCE/HGGSP (1ère/Tle) + tronc commun.
+  - **Bac Pro MELEC (2nde → Tle)** : Électrotechnique & Énergie, Électronique & Systèmes, SIN, Réseaux, Architecture & Habitat, I2D, PSE + tronc commun.
+  - **Bac Pro ASSP (2nde → Tle)** : STSS (Santé & Social), Biologie & Physiopathologie, Biotechnologies & Labo, PSE, SVT, Chimie + tronc commun.
+- **BTS 1 & BTS 2 (4 voies Post-Bac)** :
+  - **CIEL (Bac Pro & BTS)** : Cybersécurité, Réseaux & Systèmes, Électronique & Systèmes, Développement & BDD, SIN, NSI, Physique appliquée, Droit & Économie + Maths BTS / Français (CGE) / Anglais / Allemand / Espagnol.
+  - **BTS SIO (SLAM / SISR)** : Développement & BDD, Cybersécurité, Réseaux & Systèmes, NSI, SIN, Management, Droit & Économie, RH & Comm + tronc commun BTS.
+  - **BTS MCO** : Relation Client & Commerce, Mercatique, Management (MSGN), Droit & Économie, Comptabilité, RH & Comm + tronc commun BTS.
+  - **BTS CG** : Comptabilité & Finance, Management (MSGN), Droit & Économie, Mercatique, Développement & BDD (SI Comptable), Commerce, RH & Comm + tronc commun BTS.
 
 ## Mots-clés
 
 révision, jeu éducatif, quiz, collège, lycée, BTS, STMG, STI2D, CIEL, NSI, ST2S,
 STL, STD2A, STHR, STAV, S2TMD, HLP, LLCE, BTS SIO, BTS MCO, BTS CG, MELEC, ASSP,
-mathématiques, français, SVT, histoire, géographie, anglais, espagnol, physique,
-chimie, philosophie, technologie, cybersécurité, réseaux, électronique, mercatique,
-droit, économie, management, HGGSP, STSS, biotechnologies, design, hôtellerie,
-agronomie, spectacle, SQL, commerce, comptabilité, électrotechnique, apprentissage
-gamifié, streak, combo, éducation nationale, gratuit, pwa, offline
+mathématiques, français, SVT, histoire, géographie, anglais, allemand, espagnol,
+physique, chimie, philosophie, technologie, cybersécurité, réseaux, électronique,
+mercatique, droit, économie, management, HGGSP, STSS, biotechnologies, design,
+hôtellerie, agronomie, spectacle, SQL, commerce, comptabilité, électrotechnique,
+biopathologie, SPCL, RH, architecture, PSE, apprentissage gamifié, streak, combo,
+éducation nationale, gratuit, pwa, offline
 
 ## Pages publiques
 
 | Route | Description |
 |-------|-------------|
-| `index.html` | Accueil — menu principal, modales Options (classe, 18 filières, audio, particules, apparence, mode chrono, éco-énergie), connexion/inscription et confirmation Quitter |
-| `dashboard.html` | Tableau de bord élève : sélecteurs classe & filière, HUD Série / Combo, missions quotidiennes repliables, 36 matières filtrables par spécialités, boutique (98 articles), 78 succès filtrés par filière |
+| `index.html` | Accueil — menu principal, modales Options (classe, 18 filières filtrées par niveau, audio, particules, apparence, mode chrono, éco-énergie), connexion/inscription et confirmation Quitter |
+| `dashboard.html` | Tableau de bord élève : sélecteurs classe & filière cohérents, HUD Série / Combo, missions quotidiennes repliables, 43 matières filtrables par spécialités, boutique (98 articles), 79 succès filtrés par filière |
 | `map.html` | Carte de la matière : parcours des îles (niveaux 1 à 100), sélecteur d'avatar, badge classe/filière en lecture seule, expulsion hors programme, quiz adaptatif |
 | `legal.html` | Mentions légales, politique de confidentialité et gestion des cookies |
 
@@ -86,7 +93,7 @@ gamifié, streak, combo, éducation nationale, gratuit, pwa, offline
 
 | Route | Rôle |
 |-------|------|
-| `admin.html` | Panneau d'administration unifié (membres, 9 niveaux 6e → BTS, 18 filières, 36 matières, leçons manuelles & procédurales, boutique 98 articles, 78 succès, pool 9 quêtes, feature flags, pool Multi-IA & crédits) |
+| `admin.html` | Panneau d'administration unifié (membres avec filtrage classe↔filière, 9 niveaux 6e → BTS, 18 filières + niveaux autorisés, 43 matières, leçons manuelles & procédurales, boutique 98 articles, 79 succès, pool 9 quêtes, feature flags, pool Multi-IA & crédits) |
 | `test.html` | Banc de tests navigateur autonome (13 suites QA) avec runner visuel, benchmark et test interactif en direct |
 
 ## Architecture technique
@@ -94,23 +101,23 @@ gamifié, streak, combo, éducation nationale, gratuit, pwa, offline
 | Fichier / Dossier | Rôle |
 |-------------------|------|
 | `js/core/icons.js` | Bibliothèque unifiée de 70+ icônes SVG duotone (*Astral & Or*, `window.EduIcons`) |
-| `js/app.js` | Contrôleur principal, vues, apparence, particules, HUD Série/Combo, boutique, 78 succès, confettis Canvas calibrés |
+| `js/app.js` | Contrôleur principal, vues, apparence, particules, HUD Série/Combo, boutique (équipement/retrait), 79 succès, confettis Canvas calibrés |
 | `js/db.js` | Persistance isolée par compte (`localStorage` / API SQL optionnelle) : progression, classe, filière, boosters, tentatives anti-triche, profil adaptatif |
-| `js/question-bank.js` | Banque officielle des 36 matières et générateurs procéduraux déterministes (100 niveaux/matière, lazy variants) |
-| `js/quiz-engine.js` | Moteur de rendu et validation des 6 types de questions avec tolérance Levenshtein et association sans collision |
-| `js/core/audio-manager.js` | Gestionnaire audio global continu inter-pages, coupure manuelle persistée et bruitages Web Audio |
-| `js/core/quiz-timer.js` | Chronomètre unifié à horloge réelle (`Date.now`) sur tous les exercices et réessais |
+| `js/question-bank.js` | Banque officielle des 43 matières (dont Allemand complet) et générateurs procéduraux déterministes (100 niveaux/matière, lazy variants) |
+| `js/quiz-engine.js` | Moteur de rendu et validation des 6 types de questions avec tolérance Levenshtein et association réversible sans collision |
+| `js/core/audio-manager.js` | Gestionnaire audio global continu inter-pages, placement en en-tête, coupure manuelle persistée et bruitages Web Audio |
+| `js/core/quiz-timer.js` | Chronomètre unifié à horloge réelle (`Date.now`) avec cache DOM optimisé sur tous les exercices et réessais |
 | `js/core/adaptive-engine.js` | Moteur adaptatif local anti-répétition (240 signatures, rotation FIFO, reset sur échec, paliers adaptatifs) |
 | `js/core/game-rules.js` | Règles de jeu pures partagées (étoiles, 5 boosters, combos, barèmes, multiplicateurs) |
 | `js/core/quiz-session.js` | Pipeline unifié de soumission des quiz et consommation sécurisée des boosters |
 | `js/features/daily-quests.js` | Quêtes journalières déterministes (PRNG Mulberry32, tirage Fisher-Yates, renouvellement minuit) |
 | `js/ai-provider.js` | Orchestrateur Multi-IA (Make, OpenAI-compatible, Gemini) avec bascule en cascade et repli local |
-| `js/admin-store.js` | Configuration centrale : 9 niveaux, 18 filières, règles officielles des 36 matières, 98 articles boutique, 78 badges, 9 quêtes & IA |
-| `js/admin.js` | Interface et moteur du panneau d'administration |
+| `js/admin-store.js` | Configuration centrale : 9 niveaux, 18 filières + `allowedNiveaux`, règles officielles des 43 matières, 98 articles boutique, 79 badges, 9 quêtes & IA |
+| `js/admin.js` | Interface et moteur du panneau d'administration (pilotage intégral) |
 | `js/cookies.js` | Bandeau de consentement RGPD/CNIL avec fermeture rapide (mémorisation 12 mois) |
-| `css/` | `global.css` (dont 16 thèmes visuels), `style.css` (dont 27 avatars SVG), `quests.css`, `admin.css` |
-| `service-worker.js` | PWA et pré-cache hors-ligne intégral (`eduquest-cache-v1.30.0` — 93 ressources 100 % SVG) |
-| `schema.sql` | Schéma relationnel SQL (joueurs, paramètres, 36 matières SVG + 18 filières, leçons, progression, quêtes, inventaire) |
+| `css/` | `global.css` (dont 16 thèmes visuels & fiabilisation hitboxes), `style.css` (dont 27 avatars SVG & checkboxes accessibles), `quests.css`, `admin.css` |
+| `service-worker.js` | PWA et pré-cache hors-ligne intégral (`eduquest-cache-v1.30.1` — 94 ressources 100 % SVG) |
+| `schema.sql` | Schéma relationnel SQL (joueurs, paramètres, 43 matières SVG + 18 filières cohérentes, leçons, progression, quêtes, inventaire) |
 | `tests/` | Suite de tests unitaires natifs Node.js (`node --test tests/*.test.js`) |
 
 ## Données personnelles & Confidentialité

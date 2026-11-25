@@ -209,19 +209,27 @@
             </div>`;
     }
 
-    /** Met à jour visuellement la barre du chronomètre dans le DOM. */
+    const _domRefCache = new Map();
+
+    /** Met à jour visuellement la barre du chronomètre dans le DOM (avec cache de nœuds connectés). */
     function updateBarDom(idOrPrefix, tick) {
         if (typeof document === 'undefined' || !tick) return;
-        const ids = resolveIds(idOrPrefix);
-        const container = document.getElementById(ids.containerId);
-        const bar = document.getElementById(ids.barId);
-        const text = document.getElementById(ids.textId);
-        if (bar) bar.style.width = tick.percent.toFixed(1) + '%';
-        if (text) {
-            const secEl = text.querySelector('.quiz-chrono-sec');
-            if (secEl) secEl.textContent = Math.max(0, tick.remaining) + 's';
-            else text.textContent = Math.max(0, tick.remaining) + 's';
+        const key = String(idOrPrefix || 'chrono-bar-container');
+        let refs = _domRefCache.get(key);
+        if (!refs || !refs.container || !refs.container.isConnected) {
+            const ids = resolveIds(key);
+            const container = document.getElementById(ids.containerId);
+            const bar = document.getElementById(ids.barId);
+            const text = document.getElementById(ids.textId);
+            const secEl = text ? text.querySelector('.quiz-chrono-sec') : null;
+            refs = { container, bar, text, secEl };
+            if (container && container.isConnected) _domRefCache.set(key, refs);
+            else _domRefCache.delete(key);
         }
+        const { container, bar, text, secEl } = refs;
+        if (bar) bar.style.width = tick.percent.toFixed(1) + '%';
+        if (secEl) secEl.textContent = Math.max(0, tick.remaining) + 's';
+        else if (text) text.textContent = Math.max(0, tick.remaining) + 's';
         if (container) {
             container.classList.toggle('is-warning', Boolean(tick.warning) && !tick.urgent);
             container.classList.toggle('is-urgent', Boolean(tick.urgent));

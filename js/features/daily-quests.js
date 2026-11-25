@@ -188,8 +188,10 @@
     }
 
     function getBonusCoins() {
-        const raw = Number(getRewardsConfig().dailyChestCoins);
-        return Number.isFinite(raw) && raw > 0 ? Math.round(raw) : BONUS_COINS;
+        const rawVal = getRewardsConfig().dailyChestCoins;
+        if (rawVal === null || rawVal === undefined || rawVal === '') return BONUS_COINS;
+        const raw = Number(rawVal);
+        return Number.isFinite(raw) && raw >= 0 ? Math.round(raw) : BONUS_COINS;
     }
 
     /** Ouvre le coffre bonus (toutes les quêtes réclamées). */

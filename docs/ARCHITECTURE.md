@@ -36,37 +36,37 @@ EDUQUEST est une application web éducative 100 % front-end développée en Vani
 
 ```text
 eduquest/
-├── index.html                  # Accueil, modales Options (classe, 18 filières, apparence), Connexion & Quitter
-├── dashboard.html              # Tableau de bord élève, sélecteurs classe & filière, missions, 36 matières, boutique (98), succès (78)
+├── index.html                  # Accueil, modales Options (classe, 18 filières filtrées par niveau, apparence), Connexion & Quitter
+├── dashboard.html              # Tableau de bord élève, sélecteurs classe & filière, missions, 43 matières, boutique (98), succès (79)
 ├── map.html                    # Carte interactive d'aventure (1 → 100), personnage, badge filière et quiz
-├── admin.html                  # Console d'administration unifiée (membres, 9 niveaux, 18 filières, 36 matières, boutique, succès, Multi-IA)
+├── admin.html                  # Console d'administration unifiée (membres, 9 niveaux, 18 filières + niveaux, 43 matières, boutique, succès, Multi-IA)
 ├── legal.html                  # Mentions légales, RGPD et gestion des cookies
 ├── test.html                   # Banc de tests autonome pour navigateur (13 suites QA)
-├── service-worker.js           # PWA & pré-cache hors-ligne intégral (eduquest-cache-v1.30.0, 100 % SVG)
+├── service-worker.js           # PWA & pré-cache hors-ligne intégral (eduquest-cache-v1.30.1, 94 ressources 100 % SVG)
 ├── manifest.webmanifest        # Manifeste PWA (icône vectorielle Image/logo.svg)
 ├── robots.txt                  # Directives moteurs de recherche et robots IA
 ├── sitemap.xml                 # Plan du site public
 ├── llms.txt                    # Documentation normalisée pour assistants IA (llmstxt.org)
 ├── package.json                # Scripts npm test & check (v1.30.0)
-├── schema.sql                  # Schéma SQL relationnel (36 matières SVG, 18 filières, progression, quêtes, inventaire)
+├── schema.sql                  # Schéma SQL relationnel (43 matières SVG, 18 filières, progression, quêtes, inventaire)
 ├── css/
-│   ├── global.css              # Design system, cosmos animé, 16 thèmes visuels (15 custom + défaut), système d'icônes SVG .eq-icon
-│   ├── style.css               # Pages de jeu, 27 classes avatars SVG, HUD Série/Combo, bandeau mobile fermable, filtres, modales
+│   ├── global.css              # Design system, cosmos animé, 16 thèmes visuels (15 custom + défaut), icônes SVG .eq-icon, fiabilisation hitboxes
+│   ├── style.css               # Pages de jeu, 27 classes avatars SVG, HUD Série/Combo, bandeau mobile fermable, filtres, modales, checkboxes accessibles
 │   ├── quests.css              # Missions quotidiennes compactes & repliables, anneau SVG isolé (.quest-ring > svg), canvas confettis
 │   └── admin.css               # Thème glassmorphism du panneau d'administration & responsive mobile
 ├── js/
-│   ├── app.js                  # Contrôleur principal, particules/options synchronisées, HUD SVG, 78 succès, confettis calibrés
+│   ├── app.js                  # Contrôleur principal, particules/options synchronisées, HUD SVG, boutique (dont retrait titre/thème), 79 succès, confettis calibrés
 │   ├── db.js                   # Couche d'accès aux données isolée par compte (niveau, filière, progression, boosters, purge RGPD)
-│   ├── quiz-engine.js          # Moteur multi-types (6 formats, ___/[___], Levenshtein, drag & drop sans collision, icônes SVG)
-│   ├── question-bank.js        # Banque officielle des 36 matières (Collège, Lycée, BTS), lazy variants & decks stables sans biais de parité
-│   ├── admin-store.js          # Catalogue central (9 niveaux, 18 filières, 36 matières, 98 articles, 78 badges, 9 quêtes, IA)
-│   ├── admin.js                # Contrôleur d'interface d'administration (pilotage intégral, aperçu procédural à la demande)
+│   ├── quiz-engine.js          # Moteur multi-types (6 formats, ___/[___], Levenshtein, drag & drop réversible sans collision, icônes SVG)
+│   ├── question-bank.js        # Banque officielle des 43 matières dont Allemand (Collège, Lycée, BTS), lazy variants & decks stables sans biais de parité
+│   ├── admin-store.js          # Catalogue central (9 niveaux, 18 filières + allowedNiveaux, 43 matières, 98 articles, 79 badges, 9 quêtes, IA)
+│   ├── admin.js                # Contrôleur d'interface d'administration (pilotage intégral, cohérence classe↔filière, aperçu procédural sur niveau valide)
 │   ├── ai-provider.js          # Pool Multi-IA (Make, OpenAI-compatible, Gemini) avec bascule et repli adaptatif
 │   ├── cookies.js              # Bandeau de consentement conforme RGPD/CNIL avec fermeture rapide (12 mois)
 │   ├── core/
 │   │   ├── icons.js            # Bibliothèque vectorielle unifiée EduIcons (70+ icônes SVG duotones Astral & Or)
-│   │   ├── audio-manager.js    # Audio global continu inter-pages, coupure manuelle persistée & bruitages Web Audio
-│   │   ├── quiz-timer.js       # Chronomètre unifié (Date.now) sur tous les exercices & réessais
+│   │   ├── audio-manager.js    # Audio global continu inter-pages, placement adaptatif en en-tête, coupure manuelle persistée & bruitages Web Audio
+│   │   ├── quiz-timer.js       # Chronomètre unifié (Date.now) avec cache DOM sur tous les exercices & réessais
 │   │   ├── adaptive-engine.js  # Moteur adaptatif local (240 signatures, rotation FIFO, reset échec, paliers)
 │   │   ├── game-rules.js       # Règles pures (étoiles, 5 boosters, streak, combo, récompenses)
 │   │   └── quiz-session.js     # Cycle de vie, anti-triche et pipeline de validation de question
@@ -75,7 +75,7 @@ eduquest/
 ├── fonts/                      # Police pixel hébergée localement (Silkscreen — .woff2 / .ttf)
 ├── Image/
 │   ├── logo.svg                # Blason officiel vectoriel SVG Astral & Or
-│   ├── ile/                    # 36 îles-matières 100 % SVG vectoriels (thème Astral & Or)
+│   ├── ile/                    # 43 îles-matières 100 % SVG vectoriels (dont allemand.svg — thème Astral & Or)
 │   └── personnages/            # 27 avatars 100 % SVG vectoriels (thème Astral & Or)
 ├── Musique/                    # 6 pistes audio MP3 d'ambiance
 ├── docs/                       # Documentation technique (ARCHITECTURE, GUIDE_CONTRIBUTION, API_PERSISTENCE)
@@ -107,15 +107,18 @@ Les modules situés dans `js/core/`, `js/features/`, `js/db.js`, `js/question-ba
 
 ### `js/admin-store.js` — Programmes officiels, Filières, Boutique & Succès
 - **9 niveaux par défaut :** `6eme`, `5eme`, `4eme`, `3eme` (cycle `college`), `2nde`, `1ere`, `terminale`, `bts1`, `bts2` (cycle `lycee`).
-- **18 filières applicables dès la 2nde (`isFiliereApplicable`) :** `generale`, `nsi_spe`, `stmg`, `sti2d`, `ciel`, `st2s`, `stl`, `std2a`, `sthr`, `stav`, `s2tmd`, `hlp_llce`, `sciences_spe`, `bts_sio`, `bts_mco`, `bts_cg`, `bac_pro_melec`, `bac_pro_assp`.
-- **42 matières officielles (`SUBJECT_DEFAULT_RULES`) :** filtrage strict par classe et filière via `isSubjectAllowedForNiveau(subject, niveauId, filiereId)` (ex. Technologie uniquement au collège, Espagnol dès la 5ème, Philosophie uniquement en Terminale, 11 à 20 matières et 4 à 8 spécialités phares par filière au Lycée et en BTS).
+- **18 filières avec niveaux autorisés stricts (`allowedNiveaux`, `isFiliereAllowedForNiveau`, `getFilieresForNiveau`, `resolveFiliereForNiveau`) :**
+  - **2nde (6 filières) :** `generale`, `sthr`, `s2tmd`, `ciel`, `bac_pro_melec`, `bac_pro_assp`.
+  - **1ère & Terminale (15 filières) :** les 6 de 2nde + `nsi_spe`, `stmg`, `sti2d`, `st2s`, `stl`, `std2a`, `stav`, `hlp_llce`, `sciences_spe`.
+  - **BTS 1 & BTS 2 (4 filières) :** `ciel`, `bts_sio`, `bts_mco`, `bts_cg`.
+- **43 matières officielles (`SUBJECT_DEFAULT_RULES`, dont `allemand`) :** filtrage strict par classe et filière via `isSubjectAllowedForNiveau(subject, niveauId, filiereId)` (ex. Technologie uniquement au collège, Allemand dès la 6ème jusqu'au BTS 2, Espagnol dès la 5ème, HGGSP/HLP/LLCE/Agronomie/SPCL uniquement en 1ère/Terminale, Philosophie uniquement en Terminale, 11 à 21 matières par filière sur ses niveaux autorisés).
 - **`isSubjectSpecialtyForFiliere(subject, filiereId)` :** met en avant les spécialités phares de la filière en tête de grille sur `dashboard.html`.
 - **`hasSubjectCustomizations()` & `invalidateCache()` :** permettent à `app.js` de contourner `_effectiveSubjectsCache` dès que l'administrateur ajoute ou surcharge une matière, y compris en temps réel entre onglets (`storage`).
-- **Boutique (98 articles, 16 thèmes visuels) & Succès (78 badges) :** catalogue central surchageable, avec filtrage automatique des succès par cycle/filière via `isBadgeRelevantFor(badge, niveauId, filiereId)`.
+- **Boutique (98 articles, 16 thèmes visuels) & Succès (79 badges, dont `germanophone`) :** catalogue central surchageable, avec filtrage automatique des succès par cycle/filière via `isBadgeRelevantFor(badge, niveauId, filiereId)`.
 
 ### `js/core/adaptive-engine.js` & `js/question-bank.js` — Anti-répétition & Performance
 - Mémoire persistée par `(matière, classe)` jusqu'à **240 signatures** (`MAX_SEEN_SIGNATURES = 240`) et rotation FIFO sur les questions les plus anciennement vues si le vivier est épuisé.
-- `getQuestionsForNiveau()` complète les petites banques strictement au sein du **même cycle** (jamais Collège ↔ Lycée) pour garantir un vivier riche sur chacune des 36 matières.
+- `getQuestionsForNiveau()` complète les petites banques strictement au sein du **même cycle** (jamais Collège ↔ Lycée) pour garantir un vivier riche sur chacune des 43 matières.
 - `QuestionBank.extend()` génère les variantes de leçons en *lazy getter* et `app.js` met en cache les matières étendues par `(classe, filière)` (`_effectiveSubjectsCache`).
 
 ### `js/core/game-rules.js`, `quiz-session.js`, `quiz-timer.js` & `audio-manager.js`
@@ -152,6 +155,6 @@ Validation du niveau (unlockNextAndSave / _dashFinishQuiz)
     ├── Incrémentation de la Série (🔥) via DB.recordLevelVictory()
     ├── Consommation éventuelle de Double XP (boost-xp) et Élixir de Fortune (boost-coins)
     ├── Calcul des gains XP / Pièces / Score via GameRules.computeLevelRewards()
-    ├── Avancement des DailyQuests & vérification des 78 succès (checkBadges)
+    ├── Avancement des DailyQuests & vérification des 79 succès (checkBadges)
     └── Célébration Celebrate.confetti() (calibrée mobile + cooldown 1,8 s + respect options)
 ```

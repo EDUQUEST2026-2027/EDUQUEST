@@ -494,15 +494,19 @@ function currentNiveau() {
     return (cfg && cfg.defaultNiveau) ? cfg.defaultNiveau : '6eme';
 }
 
-function currentFiliere() {
+function currentFiliere(niveauOverride) {
     const cfg = (typeof AdminStore !== 'undefined' && typeof AdminStore.getSiteConfig === 'function')
         ? AdminStore.getSiteConfig()
         : null;
+    const niv = niveauOverride || currentNiveau();
     const saved = (typeof DB !== 'undefined' && DB.getFiliere) ? DB.getFiliere() : null;
+    const candidate = saved || (cfg && cfg.defaultFiliere) || 'generale';
+    if (typeof AdminStore !== 'undefined' && typeof AdminStore.resolveFiliereForNiveau === 'function') {
+        return AdminStore.resolveFiliereForNiveau(candidate, niv);
+    }
     const active = (typeof AdminStore !== 'undefined' && typeof AdminStore.getActiveFilieres === 'function')
         ? AdminStore.getActiveFilieres()
         : null;
-    const candidate = saved || (cfg && cfg.defaultFiliere) || 'generale';
     if (Array.isArray(active) && active.length > 0 && !active.some(f => f.id === candidate)) {
         return active[0].id;
     }
@@ -673,49 +677,6 @@ function setupCookieConsentFallback() {
 }
 
 /**
- * Tente de passer en mode plein écran si l'option 'pleinEcran' est activée.
- * Compatible avec tous les navigateurs (préfixes webkit et ms pour les anciens).
- *
- * Remarque : le plein écran ne peut être activé qu'après une interaction
- * utilisateur (clic). C'est une restriction de sécurité des navigateurs modernes.
- * C'est pourquoi cette fonction est aussi appelée dans l'événement onFirstInteraction.
- *
- * @returns {boolean} true si la demande de plein écran a été envoyée, false sinon
- */
-function getFullscreenElement() {
-    return document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement || null;
-}
-
-function applyFullscreenSetting() {
-    const val = getOption('pleinEcran');
-    if (val === 'true' && !getFullscreenElement()) {
-        const el = document.documentElement;
-        const request = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
-        if (request) {
-            try {
-                Promise.resolve(request.call(el)).catch(() => {});
-            } catch (_) {}
-            return true;
-        }
-    }
-    return false;
-}
-
-let _fullscreenAppliedByCommon = false;
-
-function syncFullscreenState() {
-    const fsEl = getFullscreenElement();
-    if (!fsEl && _fullscreenAppliedByCommon) {
-        _fullscreenAppliedByCommon = false;
-        saveOption('pleinEcran', 'false');
-    } else if (fsEl) {
-        _fullscreenAppliedByCommon = true;
-    }
-}
-document.addEventListener('fullscreenchange', syncFullscreenState);
-document.addEventListener('webkitfullscreenchange', syncFullscreenState);
-
-/**
  * Met à jour le texte du footer avec la version actuelle de l'application.
  * Le footer est présent sur toutes les pages, mais son contenu HTML est
  * parfois figé. Cette fonction assure qu'il affiche toujours APP_VERSION.
@@ -765,7 +726,7 @@ function showNotification(message, type = 'success') {
  *   1. Ouvre la modale thématique #modalQuitConfirm.
  *   2. À la confirmation (dans le geste utilisateur synchrone) :
  *      - Coupe immédiatement la musique & tout audio (AudioManager.stopAll)
- *      - Quitte le plein écran s'il est actif
+ *      - Déconnecte la session si configuré
  *      - Tente la fermeture directe de l'onglet (window.close)
  *      - Affiche l'écran d'au revoir puis expulse automatiquement vers about:blank
  *        si le navigateur empêche la fermeture d'un onglet ouvert manuellement.
@@ -786,12 +747,7 @@ function initAccueil() {
         if (cfg.logoutOnQuit !== false && typeof DB !== 'undefined' && typeof DB.logout === 'function') {
             try { DB.logout(); } catch (_) {}
         }
-        // 2. Quitte le plein écran si actif
-        if (document.fullscreenElement) {
-            const exitFs = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
-            if (exitFs) { try { exitFs.call(document); } catch (_) {} }
-        }
-        // 3. Bascule vers l'écran de sortie (textes pilotables en admin)
+        // 2. Bascule vers l'écran de sortie (textes pilotables en admin)
         applySiteBranding();
         if (quitModal) quitModal.hidden = true;
         const mainPage = document.getElementById('mainPage');
@@ -1068,7 +1024,6 @@ let _optionsOpenedFromHash = false;
 function initOptions() {
     const volumeMusique      = document.getElementById('volumeMusique');
     const volumeEffets       = document.getElementById('volumeEffets');
-    const pleinEcran         = document.getElementById('pleinEcran');
     const sonsActifs         = document.getElementById('sonsActifs');
     const musiqueActive      = document.getElementById('musiqueActive');
     const effetsActifs       = document.getElementById('effetsActifs');
@@ -1123,24 +1078,33 @@ function initOptions() {
         }
     }
 
-    // 3. Peuplement dynamique du sélecteur de filière (Lycée & BTS — filières actives)
-    if (optFiliereSelect && typeof AdminStore !== 'undefined') {
-        const filieres = (typeof AdminStore.getActiveFilieres === 'function')
-            ? AdminStore.getActiveFilieres()
-            : (typeof AdminStore.getFilieres === 'function' ? AdminStore.getFilieres() : []);
+    // 3. Peuplement dynamique du sélecteur de filière filtré par niveau d'études (2nde / 1ère-Tle / BTS)
+    function populateFiliereOptionsForNiveau(niveauId, preferredFiliere) {
+        if (!optFiliereSelect || typeof AdminStore === 'undefined') return;
+        const filieres = (typeof AdminStore.getFilieresForNiveau === 'function')
+            ? AdminStore.getFilieresForNiveau(niveauId)
+            : (typeof AdminStore.getActiveFilieres === 'function' ? AdminStore.getActiveFilieres() : []);
         if (Array.isArray(filieres) && filieres.length > 0) {
             optFiliereSelect.innerHTML = filieres.map(f =>
                 `<option value="${escapeHtml(f.id)}">${escapeHtml(f.icon || '🧭')} ${escapeHtml(f.label || f.id)}</option>`
             ).join('');
+            const resolved = (typeof AdminStore.resolveFiliereForNiveau === 'function')
+                ? AdminStore.resolveFiliereForNiveau(preferredFiliere || optFiliereSelect.value, niveauId)
+                : (preferredFiliere || filieres[0].id);
+            optFiliereSelect.value = filieres.some(f => f.id === resolved) ? resolved : filieres[0].id;
         }
     }
 
-    function syncFiliereGroupVisibility() {
+    function syncFiliereGroupVisibility(preferredFiliere) {
         if (!optFiliereGroup || !optNiveauSelect) return;
+        const niv = optNiveauSelect.value;
         const applicable = (typeof AdminStore !== 'undefined' && typeof AdminStore.isFiliereApplicable === 'function')
-            ? AdminStore.isFiliereApplicable(optNiveauSelect.value)
-            : ['2nde', '1ere', 'terminale', 'bts1', 'bts2'].includes(optNiveauSelect.value);
+            ? AdminStore.isFiliereApplicable(niv)
+            : ['2nde', '1ere', 'terminale', 'bts1', 'bts2'].includes(niv);
         optFiliereGroup.hidden = !applicable;
+        if (applicable) {
+            populateFiliereOptionsForNiveau(niv, preferredFiliere);
+        }
     }
 
     let _audioSaveTimer = null;
@@ -1266,7 +1230,7 @@ function initOptions() {
         updateVolumeMusique(false);
         updateVolumeEffets(false);
 
-        ['pleinEcran', 'particules', 'ecoMode', 'sonsActifs', 'musiqueActive', 'effetsActifs', 'modeChrono', 'animationsActives'].forEach(id => {
+        ['particules', 'ecoMode', 'sonsActifs', 'musiqueActive', 'effetsActifs', 'modeChrono', 'animationsActives'].forEach(id => {
             const value = getOption(id);
             const el    = document.getElementById(id);
             if (!el) return;
@@ -1292,10 +1256,10 @@ function initOptions() {
         if (optNiveauSelect && typeof DB !== 'undefined' && DB.getNiveau) {
             optNiveauSelect.value = DB.getNiveau() || (siteCfg && siteCfg.defaultNiveau) || '6eme';
         }
-        if (optFiliereSelect && typeof DB !== 'undefined' && DB.getFiliere) {
-            optFiliereSelect.value = DB.getFiliere() || (siteCfg && siteCfg.defaultFiliere) || 'generale';
-        }
-        syncFiliereGroupVisibility();
+        const savedFil = (typeof DB !== 'undefined' && DB.getFiliere)
+            ? (DB.getFiliere() || (siteCfg && siteCfg.defaultFiliere) || 'generale')
+            : 'generale';
+        syncFiliereGroupVisibility(savedFil);
 
         if (sonsActifs && !sonsActifs.checked && musiqueActive && effetsActifs) {
             musiqueActive.dataset.prevChecked = getOption('musiqueActive') || 'true';
@@ -1336,7 +1300,6 @@ function initOptions() {
         };
         if (volumeMusique) patch.volumeMusique = volumeMusique.value;
         if (volumeEffets) patch.volumeEffets = volumeEffets.value;
-        if (pleinEcran) patch.pleinEcran = String(pleinEcran.checked);
         if (particulesCheckbox) patch.particules = String(particulesCheckbox.checked);
         if (ecoModeCheckbox) patch.ecoMode = String(ecoModeCheckbox.checked);
         if (sonsActifs) {
@@ -1361,10 +1324,10 @@ function initOptions() {
         if (optNiveauSelect && typeof DB !== 'undefined' && DB.setNiveau) {
             DB.setNiveau(optNiveauSelect.value);
         }
-        if (optFiliereSelect && typeof DB !== 'undefined' && DB.setFiliere) {
+        syncFiliereGroupVisibility(optFiliereSelect ? optFiliereSelect.value : undefined);
+        if (optFiliereSelect && optFiliereGroup && !optFiliereGroup.hidden && typeof DB !== 'undefined' && DB.setFiliere && optFiliereSelect.value) {
             DB.setFiliere(optFiliereSelect.value);
         }
-        syncFiliereGroupVisibility();
 
         if (typeof _effectiveSubjectsCache !== 'undefined') _effectiveSubjectsCache.clear();
         if (typeof getEffectiveSubjects === 'function' && (document.getElementById('dashboard-app') || document.querySelector('.map-header'))) {
@@ -1384,10 +1347,23 @@ function initOptions() {
         if (modalOptionsEl) modalOptionsEl.hidden = true;
         if (_optionsOpenedFromHash) {
             _optionsOpenedFromHash = false;
+            let savedReturn = '';
+            try {
+                savedReturn = sessionStorage.getItem('eduquest_options_return') || '';
+                sessionStorage.removeItem('eduquest_options_return');
+            } catch (_) {}
+            if (savedReturn && (savedReturn.includes('dashboard.html') || savedReturn.includes('map.html'))) {
+                window.location.href = savedReturn;
+                return;
+            }
             const ref = document.referrer || '';
             if (ref && (ref.includes('dashboard.html') || ref.includes('map.html'))) {
                 window.history.back();
+                return;
             }
+        }
+        if (window.location.hash === '#options' && window.history && typeof window.history.replaceState === 'function') {
+            try { window.history.replaceState(null, '', window.location.pathname + window.location.search); } catch (_) {}
         }
     }
 
@@ -1529,27 +1505,6 @@ function initOptions() {
     }
 
     /* --- Écouteurs affichage, classe & filière --- */
-    if (pleinEcran) {
-        pleinEcran.addEventListener('change', () => {
-            if (pleinEcran.checked) {
-                const request = document.documentElement.requestFullscreen
-                             || document.documentElement.webkitRequestFullscreen
-                             || document.documentElement.msRequestFullscreen;
-                if (request) {
-                    try { Promise.resolve(request.call(document.documentElement)).catch(() => {}); } catch (_) {}
-                }
-            } else if (getFullscreenElement()) {
-                const exit = document.exitFullscreen
-                          || document.webkitExitFullscreen
-                          || document.msExitFullscreen;
-                if (exit) {
-                    try { Promise.resolve(exit.call(document)).catch(() => {}); } catch (_) {}
-                }
-            }
-            saveCurrentOptionsLocally();
-        });
-    }
-
     if (ecoModeCheckbox) ecoModeCheckbox.addEventListener('change', saveCurrentOptionsLocally);
     if (particulesCheckbox) particulesCheckbox.addEventListener('change', saveCurrentOptionsLocally);
     if (animationsCheckbox) animationsCheckbox.addEventListener('change', saveCurrentOptionsLocally);
@@ -1600,12 +1555,6 @@ function initOptions() {
             }
         });
     }
-
-    const syncPleinEcranCb = () => {
-        if (pleinEcran) pleinEcran.checked = !!getFullscreenElement();
-    };
-    document.addEventListener('fullscreenchange', syncPleinEcranCb);
-    document.addEventListener('webkitfullscreenchange', syncPleinEcranCb);
 }
 
 /* ==========================================================================
@@ -1903,6 +1852,15 @@ function getLessonHint(lesson, subjectId) {
     }
     if (subj.includes('espagnol')) {
         return "Vérifie le genre (el / la), la conjugaison (ser vs estar) et le temps demandé en espagnol.";
+    }
+    if (subj.includes('allemand')) {
+        if (q.includes('der') || q.includes('die') || q.includes('das') || q.includes('cas') || q.includes('accusatif') || q.includes('datif')) {
+            return "Pense au genre du nom allemand (der / die / das) et à sa fonction dans la phrase (Nominatif, Accusatif, Datif, Génitif).";
+        }
+        if (q.includes('weil') || q.includes('dass') || q.includes('subordonn') || q.includes('ordre')) {
+            return "En allemand, le verbe conjugué est en 2e position dans une principale et rejeté à la FIN dans une subordonnée (weil, dass, wenn).";
+        }
+        return "Vérifie les genres (der/die/das), les déclinaisons, la majuscule obligatoire sur les noms et la place du verbe en allemand.";
     }
     if (subj.includes('arts')) {
         return "Pense aux techniques artistiques (couleurs primaires/complémentaires, perspective) et aux grands mouvements culturels.";
@@ -2214,6 +2172,7 @@ function initMap() {
         'Géographie': 'geo',
         'SVT': 'svt',
         'Anglais': 'anglais',
+        'Allemand': 'allemand',
         'Espagnol': 'espagnol',
         'Physique': 'physique',
         'Chimie': 'chimie',
@@ -3384,20 +3343,6 @@ function initMap() {
         positionCharacter(findCurrentLevel(progress), true);
     });
 
-    const resetBtn = document.getElementById('reset-progress');
-    if (resetBtn) resetBtn.addEventListener('click', () => {
-        if (!confirm('Réinitialiser toute ta progression dans cette matière pour cette classe ?')) return;
-        stopMapTimer();
-        if (typeof DB !== 'undefined' && typeof DB.clearSubjectAttempts === 'function') {
-            DB.clearSubjectAttempts(effectiveSubjectId, niveauActuel);
-        }
-        progress = getDefaultProgress();
-        saveProgress(progress);
-        modal.hidden = true;
-        renderLevels(progress);
-        showNotification('Progression de la matière réinitialisée.');
-    });
-
     // Resynchronisation de la progression uniquement lors d'un retour BFCache
     window.addEventListener('pageshow', (e) => {
         if (!e || !e.persisted) return;
@@ -3532,6 +3477,13 @@ const RAW_DASH_SUBJECTS = [
         { title: "Modal verbs", q: "Which modal expresses obligation?", opts: ["must", "could", "would", "might"], correct: 0, exp: "'Must' exprime une obligation forte." },
         { type: "texte_a_trous", title: "Simple past", q: "Complète la phrase.", textWithBlanks: "Yesterday, she ___ (go) to the cinema and ___ (watch) a great film.", blanks: [["went"], ["watched"]], distractors: ["gone", "goes", "watches", "watching"], exp: "'Go' est irrégulier (went) ; 'watch' est régulier (+ed)." },
     ]},
+    { id: "allemand", name: "Allemand", icon: "De", allowedNiveaux: ["6eme", "5eme", "4eme", "3eme", "2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["all"], island: "Image/ile/allemand.svg", lessons: [
+        { title: "Les articles (der, die, das)", q: "Quel est l'article défini correct devant « Schule » (l'école) en allemand ?", opts: ["der", "die", "das", "den"], correct: 1, exp: "« Die Schule » est un nom féminin (nominatif singulier : die)." },
+        { title: "Se présenter (sein / haben)", q: "Complète : « Ich ___ 14 Jahre alt und ich ___ einen Hund. »", opts: ["bin / habe", "bist / hast", "ist / hat", "sind / haben"], correct: 0, exp: "Avec « ich » : sein → bin (âge), haben → habe (avoir un chien)." },
+        { type: "vrai_faux", title: "Majuscules et syntaxe", q: "En allemand, tous les noms communs (comme der Tisch, das Buch, die Stadt) prennent toujours une majuscule.", correct: true, exp: "Vrai : en allemand, chaque substantif commence obligatoirement par une majuscule." },
+        { type: "texte_a_choix", title: "Subordonnée avec « weil »", q: "Complète la phrase en respectant la place du verbe allemand.", textWithBlanks: "Ich lerne Deutsch, ___ ich in Berlin ___ möchte.", choices: [["weil", "und", "aber"], ["studieren", "studiere", "studiert"]], blanks: [["weil"], ["studieren"]], exp: "Après « weil » (parce que), le verbe conjugué (« möchte ») est rejeté tout à la fin, précédé de l'infinitif « studieren »." },
+        { type: "drag_and_drop", title: "Vocabulaire du quotidien", q: "Associe chaque mot allemand à sa traduction française.", items: ["Das Buch", "Der Bahnhof", "Die Freundschaft"], targets: ["Le livre", "La gare", "L'amitié"], pairs: { "Das Buch": "Le livre", "Der Bahnhof": "La gare", "Die Freundschaft": "L'amitié" }, exp: "N'oublie jamais d'apprendre chaque nom allemand avec son article (der, die ou das) !" },
+    ]},
     { id: "histoire", name: "Histoire", icon: "⌂", island: "Image/ile/histoire.svg", lessons: [
         { title: "La Révolution française", q: "En quelle année la Révolution française a-t-elle débuté ?", opts: ["1804", "1715", "1848", "1789"], correct: 3, exp: "La prise de la Bastille a lieu le 14 juillet 1789." },
         { title: "La Première Guerre mondiale", q: "La Première Guerre mondiale se termine en :", opts: ["1920", "1918", "1945", "1914"], correct: 1, exp: "L'armistice est signé le 11 novembre 1918." },
@@ -3567,7 +3519,7 @@ const RAW_DASH_SUBJECTS = [
         { type: "texte_a_trous", title: "Architecture Web", q: "Complète le rôle des langages du Web.", textWithBlanks: "Le langage ___ structure le contenu d'une page, le langage ___ gère sa présentation visuelle et ___ assure son interactivité dynamique.", blanks: [["HTML"], ["CSS"], ["JavaScript"]], distractors: ["SQL", "Python", "PHP"], exp: "Le trio fondamental du front-end est HTML (structure), CSS (style) et JavaScript (interactivité)." },
         { type: "drag_and_drop", title: "Réseaux & Protocoles", q: "Associe chaque protocole à son usage.", items: ["HTTP / HTTPS", "DNS", "SSH"], targets: ["Transfert de pages Web", "Résolution nom de domaine en IP", "Connexion à distance sécurisée"], pairs: { "HTTP / HTTPS": "Transfert de pages Web", "DNS": "Résolution nom de domaine en IP", "SSH": "Connexion à distance sécurisée" }, exp: "Ces protocoles fondamentaux structurent les communications sur Internet." },
     ]},
-    { id: "ses", name: "SES (Économie)", icon: "📊", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["generale", "stmg", "hlp_llce", "bts_mco", "bts_cg"], island: "Image/ile/ses.svg", lessons: [
+    { id: "ses", name: "SES (Économie)", icon: "📊", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale"], allowedFilieres: ["generale", "hlp_llce"], island: "Image/ile/ses.svg", lessons: [
         { title: "Le marché et les prix", q: "Selon la loi de l'offre et de la demande, lorsque la demande d'un bien augmente sans que l'offre ne change, son prix :", opts: ["diminue", "tend à augmenter", "reste toujours fixe", "devient nul"], correct: 1, exp: "La rareté relative entraîne une hausse du prix d'équilibre." },
         { title: "La création monétaire", q: "Qui crée la majeure partie de la monnaie en circulation dans une économie moderne ?", opts: ["L'État par l'impôt", "Les banques commerciales lors de l'octroi de crédits", "La banque centrale par impression de billets", "Les entreprises industrielles"], correct: 1, exp: "« Les crédits font les dépôts » : les banques commerciales créent la monnaie scripturale lors d'un prêt." },
         { type: "vrai_faux", title: "Le PIB et la croissance", q: "Le Produit Intérieur Brut (PIB) mesure la richesse totale des patrimoines des ménages.", correct: false, exp: "Faux : le PIB mesure le flux de valeur ajoutée créée sur une période donnée (un an), pas le stock de patrimoine." },
@@ -3581,49 +3533,49 @@ const RAW_DASH_SUBJECTS = [
         { type: "texte_a_choix", title: "Présent de l'indicatif", q: "Complète la phrase en espagnol.", textWithBlanks: "Nosotros ___ en la escuela y ___ español cada día.", choices: [["estamos", "somos", "están"], ["hablamos", "hablan", "habla"]], blanks: [["estamos"], ["hablamos"]], exp: "« Nosotros estamos » (lieu) et « hablamos » (1re personne du pluriel de hablar)." },
         { type: "drag_and_drop", title: "Faux amis & lexique", q: "Associe chaque mot espagnol à sa traduction française.", items: ["La calle", "El verano", "El desayuno"], targets: ["La rue", "L'été", "Le petit-déjeuner"], pairs: { "La calle": "La rue", "El verano": "L'été", "El desayuno": "Le petit-déjeuner" }, exp: "Des mots incontournables du vocabulaire courant en LV2." },
     ]},
-    { id: "arts", name: "Arts & Musique", icon: "🎨", allowedNiveaux: ["6eme", "5eme", "4eme", "3eme", "2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["generale", "ciel", "std2a", "s2tmd", "hlp_llce", "bac_pro_melec", "bac_pro_assp"], island: "Image/ile/arts.svg", lessons: [
+    { id: "arts", name: "Arts & Musique", icon: "🎨", allowedNiveaux: ["6eme", "5eme", "4eme", "3eme", "2nde", "1ere", "terminale"], allowedFilieres: ["generale", "ciel", "std2a", "s2tmd", "hlp_llce", "bac_pro_melec", "bac_pro_assp"], island: "Image/ile/arts.svg", lessons: [
         { title: "Couleurs primaires", q: "En peinture (synthèse soustractive), quelles sont les trois couleurs primaires ?", opts: ["Rouge, Vert, Bleu", "Cyan (bleu), Magenta (rouge), Jaune", "Orange, Vert, Violet", "Noir, Blanc, Gris"], correct: 1, exp: "En peinture, les primaires sont bleu/cyan, rouge/magenta et jaune." },
         { title: "Histoire de l'art", q: "Qui a peint le célèbre tableau « Guernica » en 1937 ?", opts: ["Claude Monet", "Pablo Picasso", "Vincent van Gogh", "Salvador Dalí"], correct: 1, exp: "Pablo Picasso a peint Guernica pour dénoncer le bombardement de la ville basque." },
         { type: "vrai_faux", title: "Rythme musical", q: "Une noire dure deux fois plus longtemps qu'une croche.", correct: true, exp: "Vrai : 1 noire = 2 croches (et 1 blanche = 2 noires)." },
         { type: "texte_a_trous", title: "La perspective", q: "Complète la règle de la perspective linéaire.", textWithBlanks: "Dans un dessin en perspective, les droites parallèles fuyantes convergent vers un point appelé point de ___ situé sur la ligne d'___.", blanks: [["fuite"], ["horizon"]], distractors: ["centre", "sol", "ombre"], exp: "La perspective centrale de la Renaissance s'appuie sur la ligne d'horizon et le point de fuite." },
         { type: "drag_and_drop", title: "Familles d'instruments", q: "Associe chaque instrument à sa famille orchestrale.", items: ["Violon", "Trompette", "Flûte traversière"], targets: ["Cordes frottées", "Cuivres", "Bois"], pairs: { "Violon": "Cordes frottées", "Trompette": "Cuivres", "Flûte traversière": "Bois" }, exp: "La flûte traversière appartient historiquement à la famille des bois." },
     ]},
-    { id: "hggsp", name: "HGGSP (Géopolitique)", icon: "🌐", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["generale", "hlp_llce", "s2tmd"], island: "Image/ile/hggsp.svg", lessons: [
+    { id: "hggsp", name: "HGGSP (Géopolitique)", icon: "🌐", band: "lycee", allowedNiveaux: ["1ere", "terminale"], allowedFilieres: ["generale", "hlp_llce", "s2tmd"], island: "Image/ile/hggsp.svg", lessons: [
         { title: "Soft power & Hard power", q: "Qui a théorisé la distinction entre « hard power » et « soft power » ?", opts: ["Joseph Nye", "Karl Marx", "Montesquieu", "John Maynard Keynes"], correct: 0, exp: "Le politologue américain Joseph Nye a formulé le concept de soft power en 1990." },
         { title: "Droit de la mer", q: "Jusqu'à quelle distance des côtes s'étend la Zone Économique Exclusive (ZEE) selon Montego Bay (1982) ?", opts: ["12 milles marins", "200 milles marins", "50 milles marins", "500 milles marins"], correct: 1, exp: "La ZEE s'étend jusqu'à 200 milles marins (~370 km) des côtes." },
         { type: "vrai_faux", title: "Paix de Westphalie", q: "Les traités de Westphalie (1648) consacrent le principe de souveraineté des États.", correct: true, exp: "Vrai : ils mettent fin à la guerre de Trente Ans et fondent l'ordre interétatique moderne." },
         { type: "texte_a_choix", title: "L'espace & les océans", q: "Complète les enjeux géopolitiques des nouveaux espaces.", textWithBlanks: "La conquête spatiale débute avec le satellite soviétique ___ en 1957, puis les États-Unis remportent la course à la Lune avec la mission ___ en 1969.", choices: [["Spoutnik", "Voyager", "Ariane"], ["Apollo 11", "Gemini 4", "Mir"]], blanks: [["Spoutnik"], ["Apollo 11"]], exp: "Spoutnik 1 (1957) et Apollo 11 (1969) marquent les jalons clés de la guerre froide spatiale." },
         { type: "drag_and_drop", title: "Institutions internationales", q: "Associe chaque organisation à son rôle principal.", items: ["ONU", "UNESCO", "CPI"], targets: ["Maintien de la paix internationale", "Protection du patrimoine mondial", "Jugement des crimes contre l'humanité"], pairs: { "ONU": "Maintien de la paix internationale", "UNESCO": "Protection du patrimoine mondial", "CPI": "Jugement des crimes contre l'humanité" }, exp: "Chaque institution remplit un mandat distinct dans la gouvernance mondiale." },
     ]},
-    { id: "si", name: "Sciences de l'Ingénieur", icon: "📐", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["generale", "nsi_spe", "sti2d", "sciences_spe", "bac_pro_melec"], island: "Image/ile/si.svg", lessons: [
+    { id: "si", name: "Sciences de l'Ingénieur", icon: "📐", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale"], allowedFilieres: ["generale", "nsi_spe", "sti2d", "sciences_spe", "bac_pro_melec"], island: "Image/ile/si.svg", lessons: [
         { title: "Chaîne d'énergie", q: "Dans la chaîne d'énergie, quelle fonction réalise un moteur électrique ?", opts: ["Alimenter", "Convertir", "Transmettre", "Acquérir"], correct: 1, exp: "Un moteur convertit l'énergie électrique en énergie mécanique." },
         { title: "Rendement énergétique", q: "Un système consomme 200 W et restitue 150 W utiles. Quel est son rendement η ?", opts: ["50 %", "75 %", "80 %", "133 %"], correct: 1, exp: "η = Pu / Pa = 150 / 200 = 0,75 soit 75 %." },
         { type: "vrai_faux", title: "Puissance mécanique", q: "En rotation, la puissance mécanique vaut P = C × ω (couple en N·m fois vitesse angulaire en rad/s).", correct: true, exp: "Vrai : P (W) = C (N·m) × ω (rad/s)." },
         { type: "texte_a_choix", title: "Ingénierie SysML", q: "Complète les diagrammes SysML fondamentaux.", textWithBlanks: "Le diagramme des ___ recense les contraintes du cahier des charges, tandis que le diagramme des ___ décrit les services attendus par l'utilisateur.", choices: [["exigences (req)", "séquences", "états"], ["cas d'utilisation (uc)", "blocs internes", "flux"]], blanks: [["exigences (req)"], ["cas d'utilisation (uc)"]], exp: "En SysML, « req » formalise les exigences et « uc » les cas d'utilisation." },
         { type: "drag_and_drop", title: "Liaisons mécaniques", q: "Associe chaque liaison à ses degrés de liberté.", items: ["Encastrement", "Pivot", "Glissière"], targets: ["0 degré de liberté", "1 rotation uniquement", "1 translation uniquement"], pairs: { "Encastrement": "0 degré de liberté", "Pivot": "1 rotation uniquement", "Glissière": "1 translation uniquement" }, exp: "Les liaisons élémentaires définissent les mouvements possibles entre solides." },
     ]},
-    { id: "msgn", name: "Management & Gestion", icon: "📊", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["stmg", "sthr", "stav", "bts_sio", "bts_mco", "bts_cg", "bac_pro_assp"], island: "Image/ile/msgn.svg", lessons: [
+    { id: "msgn", name: "Management & Gestion", icon: "📊", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["stmg", "sthr", "stav", "bts_sio", "bts_mco", "bts_cg"], island: "Image/ile/msgn.svg", lessons: [
         { title: "Types d'organisations", q: "Quelle est la finalité principale d'une entreprise privée ?", opts: ["Réaliser un profit pour assurer sa pérennité", "Fournir un service public gratuit", "Défendre une cause bénévole sans bénéfice", "Voter des lois"], correct: 0, exp: "Une entreprise a une finalité lucrative (créer de la valeur et dégager un profit)." },
         { title: "Valeur ajoutée", q: "Comment calcule-t-on la Valeur Ajoutée (VA) d'une entreprise ?", opts: ["Chiffre d'affaires + Achats", "Chiffre d'affaires − Consommations intermédiaires", "Bénéfice × Salaires", "Actif − Passif"], correct: 1, exp: "VA = Chiffre d'affaires (production) − Consommations intermédiaires." },
         { type: "vrai_faux", title: "Diagnostic SWOT", q: "Dans une matrice SWOT, les Forces et Faiblesses relèvent du diagnostic interne de l'organisation.", correct: true, exp: "Vrai : Forces/Faiblesses = interne ; Opportunités/Menaces = environnement externe." },
         { type: "texte_a_choix", title: "Styles de direction (Likert)", q: "Complète les styles de management.", textWithBlanks: "Un manager qui décide seul sans consulter ses équipes adopte un style ___, tandis que celui qui associe les salariés aux décisions adopte un style ___.", choices: [["autoritaire", "participatif", "délégatif"], ["participatif", "autoritaire", "paternaliste"]], blanks: [["autoritaire"], ["participatif"]], exp: "Rensis Likert distingue autoritaire, paternaliste, consultatif et participatif." },
         { type: "drag_and_drop", title: "Indicateurs comptables", q: "Associe chaque document ou notion à sa définition.", items: ["Bilan comptable", "Compte de résultat", "Seuil de rentabilité"], targets: ["Patrimoine (Actif / Passif) à une date donnée", "Produits et charges sur un exercice", "CA à partir duquel l'entreprise fait un bénéfice"], pairs: { "Bilan comptable": "Patrimoine (Actif / Passif) à une date donnée", "Compte de résultat": "Produits et charges sur un exercice", "Seuil de rentabilité": "CA à partir duquel l'entreprise fait un bénéfice" }, exp: "Ces outils clés pilotent la performance financière en STMG." },
     ]},
-    { id: "droit_eco", name: "Droit & Économie", icon: "⚖️", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["stmg", "ciel", "st2s", "sthr", "stav", "bts_sio", "bts_mco", "bts_cg", "bac_pro_melec", "bac_pro_assp"], island: "Image/ile/droit_eco.svg", lessons: [
+    { id: "droit_eco", name: "Droit & Économie", icon: "⚖️", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["stmg", "ciel", "sthr", "stav", "bts_sio", "bts_mco", "bts_cg", "bac_pro_melec", "bac_pro_assp"], island: "Image/ile/droit_eco.svg", lessons: [
         { title: "Contrat de travail", q: "Quel est le contrat de travail de droit commun en France ?", opts: ["Le CDD", "Le CDI", "Le contrat d'intérim", "La convention de stage"], correct: 1, exp: "Le Contrat à Durée Indéterminée (CDI) est la forme normale et générale de la relation de travail." },
         { title: "Politique monétaire", q: "Quelle institution conduit la politique monétaire dans la zone euro ?", opts: ["Le Parlement français", "La Banque Centrale Européenne (BCE)", "L'ONU", "La Cour de cassation"], correct: 1, exp: "La BCE fixe les taux directeurs afin de maintenir la stabilité des prix (~2 % d'inflation)." },
         { type: "vrai_faux", title: "Responsabilité civile", q: "Pour engager la responsabilité civile délictuelle, il faut prouver un fait générateur, un dommage et un lien de causalité.", correct: true, exp: "Vrai : ce sont les trois conditions cumulatives prévues par le Code civil." },
         { type: "texte_a_choix", title: "Juridictions françaises", q: "Identifie les juridictions compétentes.", textWithBlanks: "Un litige individuel entre un salarié et son employeur est jugé par le ___, tandis qu'un litige entre deux commerçants relève du ___.", choices: [["Conseil de prud'hommes", "Tribunal administratif", "Tribunal correctionnel"], ["Tribunal de commerce", "Conseil d'État", "Cour d'assises"]], blanks: [["Conseil de prud'hommes"], ["Tribunal de commerce"]], exp: "Chaque ordre et juridiction spécialisée dispose d'une compétence d'attribution précise." },
         { type: "drag_and_drop", title: "Notions économiques", q: "Associe chaque terme à sa définition.", items: ["Inflation", "Chômage conjoncturel", "Balance commerciale"], targets: ["Hausse générale et durable des prix", "Lié à un ralentissement de l'activité économique", "Exportations moins Importations de biens"], pairs: { "Inflation": "Hausse générale et durable des prix", "Chômage conjoncturel": "Lié à un ralentissement de l'activité économique", "Balance commerciale": "Exportations moins Importations de biens" }, exp: "Des repères essentiels de macroéconomie au programme STMG et BTS." },
     ]},
-    { id: "mercatique", name: "Mercatique (Marketing)", icon: "📈", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["stmg", "sthr", "bts_mco", "bts_cg"], island: "Image/ile/mercatique.svg", lessons: [
+    { id: "mercatique", name: "Mercatique (Marketing)", icon: "📈", band: "lycee", allowedNiveaux: ["1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["stmg", "sthr", "bts_mco", "bts_cg"], island: "Image/ile/mercatique.svg", lessons: [
         { title: "Le Marketing Mix (4P)", q: "Quels sont les 4 piliers historiques du plan de marchéage (4P) ?", opts: ["Produit, Prix, Distribution (Place), Communication (Promotion)", "Profit, Personnel, Production, Publicité", "Part de marché, Panier, Promotion, Pénurie", "Plan, Projet, Pilote, Partenaire"], correct: 0, exp: "Le marketing mix articule Produit, Prix, Place (distribution) et Promotion (communication)." },
         { title: "Stratégie de prix", q: "Fixer volontairement un prix élevé au lancement pour cibler une clientèle haut de gamme s'appelle :", opts: ["l'écrémage", "la pénétration", "l'alignement", "le dumping"], correct: 0, exp: "La stratégie d'écrémage privilégie une forte marge unitaire et une image premium." },
         { type: "vrai_faux", title: "Segmentation de marché", q: "Segmenter un marché consiste à le découper en groupes homogènes de consommateurs aux attentes similaires.", correct: true, exp: "Vrai : la segmentation précède le ciblage puis le positionnement (SCP)." },
         { type: "texte_a_choix", title: "Distribution", q: "Complète les types de réseaux de distribution.", textWithBlanks: "Vendre un produit dans un maximum de points de vente correspond à une distribution ___, alors que réserver la vente à un seul distributeur par zone est une distribution ___.", choices: [["intensive", "exclusive", "sélective"], ["exclusive", "intensive", "directe"]], blanks: [["intensive"], ["exclusive"]], exp: "On distingue distribution intensive (grande conso), sélective (parfums) et exclusive (luxe/auto)." },
         { type: "drag_and_drop", title: "Cycle de vie du produit", q: "Associe chaque phase du cycle de vie à sa caractéristique.", items: ["Lancement", "Croissance", "Maturité"], targets: ["Ventes faibles et forts coûts de communication", "Forte hausse des ventes et arrivée de concurrents", "Ventes au sommet et fidélisation prioritaire"], pairs: { "Lancement": "Ventes faibles et forts coûts de communication", "Croissance": "Forte hausse des ventes et arrivée de concurrents", "Maturité": "Ventes au sommet et fidélisation prioritaire" }, exp: "Le cycle de vie compte 4 phases : Lancement, Croissance, Maturité, Déclin." },
     ]},
-    { id: "i2d", name: "I2D (Innovation & Éco)", icon: "🔋", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["sti2d", "std2a", "stav", "bac_pro_melec"], island: "Image/ile/i2d.svg", lessons: [
+    { id: "i2d", name: "I2D (Innovation & Éco)", icon: "🔋", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale"], allowedFilieres: ["sti2d", "std2a", "stav", "bac_pro_melec"], island: "Image/ile/i2d.svg", lessons: [
         { title: "Analyse du Cycle de Vie", q: "Que permet d'évaluer une Analyse du Cycle de Vie (ACV) d'un produit ?", opts: ["Uniquement son prix en magasin", "Ses impacts environnementaux de l'extraction au recyclage", "Sa couleur dominante", "Son nombre de brevets"], correct: 1, exp: "L'ACV quantifie les impacts (CO₂, eau, énergie) du berceau à la tombe." },
         { title: "Énergie électrique", q: "Un radiateur de 2 kW fonctionne pendant 3 heures. Quelle énergie consomme-t-il ?", opts: ["5 kWh", "6 kWh", "1,5 kWh", "600 Wh"], correct: 1, exp: "E = P × t = 2 kW × 3 h = 6 kWh." },
         { type: "vrai_faux", title: "Résistance thermique", q: "Plus la résistance thermique R d'une paroi est élevée, meilleure est son isolation.", correct: true, exp: "Vrai : R = e / λ (épaisseur divisée par la conductivité thermique)." },
@@ -3651,56 +3603,56 @@ const RAW_DASH_SUBJECTS = [
         { type: "texte_a_choix", title: "Ports TCP/UDP usuels", q: "Associe les ports standards.", textWithBlanks: "Le trafic Web chiffré HTTPS utilise par défaut le port TCP ___, et la connexion distante sécurisée SSH utilise le port TCP ___.", choices: [["443", "80", "21"], ["22", "53", "25"]], blanks: [["443"], ["22"]], exp: "HTTP = 80, HTTPS = 443, SSH = 22, DNS = 53." },
         { type: "drag_and_drop", title: "Équipements réseau", q: "Associe chaque équipement à sa fonction.", items: ["Switch (Commutateur)", "Routeur", "Pare-feu (Firewall)"], targets: ["Transmet les trames selon les adresses MAC (L2)", "Interconnecte différents réseaux IP (L3)", "Filtre le trafic selon des règles de sécurité"], pairs: { "Switch (Commutateur)": "Transmet les trames selon les adresses MAC (L2)", "Routeur": "Interconnecte différents réseaux IP (L3)", "Pare-feu (Firewall)": "Filtre le trafic selon des règles de sécurité" }, exp: "Maîtriser le rôle de chaque équipement est indispensable en Bac Pro et BTS CIEL." },
     ]},
-    { id: "electronique", name: "Électronique & Systèmes", icon: "🔌", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["ciel", "sti2d", "nsi_spe", "bts_sio", "bac_pro_melec"], island: "Image/ile/electronique.svg", lessons: [
+    { id: "electronique", name: "Électronique & Systèmes", icon: "🔌", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["ciel", "sti2d", "nsi_spe", "bac_pro_melec"], island: "Image/ile/electronique.svg", lessons: [
         { title: "Loi d'Ohm", q: "Une résistance de 220 Ω est traversée par un courant de 0,05 A (50 mA). Quelle est la tension à ses bornes ?", opts: ["4,4 V", "11 V", "22 V", "0,11 V"], correct: 1, exp: "U = R × I = 220 × 0,05 = 11 V." },
         { title: "Diode & LED", q: "Quel est le rôle principal d'une résistance placée en série avec une LED ?", opts: ["Augmenter la tension d'alimentation", "Limiter l'intensité du courant pour ne pas détruire la LED", "Redresser le courant alternatif", "Amplifier le signal audio"], correct: 1, exp: "Sans résistance de limitation, le courant excessif détruirait instantanément la jonction de la LED." },
         { type: "vrai_faux", title: "Résistances en série", q: "Deux résistances R1 et R2 montées en série ont une résistance équivalente Réq = R1 + R2.", correct: true, exp: "Vrai : en série les résistances s'additionnent ; en parallèle, ce sont les inverses (1/Réq = 1/R1 + 1/R2)." },
         { type: "texte_a_choix", title: "Mesures électriques", q: "Complète les règles de branchement des appareils de mesure.", textWithBlanks: "Un voltmètre se branche toujours en ___ du composant étudié, tandis qu'un ampèremètre se branche toujours en ___.", choices: [["dérivation (parallèle)", "série", "court-circuit"], ["série", "dérivation (parallèle)", "boucle ouverte"]], blanks: [["dérivation (parallèle)"], ["série"]], exp: "Voltmètre en parallèle (mesure de tension) ; ampèremètre en série (mesure d'intensité)." },
         { type: "drag_and_drop", title: "Composants électroniques", q: "Associe chaque composant à son unité ou sa fonction.", items: ["Condensateur", "Transistor MOSFET", "Oscilloscope"], targets: ["Stocke de l'énergie électrique (Farad)", "Interrupteur commandé en tension", "Visualise l'évolution d'une tension dans le temps"], pairs: { "Condensateur": "Stocke de l'énergie électrique (Farad)", "Transistor MOSFET": "Interrupteur commandé en tension", "Oscilloscope": "Visualise l'évolution d'une tension dans le temps" }, exp: "Des bases incontournables en électronique et systèmes embarqués (CIEL / STI2D)." },
     ]},
-    { id: "stss", name: "STSS (Santé & Social)", icon: "🩺", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["st2s", "bac_pro_assp"], island: "Image/ile/stss.svg", lessons: [
+    { id: "stss", name: "STSS (Santé & Social)", icon: "🩺", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale"], allowedFilieres: ["st2s", "bac_pro_assp"], island: "Image/ile/stss.svg", lessons: [
         { title: "Définition de la santé (OMS)", q: "Selon l'OMS (1946), la santé est un état de complet bien-être :", opts: ["uniquement physique", "physique, mental et social", "financier et sportif", "biologique seulement"], correct: 1, exp: "L'OMS définit la santé comme un bien-être physique, mental et social, et non seulement l'absence de maladie." },
         { title: "Niveaux de prévention", q: "La vaccination vise à éviter l'apparition d'une maladie : de quel niveau de prévention s'agit-il ?", opts: ["Prévention primaire", "Prévention secondaire", "Prévention tertiaire", "Réadaptation"], correct: 0, exp: "La prévention primaire agit avant l'apparition de la maladie (vaccination, hygiène)." },
         { type: "vrai_faux", title: "Sécurité sociale", q: "En France, la Sécurité sociale a été créée par les ordonnances de 1945 selon le principe de solidarité nationale.", correct: true, exp: "Vrai : créée en octobre 1945 pour protéger contre les grands risques sociaux." },
         { type: "texte_a_choix", title: "Indicateurs démographiques", q: "Complète les notions d'épidémiologie.", textWithBlanks: "L'___ mesure le nombre de nouveaux cas d'une maladie sur une période donnée, tandis que la ___ mesure le nombre total de cas présents à un instant donné.", choices: [["incidence", "prévalence", "mortalité"], ["prévalence", "incidence", "natalité"]], blanks: [["incidence"], ["prévalence"]], exp: "Incidence = nouveaux cas sur une période ; Prévalence = total des cas existants." },
         { type: "drag_and_drop", title: "Acteurs de santé publique", q: "Associe chaque organisme à sa mission.", items: ["ARS", "PMI", "HAS"], targets: ["Pilote la politique de santé en région", "Protection maternelle et infantile", "Évalue les soins et publie des recommandations médicales"], pairs: { "ARS": "Pilote la politique de santé en région", "PMI": "Protection maternelle et infantile", "HAS": "Évalue les soins et publie des recommandations médicales" }, exp: "Ces acteurs structurent le système de santé et la protection sociale en ST2S." },
     ]},
-    { id: "biotech", name: "Biotechnologies & Labo", icon: "🧫", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["stl", "st2s", "sthr", "stav", "sciences_spe", "bac_pro_assp"], island: "Image/ile/biotech.svg", lessons: [
+    { id: "biotech", name: "Biotechnologies & Labo", icon: "🧫", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale"], allowedFilieres: ["stl", "st2s", "sthr", "stav", "sciences_spe", "bac_pro_assp"], island: "Image/ile/biotech.svg", lessons: [
         { title: "Coloration de Gram", q: "Après une coloration de Gram, quelle couleur prennent les bactéries Gram positives (Gram+) ?", opts: ["Rose / rouge", "Violette", "Verte fluorescente", "Incolore"], correct: 1, exp: "La paroi épaisse de peptidoglycane des Gram+ retient le violet de gentiane." },
         { title: "Amplification ADN (PCR)", q: "Quel est l'objectif principal de la technique PCR en biologie moléculaire ?", opts: ["Détruire l'ADN", "Amplifier en millions de copies une séquence précise d'ADN", "Mesurer le pH d'un tampon", "Colorer une coupe de tissu"], correct: 1, exp: "La PCR (Polymerase Chain Reaction) multiplie exponentiellement (2ⁿ) un fragment d'ADN cible." },
         { type: "vrai_faux", title: "Stérilisation à l'autoclave", q: "Un autoclave stérilise les milieux de culture par vapeur d'eau saturée sous pression à 121 °C.", correct: true, exp: "Vrai : 121 °C sous 1 bar de surpression détruit bactéries, virus et spores." },
         { type: "texte_a_choix", title: "Antisepsie et Désinfection", q: "Distingue l'usage des produits d'hygiène.", textWithBlanks: "Un ___ s'applique sur les tissus vivants (peau), tandis qu'un ___ s'applique sur les surfaces inertes (paillasse).", choices: [["antiseptique", "désinfectant", "solvant"], ["désinfectant", "antiseptique", "réactif"]], blanks: [["antiseptique"], ["désinfectant"]], exp: "Règle d'or en microbiologie STL et soins ASSP." },
         { type: "drag_and_drop", title: "Outils de laboratoire", q: "Associe chaque appareil de labo à son rôle.", items: ["Spectrophotomètre", "Micropipette", "Autoclave"], targets: ["Mesure l'absorbance (Beer-Lambert)", "Prélève des microvolumes (µL)", "Stérilise à la vapeur sous pression"], pairs: { "Spectrophotomètre": "Mesure l'absorbance (Beer-Lambert)", "Micropipette": "Prélève des microvolumes (µL)", "Autoclave": "Stérilise à la vapeur sous pression" }, exp: "Ces appareils sont essentiels en travaux pratiques de Biotechnologies." },
     ]},
-    { id: "design", name: "Design & Arts Appliqués", icon: "🎨", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["std2a", "s2tmd"], island: "Image/ile/design.svg", lessons: [
+    { id: "design", name: "Design & Arts Appliqués", icon: "🎨", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale"], allowedFilieres: ["std2a", "s2tmd"], island: "Image/ile/design.svg", lessons: [
         { title: "Le Bauhaus (1919)", q: "Quelle école fondée par Walter Gropius a posé les bases du design industriel moderne ?", opts: ["Le Bauhaus", "Le Baroque", "L'Impressionnisme", "Le Surréalisme"], correct: 0, exp: "Le Bauhaus relie création artistique, fonctionnalité et production industrielle." },
         { title: "Synthèse d'impression", q: "Quel mode colorimétrique à 4 encres utilise-t-on pour imprimer une affiche ou un magazine ?", opts: ["RVB", "CMJN", "ASCII", "MP4"], correct: 1, exp: "CMJN (Cyan, Magenta, Jaune, Noir) est le standard d'imprimerie (synthèse soustractive)." },
         { type: "vrai_faux", title: "Image vectorielle", q: "Un logo conçu en format vectoriel (SVG) peut être agrandi à l'échelle d'un panneau publicitaire sans pixelliser.", correct: true, exp: "Vrai : le vectoriel utilise des courbes mathématiques (Bézier) indépendantes de la résolution." },
         { type: "texte_a_choix", title: "Typographie", q: "Complète les deux grandes familles typographiques.", textWithBlanks: "Une police ___ possède des empattements (ex : Garamond), tandis qu'une police ___ n'en possède pas (ex : Helvetica).", choices: [["Serif", "Sans-Serif", "Bitmap"], ["Sans-Serif", "Serif", "CMJN"]], blanks: [["Serif"], ["Sans-Serif"]], exp: "Les polices Sans-Serif (linéales) offrent une excellente lisibilité sur écrans et signalétiques." },
         { type: "drag_and_drop", title: "Pôles du design", q: "Associe chaque domaine du design à un exemple concret.", items: ["Design d'espace", "Design graphique", "Design produit"], targets: ["Aménagement d'un musée", "Identité visuelle & logo", "Fauteuil ergonomique"], pairs: { "Design d'espace": "Aménagement d'un musée", "Design graphique": "Identité visuelle & logo", "Design produit": "Fauteuil ergonomique" }, exp: "Les 4 pôles STD2A : produit, espace, graphique et mode/textile." },
     ]},
-    { id: "hotellerie", name: "Hôtellerie & Gastronomie", icon: "🍽️", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["sthr"], island: "Image/ile/hotellerie.svg", lessons: [
+    { id: "hotellerie", name: "Hôtellerie & Gastronomie", icon: "🍽️", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale"], allowedFilieres: ["sthr"], island: "Image/ile/hotellerie.svg", lessons: [
         { title: "Démarche HACCP", q: "Quel est l'objectif de la méthode HACCP en cuisine professionnelle ?", opts: ["Maîtriser la sécurité sanitaire des aliments", "Décorer les chambres d'hôtel", "Calculer les pourboires", "Choisir la musique de salle"], correct: 0, exp: "HACCP identifie les points critiques (températures, hygiène, traçabilité) pour prévenir les contaminations." },
         { title: "Liaison chaude", q: "Quelle est la température minimale réglementaire de maintien en liaison chaude avant service ?", opts: ["+20 °C", "+40 °C", "+63 °C", "+100 °C"], correct: 2, exp: "En dessous de +63 °C (et au-dessus de +10 °C), les bactéries se multiplient rapidement." },
         { type: "vrai_faux", title: "Réaction de Maillard", q: "La réaction de Maillard est responsable du brunissement et des arômes grillés d'une viande saisie ou d'une croûte de pain.", correct: true, exp: "Vrai : elle se produit à haute température entre sucres réducteurs et acides aminés." },
         { type: "texte_a_choix", title: "Service en salle", q: "Complète les règles classiques du service à table.", textWithBlanks: "En service à l'assiette, on sert le client par la ___, tandis que le pain et le service au plat se présentent par la ___.", choices: [["droite", "gauche", "cuisine"], ["gauche", "droite", "réserve"]], blanks: [["droite"], ["gauche"]], exp: "Règle protocolaire de service en restauration française." },
         { type: "drag_and_drop", title: "Indicateurs hôteliers", q: "Associe chaque terme STHR à sa définition.", items: ["RevPAR", "Taux d'occupation", "Marche en avant"], targets: ["CA hébergement par chambre disponible", "Pourcentage de chambres vendues", "Séparation stricte circuits propre et sale"], pairs: { "RevPAR": "CA hébergement par chambre disponible", "Taux d'occupation": "Pourcentage de chambres vendues", "Marche en avant": "Séparation stricte circuits propre et sale" }, exp: "Des repères incontournables en gestion hôtelière et sciences culinaires." },
     ]},
-    { id: "agronomie", name: "Agronomie & Écologie", icon: "🌱", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["stav"], island: "Image/ile/agronomie.svg", lessons: [
+    { id: "agronomie", name: "Agronomie & Écologie", icon: "🌱", band: "lycee", allowedNiveaux: ["1ere", "terminale"], allowedFilieres: ["stav"], island: "Image/ile/agronomie.svg", lessons: [
         { title: "Éléments NPK", q: "Quels sont les trois éléments nutritifs majeurs (NPK) indispensables aux plantes ?", opts: ["Azote, Phosphore, Potassium", "Nickel, Plomb, Krypton", "Or, Fer, Zinc", "Sodium, Chlore, Soufre"], correct: 0, exp: "N (azote), P (phosphore) et K (potassium) assurent croissance, enracinement et floraison." },
         { title: "Légumineuses et azote", q: "Pourquoi introduit-on des légumineuses (trèfle, luzerne, pois) dans une rotation agricole ?", opts: ["Elles fixent l'azote de l'air grâce à une symbiose racinaire", "Elles stérilisent le sol", "Elles empêchent la pluie de tomber", "Elles produisent du pétrole"], correct: 0, exp: "Les bactéries Rhizobium dans leurs nodosités enrichissent naturellement le sol en azote." },
         { type: "vrai_faux", title: "Conversion en hectares", q: "Un hectare (1 ha) correspond exactement à 10 000 m² (un carré de 100 m × 100 m).", correct: true, exp: "Vrai : 1 ha = 100 ares = 10 000 m²." },
         { type: "texte_a_choix", title: "Agroécologie", q: "Complète les démarches durables du programme STAV.", textWithBlanks: "La ___ utilise des insectes auxiliaires contre les ravageurs, et l'___ associe arbres et cultures sur une même parcelle.", choices: [["lutte biologique", "monoculture", "déforestation"], ["agroforesterie", "hydroponie", "urbanisation"]], blanks: [["lutte biologique"], ["agroforesterie"]], exp: "L'agroécologie s'appuie sur les services rendus par les écosystèmes." },
         { type: "drag_and_drop", title: "Fertilité des sols", q: "Associe chaque notion agronomique à son rôle.", items: ["Complexe argilo-humique", "Haie bocagère", "CIPAN"], targets: ["Retient l'eau et les sels minéraux du sol", "Brise-vent et corridor écologique", "Couvert végétal piégeant les nitrates en hiver"], pairs: { "Complexe argilo-humique": "Retient l'eau et les sels minéraux du sol", "Haie bocagère": "Brise-vent et corridor écologique", "CIPAN": "Couvert végétal piégeant les nitrates en hiver" }, exp: "Pédologie et biodiversité sont au cœur de la filière STAV." },
     ]},
-    { id: "spectacle", name: "Arts de la Scène & Culture", icon: "🎭", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["s2tmd", "std2a", "hlp_llce"], island: "Image/ile/spectacle.svg", lessons: [
+    { id: "spectacle", name: "Arts de la Scène & Culture", icon: "🎭", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale"], allowedFilieres: ["s2tmd", "std2a", "hlp_llce"], island: "Image/ile/spectacle.svg", lessons: [
         { title: "Catharsis antique", q: "Selon Aristote, comment appelle-t-on la purgation des passions vécue par le spectateur de tragédie ?", opts: ["La catharsis", "La didascalie", "La pantomime", "L'ellipse"], correct: 0, exp: "Dans La Poétique, la tragédie suscite terreur et pitié pour opérer la catharsis." },
         { title: "Côté cour / Côté jardin", q: "Au théâtre, vu depuis la salle (le public), quel côté est le « côté cour » ?", opts: ["La droite", "La gauche", "Le balcon supérieur", "La fosse d'orchestre"], correct: 0, exp: "Repère historique (Tuileries) : Jardin = Gauche, Cour = Droite (vus du public)." },
         { type: "vrai_faux", title: "Les didascalies", q: "Dans une pièce de théâtre, les didascalies sont les indications scéniques destinées à la mise en scène et ne sont pas dites par les acteurs.", correct: true, exp: "Vrai : elles précisent déplacements, intonations, costumes et décors." },
         { type: "texte_a_choix", title: "Théorie musicale", q: "Complète les bases du solfège.", textWithBlanks: "Un ___ hausse une note d'un demi-ton, tandis qu'un ___ l'abaisse d'un demi-ton.", choices: [["dièse (♯)", "bémol (♭)", "soupir"], ["bémol (♭)", "dièse (♯)", "point d'orgue"]], blanks: [["dièse (♯)"], ["bémol (♭)"]], exp: "Le bécarre (♮) annule ensuite l'altération." },
         { type: "drag_and_drop", title: "Figures de la scène", q: "Associe chaque créateur majeur à son art.", items: ["Molière", "Pina Bausch", "Igor Stravinsky"], targets: ["Comédie française du XVIIe siècle", "Tanztheater (danse contemporaine)", "Musique du Sacre du printemps"], pairs: { "Molière": "Comédie française du XVIIe siècle", "Pina Bausch": "Tanztheater (danse contemporaine)", "Igor Stravinsky": "Musique du Sacre du printemps" }, exp: "Théâtre, Danse et Musique dialoguent dans la filière S2TMD." },
     ]},
-    { id: "hlp", name: "Humanités & Littérature (HLP)", icon: "📖", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["hlp_llce", "generale", "s2tmd", "std2a"], island: "Image/ile/hlp.svg", lessons: [
+    { id: "hlp", name: "Humanités & Littérature (HLP)", icon: "📖", band: "lycee", allowedNiveaux: ["1ere", "terminale"], allowedFilieres: ["hlp_llce", "generale", "s2tmd", "std2a"], island: "Image/ile/hlp.svg", lessons: [
         { title: "Rhétorique d'Aristote", q: "Quels sont les trois piliers de la persuasion selon Aristote ?", opts: ["Éthos, Pathos, Logos", "Sujet, Verbe, Complément", "Acte, Scène, Prologue", "Thèse, Somme, Calcul"], correct: 0, exp: "Éthos (crédibilité de l'orateur), Pathos (émotions), Logos (raisonnement logique)." },
         { title: "Humanisme de Montaigne", q: "Quelle célèbre devise résume le doute critique de Michel de Montaigne dans les Essais ?", opts: ["Que sais-je ?", "Je pense donc je suis", "Alea jacta est", "Veni, vidi, vici"], correct: 0, exp: "Montaigne fait graver « Que sais-je ? » sur sa médaille en 1576." },
         { type: "vrai_faux", title: "Maïeutique socratique", q: "La maïeutique de Socrate consiste à questionner son interlocuteur pour l'aider à « accoucher » lui-même de la vérité.", correct: true, exp: "Vrai : Socrate comparait sa méthode philosophique au métier de sage-femme de sa mère." },
@@ -3728,21 +3680,21 @@ const RAW_DASH_SUBJECTS = [
         { type: "texte_a_choix", title: "Comptes de tiers et banque", q: "Identifie les numéros de comptes clés du PCG.", textWithBlanks: "Le compte ___ enregistre les créances Clients, le compte ___ les dettes Fournisseurs et le compte ___ la Banque.", choices: [["411", "707", "101"], ["401", "512", "606"], ["512", "411", "218"]], blanks: [["411"], ["401"], ["512"]], exp: "411 Clients, 401 Fournisseurs, 512 Banques : les numéros les plus utilisés en BTS CG." },
         { type: "drag_and_drop", title: "Notions comptables BTS CG", q: "Associe chaque notion à sa définition.", items: ["TVA à décaisser", "Amortissement linéaire", "Rapprochement bancaire"], targets: ["TVA collectée moins TVA déductible", "Répartition constante du coût d'un bien sur sa durée", "Vérification entre compte 512 et relevé de banque"], pairs: { "TVA à décaisser": "TVA collectée moins TVA déductible", "Amortissement linéaire": "Répartition constante du coût d'un bien sur sa durée", "Rapprochement bancaire": "Vérification entre compte 512 et relevé de banque" }, exp: "Des fondamentaux de comptabilité générale et fiscale." },
     ]},
-    { id: "electrotech", name: "Électrotechnique & Énergie", icon: "⚡", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["bac_pro_melec", "sti2d"], island: "Image/ile/electrotech.svg", lessons: [
+    { id: "electrotech", name: "Électrotechnique & Énergie", icon: "⚡", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale"], allowedFilieres: ["bac_pro_melec", "sti2d"], island: "Image/ile/electrotech.svg", lessons: [
         { title: "Norme NF C 15-100", q: "Quelle norme française encadre les installations électriques basse tension dans les bâtiments ?", opts: ["NF C 15-100", "ISO 216", "HTTP/3", "NF Z 00-100"], correct: 0, exp: "La norme NF C 15-100 fixe les règles de sécurité, protections et sections de câbles." },
         { title: "Protection différentielle 30 mA", q: "Que protège prioritairement un interrupteur différentiel 30 mA dans un tableau électrique ?", opts: ["Les personnes contre l'électrocution lors d'une fuite de courant à la terre", "Uniquement les ampoules LED", "La vitesse du Wi-Fi", "La pression d'eau chaude"], correct: 0, exp: "Il détecte un déséquilibre phase/neutre > 30 mA et coupe quasi instantanément le circuit." },
         { type: "vrai_faux", title: "Code couleur normalisé", q: "En installation électrique NF C 15-100, le conducteur bleu clair est réservé au Neutre et le vert/jaune à la Terre (PE).", correct: true, exp: "Vrai : le respect strict du code couleur est vital pour la sécurité des intervenants." },
         { type: "texte_a_choix", title: "Réseau triphasé européen", q: "Complète les tensions standard en basse tension.", textWithBlanks: "Sur un réseau européen 50 Hz, la tension simple (phase-neutre) vaut ___ V et la tension composée (entre deux phases) vaut ___ V.", choices: [["230", "12", "110"], ["400", "230", "1000"]], blanks: [["230"], ["400"]], exp: "En triphasé équilibré : U = V × √3 = 230 × 1,732 ≈ 400 V." },
         { type: "drag_and_drop", title: "Appareillage électrique", q: "Associe chaque organe électrique à sa fonction.", items: ["Disjoncteur magnétothermique", "VAT", "Contacteur"], targets: ["Protège la ligne contre surcharges et courts-circuits", "Vérifie l'absence de tension lors d'une consignation", "Commande un circuit de puissance à distance"], pairs: { "Disjoncteur magnétothermique": "Protège la ligne contre surcharges et courts-circuits", "VAT": "Vérifie l'absence de tension lors d'une consignation", "Contacteur": "Commande un circuit de puissance à distance" }, exp: "Des compétences clés du technicien Bac Pro MELEC." },
     ]},
-    { id: "biopathologie", name: "Biologie & Physiopathologie", icon: "🫀", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["st2s", "bac_pro_assp", "stl", "sciences_spe"], island: "Image/ile/biopathologie.svg", lessons: [
+    { id: "biopathologie", name: "Biologie & Physiopathologie", icon: "🫀", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale"], allowedFilieres: ["st2s", "bac_pro_assp", "stl", "sciences_spe"], island: "Image/ile/biopathologie.svg", lessons: [
         { title: "Circulation systémique", q: "Quelle cavité cardiaque propulse le sang oxygéné dans l'aorte vers l'ensemble des organes ?", opts: ["Le ventricule gauche", "L'oreillette droite", "Le ventricule droit", "La veine pulmonaire"], correct: 0, exp: "Le ventricule gauche éjecte le sang riche en O₂ dans l'artère aorte (grande circulation)." },
         { title: "Imagerie médicale non irradiante", q: "Quelle technique d'imagerie médicale utilise un champ magnétique et des ondes radio sans rayons X ?", opts: ["L'IRM", "Le scanner (TDM)", "La radiographie", "La scintigraphie"], correct: 0, exp: "L'IRM (Imagerie par Résonance Magnétique) et l'échographie n'utilisent aucun rayonnement ionisant." },
         { type: "vrai_faux", title: "Échanges gazeux pulmonaires", q: "Les échanges gazeux respiratoires entre l'air et le sang s'effectuent au niveau de la paroi des alvéoles pulmonaires.", correct: true, exp: "Vrai : l'O₂ diffuse de l'alvéole vers le capillaire sanguin et le CO₂ en sens inverse." },
         { type: "texte_a_choix", title: "Terminologie médicale", q: "Complète le sens des suffixes médicaux en BPH.", textWithBlanks: "Le suffixe ___ désigne une inflammation (ex : bronchite), tandis que le terme ___ désigne une accélération du rythme cardiaque.", choices: [["-ite", "-ectomie", "-scopie"], ["tachycardie", "bradycardie", "hypoxie"]], blanks: [["-ite"], ["tachycardie"]], exp: "-ite = inflammation ; tachycardie = FC > 100 bpm au repos." },
         { type: "drag_and_drop", title: "Fonctions des organes", q: "Associe chaque organe ou unité fonctionnelle à son rôle physiologique.", items: ["Néphron (Rein)", "Pancréas endocrine", "Hémoglobine (Hématie)"], targets: ["Filtre le sang pour produire l'urine", "Sécrète l'insuline et le glucagon (glycémie)", "Fixe et transporte le dioxygène dans le sang"], pairs: { "Néphron (Rein)": "Filtre le sang pour produire l'urine", "Pancréas endocrine": "Sécrète l'insuline et le glucagon (glycémie)", "Hémoglobine (Hématie)": "Fixe et transporte le dioxygène dans le sang" }, exp: "Des repères fondamentaux de Biologie et Physiopathologie Humaines (ST2S / ASSP)." },
     ]},
-    { id: "spcl", name: "Sciences & Chimie de Labo", icon: "⚗️", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["stl", "sciences_spe", "st2s", "stav", "sti2d"], island: "Image/ile/spcl.svg", lessons: [
+    { id: "spcl", name: "Sciences & Chimie de Labo", icon: "⚗️", band: "lycee", allowedNiveaux: ["1ere", "terminale"], allowedFilieres: ["stl", "sciences_spe", "st2s", "stav", "sti2d"], island: "Image/ile/spcl.svg", lessons: [
         { title: "Titrage à l'équivalence", q: "Que se passe-t-il exactement à l'équivalence d'un titrage chimique au laboratoire ?", opts: ["Les réactifs titré et titrant ont été introduits dans les proportions stœchiométriques", "Le pH vaut toujours 0", "Le solvant s'évapore totalement", "La réaction s'inverse"], correct: 0, exp: "À l'équivalence, les deux réactifs sont tous deux limitants (changement de réactif limitant)." },
         { title: "Chromatographie (CCM)", q: "En CCM, le rapport frontal Rf = d / D d'une espèce chimique est toujours compris entre :", opts: ["0 et 1", "1 et 10", "−5 et +5", "10 et 100"], correct: 0, exp: "La distance d parcourue par la tache est toujours inférieure ou égale à celle du front de l'éluant D." },
         { type: "vrai_faux", title: "Sécurité des acides", q: "Pour diluer un acide concentré en sécurité, on verse toujours lentement l'acide dans l'eau et jamais l'eau dans l'acide.", correct: true, exp: "Vrai : la dilution est très exothermique ; verser l'eau dans l'acide provoquerait des projections." },
@@ -3756,21 +3708,21 @@ const RAW_DASH_SUBJECTS = [
         { type: "texte_a_choix", title: "Recrutement & Compétences", q: "Complète les notions clés de GRH.", textWithBlanks: "Les ___ désignent les savoir-faire techniques mesurables, tandis que les ___ désignent les compétences relationnelles et comportementales.", choices: [["hard skills", "soft skills", "turn-over"], ["soft skills", "hard skills", "bilans"]], blanks: [["hard skills"], ["soft skills"]], exp: "Un recrutement équilibré évalue à la fois hard skills (métier) et soft skills (savoir-être)." },
         { type: "drag_and_drop", title: "Outils et démarches RH", q: "Associe chaque concept RH à sa définition.", items: ["GEPP (ex-GPEC)", "QVCT", "Médiation"], targets: ["Anticiper l'évolution des emplois et des compétences", "Améliorer le bien-être et les conditions de travail", "Résoudre un conflit avec l'aide d'un tiers neutre"], pairs: { "GEPP (ex-GPEC)": "Anticiper l'évolution des emplois et des compétences", "QVCT": "Améliorer le bien-être et les conditions de travail", "Médiation": "Résoudre un conflit avec l'aide d'un tiers neutre" }, exp: "Des notions phares de la spécialité RHC en Terminale STMG et BTS." },
     ]},
-    { id: "architecture_habitat", name: "Architecture & Habitat Durable", icon: "🏗️", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["sti2d", "std2a", "bac_pro_melec", "stav", "sciences_spe"], island: "Image/ile/architecture_habitat.svg", lessons: [
+    { id: "architecture_habitat", name: "Architecture & Habitat Durable", icon: "🏗️", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale"], allowedFilieres: ["sti2d", "std2a", "bac_pro_melec", "stav", "sciences_spe"], island: "Image/ile/architecture_habitat.svg", lessons: [
         { title: "Réglementation RE2020", q: "Quel est l'apport majeur de la réglementation environnementale RE2020 dans la construction neuve ?", opts: ["Réduire l'empreinte carbone sur tout le cycle de vie, renforcer la sobriété énergétique et le confort d'été", "Interdire les isolants thermiques", "Obliger à installer des chaudières au fioul", "Supprimer la ventilation"], correct: 0, exp: "La RE2020 favorise les matériaux biosourcés et les énergies décarbonées." },
         { title: "Béton armé", q: "Pourquoi associe-t-on des barres d'acier au béton dans une poutre en béton armé ?", opts: ["Le béton résiste à la compression et l'acier reprend les efforts de traction", "L'acier sert uniquement à colorer le béton", "Le béton fond à 30 °C sans acier", "Pour augmenter les ponts thermiques"], correct: 0, exp: "Complémentarité mécanique : béton en compression + acier en traction." },
         { type: "vrai_faux", title: "Conception bioclimatique", q: "Dans l'hémisphère Nord, orienter les pièces de vie au Sud permet de capter gratuitement les apports solaires en hiver.", correct: true, exp: "Vrai : le soleil bas d'hiver pénètre au Sud, tandis qu'une casquette solaire protège du soleil haut d'été." },
         { type: "texte_a_choix", title: "Maquette numérique & Isolation", q: "Complète les termes d'ingénierie du bâtiment.", textWithBlanks: "Le ___ désigne la maquette numérique 3D partagée d'un ouvrage, et l'___ enveloppe le bâtiment par l'extérieur pour supprimer les ponts thermiques.", choices: [["BIM", "PVC", "DNS"], ["ITE", "ITI", "VMC"]], blanks: [["BIM"], ["ITE"]], exp: "BIM = Building Information Modeling ; ITE = Isolation Thermique par l'Extérieur." },
         { type: "drag_and_drop", title: "Équipements & Structure de l'habitat", q: "Associe chaque élément constructif à sa fonction.", items: ["Fondations", "VMC double flux", "Pompe à chaleur (PAC)"], targets: ["Transmettre les charges du bâtiment au sol porteur", "Renouveler l'air en récupérant la chaleur de l'air extrait", "Capter les calories extérieures pour chauffer avec un COP > 3"], pairs: { "Fondations": "Transmettre les charges du bâtiment au sol porteur", "VMC double flux": "Renouveler l'air en récupérant la chaleur de l'air extrait", "Pompe à chaleur (PAC)": "Capter les calories extérieures pour chauffer avec un COP > 3" }, exp: "L'alliance de la structure, de la thermique et des équipements en STI2D AC, STD2A et MELEC." },
     ]},
-    { id: "llce", name: "Langues & Cultures (LLCE)", icon: "🌍", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["hlp_llce", "generale", "s2tmd", "std2a", "sthr", "bts_mco"], island: "Image/ile/llce.svg", lessons: [
+    { id: "llce", name: "Langues & Cultures (LLCE)", icon: "🌍", band: "lycee", allowedNiveaux: ["1ere", "terminale"], allowedFilieres: ["hlp_llce", "generale", "s2tmd", "std2a", "sthr"], island: "Image/ile/llce.svg", lessons: [
         { title: "Théâtre élisabéthain", q: "Quel dramaturge anglais est l'auteur de « Hamlet », « Macbeth » et « Romeo and Juliet » ?", opts: ["William Shakespeare", "Charles Dickens", "George Orwell", "Oscar Wilde"], correct: 0, exp: "William Shakespeare (1564-1616) est la figure majeure du théâtre élisabéthain (Globe Theatre)." },
         { title: "Siècle d'Or espagnol", q: "Quel roman de Miguel de Cervantes (1605) met en scène un chevalier idéaliste et son écuyer Sancho Panza ?", opts: ["Don Quijote de la Mancha", "Cien años de soledad", "La casa de Bernarda Alba", "Ficciones"], correct: 0, exp: "Don Quichotte est considéré comme le premier grand roman moderne européen." },
         { type: "vrai_faux", title: "Dystopie d'Orwell", q: "Dans le roman « 1984 » de George Orwell, « Big Brother » incarne la surveillance totalitaire et la manipulation du langage.", correct: true, exp: "Vrai : publié en 1949, 1984 forge les concepts de Big Brother, Thought Police et Newspeak." },
         { type: "texte_a_choix", title: "Réalisme magique & Droits civiques", q: "Complète ces repères culturels LLCE.", textWithBlanks: "L'écrivain colombien ___ a popularisé le réalisme magique, tandis que ___ a prononcé le discours « I Have a Dream » en 1963.", choices: [["Gabriel García Márquez", "Francisco de Goya", "Pedro Almodóvar"], ["Martin Luther King Jr.", "Thomas Jefferson", "Ernest Hemingway"]], blanks: [["Gabriel García Márquez"], ["Martin Luther King Jr."]], exp: "Deux figures majeures des mondes hispanophone et anglophone." },
         { type: "drag_and_drop", title: "Chefs-d'œuvre internationaux", q: "Associe chaque œuvre à son auteur.", items: ["Pride and Prejudice", "Romancero gitano", "Frankenstein"], targets: ["Jane Austen", "Federico García Lorca", "Mary Shelley"], pairs: { "Pride and Prejudice": "Jane Austen", "Romancero gitano": "Federico García Lorca", "Frankenstein": "Mary Shelley" }, exp: "Roman géorgien, poésie espagnole de la Génération de 27 et chef-d'œuvre gothique." },
     ]},
-    { id: "pse", name: "Prévention, Santé & Environnement", icon: "🌱", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale", "bts1", "bts2"], allowedFilieres: ["bac_pro_assp", "bac_pro_melec", "ciel", "sthr", "stav", "st2s", "stl"], island: "Image/ile/pse.svg", lessons: [
+    { id: "pse", name: "Prévention, Santé & Environnement", icon: "🌱", band: "lycee", allowedNiveaux: ["2nde", "1ere", "terminale"], allowedFilieres: ["bac_pro_assp", "bac_pro_melec", "ciel", "sthr", "stav", "st2s", "stl"], island: "Image/ile/pse.svg", lessons: [
         { title: "Ordre d'intervention SST", q: "En secourisme au travail (SST), quelles sont les 4 actions successives face à un accident ?", opts: ["Protéger → Examiner → Faire alerter → Secourir", "Secourir → Courir → Déplacer → Attendre", "Alerter → Partir → Revenir → Observer", "Examiner → Donner à boire → Relever → Partir"], correct: 0, exp: "On commence toujours par Protéger pour éviter le sur-accident avant d'Examiner, Alerter et Secourir." },
         { title: "Évaluation des risques (DUERP)", q: "Dans quel document obligatoire l'employeur consigne-t-il l'évaluation des risques professionnels de chaque poste ?", opts: ["Le DUERP (Document Unique d'Évaluation des Risques Professionnels)", "Le bilan comptable", "Le catalogue client", "Le contrat de vente"], correct: 0, exp: "Le DUERP est obligatoire dans toute entreprise dès le 1er salarié." },
         { type: "vrai_faux", title: "Protection collective vs EPI", q: "En prévention des risques, la protection collective (carter, aspiration, garde-corps) est toujours prioritaire sur l'EPI (gants, casque).", correct: true, exp: "Vrai : la protection collective protège tous les opérateurs à la source." },
@@ -3783,7 +3735,7 @@ if (typeof AdminStore !== 'undefined' && AdminStore.registerDefaults) {
     AdminStore.registerDefaults(RAW_DASH_SUBJECTS);
 }
 
-// Cache mémoire des matières étendues par (niveau, filière) — évite de régénérer 36×100 leçons à chaque navigation
+// Cache mémoire des matières étendues par (niveau, filière) — évite de régénérer 43×100 leçons à chaque navigation
 const _effectiveSubjectsCache = new Map();
 
 /**
@@ -3793,7 +3745,7 @@ const _effectiveSubjectsCache = new Map();
  */
 function getEffectiveSubjects(niveau, filiere) {
     const currentNiv = niveau || currentNiveau();
-    const currentFil = filiere || currentFiliere();
+    const currentFil = filiere || currentFiliere(currentNiv);
     const cacheKey = `${currentNiv}::${currentFil}`;
     const hasAdminCustom = (typeof AdminStore !== 'undefined' && typeof AdminStore.hasSubjectCustomizations === 'function')
         ? (() => {
@@ -3858,7 +3810,7 @@ function getEffectiveSubjects(niveau, filiere) {
     return extended;
 }
 
-// Initialisation paresseuse : évite de générer 100 niveaux × 36 matières sur index.html et admin.html
+// Initialisation paresseuse : évite de générer 100 niveaux × 43 matières sur index.html et admin.html
 let DASH_SUBJECTS = [];
 function ensureSubjectsLoaded(niveauOverride, filiereOverride) {
     if (!Array.isArray(DASH_SUBJECTS) || DASH_SUBJECTS.length === 0) {
@@ -3874,6 +3826,7 @@ const SUBJECT_TO_MATIERE = {
     geo:           { name: 'Géographie',             icon: 'geo.svg' },
     svt:           { name: 'SVT',                    icon: 'svt.svg' },
     anglais:       { name: 'Anglais',                icon: 'anglais.svg' },
+    allemand:      { name: 'Allemand',               icon: 'allemand.svg' },
     espagnol:      { name: 'Espagnol',               icon: 'espagnol.svg' },
     physique:      { name: 'Physique',               icon: 'physique.svg' },
     chimie:        { name: 'Chimie',                 icon: 'chimie.svg' },
@@ -3974,7 +3927,8 @@ const BADGES_CATALOG = (typeof AdminStore !== 'undefined' && AdminStore.DEFAULT_
         { id: 'coffre_ouvert', icon: '🎁', name: 'Chasseur de Trésor', desc: 'Ouvre le coffre quotidien bonus.', category: 'quetes', band: 'all', allowedFilieres: ['all'], condition: 'dailyChestOpened' },
         { id: 'technophile', icon: '💻', name: 'Technophile', desc: 'Atteins le niveau 5 en Technologie (Collège).', category: 'matieres', band: 'college', allowedFilieres: ['all'], condition: 'technoLevel >= 5' },
         { id: 'sciences_fan', icon: '🔬', name: 'Scientifique', desc: 'Atteins le niveau 5 en SVT, Physique ou Chimie.', category: 'matieres', band: 'all', allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel', 'st2s'], condition: 'scienceLevel >= 5' },
-        { id: 'hispanophone', icon: '🇪🇸', name: 'Hispanophone', desc: 'Atteins le niveau 5 en Espagnol (LV2).', category: 'matieres', band: 'all', allowedFilieres: ['generale', 'stmg', 'st2s'], condition: 'espagnolLevel >= 5' },
+        { id: 'germanophone', icon: '🇩🇪', name: 'Germanophone', desc: 'Atteins le niveau 5 en Allemand.', category: 'matieres', band: 'all', allowedFilieres: ['all'], condition: 'allemandLevel >= 5' },
+        { id: 'hispanophone', icon: '🇪🇸', name: 'Hispanophone', desc: 'Atteins le niveau 5 en Espagnol (LV2).', category: 'matieres', band: 'all', allowedFilieres: ['all'], condition: 'espagnolLevel >= 5' },
         { id: 'artiste_melomane', icon: '🎨', name: 'Esprit Créatif', desc: 'Atteins le niveau 5 en Arts & Musique.', category: 'matieres', band: 'all', allowedFilieres: ['generale'], condition: 'artsLevel >= 5' },
         { id: 'philo_fan', icon: '🏛️', name: 'Penseur Antique', desc: 'Atteins le niveau 5 en Philosophie.', category: 'matieres', band: 'lycee', allowedFilieres: ['generale', 'nsi_spe', 'stmg', 'sti2d', 'st2s'], condition: 'philoLevel >= 5' },
         { id: 'geopoliticien', icon: '🗺️', name: 'Géopoliticien', desc: 'Atteins le niveau 5 en HGGSP (Géopolitique).', category: 'matieres', band: 'lycee', allowedFilieres: ['generale'], condition: 'hggspLevel >= 5' },
@@ -4245,6 +4199,9 @@ function checkBadges(extra = {}) {
             case 'hispanophone':
                 pass = (completedPerSubject['espagnol'] || 0) >= 5;
                 break;
+            case 'germanophone':
+                pass = (completedPerSubject['allemand'] || 0) >= 5;
+                break;
             case 'explorateur_geo':
                 pass = (completedPerSubject['geo'] || 0) >= 5;
                 break;
@@ -4369,6 +4326,7 @@ function checkBadges(extra = {}) {
                         sciencesSpeLevel: Math.max(completedPerSubject['maths'] || 0, completedPerSubject['physique'] || 0, completedPerSubject['chimie'] || 0, completedPerSubject['svt'] || 0),
                         philoLevel: completedPerSubject['philo'] || 0,
                         anglaisLevel: completedPerSubject['anglais'] || 0,
+                        allemandLevel: completedPerSubject['allemand'] || 0,
                         espagnolLevel: completedPerSubject['espagnol'] || 0,
                         artsLevel: completedPerSubject['arts'] || 0,
                         emcLevel: completedPerSubject['emc'] || 0,
@@ -4650,12 +4608,12 @@ function initDashboard() {
             : ['2nde', '1ere', 'terminale', 'bts1', 'bts2'].includes(curNiv);
         let filiereSelectHtml = '';
         if (showFiliere) {
-            const filieres = (typeof AdminStore !== 'undefined' && typeof AdminStore.getActiveFilieres === 'function')
-                ? AdminStore.getActiveFilieres()
-                : (typeof AdminStore !== 'undefined' && typeof AdminStore.getFilieres === 'function'
-                    ? AdminStore.getFilieres()
+            const filieres = (typeof AdminStore !== 'undefined' && typeof AdminStore.getFilieresForNiveau === 'function')
+                ? AdminStore.getFilieresForNiveau(curNiv)
+                : (typeof AdminStore !== 'undefined' && typeof AdminStore.getActiveFilieres === 'function'
+                    ? AdminStore.getActiveFilieres()
                     : [{ id: 'generale', label: 'Voie Générale', icon: '📚' }]);
-            const curFil = currentFiliere();
+            const curFil = currentFiliere(curNiv);
             const filOpts = filieres.map(f => {
                 const selected = f.id === curFil ? ' selected' : '';
                 return `<option value="${escapeHtml(f.id)}"${selected}>${escapeHtml(f.icon || '🧭')} ${escapeHtml(f.shortLabel || f.label)}</option>`;
@@ -5262,7 +5220,10 @@ function initDashboard() {
                 btn = `<div style="font-size:12px; margin-bottom:8px; color:#ffd166; font-weight:700;">En réserve : ${boosterStock}</div>
                        <button type="button" class="dash-skin-btn buy" ${affordable ? '' : 'disabled'} data-item-id="${escapeHtml(s.id)}" onclick="window._dashBuySkin(this.dataset.itemId)">Acheter (+1) · ${s.cost} pièces</button>`;
             } else if (isEquipped) {
-                btn = `<button type="button" class="dash-skin-btn equipped" disabled>${eqIcon('check', 13, 'emerald')} Équipé</button>`;
+                const canUnequip = isTitle || (isTheme && s.id !== 'default');
+                btn = canUnequip
+                    ? `<button type="button" class="dash-skin-btn equipped is-unequippable" data-item-id="${escapeHtml(s.id)}" onclick="window._dashEquipSkin(this.dataset.itemId)" title="Cliquer pour retirer">${eqIcon('check', 13, 'emerald')} Équipé · Retirer</button>`
+                    : `<button type="button" class="dash-skin-btn equipped" disabled>${eqIcon('check', 13, 'emerald')} Équipé</button>`;
             } else if (owned) {
                 const actionLabel = isTitle ? 'Porter ce titre' : isTheme ? 'Appliquer' : isAvatar ? 'Incarner' : 'Équiper';
                 btn = `<button type="button" class="dash-skin-btn equip" data-item-id="${escapeHtml(s.id)}" onclick="window._dashEquipSkin(this.dataset.itemId)">${actionLabel}</button>`;
@@ -5558,8 +5519,14 @@ function initDashboard() {
             return;
         }
         DB.setNiveau(val);
+        const rawFil = (typeof DB !== 'undefined' && DB.getFiliere) ? DB.getFiliere() : 'generale';
+        const curFil = (typeof AdminStore !== 'undefined' && typeof AdminStore.resolveFiliereForNiveau === 'function')
+            ? AdminStore.resolveFiliereForNiveau(rawFil, val)
+            : currentFiliere(val);
+        if (typeof AdminStore !== 'undefined' && typeof AdminStore.isFiliereApplicable === 'function' && AdminStore.isFiliereApplicable(val) && curFil !== rawFil && typeof DB !== 'undefined' && DB.setFiliere) {
+            DB.setFiliere(curFil);
+        }
         _effectiveSubjectsCache.clear();
-        const curFil = currentFiliere();
         if (typeof getEffectiveSubjects === 'function') {
             DASH_SUBJECTS = getEffectiveSubjects(val, curFil);
         }
@@ -6105,15 +6072,7 @@ document.addEventListener('DOMContentLoaded', () => {
     refreshFooterCredits();
     setupCookieConsentFallback();
 
-    // 4. Plein écran automatique si activé dans les options
-    applyFullscreenSetting();
-    function onFirstInteraction() {
-        applyFullscreenSetting();
-        document.removeEventListener('click', onFirstInteraction, true);
-    }
-    document.addEventListener('click', onFirstInteraction, true);
-
-    // 5. Initialisation des fonctionnalités spécifiques à chaque page
+    // 4. Initialisation des fonctionnalités spécifiques à chaque page
     initAccueil();
     initConnexion();
     initOptions();

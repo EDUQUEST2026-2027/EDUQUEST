@@ -5,9 +5,9 @@
    PRINCIPE :
    - Accès PROTÉGÉ : le panneau exige un compte avec le rôle « admin ».
    - Onglets (pilotage intégral) :
-       • Niveaux & Filières → 9 niveaux (6e → BTS 2) et 18 filières (AdminStore)
-       • Matières & leçons  → 36 matières + personnalisées, 6 types de questions
-       • Boutique & Succès  → 98 articles, 78 succès filtrés par filière, 9 quêtes
+       • Niveaux & Filières → 9 niveaux (6e → BTS 2) et 18 filières cohérentes par niveau (AdminStore)
+       • Matières & leçons  → 43 matières + personnalisées, 6 types de questions
+       • Boutique & Succès  → 98 articles, 79 succès filtrés par filière, 9 quêtes
        • Membres            → comptes locaux (db.js, rôle élève/admin, XP/pièces/filière)
        • Réglages, IA & Crédits → feature flags, Multi-IA, export/import, reset
    - Toutes les saisies utilisateur sont échappées (esc) avant insertion HTML.
@@ -63,6 +63,7 @@
         { value: 'Image/ile/geo.svg', label: 'Île de la Géographie' },
         { value: 'Image/ile/svt.svg', label: 'Île des SVT' },
         { value: 'Image/ile/anglais.svg', label: 'Île d\'Anglais' },
+        { value: 'Image/ile/allemand.svg', label: 'Île d\'Allemand (LV1 / LV2 / BTS)' },
         { value: 'Image/ile/physique.svg', label: 'Île de Physique' },
         { value: 'Image/ile/chimie.svg', label: 'Île de Chimie' },
         { value: 'Image/ile/technologie.svg', label: 'Île de Technologie' },
@@ -187,7 +188,7 @@
                 <h2>Erreur d'affichage</h2>
                 <p class="adm-error">${esc(err && err.message ? err.message : String(err))}</p>
                 <p class="adm-hint">Ouvrez la console (F12) pour plus de détails, puis rechargez la page.</p>
-                <div style="text-align:center; margin-top:14px;"><button class="adm-btn" onclick="location.reload()">Recharger</button></div>
+                <div style="text-align:center; margin-top:14px;"><button type="button" class="adm-btn" onclick="location.reload()">Recharger</button></div>
             </div></div>`;
         }
     }
@@ -360,9 +361,9 @@
                 </td>
                 <td>
                     <div class="adm-row-actions">
-                        <button class="adm-ico-btn" title="Monter" ${i === 0 ? 'disabled' : ''} onclick="ADM.lvlMove(${i},-1)">↑</button>
-                        <button class="adm-ico-btn" title="Descendre" ${i === count - 1 ? 'disabled' : ''} onclick="ADM.lvlMove(${i},1)">↓</button>
-                        <button class="adm-ico-btn danger" title="Supprimer" ${count <= 1 ? 'disabled' : ''} onclick="ADM.lvlDelete(${i})">🗑</button>
+                        <button type="button" class="adm-ico-btn" title="Monter" ${i === 0 ? 'disabled' : ''} onclick="ADM.lvlMove(${i},-1)">↑</button>
+                        <button type="button" class="adm-ico-btn" title="Descendre" ${i === count - 1 ? 'disabled' : ''} onclick="ADM.lvlMove(${i},1)">↓</button>
+                        <button type="button" class="adm-ico-btn danger" title="Supprimer" ${count <= 1 ? 'disabled' : ''} onclick="ADM.lvlDelete(${i})">🗑</button>
                     </div>
                 </td>
             </tr>`).join('');
@@ -382,10 +383,10 @@
                     </table>
                 </div>
                 <div class="adm-toolbar" style="margin-top:16px;">
-                    <button class="adm-btn adm-btn-ghost" onclick="ADM.lvlAdd()">+ Ajouter un niveau</button>
-                    <button class="adm-btn adm-btn-ok" onclick="ADM.levelsSave()">💾 Enregistrer</button>
-                    <button class="adm-btn adm-btn-ghost" onclick="ADM.levelsCancel()">Annuler</button>
-                    <button class="adm-btn adm-btn-danger adm-right" onclick="ADM.levelsReset()">Rétablir les niveaux par défaut</button>
+                    <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.lvlAdd()">+ Ajouter un niveau</button>
+                    <button type="button" class="adm-btn adm-btn-ok" onclick="ADM.levelsSave()">💾 Enregistrer</button>
+                    <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.levelsCancel()">Annuler</button>
+                    <button type="button" class="adm-btn adm-btn-danger adm-right" onclick="ADM.levelsReset()">Rétablir les niveaux par défaut</button>
                 </div>
                 <p class="adm-hint">La « bande de contenu » choisit la difficulté des questions générées (collège ou lycée / BTS).
                 Les niveaux par défaut sont : 6ème → Terminale, BTS 1ère année et BTS 2ème année.</p>
@@ -400,33 +401,44 @@
         const count = draft.length;
         const allSubs = subjectList();
         const allBadges = AdminStore.getBadges();
+        const lyceeLevels = AdminStore.getLevels().filter(l => l.band === 'lycee');
 
         const rows = draft.map((f, i) => {
+            const allowedNivs = (Array.isArray(f.allowedNiveaux) && f.allowedNiveaux.length)
+                ? f.allowedNiveaux
+                : lyceeLevels.map(l => l.id);
+            const sampleNiv = allowedNivs[0] || 'terminale';
             const subCount = allSubs.filter(s => {
                 const af = AdminStore.defaultAllowedFilieresForSubject(s);
                 return af.includes('all') || af.includes(f.id);
             }).length;
-            const badgeCount = allBadges.filter(b => AdminStore.isBadgeRelevantFor(b, 'terminale', f.id)).length;
+            const badgeCount = allBadges.filter(b => AdminStore.isBadgeRelevantFor(b, sampleNiv, f.id)).length;
+            const nivPills = lyceeLevels.map(l => {
+                const checked = allowedNivs.includes(l.id);
+                const shortLbl = l.id === 'bts1' ? 'BTS 1' : l.id === 'bts2' ? 'BTS 2' : (l.id === 'terminale' ? 'Tle' : (l.label || l.id));
+                return `<button type="button" class="adm-grade-pill ${checked ? 'checked' : ''}" style="padding:2px 7px; font-size:0.74rem;" data-idx="${i}" data-niv="${esc(l.id)}" onclick="ADM.filToggleNiveau(Number(this.dataset.idx), this.dataset.niv)" title="${esc(l.label || l.id)}">${checked ? '✓' : '○'} ${esc(shortLbl)}</button>`;
+            }).join('');
             return `
                 <tr style="${f.enabled === false ? 'opacity:0.55;' : ''}">
                     <td class="num">${i + 1}</td>
-                    <td style="width:68px;"><input class="adm-input" value="${esc(f.icon || '🧭')}" oninput="ADM.fil(${i},'icon',this.value)" style="text-align:center;"></td>
+                    <td style="width:62px;"><input class="adm-input" value="${esc(f.icon || '🧭')}" oninput="ADM.fil(${i},'icon',this.value)" style="text-align:center;"></td>
                     <td><input class="adm-input" value="${esc(f.id)}" placeholder="ex: ciel, sio" oninput="ADM.fil(${i},'id',this.value)"></td>
                     <td><input class="adm-input" value="${esc(f.label)}" placeholder="Nom complet" oninput="ADM.fil(${i},'label',this.value)"></td>
                     <td><input class="adm-input" value="${esc(f.shortLabel || '')}" placeholder="Badge court" oninput="ADM.fil(${i},'shortLabel',this.value)"></td>
+                    <td><div class="adm-grade-pills" style="gap:4px;">${nivPills}</div></td>
                     <td><input class="adm-input" value="${esc(f.desc || '')}" placeholder="Description" oninput="ADM.fil(${i},'desc',this.value)"></td>
                     <td style="text-align:center; white-space:nowrap;">
                         <span class="adm-badge adm-badge-type" title="Matières accessibles">${subCount} mat.</span>
-                        <span class="adm-badge adm-badge-system" title="Succès visibles en Terminale/BTS">${badgeCount} 🏆</span>
+                        <span class="adm-badge adm-badge-system" title="Succès visibles dans cette filière">${badgeCount} 🏆</span>
                     </td>
                     <td style="text-align:center;">
                         <input type="checkbox" ${f.enabled !== false ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer;" title="Activer/désactiver cette filière" onchange="ADM.fil(${i},'enabled',this.checked)">
                     </td>
                     <td>
                         <div class="adm-row-actions">
-                            <button class="adm-ico-btn" title="Monter" ${i === 0 ? 'disabled' : ''} onclick="ADM.filMove(${i},-1)">↑</button>
-                            <button class="adm-ico-btn" title="Descendre" ${i === count - 1 ? 'disabled' : ''} onclick="ADM.filMove(${i},1)">↓</button>
-                            <button class="adm-ico-btn danger" title="Supprimer" ${count <= 1 ? 'disabled' : ''} onclick="ADM.filDelete(${i})">🗑</button>
+                            <button type="button" class="adm-ico-btn" title="Monter" ${i === 0 ? 'disabled' : ''} onclick="ADM.filMove(${i},-1)">↑</button>
+                            <button type="button" class="adm-ico-btn" title="Descendre" ${i === count - 1 ? 'disabled' : ''} onclick="ADM.filMove(${i},1)">↓</button>
+                            <button type="button" class="adm-ico-btn danger" title="Supprimer" ${count <= 1 ? 'disabled' : ''} onclick="ADM.filDelete(${i})">🗑</button>
                         </div>
                     </td>
                 </tr>`;
@@ -436,8 +448,7 @@
             <div class="adm-card">
                 <h2>🧭 Filières &amp; Voies d'études <small>${draft.filter(f => f.enabled !== false).length} active(s) sur ${count}</small></h2>
                 <div class="adm-note">
-                    Pilotez ici les filières proposées aux élèves du <b>Lycée (2de → Terminale)</b> et de <b>BTS (1ère &amp; 2ème année)</b>.
-                    Vous pouvez activer/désactiver une filière existante ou créer de nouvelles voies d'établissement (ex. BTS SIO, Bac Pro SN, STL…), puis associer matières et succès depuis leurs onglets dédiés.
+                    Pilotez ici les filières proposées aux élèves du <b>Lycée (2de → Terminale)</b> et de <b>BTS (1ère &amp; 2ème année)</b> ainsi que leurs <b>niveaux d'études autorisés</b> (ex. BTS SIO/MCO/CG uniquement en BTS 1-2 ; spécialités de 1ère/Tle uniquement en 1ère/Tle).
                 </div>
                 <div class="adm-table-wrap">
                     <table class="adm-table">
@@ -448,6 +459,7 @@
                                 <th>Identifiant</th>
                                 <th>Libellé complet</th>
                                 <th>Badge court</th>
+                                <th>Niveaux autorisés</th>
                                 <th>Description</th>
                                 <th>Contenu</th>
                                 <th>Active</th>
@@ -458,10 +470,10 @@
                     </table>
                 </div>
                 <div class="adm-toolbar" style="margin-top:16px;">
-                    <button class="adm-btn adm-btn-ghost" onclick="ADM.filAdd()">+ Ajouter une filière</button>
-                    <button class="adm-btn adm-btn-ok" onclick="ADM.filieresSave()">💾 Enregistrer les filières</button>
-                    <button class="adm-btn adm-btn-ghost" onclick="ADM.filieresCancel()">Annuler</button>
-                    <button class="adm-btn adm-btn-danger adm-right" onclick="ADM.filieresReset()">Rétablir les filières officielles</button>
+                    <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.filAdd()">+ Ajouter une filière</button>
+                    <button type="button" class="adm-btn adm-btn-ok" onclick="ADM.filieresSave()">💾 Enregistrer les filières</button>
+                    <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.filieresCancel()">Annuler</button>
+                    <button type="button" class="adm-btn adm-btn-danger adm-right" onclick="ADM.filieresReset()">Rétablir les filières officielles</button>
                 </div>
             </div>`;
     }
@@ -550,7 +562,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <button class="adm-btn adm-btn-ok" style="margin-top:4px;" onclick="ADM.createSubject()">+ Créer la matière</button>
+                                <button type="button" class="adm-btn adm-btn-ok" style="margin-top:4px;" onclick="ADM.createSubject()">+ Créer la matière</button>
                             </div>
                             <p class="adm-hint" style="margin-top:8px;">Les matières personnalisées créées apparaissent immédiatement dans le jeu selon leur cycle et leurs classes autorisées.</p>
                         </div>
@@ -642,8 +654,8 @@
                             <span class="adm-badge" style="background:rgba(95,212,230,0.15); color:var(--cyan);">${esc(S.studyGrade.toUpperCase())}</span>
                         </div>
                         <div class="adm-row-actions">
-                            <button class="adm-btn adm-btn-ok" style="padding:4px 10px; font-size:0.8rem;" onclick="ADM.importProceduralQuestion(${idx})">📋 Importer en leçon manuelle</button>
-                            <button class="adm-btn adm-btn-ghost" style="padding:4px 10px; font-size:0.8rem;" onclick="ADM.testProceduralQuestion(${idx})">🧪 Tester</button>
+                            <button type="button" class="adm-btn adm-btn-ok" style="padding:4px 10px; font-size:0.8rem;" onclick="ADM.importProceduralQuestion(${idx})">📋 Importer en leçon manuelle</button>
+                            <button type="button" class="adm-btn adm-btn-ghost" style="padding:4px 10px; font-size:0.8rem;" onclick="ADM.testProceduralQuestion(${idx})">🧪 Tester</button>
                         </div>
                     </div>
                     <div class="adm-q-text">${esc(q.q || q.title || 'Question')}</div>
@@ -783,19 +795,19 @@
                     </div>
 
                     <div class="adm-toolbar">
-                        <button class="adm-btn adm-btn-ok" onclick="ADM.saveMeta()">💾 Enregistrer les réglages de la matière</button>
+                        <button type="button" class="adm-btn adm-btn-ok" onclick="ADM.saveMeta()">💾 Enregistrer les réglages de la matière</button>
                         ${isCustom
-                ? `<button class="adm-btn adm-btn-danger adm-right" onclick="ADM.deleteSubject()">Supprimer la matière</button>`
-                : `<button class="adm-btn adm-btn-ghost adm-right" onclick="ADM.resetSubject()" title="Retirer toutes les modifications de cette matière">Rétablir l'original</button>`}
+                ? `<button type="button" class="adm-btn adm-btn-danger adm-right" onclick="ADM.deleteSubject()">Supprimer la matière</button>`
+                : `<button type="button" class="adm-btn adm-btn-ghost adm-right" onclick="ADM.resetSubject()" title="Retirer toutes les modifications de cette matière">Rétablir l'original</button>`}
                     </div>
                 </div>
 
                 <!-- SOUS-ONGLETS DE CONTENU : LEÇONS MANUELLES vs QUESTIONS PAR NIVEAU / ALÉATOIRE -->
                 <div class="adm-subtabs">
-                    <button class="adm-subtab ${subTab !== 'procedural' ? 'active' : ''}" onclick="ADM.setSubjectSubTab('manual')">
+                    <button type="button" class="adm-subtab ${subTab !== 'procedural' ? 'active' : ''}" onclick="ADM.setSubjectSubTab('manual')">
                         📝 Leçons manuelles (${lessons.length})
                     </button>
-                    <button class="adm-subtab ${subTab === 'procedural' ? 'active' : ''}" onclick="ADM.setSubjectSubTab('procedural')">
+                    <button type="button" class="adm-subtab ${subTab === 'procedural' ? 'active' : ''}" onclick="ADM.setSubjectSubTab('procedural')">
                         🎲 Questions par niveau d'étude &amp; Aléatoire
                     </button>
                 </div>
@@ -804,8 +816,8 @@
                     <!-- VUE 1 : LEÇONS MANUELLES -->
                     ${editor}
                     <div class="adm-toolbar" style="margin-top:10px;">
-                        <button class="adm-btn" onclick="ADM.newLesson()">+ Ajouter une leçon (niveau ${lessons.length + 1})</button>
-                        <button class="adm-btn adm-btn-ghost" onclick="ADM.openSubject('')">‹ Retour à la liste</button>
+                        <button type="button" class="adm-btn" onclick="ADM.newLesson()">+ Ajouter une leçon (niveau ${lessons.length + 1})</button>
+                        <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.openSubject('')">‹ Retour à la liste</button>
                     </div>
                     ${lessons.length ? `<div class="adm-lesson-preview">${lessons.length} leçon(s) manuelle(s) — cliquez sur ✏️ pour éditer ou 🧪 pour tester.</div>` : '<div class="adm-empty">Aucune leçon manuelle écrite pour l\'instant.</div>'}
                     ${lessonRows}
@@ -826,8 +838,8 @@
                                         🎲 Graine / Variante n° ${S.questionVariant}
                                     </div>
                                 </div>
-                                <button class="adm-btn adm-btn-ok" style="white-space:nowrap;" onclick="ADM.nextQuestionVariant()">🎲 Tirer une autre variante</button>
-                                <button class="adm-btn adm-btn-ghost" onclick="ADM.resetQuestionVariant()">🔄 Réinitialiser</button>
+                                <button type="button" class="adm-btn adm-btn-ok" style="white-space:nowrap;" onclick="ADM.nextQuestionVariant()">🎲 Tirer une autre variante</button>
+                                <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.resetQuestionVariant()">🔄 Réinitialiser</button>
                             </div>
                         </div>
                         <p class="adm-hint" style="margin-top:8px;">
@@ -840,7 +852,7 @@
                         ${isCustom ? `
                             <div class="adm-empty">
                                 Les matières personnalisées créées par l'enseignant utilisent uniquement vos leçons manuelles.<br>
-                                <button class="adm-btn adm-btn-ok" style="margin-top:10px;" onclick="ADM.setSubjectSubTab('manual')">Ajouter une leçon manuelle</button>
+                                <button type="button" class="adm-btn adm-btn-ok" style="margin-top:10px;" onclick="ADM.setSubjectSubTab('manual')">Ajouter une leçon manuelle</button>
                             </div>
                         ` : (proceduralCards || '<div class="adm-empty">Aucune question disponible pour ce niveau.</div>')}
                     </div>
@@ -956,7 +968,7 @@
                             🧪 Test interactif de la question
                             <span class="adm-badge adm-badge-type">${esc(typeLabel(type))}</span>
                         </h3>
-                        <button class="adm-ico-btn" onclick="ADM.closeTestModal()" title="Fermer">✕</button>
+                        <button type="button" class="adm-ico-btn" onclick="ADM.closeTestModal()" title="Fermer">✕</button>
                     </div>
                     <div style="margin-top:14px;">
                         <p style="font-size:1.15rem; font-weight:600; color:#fff; margin-bottom:12px; line-height:1.4;">
@@ -965,8 +977,8 @@
                         ${interactiveHtml}
                         ${resultBanner}
                         <div class="adm-toolbar" style="margin-top:16px; border-top:1px dashed rgba(154,167,216,0.2); padding-top:12px;">
-                            <button class="adm-btn adm-btn-ok" onclick="ADM.submitTestAnswer()">Valider la réponse</button>
-                            <button class="adm-btn adm-btn-ghost" onclick="ADM.closeTestModal()">Fermer</button>
+                            <button type="button" class="adm-btn adm-btn-ok" onclick="ADM.submitTestAnswer()">Valider la réponse</button>
+                            <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.closeTestModal()">Fermer</button>
                         </div>
                     </div>
                 </div>
@@ -1005,8 +1017,8 @@
                     ${commonFields}
                     <div class="adm-error" id="admLessonErr"></div>
                     <div class="adm-toolbar">
-                        <button class="adm-btn adm-btn-ok" onclick="ADM.lessonSave()">💾 Enregistrer la leçon</button>
-                        <button class="adm-btn adm-btn-ghost" onclick="ADM.cancelLesson()">Annuler</button>
+                        <button type="button" class="adm-btn adm-btn-ok" onclick="ADM.lessonSave()">💾 Enregistrer la leçon</button>
+                        <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.cancelLesson()">Annuler</button>
                     </div>
                 </div>
             </div>`;
@@ -1202,16 +1214,16 @@
                 <div class="adm-toolbar">
                     <h2 style="margin:0;">🏆 Gestion des Succès &amp; Badges <small>${filtered.length}/${allBadges.length} affiché(s)</small></h2>
                     <div class="adm-right" style="display:flex; gap:8px;">
-                        <button class="adm-btn adm-btn-ok" onclick="ADM.newBadge()">+ Ajouter un succès</button>
+                        <button type="button" class="adm-btn adm-btn-ok" onclick="ADM.newBadge()">+ Ajouter un succès</button>
                     </div>
                 </div>
                 <p class="adm-hint">Pilotez chaque succès et sa <b>filière cible</b> (CIEL, STMG, STI2D, NSI, ST2S, Générale, Collège ou Universel). Les élèves ne voient par défaut que les succès de leur filière, avec un bouton « Tout voir » sur leur tableau de bord.</p>
 
                 <!-- Filtres par Filière -->
                 <div class="adm-shop-filter-tabs" style="margin-bottom:8px;">
-                    <button class="adm-shop-filter-btn ${filFilter === 'all' ? 'active' : ''}" onclick="ADM.setBadgeFiliereFilter('all')">👁️ Toutes filières (${allBadges.length})</button>
-                    <button class="adm-shop-filter-btn ${filFilter === 'universal' ? 'active' : ''}" onclick="ADM.setBadgeFiliereFilter('universal')">🌐 Universels</button>
-                    <button class="adm-shop-filter-btn ${filFilter === 'college' ? 'active' : ''}" onclick="ADM.setBadgeFiliereFilter('college')">🏫 Collège</button>
+                    <button type="button" class="adm-shop-filter-btn ${filFilter === 'all' ? 'active' : ''}" onclick="ADM.setBadgeFiliereFilter('all')">👁️ Toutes filières (${allBadges.length})</button>
+                    <button type="button" class="adm-shop-filter-btn ${filFilter === 'universal' ? 'active' : ''}" onclick="ADM.setBadgeFiliereFilter('universal')">🌐 Universels</button>
+                    <button type="button" class="adm-shop-filter-btn ${filFilter === 'college' ? 'active' : ''}" onclick="ADM.setBadgeFiliereFilter('college')">🏫 Collège</button>
                     ${allFilieres.map(f => {
                         const cnt = allBadges.filter(b => b.band !== 'college' && Array.isArray(b.allowedFilieres) && b.allowedFilieres.includes(f.id) && !b.allowedFilieres.includes('all')).length;
                         return `<button type="button" class="adm-shop-filter-btn ${filFilter === f.id ? 'active' : ''}" data-id="${esc(f.id)}" onclick="ADM.setBadgeFiliereFilter(this.dataset.id)">${emoIco(f.icon || 'compass', 14)} ${esc(f.shortLabel || f.label)} (${cnt})</button>`;
@@ -1221,7 +1233,7 @@
                 <!-- Filtres par Catégorie -->
                 <div class="adm-shop-filter-tabs">
                     ${Object.keys(BADGE_CATEGORY_LABELS).map(k => `
-                        <button class="adm-shop-filter-btn ${cat === k ? 'active' : ''}" onclick="ADM.setBadgeCategory('${k}')">
+                        <button type="button" class="adm-shop-filter-btn ${cat === k ? 'active' : ''}" onclick="ADM.setBadgeCategory('${k}')">
                             ${BADGE_CATEGORY_LABELS[k]} (${k === 'all' ? allBadges.filter(matchesFiliere).length : allBadges.filter(i => (i.category || 'progression') === k && matchesFiliere(i)).length})
                         </button>
                     `).join('')}
@@ -1234,9 +1246,9 @@
                 </div>
 
                 <div class="adm-toolbar" style="margin-top:20px; border-top: 1px dashed rgba(154,167,216,0.2); padding-top: 14px; display:flex; gap:10px; flex-wrap:wrap;">
-                    <button class="adm-btn adm-btn-ghost" onclick="ADM.unlockAllBadges()">✨ Tout débloquer (test compte)</button>
-                    <button class="adm-btn adm-btn-ghost" onclick="ADM.resetUserBadges()">🔒 Réinitialiser mes succès</button>
-                    <button class="adm-btn adm-btn-danger adm-right" onclick="ADM.resetBadgesCatalog()">🔄 Rétablir le catalogue de succès par défaut</button>
+                    <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.unlockAllBadges()">✨ Tout débloquer (test compte)</button>
+                    <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.resetUserBadges()">🔒 Réinitialiser mes succès</button>
+                    <button type="button" class="adm-btn adm-btn-danger adm-right" onclick="ADM.resetBadgesCatalog()">🔄 Rétablir le catalogue de succès par défaut</button>
                 </div>
             </div>`;
     }
@@ -1310,8 +1322,8 @@
                     </div>
 
                     <div class="adm-form-actions" style="margin-top:14px; display:flex; gap:10px;">
-                        <button class="adm-btn adm-btn-ok" onclick="ADM.saveBadge()">💾 Enregistrer le succès</button>
-                        <button class="adm-btn adm-btn-ghost" onclick="ADM.cancelBadgeEdit()">Annuler</button>
+                        <button type="button" class="adm-btn adm-btn-ok" onclick="ADM.saveBadge()">💾 Enregistrer le succès</button>
+                        <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.cancelBadgeEdit()">Annuler</button>
                     </div>
                 </div>
             </div>`;
@@ -1373,14 +1385,14 @@
             <div class="adm-card">
                 <div class="adm-toolbar">
                     <h2 style="margin:0;">🛍️ Gestion de la Boutique <small>${allItems.length} article(s)</small></h2>
-                    <button class="adm-btn adm-btn-ok adm-right" onclick="ADM.newShopItem()">+ Ajouter un article</button>
+                    <button type="button" class="adm-btn adm-btn-ok adm-right" onclick="ADM.newShopItem()">+ Ajouter un article</button>
                 </div>
                 <p class="adm-hint">Personnalisez les prix, l'apparence et ajoutez de nouveaux articles (Halos, Avatars, Titres, Thèmes, Boosters) pour motiver les élèves.</p>
 
                 <!-- Filtres de catégories -->
                 <div class="adm-shop-filter-tabs">
                     ${Object.keys(SHOP_CATEGORY_LABELS).map(k => `
-                        <button class="adm-shop-filter-btn ${cat === k ? 'active' : ''}" onclick="ADM.setShopCategory('${k}')">
+                        <button type="button" class="adm-shop-filter-btn ${cat === k ? 'active' : ''}" onclick="ADM.setShopCategory('${k}')">
                             ${SHOP_CATEGORY_LABELS[k]} (${catCounts[k] || 0})
                         </button>
                     `).join('')}
@@ -1393,7 +1405,7 @@
                 </div>
 
                 <div class="adm-toolbar" style="margin-top:20px; border-top: 1px dashed rgba(154,167,216,0.2); padding-top: 14px;">
-                    <button class="adm-btn adm-btn-ghost" onclick="ADM.resetShopItems()">🔄 Rétablir la boutique par défaut</button>
+                    <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.resetShopItems()">🔄 Rétablir la boutique par défaut</button>
                 </div>
             </div>`;
     }
@@ -1474,8 +1486,8 @@
 
                     <div class="adm-error" id="admShopErr"></div>
                     <div class="adm-toolbar">
-                        <button class="adm-btn adm-btn-ok" onclick="ADM.saveShopItem()">💾 Enregistrer l'article</button>
-                        <button class="adm-btn adm-btn-ghost" onclick="ADM.cancelShopItem()">Annuler</button>
+                        <button type="button" class="adm-btn adm-btn-ok" onclick="ADM.saveShopItem()">💾 Enregistrer l'article</button>
+                        <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.cancelShopItem()">Annuler</button>
                     </div>
                 </div>
             </div>`;
@@ -1540,15 +1552,15 @@
                 </div>
 
                 <div class="adm-toolbar" style="margin-top:16px;">
-                    <button class="adm-btn adm-btn-ok" onclick="ADM.rewardsSave()">💾 Enregistrer les récompenses</button>
-                    <button class="adm-btn adm-btn-ghost" onclick="ADM.rewardsReset()">Rétablir les valeurs par défaut</button>
+                    <button type="button" class="adm-btn adm-btn-ok" onclick="ADM.rewardsSave()">💾 Enregistrer les récompenses</button>
+                    <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.rewardsReset()">Rétablir les valeurs par défaut</button>
                 </div>
 
                 <!-- Éditeur complet du Pool de Quêtes Quotidiennes -->
                 <div class="adm-card" style="border-color: rgba(95,212,230,0.35); margin-top: 16px;">
                     <div class="adm-toolbar">
                         <h3 style="font-family:'Cinzel',serif; font-size:15px; color:var(--cyan); margin:0;">📋 Pool des Quêtes Quotidiennes (${(S.questsDraft || AdminStore.getQuestPool()).length})</h3>
-                        <button class="adm-btn adm-btn-ghost" onclick="ADM.refreshTodayQuests()">🔄 Régénérer les quêtes du jour</button>
+                        <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.refreshTodayQuests()">🔄 Régénérer les quêtes du jour</button>
                     </div>
                     <p class="adm-hint" style="margin:6px 0 10px;">Personnalisez les missions tirées chaque matin à minuit (3 types distincts tirés + la quête de connexion).</p>
                     ${(() => {
@@ -1586,16 +1598,16 @@
                                             <td style="width:76px;"><input class="adm-input" type="number" min="0" max="500" value="${q.xp}" oninput="ADM.qField(${qi},'xp',this.value)"></td>
                                             <td style="width:76px;"><input class="adm-input" type="number" min="0" max="500" value="${q.coins}" oninput="ADM.qField(${qi},'coins',this.value)"></td>
                                             <td style="text-align:center;"><input type="checkbox" ${q.enabled !== false ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer;" onchange="ADM.qField(${qi},'enabled',this.checked)"></td>
-                                            <td><button class="adm-ico-btn danger" ${qList.length <= 1 ? 'disabled' : ''} onclick="ADM.qDelete(${qi})" title="Supprimer">🗑</button></td>
+                                            <td><button type="button" class="adm-ico-btn danger" ${qList.length <= 1 ? 'disabled' : ''} onclick="ADM.qDelete(${qi})" title="Supprimer">🗑</button></td>
                                         </tr>
                                     `).join('')}
                                 </tbody>
                             </table>
                         </div>
                         <div class="adm-toolbar" style="margin-top:12px;">
-                            <button class="adm-btn adm-btn-ghost" onclick="ADM.qAdd()">+ Ajouter une quête</button>
-                            <button class="adm-btn adm-btn-ok" onclick="ADM.questsSave()">💾 Enregistrer le pool de quêtes</button>
-                            <button class="adm-btn adm-btn-danger adm-right" onclick="ADM.questsReset()">Rétablir les quêtes par défaut</button>
+                            <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.qAdd()">+ Ajouter une quête</button>
+                            <button type="button" class="adm-btn adm-btn-ok" onclick="ADM.questsSave()">💾 Enregistrer le pool de quêtes</button>
+                            <button type="button" class="adm-btn adm-btn-danger adm-right" onclick="ADM.questsReset()">Rétablir les quêtes par défaut</button>
                         </div>`;
                     })()}
                 </div>
@@ -1605,10 +1617,10 @@
                     <h3 style="font-family:'Cinzel',serif; font-size:15px; color:var(--green); margin-bottom:8px;">💰 Outil de test de l'Économie (Portefeuille Local)</h3>
                     <p class="adm-hint" style="margin-bottom:12px;">Ajoutez des pièces ou de l'XP sur cet appareil pour tester immédiatement les achats en boutique.</p>
                     <div class="adm-toolbar">
-                        <button class="adm-btn adm-btn-ghost" onclick="ADM.grantPlayerReward(0, 100)">+100 Pièces 🪙</button>
-                        <button class="adm-btn adm-btn-ghost" onclick="ADM.grantPlayerReward(0, 500)">+500 Pièces 🪙</button>
-                        <button class="adm-btn adm-btn-ghost" onclick="ADM.grantPlayerReward(100, 0)">+100 XP ⚡</button>
-                        <button class="adm-btn adm-btn-danger adm-right" onclick="ADM.grantPlayerReward(0, 0, true)">Réinitialiser à 30 pièces & 0 XP</button>
+                        <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.grantPlayerReward(0, 100)">+100 Pièces 🪙</button>
+                        <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.grantPlayerReward(0, 500)">+500 Pièces 🪙</button>
+                        <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.grantPlayerReward(100, 0)">+100 XP ⚡</button>
+                        <button type="button" class="adm-btn adm-btn-danger adm-right" onclick="ADM.grantPlayerReward(0, 0, true)">Réinitialiser à 30 pièces & 0 XP</button>
                     </div>
                 </div>
 
@@ -1644,8 +1656,13 @@
         const rows = S.members.map(m => {
             const isMe = me && m.email === me.email;
             const curNiv = m.niveau || '6eme';
-            const curFil = m.filiere || 'generale';
             const filApplicable = AdminStore.isFiliereApplicable(curNiv);
+            const memberFilieres = filApplicable && typeof AdminStore.getFilieresForNiveau === 'function'
+                ? AdminStore.getFilieresForNiveau(curNiv)
+                : filieres;
+            const curFil = filApplicable && typeof AdminStore.resolveFiliereForNiveau === 'function'
+                ? AdminStore.resolveFiliereForNiveau(m.filiere || 'generale', curNiv)
+                : (m.filiere || 'generale');
             return `
                 <tr>
                     <td>
@@ -1659,8 +1676,8 @@
                     </td>
                     <td>
                         ${filApplicable ? `
-                        <select class="adm-select adm-member-inline-select" data-email="${esc(m.email)}" onchange="ADM.setMemberFiliere(this.dataset.email, this.value)" title="Filière de cet élève">
-                            ${filieres.map(f => `<option value="${esc(f.id)}"${curFil === f.id ? ' selected' : ''}>${esc(f.shortLabel || f.label)}</option>`).join('')}
+                        <select class="adm-select adm-member-inline-select" data-email="${esc(m.email)}" onchange="ADM.setMemberFiliere(this.dataset.email, this.value)" title="Filière de cet élève (filtrée selon sa classe)">
+                            ${memberFilieres.map(f => `<option value="${esc(f.id)}"${curFil === f.id ? ' selected' : ''}>${esc(f.shortLabel || f.label)}</option>`).join('')}
                         </select>` : '<span class="adm-hint">Collège</span>'}
                     </td>
                     <td style="white-space:nowrap; font-size:0.86rem;">
@@ -1705,7 +1722,7 @@
                                     <option value="admin">Administrateur</option>
                                 </select></div>
                         </div>
-                        <div><button class="adm-btn" onclick="ADM.addMember()">Créer le compte</button></div>
+                        <div><button type="button" class="adm-btn" onclick="ADM.addMember()">Créer le compte</button></div>
                     </div>
                 </div>
                 <div class="adm-table-wrap" style="margin-top:14px;">
@@ -1773,15 +1790,24 @@
                     <div class="adm-grid-2">
                         <div class="adm-field">
                             <label>Classe par défaut des nouveaux élèves</label>
-                            <select class="adm-select" id="admSiteDefaultNiveau">
+                            <select class="adm-select" id="admSiteDefaultNiveau" onchange="ADM.onSettingsDefaultNiveauChange(this.value)">
                                 ${levels.map(l => `<option value="${esc(l.id)}"${(siteCfg.defaultNiveau || '6eme') === l.id ? ' selected' : ''}>🎓 ${esc(l.label)}</option>`).join('')}
                             </select>
                         </div>
                         <div class="adm-field">
                             <label>Filière par défaut (Lycée &amp; BTS)</label>
-                            <select class="adm-select" id="admSiteDefaultFiliere">
-                                ${filieres.map(f => `<option value="${esc(f.id)}"${(siteCfg.defaultFiliere || 'generale') === f.id ? ' selected' : ''}>${esc(f.icon || '🧭')} ${esc(f.label)}</option>`).join('')}
-                            </select>
+                            ${(() => {
+                                const defNiv = siteCfg.defaultNiveau || '6eme';
+                                const filOpts = (AdminStore.isFiliereApplicable(defNiv) && typeof AdminStore.getFilieresForNiveau === 'function')
+                                    ? AdminStore.getFilieresForNiveau(defNiv)
+                                    : filieres;
+                                const defFil = (AdminStore.isFiliereApplicable(defNiv) && typeof AdminStore.resolveFiliereForNiveau === 'function')
+                                    ? AdminStore.resolveFiliereForNiveau(siteCfg.defaultFiliere || 'generale', defNiv)
+                                    : (siteCfg.defaultFiliere || 'generale');
+                                return `<select class="adm-select" id="admSiteDefaultFiliere">
+                                    ${filOpts.map(f => `<option value="${esc(f.id)}"${defFil === f.id ? ' selected' : ''}>${esc(f.icon || '🧭')} ${esc(f.label)}</option>`).join('')}
+                                </select>`;
+                            })()}
                         </div>
                     </div>
 
@@ -1900,8 +1926,8 @@
                     </div>
 
                     <div class="adm-toolbar" style="margin-top:14px;">
-                        <button class="adm-btn adm-btn-ok" onclick="ADM.saveSiteSettings()">💾 Enregistrer la configuration du site</button>
-                        <button class="adm-btn adm-btn-ghost" onclick="ADM.resetSiteSettings()">Rétablir les valeurs de jeu par défaut</button>
+                        <button type="button" class="adm-btn adm-btn-ok" onclick="ADM.saveSiteSettings()">💾 Enregistrer la configuration du site</button>
+                        <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.resetSiteSettings()">Rétablir les valeurs de jeu par défaut</button>
                     </div>
                 </div>
             </div>
@@ -2075,9 +2101,9 @@
                     </div>
 
                     <div class="adm-toolbar" style="margin-top:14px;">
-                        <button class="adm-btn adm-btn-ok" onclick="ADM.saveAiSettings()">💾 Enregistrer la configuration Multi-IA</button>
-                        <button class="adm-btn adm-btn-ghost" onclick="ADM.testAiSettings()">🧪 Tester le pool IA</button>
-                        <button class="adm-btn adm-btn-ghost adm-right" onclick="ADM.resetAiSettings()">Rétablir par défaut</button>
+                        <button type="button" class="adm-btn adm-btn-ok" onclick="ADM.saveAiSettings()">💾 Enregistrer la configuration Multi-IA</button>
+                        <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.testAiSettings()">🧪 Tester le pool IA</button>
+                        <button type="button" class="adm-btn adm-btn-ghost adm-right" onclick="ADM.resetAiSettings()">Rétablir par défaut</button>
                     </div>
                     <div id="admAiTestResult" style="margin-top:10px;"></div>
                 </div>
@@ -2087,12 +2113,12 @@
                 <h2>🗄️ Sauvegarde &amp; Restauration Intégrale du Site</h2>
                 <p class="adm-hint">Exportez l'intégralité des données du site (niveaux scolaires, matières, leçons manuelles, boutique, succès, récompenses économiques, crédits, configuration du site et IA) en un seul fichier JSON universel.</p>
                 <div class="adm-toolbar">
-                    <button class="adm-btn" onclick="ADM.exportConfig()">⬇️ Exporter toute la configuration</button>
-                    <button class="adm-btn adm-btn-ghost" onclick="ADM.downloadConfig()">💾 Télécharger (.json)</button>
+                    <button type="button" class="adm-btn" onclick="ADM.exportConfig()">⬇️ Exporter toute la configuration</button>
+                    <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.downloadConfig()">💾 Télécharger (.json)</button>
                 </div>
                 <textarea class="adm-textarea" id="admExportArea" readonly placeholder="Cliquez sur « Exporter toute la configuration » pour afficher le JSON ici…" rows="5"></textarea>
                 <div style="margin-top:12px;">
-                    <button class="adm-btn" onclick="ADM.importConfig()">⬆️ Importer la configuration</button>
+                    <button type="button" class="adm-btn" onclick="ADM.importConfig()">⬆️ Importer la configuration</button>
                     <textarea class="adm-textarea" id="admImportArea" placeholder="Collez ici un JSON exporté puis cliquez sur « Importer la configuration »…" rows="5" style="margin-top:6px;"></textarea>
                 </div>
             </div>
@@ -2101,14 +2127,14 @@
                 <h2 style="color:#ffab91;">☢️ Zone sensible &amp; Réinitialisations</h2>
                 <p class="adm-hint">Réinitialisez des modules individuels ou effacez les caches locaux de cet appareil.</p>
                 <div class="adm-toolbar" style="flex-wrap:wrap; gap:8px;">
-                    <button class="adm-btn adm-btn-danger" onclick="ADM.resetAdminConfig()">Réinitialiser TOUT le panneau</button>
-                    <button class="adm-btn adm-btn-ghost" onclick="ADM.levelsReset()">Niveaux par défaut</button>
-                    <button class="adm-btn adm-btn-ghost" onclick="ADM.filieresReset()">Filières par défaut</button>
-                    <button class="adm-btn adm-btn-ghost" onclick="ADM.resetShopItems()">Boutique par défaut</button>
-                    <button class="adm-btn adm-btn-ghost" onclick="ADM.resetBadgesCatalog()">Succès par défaut</button>
-                    <button class="adm-btn adm-btn-ghost" onclick="ADM.questsReset()">Quêtes par défaut</button>
-                    <button class="adm-btn adm-btn-ghost" onclick="ADM.rewardsReset()">Récompenses par défaut</button>
-                    <button class="adm-btn adm-btn-danger adm-right" onclick="ADM.resetProgress()">Effacer la progression joueur (appareil)</button>
+                    <button type="button" class="adm-btn adm-btn-danger" onclick="ADM.resetAdminConfig()">Réinitialiser TOUT le panneau</button>
+                    <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.levelsReset()">Niveaux par défaut</button>
+                    <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.filieresReset()">Filières par défaut</button>
+                    <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.resetShopItems()">Boutique par défaut</button>
+                    <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.resetBadgesCatalog()">Succès par défaut</button>
+                    <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.questsReset()">Quêtes par défaut</button>
+                    <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.rewardsReset()">Récompenses par défaut</button>
+                    <button type="button" class="adm-btn adm-btn-danger adm-right" onclick="ADM.resetProgress()">Effacer la progression joueur (appareil)</button>
                 </div>
             </div>`;
     }
@@ -2143,8 +2169,8 @@
                 </div>
 
                 <div class="adm-toolbar">
-                    <button class="adm-btn adm-btn-ok" onclick="ADM.creditsSave()">💾 Enregistrer les crédits</button>
-                    <button class="adm-btn adm-btn-ghost" onclick="ADM.creditsReset()">Rétablir les valeurs par défaut</button>
+                    <button type="button" class="adm-btn adm-btn-ok" onclick="ADM.creditsSave()">💾 Enregistrer les crédits</button>
+                    <button type="button" class="adm-btn adm-btn-ghost" onclick="ADM.creditsReset()">Rétablir les valeurs par défaut</button>
                 </div>
                 <p class="adm-hint" style="margin-top:8px;">Après enregistrement, rechargez la page du
                 jeu (F5) pour voir les crédits à jour dans le pied de page.</p>
@@ -2290,7 +2316,7 @@
         },
         levelsCancel() { S.levelsDraft = null; renderTabContent(); },
         levelsReset() {
-            if (!confirm('Rétablir les niveaux scolaires par défaut (6ème → Terminale) ?')) return;
+            if (!confirm('Rétablir les niveaux scolaires par défaut (6ème → Terminale + BTS 1/2) ?')) return;
             AdminStore.resetLevels();
             S.levelsDraft = null;
             renderTabContent();
@@ -2303,6 +2329,17 @@
             S.editingLesson = null;
             S.lessonDraft = null;
             S.subjectList = [];
+            if (S.subjectId && typeof AdminStore !== 'undefined') {
+                const opened = subjectList().find(x => x.id === S.subjectId);
+                if (opened) {
+                    const allowed = (typeof AdminStore.defaultAllowedNiveauxForSubject === 'function')
+                        ? AdminStore.defaultAllowedNiveauxForSubject(opened)
+                        : (Array.isArray(opened.allowedNiveaux) ? opened.allowedNiveaux : []);
+                    if (allowed.length > 0 && !allowed.includes(S.studyGrade)) {
+                        S.studyGrade = allowed[0];
+                    }
+                }
+            }
             renderTabContent();
         },
         onSubjectIslandSelect(val, inputId, previewId) {
@@ -2386,6 +2423,24 @@
             if (!S.filieresDraft || !S.filieresDraft[i]) return;
             S.filieresDraft[i][field] = val;
         },
+        filToggleNiveau(i, nivId) {
+            if (!S.filieresDraft || !S.filieresDraft[i] || !nivId) return;
+            const lyceeLevels = AdminStore.getLevels().filter(l => l.band === 'lycee').map(l => l.id);
+            let cur = (Array.isArray(S.filieresDraft[i].allowedNiveaux) && S.filieresDraft[i].allowedNiveaux.length)
+                ? S.filieresDraft[i].allowedNiveaux.slice()
+                : lyceeLevels.slice();
+            if (cur.includes(nivId)) {
+                if (cur.length <= 1) {
+                    toast('Une filière doit être associée à au moins un niveau d\'étude.', 'err');
+                    return;
+                }
+                cur = cur.filter(x => x !== nivId);
+            } else {
+                cur.push(nivId);
+            }
+            S.filieresDraft[i].allowedNiveaux = cur;
+            renderTabContent();
+        },
         filAdd() {
             if (!S.filieresDraft) S.filieresDraft = AdminStore.getFilieres();
             const existingIds = new Set(S.filieresDraft.map(f => String(f.id || '').toLowerCase()));
@@ -2397,6 +2452,7 @@
                 shortLabel: 'Nouvelle',
                 icon: '🧭',
                 enabled: true,
+                allowedNiveaux: ['2nde', '1ere', 'terminale'],
                 desc: '',
             });
             renderTabContent();
@@ -2479,6 +2535,18 @@
             renderTabContent();
             toast('Matière, classes et filières enregistrées ✔', 'ok');
         },
+        _readSubjectMetaInputs() {
+            const patch = {};
+            const nameEl = document.getElementById('admMetaName');
+            const iconEl = document.getElementById('admMetaIcon');
+            const descEl = document.getElementById('admMetaDesc');
+            const enabledEl = document.getElementById('admMetaEnabled');
+            if (nameEl && nameEl.value.trim()) patch.name = nameEl.value;
+            if (iconEl) patch.icon = iconEl.value;
+            if (descEl) patch.description = descEl.value;
+            if (enabledEl) patch.enabled = Boolean(enabledEl.checked);
+            return patch;
+        },
         toggleSubjectFiliere(filId) {
             if (!S.subjectId) return;
             const sub = subjectList().find(x => x.id === S.subjectId);
@@ -2497,7 +2565,7 @@
                 }
             }
             sub.allowedFilieres = current;
-            AdminStore.saveSubjectMeta(S.subjectId, { allowedFilieres: current });
+            AdminStore.saveSubjectMeta(S.subjectId, { ...ADM._readSubjectMetaInputs(), allowedFilieres: current });
             S.subjectList = [];
             renderTabContent();
         },
@@ -2512,7 +2580,7 @@
                 specs.push(filId);
             }
             sub.specialtyFilieres = specs;
-            AdminStore.saveSubjectMeta(S.subjectId, { specialtyFilieres: specs });
+            AdminStore.saveSubjectMeta(S.subjectId, { ...ADM._readSubjectMetaInputs(), specialtyFilieres: specs });
             S.subjectList = [];
             renderTabContent();
         },
@@ -2529,7 +2597,7 @@
             } else {
                 sub.allowedNiveaux = allLevels.map(l => l.id);
             }
-            AdminStore.saveSubjectMeta(S.subjectId, { band, allowedNiveaux: sub.allowedNiveaux });
+            AdminStore.saveSubjectMeta(S.subjectId, { ...ADM._readSubjectMetaInputs(), band, allowedNiveaux: sub.allowedNiveaux });
             S.subjectList = [];
             renderTabContent();
             toast('Cycle mis à jour : ' + (band === 'college' ? 'Collège' : band === 'lycee' ? 'Lycée' : 'Tous cycles'), 'ok');
@@ -2549,7 +2617,7 @@
                 current.push(gradeId);
             }
             sub.allowedNiveaux = current;
-            AdminStore.saveSubjectMeta(S.subjectId, { allowedNiveaux: current });
+            AdminStore.saveSubjectMeta(S.subjectId, { ...ADM._readSubjectMetaInputs(), allowedNiveaux: current });
             S.subjectList = [];
             renderTabContent();
         },
@@ -2560,7 +2628,7 @@
             const allLevels = AdminStore.getLevels();
             const current = checked ? allLevels.map(l => l.id) : [];
             sub.allowedNiveaux = current;
-            AdminStore.saveSubjectMeta(S.subjectId, { allowedNiveaux: current });
+            AdminStore.saveSubjectMeta(S.subjectId, { ...ADM._readSubjectMetaInputs(), allowedNiveaux: current });
             S.subjectList = [];
             renderTabContent();
         },
@@ -3022,7 +3090,12 @@
             renderTabContent();
         },
         async setMemberGrade(email, niveau) {
-            const r = DB.updateLocalMemberData(email, { niveau });
+            const member = S.members.find(x => x.email === email);
+            const payload = { niveau };
+            if (AdminStore.isFiliereApplicable(niveau) && typeof AdminStore.resolveFiliereForNiveau === 'function') {
+                payload.filiere = AdminStore.resolveFiliereForNiveau((member && member.filiere) || 'generale', niveau);
+            }
+            const r = DB.updateLocalMemberData(email, payload);
             if (!r.ok) { toast(r.error || 'Modification impossible.', 'err'); }
             else { toast('Classe mise à jour : ' + AdminStore.levelLabel(niveau) + ' ✔', 'ok'); }
             await refreshMembers();
@@ -3083,6 +3156,21 @@
         },
 
         /* ----- Réglages ----- */
+        onSettingsDefaultNiveauChange(niveau) {
+            const sel = document.getElementById('admSiteDefaultFiliere');
+            if (!sel || typeof AdminStore === 'undefined') return;
+            const filOpts = (AdminStore.isFiliereApplicable(niveau) && typeof AdminStore.getFilieresForNiveau === 'function')
+                ? AdminStore.getFilieresForNiveau(niveau)
+                : AdminStore.getFilieres();
+            const curVal = sel.value || 'generale';
+            const resolved = (AdminStore.isFiliereApplicable(niveau) && typeof AdminStore.resolveFiliereForNiveau === 'function')
+                ? AdminStore.resolveFiliereForNiveau(curVal, niveau)
+                : curVal;
+            sel.innerHTML = filOpts.map(f => `<option value="${esc(f.id)}"${resolved === f.id ? ' selected' : ''}>${esc(f.icon || '🧭')} ${esc(f.label)}</option>`).join('');
+            if (filOpts.length && !filOpts.some(f => f.id === sel.value)) {
+                sel.value = filOpts[0].id;
+            }
+        },
         saveSiteSettings() {
             const title = (document.getElementById('admSiteTitle') || {}).value;
             const tagline = (document.getElementById('admSiteTagline') || {}).value;
@@ -3091,7 +3179,10 @@
             const exitSubtitle = (document.getElementById('admSiteExitSubtitle') || {}).value;
             const dashboardFooterNote = (document.getElementById('admSiteDashFooter') || {}).value;
             const defaultNiveau = (document.getElementById('admSiteDefaultNiveau') || {}).value || '6eme';
-            const defaultFiliere = (document.getElementById('admSiteDefaultFiliere') || {}).value || 'generale';
+            const rawDefaultFiliere = (document.getElementById('admSiteDefaultFiliere') || {}).value || 'generale';
+            const defaultFiliere = (AdminStore.isFiliereApplicable(defaultNiveau) && typeof AdminStore.resolveFiliereForNiveau === 'function')
+                ? AdminStore.resolveFiliereForNiveau(rawDefaultFiliere, defaultNiveau)
+                : rawDefaultFiliere;
             const quizTimerSeconds = parseInt((document.getElementById('admSiteTimer') || {}).value, 10);
             const xpMultiplier = parseFloat((document.getElementById('admSiteXpMult') || {}).value);
             const coinMultiplier = parseFloat((document.getElementById('admSiteCoinMult') || {}).value);

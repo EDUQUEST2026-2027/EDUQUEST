@@ -475,11 +475,11 @@
             </div>
             <div class="header-actions">
                 <a href="index.html" class="btn">← Menu Principal</a>
-                <button id="btn-run-all" class="btn btn-primary">▶ Tout Relancer</button>
-                <button id="btn-run-failed" class="btn" style="display:none;">🔁 Rejouer Échecs</button>
-                <button id="btn-benchmark" class="btn btn-secondary">⚡ Benchmark Performance</button>
-                <button id="btn-copy-report" class="btn">📋 Copier Rapport</button>
-                <button id="btn-export-json" class="btn">💾 Exporter JSON</button>
+                <button type="button" id="btn-run-all" class="btn btn-primary">▶ Tout Relancer</button>
+                <button type="button" id="btn-run-failed" class="btn" style="display:none;">🔁 Rejouer Échecs</button>
+                <button type="button" id="btn-benchmark" class="btn btn-secondary">⚡ Benchmark Performance</button>
+                <button type="button" id="btn-copy-report" class="btn">📋 Copier Rapport</button>
+                <button type="button" id="btn-export-json" class="btn">💾 Exporter JSON</button>
             </div>
         </header>
 
@@ -1199,8 +1199,8 @@
             });
         });
 
-        // --- SUITE 13 : 18 FILIÈRES, BTS 1/2, 36 MATIÈRES, 98 ARTICLES, 78 SUCCÈS & SVG ASTRAL (v1.30.0) ---
-        describe('18 Filières, BTS 1/2, 36 Matières, Boutique, Succès & SVG Astral (v1.30.0)', function (it) {
+        // --- SUITE 13 : 18 FILIÈRES COHÉRENTES, BTS 1/2, 43 MATIÈRES (DONT ALLEMAND), 98 ARTICLES, 79 SUCCÈS & SVG ASTRAL (v1.30.0) ---
+        describe('18 Filières cohérentes, BTS 1/2, 43 Matières (dont Allemand), Boutique, 79 Succès & SVG Astral (v1.30.0)', function (it) {
             it('DB.getFiliere / setFiliere persiste la filière choisie', function () {
                 DB.setFiliere('ciel');
                 assert.strictEqual(DB.getFiliere(), 'ciel');
@@ -1209,12 +1209,20 @@
                 DB.setFiliere('generale');
             });
 
-            it('18 filières actives au Lycée & BTS, ignorées au Collège (6e→3e)', function () {
+            it('18 filières cohérentes par niveau (2nde: 6, 1ère/Tle: 15, BTS: 4, Collège: 0)', function () {
                 assert.strictEqual(AdminStore.getFilieres().length, 18);
                 assert.strictEqual(AdminStore.isFiliereApplicable('3eme'), false);
-                assert.strictEqual(AdminStore.isFiliereApplicable('2nde'), true);
-                assert.strictEqual(AdminStore.isFiliereApplicable('bts1'), true);
-                assert.strictEqual(AdminStore.isFiliereApplicable('bts2'), true);
+                assert.strictEqual(AdminStore.getFilieresForNiveau('6eme').length, 0);
+                assert.strictEqual(AdminStore.getFilieresForNiveau('2nde').length, 6);
+                assert.strictEqual(AdminStore.getFilieresForNiveau('1ere').length, 15);
+                assert.strictEqual(AdminStore.getFilieresForNiveau('terminale').length, 15);
+                assert.strictEqual(AdminStore.getFilieresForNiveau('bts1').length, 4);
+                assert.strictEqual(AdminStore.getFilieresForNiveau('bts2').length, 4);
+                assert.strictEqual(AdminStore.isFiliereAllowedForNiveau('bts_sio', '2nde'), false);
+                assert.strictEqual(AdminStore.isFiliereAllowedForNiveau('generale', 'bts1'), false);
+                assert.strictEqual(AdminStore.resolveFiliereForNiveau('stmg', 'bts1'), 'bts_mco');
+                assert.strictEqual(AdminStore.isSubjectAllowedForNiveau({ id: 'allemand' }, '6eme'), true);
+                assert.strictEqual(AdminStore.isSubjectAllowedForNiveau({ id: 'allemand' }, 'bts2', 'bts_sio'), true);
                 assert.strictEqual(AdminStore.isSubjectAllowedForNiveau({ id: 'cybersecurite' }, 'bts1', 'ciel'), true);
                 assert.strictEqual(AdminStore.isSubjectAllowedForNiveau({ id: 'cybersecurite' }, 'terminale', 'stmg'), false);
                 assert.strictEqual(AdminStore.isSubjectAllowedForNiveau({ id: 'msgn' }, 'terminale', 'stmg'), true);
@@ -1225,8 +1233,9 @@
                 assert.strictEqual(AdminStore.isSubjectAllowedForNiveau({ id: 'electrotech' }, 'terminale', 'bac_pro_melec'), true);
             });
 
-            it('QuestionBank génère sans doublon d\'options pour les 29 matières de filières', function () {
+            it('QuestionBank génère sans doublon d\'options pour Allemand et les 29 matières de filières', function () {
                 const newSubs = [
+                    ['allemand', '6eme'], ['allemand', 'bts1'],
                     ['espagnol', '4eme'], ['arts', '5eme'], ['hggsp', '1ere'], ['si', '1ere'],
                     ['msgn', '1ere'], ['droit_eco', 'terminale'], ['mercatique', 'terminale'],
                     ['i2d', '1ere'], ['sin', 'terminale'], ['cybersecurite', 'bts1'],
@@ -1246,9 +1255,10 @@
                 });
             });
 
-            it('Boutique (98 articles dont thème Rubis) et Succès (78 badges) cohérents', function () {
+            it('Boutique (98 articles dont thème Rubis) et Succès (79 badges dont Germanophone) cohérents', function () {
                 assert.strictEqual(AdminStore.DEFAULT_SHOP_ITEMS.length, 98);
-                assert.strictEqual(AdminStore.DEFAULT_BADGES.length, 78);
+                assert.strictEqual(AdminStore.DEFAULT_BADGES.length, 79);
+                assert.ok(AdminStore.DEFAULT_BADGES.some(b => b.id === 'germanophone'));
             });
 
             it('EduIcons : bibliothèque SVG Astral & Or chargée, 100 % vectorielle et sécurisée', function () {

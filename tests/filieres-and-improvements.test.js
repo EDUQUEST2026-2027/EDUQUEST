@@ -25,8 +25,8 @@ const QuizEngine = require(path.join(ROOT, 'js', 'quiz-engine.js'));
 const GameRules = require(path.join(ROOT, 'js', 'core', 'game-rules.js'));
 const QuizSession = require(path.join(ROOT, 'js', 'core', 'quiz-session.js'));
 
-const ALL_36_SUBJECTS = [
-    'maths', 'francais', 'histoire', 'geo', 'emc', 'anglais', 'espagnol',
+const ALL_43_SUBJECTS = [
+    'maths', 'francais', 'histoire', 'geo', 'emc', 'anglais', 'allemand', 'espagnol',
     'svt', 'physique', 'chimie', 'techno', 'arts', 'philo', 'nsi', 'ses',
     'hggsp', 'si', 'msgn', 'droit_eco', 'mercatique', 'i2d', 'sin',
     'cybersecurite', 'reseaux', 'electronique', 'stss',
@@ -78,7 +78,9 @@ test.describe('Filières (18 voies officielles) & Programme officiel', () => {
                 );
             }
         }
-        // Espagnol LV2 commence en 5ème (programme officiel)
+        // Allemand LV1/bilangue/LV2 commence dès la 6ème ; Espagnol LV2 commence en 5ème (programme officiel)
+        assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'allemand' }, '6eme'), true);
+        assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'allemand' }, '3eme'), true);
         assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'espagnol' }, '6eme'), false);
         assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'espagnol' }, '5eme'), true);
         assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'espagnol' }, '3eme'), true);
@@ -155,33 +157,69 @@ test.describe('Filières (18 voies officielles) & Programme officiel', () => {
         assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'pse' }, 'terminale', 'bac_pro_assp'), true);
         assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'electrotech' }, 'terminale', 'sthr'), false);
 
-        // Vérifie que CHAQUE filière dispose d'au moins 11 matières et 4 spécialités sur tous les niveaux Lycée & BTS (y compris via RAW_DASH_SUBJECTS)
+        // Cohérence stricte Filières ↔ Niveaux d'études (2nde / 1ère-Tle / BTS 1-2)
+        assert.equal(AdminStore.getFilieresForNiveau('6eme').length, 0);
+        assert.equal(AdminStore.getFilieresForNiveau('2nde').length, 6, '6 filières accessibles dès la 2nde');
+        assert.equal(AdminStore.getFilieresForNiveau('1ere').length, 15, '15 filières lycée en 1ère');
+        assert.equal(AdminStore.getFilieresForNiveau('terminale').length, 15, '15 filières lycée en Terminale');
+        assert.equal(AdminStore.getFilieresForNiveau('bts1').length, 4, '4 filières post-bac en BTS 1');
+        assert.equal(AdminStore.getFilieresForNiveau('bts2').length, 4, '4 filières post-bac en BTS 2');
+
+        // Filières BTS strictement interdites au Lycée, filières Lycée-only strictement interdites en BTS
+        for (const btsFil of ['bts_sio', 'bts_mco', 'bts_cg']) {
+            assert.equal(AdminStore.isFiliereAllowedForNiveau(btsFil, '2nde'), false);
+            assert.equal(AdminStore.isFiliereAllowedForNiveau(btsFil, '1ere'), false);
+            assert.equal(AdminStore.isFiliereAllowedForNiveau(btsFil, 'terminale'), false);
+            assert.equal(AdminStore.isFiliereAllowedForNiveau(btsFil, 'bts1'), true);
+            assert.equal(AdminStore.isFiliereAllowedForNiveau(btsFil, 'bts2'), true);
+        }
+        for (const lyceeOnly of ['generale', 'stmg', 'sti2d', 'st2s', 'stl', 'std2a', 'sthr', 'stav', 's2tmd', 'hlp_llce', 'sciences_spe', 'nsi_spe', 'bac_pro_melec', 'bac_pro_assp']) {
+            assert.equal(AdminStore.isFiliereAllowedForNiveau(lyceeOnly, 'bts1'), false, `${lyceeOnly} interdit en BTS 1`);
+            assert.equal(AdminStore.isFiliereAllowedForNiveau(lyceeOnly, 'bts2'), false, `${lyceeOnly} interdit en BTS 2`);
+        }
+        for (const spe1ere of ['nsi_spe', 'stmg', 'sti2d', 'st2s', 'stl', 'std2a', 'stav', 'hlp_llce', 'sciences_spe']) {
+            assert.equal(AdminStore.isFiliereAllowedForNiveau(spe1ere, '2nde'), false, `${spe1ere} interdit en 2nde`);
+            assert.equal(AdminStore.isFiliereAllowedForNiveau(spe1ere, '1ere'), true, `${spe1ere} autorisé en 1ère`);
+        }
+        assert.equal(AdminStore.resolveFiliereForNiveau('stmg', 'bts1'), 'bts_mco');
+        assert.equal(AdminStore.resolveFiliereForNiveau('nsi_spe', 'bts1'), 'bts_sio');
+        assert.equal(AdminStore.resolveFiliereForNiveau('bts_sio', '1ere'), 'nsi_spe');
+        assert.equal(AdminStore.resolveFiliereForNiveau('bts_mco', '2nde'), 'generale');
+
+        // Allemand disponible du Collège au BTS sur toutes les filières
+        assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'allemand' }, '2nde', 'generale'), true);
+        assert.equal(AdminStore.isSubjectAllowedForNiveau({ id: 'allemand' }, 'bts2', 'bts_sio'), true);
+
+        // Vérifie que CHAQUE filière dispose d'au moins 11 matières et de spécialités cohérentes sur SES niveaux autorisés (y compris via RAW_DASH_SUBJECTS)
         const appSrc = fs.readFileSync(path.join(ROOT, 'js', 'app.js'), 'utf8');
         const rawMatch = appSrc.match(/const RAW_DASH_SUBJECTS = (\[[\s\S]*?\n\]);/);
         assert.ok(rawMatch, 'RAW_DASH_SUBJECTS doit être présent dans js/app.js');
         const rawDashSubjects = eval(rawMatch[1]);
-        assert.equal(rawDashSubjects.length, 42, '42 matières officielles attendues dans RAW_DASH_SUBJECTS');
+        assert.equal(rawDashSubjects.length, 43, '43 matières officielles attendues dans RAW_DASH_SUBJECTS (dont Allemand)');
         const effectiveSubs = AdminStore.applyOverrides(rawDashSubjects);
         for (const f of AdminStore.getFilieres()) {
-            for (const niv of ['2nde', '1ere', 'terminale', 'bts1', 'bts2']) {
+            assert.ok(Array.isArray(f.allowedNiveaux) && f.allowedNiveaux.length >= 2, `Filière ${f.id} doit définir allowedNiveaux`);
+            for (const niv of f.allowedNiveaux) {
                 const allowed = effectiveSubs.filter(s => AdminStore.isSubjectAllowedForNiveau(s, niv, f.id));
                 const specs = allowed.filter(s => AdminStore.isSubjectSpecialtyForFiliere(s, f.id));
+                const minSpecs = niv === '2nde' ? 2 : 5;
                 assert.ok(
                     allowed.length >= 11,
                     `Filière ${f.id} en ${niv} a trop peu de matières (${allowed.length}) : ${allowed.map(s => s.id).join(', ')}`
                 );
                 assert.ok(
-                    specs.length >= 4,
-                    `Filière ${f.id} en ${niv} a trop peu de spécialités (${specs.length}) : ${specs.map(s => s.id).join(', ')}`
+                    specs.length >= minSpecs,
+                    `Filière ${f.id} en ${niv} a trop peu de spécialités (${specs.length} < ${minSpecs}) : ${specs.map(s => s.id).join(', ')}`
                 );
             }
         }
     });
 });
 
-test.describe('QuestionBank — Intégrité complète des 36 matières (Collège, Lycée & BTS)', () => {
+test.describe('QuestionBank — Intégrité complète des 43 matières (Collège, Lycée & BTS)', () => {
     test('Chaque matière génère 25 niveaux valides sans doublon d\'options ni index invalide', () => {
         const sampleLevelBySubject = {
+            allemand: '4eme',
             techno: '4eme',
             philo: 'terminale',
             hggsp: '1ere',
@@ -217,7 +255,7 @@ test.describe('QuestionBank — Intégrité complète des 36 matières (Collège
             pse: 'terminale',
         };
 
-        for (const subjectId of ALL_36_SUBJECTS) {
+        for (const subjectId of ALL_43_SUBJECTS) {
             const niv = sampleLevelBySubject[subjectId] || '3eme';
             for (let lvl = 0; lvl < 25; lvl++) {
                 const lesson = QuestionBank.generateOne(subjectId, lvl, niv, 0);
@@ -268,6 +306,8 @@ test.describe('Anti-répétition renforcée (AdaptiveEngine + QuestionBank)', ()
             ['mercatique', 'terminale'],
             ['i2d', '1ere'],
             ['sin', 'terminale'],
+            ['allemand', '4eme'],
+            ['allemand', 'bts1'],
             ['espagnol', '3eme'],
             ['hggsp', 'terminale'],
             ['si', '1ere'],
@@ -315,7 +355,7 @@ test.describe('Anti-répétition renforcée (AdaptiveEngine + QuestionBank)', ()
 });
 
 test.describe('Assets, PWA Service Worker & HTML — Cohérence v1.30.0 (100 % SVG Astral & Or)', () => {
-    test('Logo SVG, toutes les 36 îles SVG et tous les 27 avatars SVG existent, sont non vides, valides XML et pré-cachés (zéro .webp)', () => {
+    test('Logo SVG, toutes les 43 îles SVG et tous les 27 avatars SVG existent, sont non vides, valides XML et pré-cachés (zéro .webp)', () => {
         const swContent = fs.readFileSync(path.join(ROOT, 'service-worker.js'), 'utf8');
         assert.equal(swContent.includes('.webp'), false, 'service-worker.js ne doit plus référencer de fichiers .webp');
         assert.equal(swContent.includes('js/core/icons.js'), true, 'js/core/icons.js doit être pré-caché');
@@ -327,7 +367,7 @@ test.describe('Assets, PWA Service Worker & HTML — Cohérence v1.30.0 (100 % S
 
         const allIslands = [
             'maths.svg', 'francais.svg', 'histoire.svg', 'geo.svg', 'svt.svg',
-            'anglais.svg', 'physique.svg', 'chimie.svg', 'technologie.svg',
+            'anglais.svg', 'allemand.svg', 'physique.svg', 'chimie.svg', 'technologie.svg',
             'philo.svg', 'emc.svg', 'nsi.svg', 'ses.svg',
             'espagnol.svg', 'arts.svg', 'hggsp.svg', 'si.svg',
             'msgn.svg', 'droit_eco.svg', 'mercatique.svg',
@@ -378,13 +418,24 @@ test.describe('Assets, PWA Service Worker & HTML — Cohérence v1.30.0 (100 % S
         }
     });
 
-    test('index.html contient le sélecteur de filière, BTS et les boutons de fermeture rapide ✕', () => {
-        const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-        assert.ok(html.includes('id="optionsFiliereSelect"'));
-        assert.ok(html.includes('id="closeOptionsX"'));
-        assert.ok(html.includes('id="closeLoginX"'));
-        assert.ok(html.includes('value="bts1"'));
-        assert.ok(html.includes('value="bts2"'));
+    test('index.html, map.html et app.js : sélecteur de filière présent, plein écran et reset progression joueur supprimés', () => {
+        const indexHtml = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+        const mapHtml = fs.readFileSync(path.join(ROOT, 'map.html'), 'utf8');
+        const appJs = fs.readFileSync(path.join(ROOT, 'js', 'app.js'), 'utf8');
+        const styleCss = fs.readFileSync(path.join(ROOT, 'css', 'style.css'), 'utf8');
+        assert.ok(indexHtml.includes('id="optionsFiliereSelect"'));
+        assert.ok(indexHtml.includes('id="closeOptionsX"'));
+        assert.ok(indexHtml.includes('id="closeLoginX"'));
+        assert.ok(indexHtml.includes('value="bts1"'));
+        assert.ok(indexHtml.includes('value="bts2"'));
+        // Plein écran supprimé
+        assert.equal(indexHtml.includes('pleinEcran'), false, 'Option plein écran supprimée de index.html');
+        assert.equal(appJs.includes('requestFullscreen'), false, 'requestFullscreen supprimé de js/app.js');
+        assert.equal(appJs.includes('exitFullscreen'), false, 'exitFullscreen supprimé de js/app.js');
+        // Réinitialisation de progression côté joueur supprimée
+        assert.equal(mapHtml.includes('reset-progress'), false, 'Bouton reset-progress supprimé de map.html');
+        assert.equal(appJs.includes('reset-progress'), false, 'Gestionnaire reset-progress supprimé de js/app.js');
+        assert.equal(styleCss.includes('modal-reset-btn'), false, 'Style modal-reset-btn supprimé de css/style.css');
     });
 });
 
@@ -563,8 +614,11 @@ test.describe('Succès triés/filtrés par filière & Pilotage intégral Admin (
         AdminStore.resetAll();
 
         const allBadges = AdminStore.getBadges();
-        assert.equal(allBadges.length, 78, `78 succès attendus (46 + 32 nouveaux), reçu ${allBadges.length}`);
+        assert.equal(allBadges.length, 79, `79 succès attendus (dont germanophone), reçu ${allBadges.length}`);
         assert.equal(new Set(allBadges.map(b => b.id)).size, allBadges.length, 'Identifiants de succès uniques');
+        assert.ok(allBadges.find(b => b.id === 'germanophone'), 'Succès germanophone attendu');
+        assert.equal(AdminStore.isBadgeRelevantFor(allBadges.find(b => b.id === 'germanophone'), '6eme', 'generale'), true);
+        assert.equal(AdminStore.isBadgeRelevantFor(allBadges.find(b => b.id === 'germanophone'), 'bts1', 'bts_sio'), true);
         assert.equal(AdminStore.isBadgeRelevantFor(allBadges.find(b => b.id === 'stl_biotech'), 'terminale', 'stl'), true);
         assert.equal(AdminStore.isBadgeRelevantFor(allBadges.find(b => b.id === 'stl_biotech'), 'terminale', 'stmg'), false);
         assert.equal(AdminStore.isBadgeRelevantFor(allBadges.find(b => b.id === 'sio_architecte'), 'bts1', 'bts_sio'), true);

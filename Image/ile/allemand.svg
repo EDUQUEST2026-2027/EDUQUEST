@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
+  <defs>
+    <radialGradient id="iallemandHalo" cx="0.5" cy="0.44" r="0.52">
+      <stop offset="0" stop-color="#f59e0b" stop-opacity="0.34"/>
+      <stop offset="0.55" stop-color="#dc2626" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#070b1a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="iallemandRockTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c3e68"/>
+      <stop offset="0.55" stop-color="#192544"/>
+      <stop offset="1" stop-color="#0d1428"/>
+    </linearGradient>
+    <linearGradient id="iallemandRockDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#18223d"/>
+      <stop offset="1" stop-color="#080d1b"/>
+    </linearGradient>
+    <linearGradient id="iallemandPlateau" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a2626"/>
+      <stop offset="1" stop-color="#231218"/>
+    </linearGradient>
+    <linearGradient id="iallemandGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7e29c"/>
+      <stop offset="0.5" stop-color="#c8a84b"/>
+      <stop offset="1" stop-color="#8b661d"/>
+    </linearGradient>
+    <linearGradient id="iallemandStone" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#efe0b8"/>
+      <stop offset="1" stop-color="#bda064"/>
+    </linearGradient>
+    <linearGradient id="iallemandBanner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c2a4f"/>
+      <stop offset="1" stop-color="#0c1328"/>
+    </linearGradient>
+    <filter id="iallemandShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="9" stdDeviation="7" flood-color="#000000" flood-opacity="0.52"/>
+    </filter>
+  </defs>
+
+  <!-- Halo astral unifié -->
+  <circle cx="210" cy="195" r="185" fill="url(#iallemandHalo)"/>
+
+  <!-- Étoiles astrales dorées (grille signature EDUQUEST) -->
+  <g fill="#f2dc96">
+    <path d="M52 94 l2.6 6 6 2.6 -6 2.6 -2.6 6 -2.6 -6 -6 -2.6 6 -2.6 Z" opacity="0.88"/>
+    <path d="M368 72 l2.2 5 5 2.2 -5 2.2 -2.2 5 -2.2 -5 -5 -2.2 5 -2.2 Z" opacity="0.72"/>
+    <path d="M382 174 l1.8 4 4 1.8 -4 1.8 -1.8 4 -1.8 -4 -4 -1.8 4 -1.8 Z" opacity="0.55"/>
+    <circle cx="64" cy="210" r="2.4" fill="#fbbf24" opacity="0.65"/>
+    <circle cx="352" cy="264" r="2.6" opacity="0.5"/>
+    <circle cx="320" cy="44" r="2" fill="#f87171" opacity="0.6"/>
+  </g>
+
+  <g filter="url(#iallemandShadow)">
+    <!-- Socle rocheux flottant unifié -->
+    <path d="M34 232 L210 264 L386 232 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 L68 284 Z" fill="url(#iallemandRockTop)" stroke="#080e1d" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M68 284 L132 300 L210 308 L288 300 L352 284 L314 328 L272 362 L210 384 L148 362 L106 328 Z" fill="url(#iallemandRockDeep)" opacity="0.85"/>
+    <!-- Veines cristallines de la matière -->
+    <path d="M120 296 L142 324 M296 296 L278 326 M192 318 L210 356 L228 318" stroke="#fbbf24" stroke-width="2.4" stroke-linecap="round" opacity="0.52" fill="none"/>
+    <!-- Galets flottants sous l'île -->
+    <polygon points="164,376 175,382 169,394 157,388" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <polygon points="256,374 268,382 260,393 249,386" fill="#1b294c" stroke="#c8a84b" stroke-width="1.2"/>
+    <circle cx="210" cy="400" r="4" fill="#fbbf24" opacity="0.75"/>
+
+    <!-- Plateau insulaire cerclé d'or -->
+    <ellipse cx="210" cy="236" rx="176" ry="54" fill="url(#iallemandPlateau)" stroke="url(#iallemandGold)" stroke-width="3.5"/>
+    <ellipse cx="210" cy="232" rx="158" ry="43" fill="none" stroke="#fbbf24" stroke-width="1.5" stroke-opacity="0.45"/>
+
+    <!-- Scène dédiée à la matière : Porte de Brandebourg dorée + Blason tricolore allemand -->
+    <g transform="translate(210 154)">
+      <ellipse cx="0" cy="74" rx="96" ry="15" fill="#091326" opacity="0.48"/>
+      <!-- Porte de Brandebourg (Brandenburger Tor) -->
+      <g transform="translate(-14 0)">
+        <!-- Socle -->
+        <rect x="-76" y="60" width="152" height="12" rx="3" fill="#8b6f3d" stroke="#1e293b" stroke-width="2"/>
+        <!-- 6 colonnes doriques -->
+        <rect x="-68" y="-12" width="12" height="72" fill="url(#iallemandStone)" stroke="#1e293b" stroke-width="2"/>
+        <rect x="-44" y="-12" width="12" height="72" fill="url(#iallemandStone)" stroke="#1e293b" stroke-width="2"/>
+        <rect x="-18" y="-12" width="12" height="72" fill="url(#iallemandStone)" stroke="#1e293b" stroke-width="2"/>
+        <rect x="6" y="-12" width="12" height="72" fill="url(#iallemandStone)" stroke="#1e293b" stroke-width="2"/>
+        <rect x="32" y="-12" width="12" height="72" fill="url(#iallemandStone)" stroke="#1e293b" stroke-width="2"/>
+        <rect x="56" y="-12" width="12" height="72" fill="url(#iallemandStone)" stroke="#1e293b" stroke-width="2"/>
+        <!-- Entablement & fronton -->
+        <rect x="-78" y="-28" width="156" height="17" rx="2" fill="url(#iallemandStone)" stroke="url(#iallemandGold)" stroke-width="2.5"/>
+        <rect x="-54" y="-44" width="108" height="16" rx="2" fill="#d9be83" stroke="url(#iallemandGold)" stroke-width="2.2"/>
+        <!-- Quadrige doré stylisé au sommet -->
+        <path d="M-24 -44 C-20 -66 -6 -72 0 -76 C6 -72 20 -66 24 -44 Z" fill="url(#iallemandGold)" stroke="#451a03" stroke-width="1.8"/>
+        <circle cx="0" cy="-64" r="5" fill="#fffbeb"/>
+        <path d="M-16 -56 L-28 -64 M16 -56 L28 -64" stroke="#f7e29c" stroke-width="2.5" stroke-linecap="round"/>
+      </g>
+
+      <!-- Blason tricolore allemand (Noir, Rouge, Or) -->
+      <g transform="translate(68 18)">
+        <clipPath id="iallemandShieldClip">
+          <path d="M0 -38 L34 -24 V10 C34 32 18 45 0 52 C-18 45 -34 32 -34 10 V-24 Z"/>
+        </clipPath>
+        <g clip-path="url(#iallemandShieldClip)">
+          <rect x="-36" y="-40" width="72" height="31" fill="#111827"/>
+          <rect x="-36" y="-9" width="72" height="31" fill="#dc2626"/>
+          <rect x="-36" y="22" width="72" height="34" fill="#facc15"/>
+        </g>
+        <path d="M0 -38 L34 -24 V10 C34 32 18 45 0 52 C-18 45 -34 32 -34 10 V-24 Z" fill="none" stroke="url(#iallemandGold)" stroke-width="3.5"/>
+      </g>
+    </g>
+
+    <!-- Bannière astrale dorée unifiée -->
+    <g transform="translate(210 336)">
+      <path d="M-96 -19 L96 -19 L84 19 L-84 19 Z"
+            fill="url(#iallemandBanner)" stroke="url(#iallemandGold)" stroke-width="3" stroke-linejoin="round"/>
+      <g fill="#f5de8a">
+        <circle cx="-80" cy="-9" r="2.4"/>
+        <circle cx="80" cy="-9" r="2.4"/>
+        <circle cx="-74" cy="10" r="2.4"/>
+        <circle cx="74" cy="10" r="2.4"/>
+      </g>
+      <text x="0" y="7" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="20" font-weight="700"
+            fill="#f4de94" letter-spacing="2">ALLEMAND</text>
+    </g>
+  </g>
+</svg>

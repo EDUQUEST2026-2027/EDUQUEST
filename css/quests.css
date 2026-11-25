@@ -49,6 +49,7 @@
     background: linear-gradient(90deg, transparent, #ffd166, #f72585, #4cc9f0, transparent);
     background-size: 200% 100%;
     animation: questShine 4s linear infinite;
+    pointer-events: none;
 }
 
 .quest-board-head {

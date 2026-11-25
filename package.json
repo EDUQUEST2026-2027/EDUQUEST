@@ -1,7 +1,7 @@
 {
   "name": "eduquest-advanced",
   "version": "1.30.0",
-  "description": "EDUQUEST — application française de révision gamifiée (Collège, Lycée & BTS · 18 filières · 36 matières officielles)",
+  "description": "EDUQUEST — application française de révision gamifiée (Collège, Lycée & BTS · 18 filières · 43 matières officielles dont Allemand)",
   "private": true,
   "scripts": {
     "test": "node --test tests/*.test.js",

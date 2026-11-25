@@ -14,7 +14,7 @@ Toutes les clés sont préfixées par `eduquest_` pour éviter tout conflit avec
 |---|---|---|
 | `eduquest_opts_<scope>` *(et `eduquest_options` invité)* | `Object` | Préférences du joueur (audio, particules, animations, apparence, mode chrono, éco-énergie, XP/pièces/skins/thème/avatar/titre équipés, état replié missions/menu bas mobile) |
 | `eduquest_niveau_<scope>` *(et `eduquest_niveau` invité)* | `String` | Niveau scolaire sélectionné par l'élève (`6eme` → `terminale`, `bts1`, `bts2`) |
-| `eduquest_filiere_<scope>` *(et `eduquest_filiere` invité)* | `String` | Filière scolaire sélectionnée au lycée/BTS parmi les 18 filières officielles (`generale`, `nsi_spe`, `stmg`, `sti2d`, `ciel`, `st2s`, `stl`, `std2a`, `sthr`, `stav`, `s2tmd`, `hlp_llce`, `sciences_spe`, `bts_sio`, `bts_mco`, `bts_cg`, `bac_pro_melec`, `bac_pro_assp`) |
+| `eduquest_filiere_<scope>` *(et `eduquest_filiere` invité)* | `String` | Filière scolaire sélectionnée au lycée/BTS parmi les 18 filières officielles cohérentes avec la classe (`2nde` : 6 voies, `1ere`/`terminale` : 15 voies, `bts1`/`bts2` : 4 voies) |
 | `eduquest_prog_<scope>_<matiere>_<niveau>` | `Object` | Progression détaillée par matière et par classe (`{ levels: { "1": { unlocked, stars }, ... } }`) |
 | `eduquest_session` | `Object` | Session active (`{ token, username, email, role }`) |
 | `eduquest_local_users` | `Array` | Comptes locaux enregistrés (`{ email, username, password, role, created }`) — mots de passe hachés SHA-256 (`sh_*`) |
@@ -133,7 +133,7 @@ Pour connecter l'application à un serveur distant :
 - `POST /admin/config/site` : enregistre la configuration globale (`siteConfig`)
 - `GET /admin/config/ai` : récupère les réglages de l'IA et Webhooks Make (`aiConfig`)
 - `POST /admin/config/ai` : met à jour le pool Multi-IA, les webhooks et le timeout réseau
-- `GET /admin/subjects` : liste des 36 matières officielles (+ personnalisées), cycles, classes et filières autorisées
+- `GET /admin/subjects` : liste des 43 matières officielles (+ personnalisées), cycles, classes et filières autorisées
 - `POST /admin/subjects` : mise à jour ou création d'une matière
 - `GET /admin/lessons/:matiere` : récupère les leçons manuelles d'une matière
 - `POST /admin/lessons/:matiere` : enregistre la liste des leçons d'une matière

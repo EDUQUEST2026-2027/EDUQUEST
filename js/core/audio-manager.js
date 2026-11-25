@@ -428,7 +428,7 @@
 
         try {
             if (!sfxCtx) sfxCtx = new AudioCtx();
-            if (sfxCtx.state === 'suspended') sfxCtx.resume().catch(() => {});
+            if (sfxCtx.state === 'suspended') sfxCtx.resume().catch(() => { });
 
             const now = sfxCtx.currentTime;
             const peak = Math.min(0.25, vol * 0.22);
@@ -507,11 +507,11 @@
             updateQuickToggleUI();
         });
 
-        // Sur map.html : insérer proprement dans les actions de .map-header si présent
-        const mapHeaderRight = document.querySelector('.map-header > div:last-child');
-        if (mapHeaderRight) {
+        // Sur map.html ou legal.html : insérer proprement dans les actions d'en-tête si présent (évite tout chevauchement)
+        const headerSlot = document.querySelector('.map-header > div:last-child') || document.querySelector('.adm-top-right');
+        if (headerSlot) {
             btn.classList.add('in-header');
-            mapHeaderRight.insertBefore(btn, mapHeaderRight.firstChild);
+            headerSlot.insertBefore(btn, headerSlot.firstChild);
         } else {
             document.body.appendChild(btn);
         }

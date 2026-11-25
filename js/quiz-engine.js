@@ -203,8 +203,10 @@ const QuizEngine = (() => {
 
     function bindReponseCourte(container, question, quizState, onSubmit) {
         const input = container.querySelector('.dash-short-input');
+        const submitBtn = container.querySelector('.dash-short-submit');
+        if (!input || !submitBtn) return;
         const submit = () => { if (input.value.trim()) onSubmit(input.value.trim()); };
-        container.querySelector('.dash-short-submit').addEventListener('click', submit);
+        submitBtn.addEventListener('click', submit);
         input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
         if (!isCoarseTouchDevice()) input.focus();
     }
@@ -397,14 +399,22 @@ const QuizEngine = (() => {
 
         container.querySelectorAll('.dash-dd-chip').forEach(chip => {
             chip.addEventListener('click', () => {
-                selectedItem = chip.dataset.item;
+                selectedItem = (selectedItem === chip.dataset.item) ? null : chip.dataset.item;
                 refresh();
             });
         });
         container.querySelectorAll('.dash-dd-target').forEach(target => {
             target.addEventListener('click', () => {
-                if (selectedItem === null) return;
                 const targetIdx = target.dataset.target;
+                if (selectedItem === null) {
+                    // Permet de retirer une association en cliquant directement sur une cible déjà remplie
+                    let removed = false;
+                    Object.keys(pairs).forEach(k => {
+                        if (pairs[k] === targetIdx) { delete pairs[k]; removed = true; }
+                    });
+                    if (removed) refresh();
+                    return;
+                }
                 // Évite qu'un même emplacement cible soit associé à deux éléments différents
                 Object.keys(pairs).forEach(k => {
                     if (pairs[k] === targetIdx) delete pairs[k];

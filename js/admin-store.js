@@ -6,13 +6,13 @@
    Ce fichier stocke, valide et synchronise l'ensemble des personnalisations
    administratives sans altérer le moteur de jeu :
      - Niveaux & Filières → 9 classes (6e → BTS 2) et 18 filières officielles.
-     - Matières & Leçons  → 36 matières officielles (cycle, classes, filières,
+     - Matières & Leçons  → 43 matières officielles (cycle, classes, filières,
                             spécialités), leçons manuelles & aperçus procéduraux.
      - Configuration site → Titre, slogan, chrono, multiplicateurs XP/pièces,
                             feature flags, maintenance et sons.
      - Configuration IA   → Pool multi-IA (Make, OpenAI-compatible, Gemini), mode
                             adaptatif et webhooks de génération/validation.
-     - Boutique, Succès & Quêtes → 98 articles, 78 succès filtrés par filière et 9 quêtes.
+     - Boutique, Succès & Quêtes → 98 articles, 79 succès filtrés par filière et 9 quêtes.
 
    PERSISTANCE :
    Tout est unifié sous la clé localStorage 'eduquest_admin_data' et synchronisable
@@ -28,88 +28,92 @@ const AdminStore = (() => {
     // Clé localStorage unique pour toute la configuration administrateur
     const LS_KEY = 'eduquest_admin_data';
 
-    // Filières / voies officielles (Lycée Général, Technologique, Professionnel & Post-Bac BTS — 18 filières)
-    const DEFAULT_FILIERES = [
-        { id: 'generale',      label: 'Voie Générale', shortLabel: 'Générale', icon: '📚', enabled: true, desc: 'Tronc commun et spécialités du lycée général (SES, NSI, HGGSP, SI, HLP, LLCE, Sciences & Arts)' },
-        { id: 'nsi_spe',       label: 'Spécialité NSI & Numérique', shortLabel: 'Spé NSI', icon: '💻', enabled: true, desc: 'Parcours informatique, algorithmique, développement/BDD, réseaux, cybersécurité, SIN et SI' },
-        { id: 'stmg',          label: 'STMG (Management & Gestion)', shortLabel: 'STMG', icon: '📊', enabled: true, desc: 'Management (MSGN), Droit & Économie, Mercatique, Gestion-Finance (Comptabilité), RH & Comm et SIG' },
-        { id: 'sti2d',         label: 'STI2D (Industrie & Dév. Durable)', shortLabel: 'STI2D', icon: '⚙️', enabled: true, desc: 'I2D (ITEC), SIN, Architecture & Habitat (AC), Énergie & Électrotechnique (EE), Électronique et SI' },
-        { id: 'ciel',          label: 'CIEL (Cyber, Réseaux & Électronique)', shortLabel: 'CIEL', icon: '🛡️', enabled: true, desc: 'Bac Pro & BTS CIEL : Cybersécurité, Réseaux & Systèmes, Électronique, SIN, Dév/BDD, NSI, Droit IT & PSE' },
-        { id: 'st2s',          label: 'ST2S (Santé & Social)', shortLabel: 'ST2S', icon: '🩺', enabled: true, desc: 'Sciences Sanitaires & Sociales (STSS), Biologie & Physiopathologie (BPH), Biotechnologies, Chimie, SVT & PSE' },
-        // --- 12 FILIÈRES OFFICIELLES COMPLÉMENTAIRES (TECHNO, GÉNÉRAL, PRO & BTS) ---
-        { id: 'stl',           label: 'STL (Sciences & Tech. de Laboratoire)', shortLabel: 'STL', icon: '🧫', enabled: true, desc: 'Biotechnologies, Sciences & Chimie de Labo (SPCL), Biochimie, Biopathologie, Physique-Chimie et SVT' },
-        { id: 'std2a',         label: 'STD2A (Design & Arts Appliqués)', shortLabel: 'STD2A', icon: '🎨', enabled: true, desc: 'Design & Arts Appliqués, Architecture & Habitat, Arts & Musique, Éco-conception (I2D), Scénographie et Culture' },
-        { id: 'sthr',          label: 'STHR (Hôtellerie & Restauration)', shortLabel: 'STHR', icon: '🍽️', enabled: true, desc: 'Hôtellerie & Gastronomie, Management (MSGN), Mercatique, Commerce, RH & Comm, Comptabilité, PSE et Langues' },
-        { id: 'stav',          label: 'STAV (Agronomie & Vivant)', shortLabel: 'STAV', icon: '🌱', enabled: true, desc: 'Agronomie & Écologie, SVT, Biotechnologies, Chimie, PSE, Éco-technologies (I2D), Aménagement et Gestion' },
-        { id: 's2tmd',         label: 'S2TMD (Théâtre, Musique & Danse)', shortLabel: 'S2TMD', icon: '🎭', enabled: true, desc: 'Arts de la Scène & Culture, Arts & Musique, Design & Scénographie, Humanités (HLP), LLCE et Géopolitique' },
-        { id: 'hlp_llce',      label: 'Humanités, Lettres & Langues (HLP)', shortLabel: 'HLP/LLCE', icon: '📖', enabled: true, desc: 'Humanités, Littérature & Philosophie (HLP), Langues & Cultures (LLCE), Géopolitique (HGGSP), Arts et Sciences humaines' },
-        { id: 'sciences_spe',  label: 'Spécialités Maths & Sciences (PC/SVT)', shortLabel: 'Spé Sciences', icon: '🔬', enabled: true, desc: 'Parcours scientifique complet : Mathématiques, Physique, Chimie, SVT, SI, Labo (SPCL), Biopathologie et NSI' },
-        { id: 'bts_sio',       label: 'BTS SIO (Services Informatiques)', shortLabel: 'BTS SIO', icon: '🖥️', enabled: true, desc: 'Options SLAM & SISR : Développement & BDD, Réseaux & Systèmes, Cybersécurité, NSI, SIN, CEJM (Droit-Éco & MSGN)' },
-        { id: 'bts_mco',       label: 'BTS MCO (Management Commercial)', shortLabel: 'BTS MCO', icon: '🛒', enabled: true, desc: 'Relation Client & Commerce, Mercatique, Management (MSGN), RH & Comm, Comptabilité-Gestion, CEJM (Droit-Éco) & Langues' },
-        { id: 'bts_cg',        label: 'BTS CG (Comptabilité & Gestion)', shortLabel: 'BTS CG', icon: '🧮', enabled: true, desc: 'Comptabilité, Fiscalité & Contrôle de gestion, CEJM (Droit-Éco & MSGN), SI Comptable & SQL (Dév/BDD), RH & Paie' },
-        { id: 'bac_pro_melec', label: 'Bac Pro MELEC (Électricité & Connecté)', shortLabel: 'MELEC', icon: '⚡', enabled: true, desc: 'Électrotechnique (NF C 15-100), Électronique, SIN & Domotique, Réseaux connectés, Habitat (AC), I2D et PSE' },
-        { id: 'bac_pro_assp',  label: 'Bac Pro ASSP (Soins & Accompagnement)', shortLabel: 'ASSP', icon: '🏥', enabled: true, desc: 'STSS (Médico-Social), Biologie & Physiopathologie (BPH & Soins), Biotechnologies & Hygiène, PSE, SVT et Chimie' },
-    ];
-
     const ALL_NIVEAUX = ['6eme', '5eme', '4eme', '3eme', '2nde', '1ere', 'terminale', 'bts1', 'bts2'];
+    const COLLEGE_ONLY = ['6eme', '5eme', '4eme', '3eme'];
     const COLLEGE_LYCEE = ['6eme', '5eme', '4eme', '3eme', '2nde', '1ere', 'terminale'];
     const FROM_5EME_TO_BTS = ['5eme', '4eme', '3eme', '2nde', '1ere', 'terminale', 'bts1', 'bts2'];
     const LYCEE_ONLY = ['2nde', '1ere', 'terminale'];
+    const LYCEE_1ERE_TLE = ['1ere', 'terminale'];
     const LYCEE_BTS = ['2nde', '1ere', 'terminale', 'bts1', 'bts2'];
+    const BTS_ONLY = ['bts1', 'bts2'];
 
-    // Règles pédagogiques conformes au programme officiel (Collège, Lycée & BTS, par filière — 42 matières)
+    // Filières / voies officielles (Lycée Général, Technologique, Professionnel & Post-Bac BTS — 18 filières)
+    // Chaque filière précise ses niveaux d'études autorisés (cohérence stricte 2nde / 1ère-Tle / BTS).
+    const DEFAULT_FILIERES = [
+        { id: 'generale', label: 'Voie Générale', shortLabel: 'Générale', icon: '📚', enabled: true, allowedNiveaux: LYCEE_ONLY, desc: 'Tronc commun et spécialités du lycée général (SES, NSI, HGGSP, SI, HLP, LLCE, Sciences & Arts)' },
+        { id: 'nsi_spe', label: 'Spécialité NSI & Numérique', shortLabel: 'Spé NSI', icon: '💻', enabled: true, allowedNiveaux: LYCEE_1ERE_TLE, desc: 'Parcours informatique, algorithmique, développement/BDD, réseaux, cybersécurité, SIN et SI (1ère/Tle)' },
+        { id: 'stmg', label: 'STMG (Management & Gestion)', shortLabel: 'STMG', icon: '📊', enabled: true, allowedNiveaux: LYCEE_1ERE_TLE, desc: 'Management (MSGN), Droit & Économie, Mercatique, Gestion-Finance (Comptabilité), RH & Comm et SIG' },
+        { id: 'sti2d', label: 'STI2D (Industrie & Dév. Durable)', shortLabel: 'STI2D', icon: '⚙️', enabled: true, allowedNiveaux: LYCEE_1ERE_TLE, desc: 'I2D (ITEC), SIN, Architecture & Habitat (AC), Énergie & Électrotechnique (EE), Électronique et SI' },
+        { id: 'ciel', label: 'CIEL (Cyber, Réseaux & Électronique)', shortLabel: 'CIEL', icon: '🛡️', enabled: true, allowedNiveaux: LYCEE_BTS, desc: 'Bac Pro & BTS CIEL : Cybersécurité, Réseaux & Systèmes, Électronique, SIN, Dév/BDD, NSI, Droit IT & PSE' },
+        { id: 'st2s', label: 'ST2S (Santé & Social)', shortLabel: 'ST2S', icon: '🩺', enabled: true, allowedNiveaux: LYCEE_1ERE_TLE, desc: 'Sciences Sanitaires & Sociales (STSS), Biologie & Physiopathologie (BPH), Biotechnologies, Chimie, SVT & PSE' },
+        // --- 12 FILIÈRES OFFICIELLES COMPLÉMENTAIRES (TECHNO, GÉNÉRAL, PRO & BTS) ---
+        { id: 'stl', label: 'STL (Sciences & Tech. de Laboratoire)', shortLabel: 'STL', icon: '🧫', enabled: true, allowedNiveaux: LYCEE_1ERE_TLE, desc: 'Biotechnologies, Sciences & Chimie de Labo (SPCL), Biochimie, Biopathologie, Physique-Chimie et SVT' },
+        { id: 'std2a', label: 'STD2A (Design & Arts Appliqués)', shortLabel: 'STD2A', icon: '🎨', enabled: true, allowedNiveaux: LYCEE_1ERE_TLE, desc: 'Design & Arts Appliqués, Architecture & Habitat, Arts & Musique, Éco-conception (I2D), Scénographie et Culture' },
+        { id: 'sthr', label: 'STHR (Hôtellerie & Restauration)', shortLabel: 'STHR', icon: '🍽️', enabled: true, allowedNiveaux: LYCEE_ONLY, desc: 'Hôtellerie & Gastronomie, Management (MSGN), Mercatique, Commerce, RH & Comm, Comptabilité, PSE et Langues' },
+        { id: 'stav', label: 'STAV (Agronomie & Vivant)', shortLabel: 'STAV', icon: '🌱', enabled: true, allowedNiveaux: LYCEE_1ERE_TLE, desc: 'Agronomie & Écologie, SVT, Biotechnologies, Chimie, PSE, Éco-technologies (I2D), Aménagement et Gestion' },
+        { id: 's2tmd', label: 'S2TMD (Théâtre, Musique & Danse)', shortLabel: 'S2TMD', icon: '🎭', enabled: true, allowedNiveaux: LYCEE_ONLY, desc: 'Arts de la Scène & Culture, Arts & Musique, Design & Scénographie, Humanités (HLP), LLCE et Géopolitique' },
+        { id: 'hlp_llce', label: 'Humanités, Lettres & Langues (HLP)', shortLabel: 'HLP/LLCE', icon: '📖', enabled: true, allowedNiveaux: LYCEE_1ERE_TLE, desc: 'Humanités, Littérature & Philosophie (HLP), Langues & Cultures (LLCE), Géopolitique (HGGSP), Arts et Sciences humaines' },
+        { id: 'sciences_spe', label: 'Spécialités Maths & Sciences (PC/SVT)', shortLabel: 'Spé Sciences', icon: '🔬', enabled: true, allowedNiveaux: LYCEE_1ERE_TLE, desc: 'Parcours scientifique complet : Mathématiques, Physique, Chimie, SVT, SI, Labo (SPCL), Biopathologie et NSI' },
+        { id: 'bts_sio', label: 'BTS SIO (Services Informatiques)', shortLabel: 'BTS SIO', icon: '🖥️', enabled: true, allowedNiveaux: BTS_ONLY, desc: 'Options SLAM & SISR : Développement & BDD, Réseaux & Systèmes, Cybersécurité, NSI, SIN, CEJM (Droit-Éco & MSGN)' },
+        { id: 'bts_mco', label: 'BTS MCO (Management Commercial)', shortLabel: 'BTS MCO', icon: '🛒', enabled: true, allowedNiveaux: BTS_ONLY, desc: 'Relation Client & Commerce, Mercatique, Management (MSGN), RH & Comm, Comptabilité-Gestion, CEJM (Droit-Éco) & Langues' },
+        { id: 'bts_cg', label: 'BTS CG (Comptabilité & Gestion)', shortLabel: 'BTS CG', icon: '🧮', enabled: true, allowedNiveaux: BTS_ONLY, desc: 'Comptabilité, Fiscalité & Contrôle de gestion, CEJM (Droit-Éco & MSGN), SI Comptable & SQL (Dév/BDD), RH & Paie' },
+        { id: 'bac_pro_melec', label: 'Bac Pro MELEC (Électricité & Connecté)', shortLabel: 'MELEC', icon: '⚡', enabled: true, allowedNiveaux: LYCEE_ONLY, desc: 'Électrotechnique (NF C 15-100), Électronique, SIN & Domotique, Réseaux connectés, Habitat (AC), I2D et PSE' },
+        { id: 'bac_pro_assp', label: 'Bac Pro ASSP (Soins & Accompagnement)', shortLabel: 'ASSP', icon: '🏥', enabled: true, allowedNiveaux: LYCEE_ONLY, desc: 'STSS (Médico-Social), Biologie & Physiopathologie (BPH & Soins), Biotechnologies & Hygiène, PSE, SVT et Chimie' },
+    ];
+
+    // Règles pédagogiques conformes au programme officiel (Collège, Lycée & BTS, par filière — 43 matières)
     // - Technologie : Collège uniquement (6e → 3e)
+    // - Allemand (LV1/bilangue/LV2) : dès la 6ème jusqu'au BTS 2
     // - Espagnol LV2 : dès la 5ème (5e → BTS 2)
-    // - NSI & SES : Lycée & BTS uniquement — jamais au collège
-    // - Philosophie : Terminale uniquement — jamais au collège
-    // - Matières de spécialité & filières (HGGSP, SI, MSGN, Droit-Éco, Mercatique, I2D, SIN,
-    //   Cybersécurité, Réseaux, Électronique, STSS, Biotech, Design, Hôtellerie, Agronomie,
-    //   Spectacle, HLP, Dév & BDD, Commerce, Comptabilité, Électrotechnique, Biopathologie,
-    //   SPCL, RH & Comm, Architecture & Habitat, LLCE, PSE) : Lycée & BTS selon la filière.
+    // - SES : Lycée Général uniquement (2nde → Terminale) — jamais au collège ni en BTS
+    // - HGGSP, HLP, LLCE : Spécialités de 1ère & Terminale uniquement
+    // - Philosophie : Terminale Générale & Technologique uniquement — jamais au collège ni en BTS
+    // - Matières de spécialité & filières alignées sur les cycles exacts (Lycée vs BTS).
     const SUBJECT_DEFAULT_RULES = {
-        maths:                { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['all'], specialtyFilieres: ['sciences_spe'] },
-        francais:             { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['all'], specialtyFilieres: ['hlp_llce'] },
-        histoire:             { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['all'], specialtyFilieres: [] },
-        geo:                  { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['all'], specialtyFilieres: [] },
-        emc:                  { band: 'all',     allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['all'], specialtyFilieres: [] },
-        anglais:              { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['all'], specialtyFilieres: ['hlp_llce'] },
-        espagnol:             { band: 'all',     allowedNiveaux: FROM_5EME_TO_BTS, allowedFilieres: ['all'], specialtyFilieres: ['hlp_llce'] },
-        svt:                  { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['generale', 'st2s', 'stl', 'sthr', 'stav', 's2tmd', 'hlp_llce', 'sciences_spe', 'bac_pro_assp'], specialtyFilieres: ['st2s', 'stav', 'sciences_spe', 'bac_pro_assp', 'stl'] },
-        physique:             { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel', 'st2s', 'stl', 'std2a', 'stav', 's2tmd', 'hlp_llce', 'sciences_spe', 'bts_sio', 'bac_pro_melec', 'bac_pro_assp'], specialtyFilieres: ['stl', 'sciences_spe'] },
-        chimie:               { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel', 'st2s', 'stl', 'std2a', 'sthr', 'stav', 'hlp_llce', 'sciences_spe', 'bac_pro_melec', 'bac_pro_assp'], specialtyFilieres: ['stl', 'sciences_spe', 'st2s', 'stav'] },
-        techno:               { band: 'college', allowedNiveaux: ['6eme', '5eme', '4eme', '3eme'], allowedFilieres: ['all'], specialtyFilieres: [] },
-        arts:                 { band: 'all',     allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['generale', 'ciel', 'std2a', 's2tmd', 'hlp_llce', 'bac_pro_melec', 'bac_pro_assp'], specialtyFilieres: ['std2a', 's2tmd'] },
-        philo:                { band: 'lycee',   allowedNiveaux: ['terminale'], allowedFilieres: ['generale', 'nsi_spe', 'stmg', 'sti2d', 'st2s', 'stl', 'std2a', 'sthr', 'stav', 's2tmd', 'hlp_llce', 'sciences_spe'], specialtyFilieres: ['hlp_llce', 'generale'] },
-        nsi:                  { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel', 'sciences_spe', 'bts_sio'], specialtyFilieres: ['nsi_spe', 'ciel', 'bts_sio'] },
-        ses:                  { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['generale', 'stmg', 'hlp_llce', 'bts_mco', 'bts_cg'], specialtyFilieres: ['generale'] },
-        hggsp:                { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['generale', 'hlp_llce', 's2tmd'], specialtyFilieres: ['generale', 'hlp_llce'] },
-        si:                   { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'sciences_spe', 'bac_pro_melec'], specialtyFilieres: ['nsi_spe', 'sti2d', 'generale', 'sciences_spe'] },
-        msgn:                 { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stmg', 'sthr', 'stav', 'bts_sio', 'bts_mco', 'bts_cg', 'bac_pro_assp'], specialtyFilieres: ['stmg', 'sthr', 'bts_mco', 'bts_cg'] },
-        droit_eco:            { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stmg', 'ciel', 'st2s', 'sthr', 'stav', 'bts_sio', 'bts_mco', 'bts_cg', 'bac_pro_melec', 'bac_pro_assp'], specialtyFilieres: ['stmg', 'ciel', 'bts_sio', 'bts_mco', 'bts_cg'] },
-        mercatique:           { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stmg', 'sthr', 'bts_mco', 'bts_cg'], specialtyFilieres: ['stmg', 'sthr', 'bts_mco'] },
-        i2d:                  { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['sti2d', 'std2a', 'stav', 'bac_pro_melec'], specialtyFilieres: ['sti2d', 'std2a'] },
-        sin:                  { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['sti2d', 'nsi_spe', 'ciel', 'bts_sio', 'bac_pro_melec'], specialtyFilieres: ['sti2d', 'nsi_spe', 'ciel', 'bac_pro_melec'] },
-        cybersecurite:        { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['ciel', 'nsi_spe', 'bts_sio'], specialtyFilieres: ['ciel', 'nsi_spe', 'bts_sio'] },
-        reseaux:              { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['ciel', 'nsi_spe', 'bts_sio', 'bac_pro_melec'], specialtyFilieres: ['ciel', 'nsi_spe', 'bts_sio', 'bac_pro_melec'] },
-        electronique:         { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['ciel', 'sti2d', 'nsi_spe', 'bts_sio', 'bac_pro_melec'], specialtyFilieres: ['ciel', 'sti2d', 'bac_pro_melec'] },
-        stss:                 { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['st2s', 'bac_pro_assp'], specialtyFilieres: ['st2s', 'bac_pro_assp'] },
+        maths: { band: 'all', allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['all'], specialtyFilieres: ['sciences_spe'] },
+        francais: { band: 'all', allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['all'], specialtyFilieres: ['hlp_llce'] },
+        histoire: { band: 'all', allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['all'], specialtyFilieres: [] },
+        geo: { band: 'all', allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['all'], specialtyFilieres: [] },
+        emc: { band: 'all', allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['all'], specialtyFilieres: [] },
+        anglais: { band: 'all', allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['all'], specialtyFilieres: ['hlp_llce'] },
+        allemand: { band: 'all', allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['all'], specialtyFilieres: ['hlp_llce'] },
+        espagnol: { band: 'all', allowedNiveaux: FROM_5EME_TO_BTS, allowedFilieres: ['all'], specialtyFilieres: ['hlp_llce'] },
+        svt: { band: 'all', allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['generale', 'st2s', 'stl', 'sthr', 'stav', 's2tmd', 'hlp_llce', 'sciences_spe', 'bac_pro_assp'], specialtyFilieres: ['st2s', 'stav', 'sciences_spe', 'bac_pro_assp', 'stl'] },
+        physique: { band: 'all', allowedNiveaux: ALL_NIVEAUX, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel', 'st2s', 'stl', 'std2a', 'stav', 's2tmd', 'hlp_llce', 'sciences_spe', 'bac_pro_melec', 'bac_pro_assp'], specialtyFilieres: ['stl', 'sciences_spe', 'ciel'] },
+        chimie: { band: 'all', allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel', 'st2s', 'stl', 'std2a', 'sthr', 'stav', 'hlp_llce', 'sciences_spe', 'bac_pro_melec', 'bac_pro_assp'], specialtyFilieres: ['stl', 'sciences_spe', 'st2s', 'stav'] },
+        techno: { band: 'college', allowedNiveaux: COLLEGE_ONLY, allowedFilieres: ['all'], specialtyFilieres: [] },
+        arts: { band: 'all', allowedNiveaux: COLLEGE_LYCEE, allowedFilieres: ['generale', 'ciel', 'std2a', 's2tmd', 'hlp_llce', 'bac_pro_melec', 'bac_pro_assp'], specialtyFilieres: ['std2a', 's2tmd'] },
+        philo: { band: 'lycee', allowedNiveaux: ['terminale'], allowedFilieres: ['generale', 'nsi_spe', 'stmg', 'sti2d', 'st2s', 'stl', 'std2a', 'sthr', 'stav', 's2tmd', 'hlp_llce', 'sciences_spe'], specialtyFilieres: ['hlp_llce', 'generale'] },
+        nsi: { band: 'lycee', allowedNiveaux: LYCEE_BTS, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel', 'sciences_spe', 'bts_sio'], specialtyFilieres: ['nsi_spe', 'ciel', 'bts_sio'] },
+        ses: { band: 'lycee', allowedNiveaux: LYCEE_ONLY, allowedFilieres: ['generale', 'hlp_llce'], specialtyFilieres: ['generale'] },
+        hggsp: { band: 'lycee', allowedNiveaux: LYCEE_1ERE_TLE, allowedFilieres: ['generale', 'hlp_llce', 's2tmd'], specialtyFilieres: ['generale', 'hlp_llce'] },
+        si: { band: 'lycee', allowedNiveaux: LYCEE_ONLY, allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'sciences_spe', 'bac_pro_melec'], specialtyFilieres: ['nsi_spe', 'sti2d', 'generale', 'sciences_spe'] },
+        msgn: { band: 'lycee', allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stmg', 'sthr', 'stav', 'bts_sio', 'bts_mco', 'bts_cg'], specialtyFilieres: ['stmg', 'sthr', 'bts_mco', 'bts_cg', 'bts_sio'] },
+        droit_eco: { band: 'lycee', allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stmg', 'ciel', 'sthr', 'stav', 'bts_sio', 'bts_mco', 'bts_cg', 'bac_pro_melec', 'bac_pro_assp'], specialtyFilieres: ['stmg', 'ciel', 'bts_sio', 'bts_mco', 'bts_cg'] },
+        mercatique: { band: 'lycee', allowedNiveaux: ['1ere', 'terminale', 'bts1', 'bts2'], allowedFilieres: ['stmg', 'sthr', 'bts_mco', 'bts_cg'], specialtyFilieres: ['stmg', 'sthr', 'bts_mco'] },
+        i2d: { band: 'lycee', allowedNiveaux: LYCEE_ONLY, allowedFilieres: ['sti2d', 'std2a', 'stav', 'bac_pro_melec'], specialtyFilieres: ['sti2d', 'std2a'] },
+        sin: { band: 'lycee', allowedNiveaux: LYCEE_BTS, allowedFilieres: ['sti2d', 'nsi_spe', 'ciel', 'bts_sio', 'bac_pro_melec'], specialtyFilieres: ['sti2d', 'nsi_spe', 'ciel', 'bac_pro_melec'] },
+        cybersecurite: { band: 'lycee', allowedNiveaux: LYCEE_BTS, allowedFilieres: ['ciel', 'nsi_spe', 'bts_sio'], specialtyFilieres: ['ciel', 'nsi_spe', 'bts_sio'] },
+        reseaux: { band: 'lycee', allowedNiveaux: LYCEE_BTS, allowedFilieres: ['ciel', 'nsi_spe', 'bts_sio', 'bac_pro_melec'], specialtyFilieres: ['ciel', 'nsi_spe', 'bts_sio', 'bac_pro_melec'] },
+        electronique: { band: 'lycee', allowedNiveaux: LYCEE_BTS, allowedFilieres: ['ciel', 'sti2d', 'nsi_spe', 'bac_pro_melec'], specialtyFilieres: ['ciel', 'sti2d', 'bac_pro_melec'] },
+        stss: { band: 'lycee', allowedNiveaux: LYCEE_ONLY, allowedFilieres: ['st2s', 'bac_pro_assp'], specialtyFilieres: ['st2s', 'bac_pro_assp'] },
         // --- 16 MATIÈRES DÉDIÉES AUX FILIÈRES TECHNO, GÉNÉRALES, PRO & BTS ---
-        biotech:              { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stl', 'st2s', 'sthr', 'stav', 'sciences_spe', 'bac_pro_assp'], specialtyFilieres: ['stl', 'st2s', 'stav', 'bac_pro_assp'] },
-        design:               { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['std2a', 's2tmd'], specialtyFilieres: ['std2a', 's2tmd'] },
-        hotellerie:           { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['sthr'], specialtyFilieres: ['sthr'] },
-        agronomie:            { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stav'], specialtyFilieres: ['stav'] },
-        spectacle:            { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['s2tmd', 'std2a', 'hlp_llce'], specialtyFilieres: ['s2tmd', 'std2a'] },
-        hlp:                  { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['hlp_llce', 'generale', 's2tmd', 'std2a'], specialtyFilieres: ['hlp_llce', 'generale', 's2tmd'] },
-        dev_bdd:              { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['bts_sio', 'nsi_spe', 'ciel', 'stmg', 'bts_cg'], specialtyFilieres: ['bts_sio', 'nsi_spe', 'ciel', 'bts_cg'] },
-        commerce:             { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['bts_mco', 'stmg', 'sthr', 'bts_cg'], specialtyFilieres: ['bts_mco', 'stmg', 'sthr'] },
-        comptabilite:         { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['bts_cg', 'stmg', 'bts_mco', 'sthr'], specialtyFilieres: ['bts_cg', 'stmg', 'bts_mco'] },
-        electrotech:          { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['bac_pro_melec', 'sti2d'], specialtyFilieres: ['bac_pro_melec', 'sti2d'] },
-        biopathologie:        { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['st2s', 'bac_pro_assp', 'stl', 'sciences_spe'], specialtyFilieres: ['st2s', 'bac_pro_assp', 'stl'] },
-        spcl:                 { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stl', 'sciences_spe', 'st2s', 'stav', 'sti2d'], specialtyFilieres: ['stl', 'sciences_spe'] },
-        rh_comm:              { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stmg', 'bts_mco', 'bts_cg', 'sthr', 'bts_sio'], specialtyFilieres: ['stmg', 'bts_mco', 'bts_cg', 'sthr'] },
-        architecture_habitat: { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['sti2d', 'std2a', 'bac_pro_melec', 'stav', 'sciences_spe'], specialtyFilieres: ['sti2d', 'std2a', 'bac_pro_melec'] },
-        llce:                 { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['hlp_llce', 'generale', 's2tmd', 'std2a', 'sthr', 'bts_mco'], specialtyFilieres: ['hlp_llce', 'generale', 's2tmd'] },
-        pse:                  { band: 'lycee',   allowedNiveaux: LYCEE_BTS, allowedFilieres: ['bac_pro_assp', 'bac_pro_melec', 'ciel', 'sthr', 'stav', 'st2s', 'stl'], specialtyFilieres: ['bac_pro_assp', 'bac_pro_melec', 'ciel', 'sthr', 'stav'] },
+        biotech: { band: 'lycee', allowedNiveaux: LYCEE_ONLY, allowedFilieres: ['stl', 'st2s', 'sthr', 'stav', 'sciences_spe', 'bac_pro_assp'], specialtyFilieres: ['stl', 'st2s', 'stav', 'bac_pro_assp'] },
+        design: { band: 'lycee', allowedNiveaux: LYCEE_ONLY, allowedFilieres: ['std2a', 's2tmd'], specialtyFilieres: ['std2a', 's2tmd'] },
+        hotellerie: { band: 'lycee', allowedNiveaux: LYCEE_ONLY, allowedFilieres: ['sthr'], specialtyFilieres: ['sthr'] },
+        agronomie: { band: 'lycee', allowedNiveaux: LYCEE_1ERE_TLE, allowedFilieres: ['stav'], specialtyFilieres: ['stav'] },
+        spectacle: { band: 'lycee', allowedNiveaux: LYCEE_ONLY, allowedFilieres: ['s2tmd', 'std2a', 'hlp_llce'], specialtyFilieres: ['s2tmd', 'std2a'] },
+        hlp: { band: 'lycee', allowedNiveaux: LYCEE_1ERE_TLE, allowedFilieres: ['hlp_llce', 'generale', 's2tmd', 'std2a'], specialtyFilieres: ['hlp_llce', 'generale', 's2tmd'] },
+        dev_bdd: { band: 'lycee', allowedNiveaux: LYCEE_BTS, allowedFilieres: ['bts_sio', 'nsi_spe', 'ciel', 'stmg', 'bts_cg'], specialtyFilieres: ['bts_sio', 'nsi_spe', 'ciel', 'bts_cg'] },
+        commerce: { band: 'lycee', allowedNiveaux: LYCEE_BTS, allowedFilieres: ['bts_mco', 'stmg', 'sthr', 'bts_cg'], specialtyFilieres: ['bts_mco', 'stmg', 'sthr'] },
+        comptabilite: { band: 'lycee', allowedNiveaux: LYCEE_BTS, allowedFilieres: ['bts_cg', 'stmg', 'bts_mco', 'sthr'], specialtyFilieres: ['bts_cg', 'stmg', 'bts_mco'] },
+        electrotech: { band: 'lycee', allowedNiveaux: LYCEE_ONLY, allowedFilieres: ['bac_pro_melec', 'sti2d'], specialtyFilieres: ['bac_pro_melec', 'sti2d'] },
+        biopathologie: { band: 'lycee', allowedNiveaux: LYCEE_ONLY, allowedFilieres: ['st2s', 'bac_pro_assp', 'stl', 'sciences_spe'], specialtyFilieres: ['st2s', 'bac_pro_assp', 'stl'] },
+        spcl: { band: 'lycee', allowedNiveaux: LYCEE_1ERE_TLE, allowedFilieres: ['stl', 'sciences_spe', 'st2s', 'stav', 'sti2d'], specialtyFilieres: ['stl', 'sciences_spe'] },
+        rh_comm: { band: 'lycee', allowedNiveaux: LYCEE_BTS, allowedFilieres: ['stmg', 'bts_mco', 'bts_cg', 'sthr', 'bts_sio'], specialtyFilieres: ['stmg', 'bts_mco', 'bts_cg', 'sthr'] },
+        architecture_habitat: { band: 'lycee', allowedNiveaux: LYCEE_ONLY, allowedFilieres: ['sti2d', 'std2a', 'bac_pro_melec', 'stav', 'sciences_spe'], specialtyFilieres: ['sti2d', 'std2a', 'bac_pro_melec'] },
+        llce: { band: 'lycee', allowedNiveaux: LYCEE_1ERE_TLE, allowedFilieres: ['hlp_llce', 'generale', 's2tmd', 'std2a', 'sthr'], specialtyFilieres: ['hlp_llce', 'generale', 's2tmd'] },
+        pse: { band: 'lycee', allowedNiveaux: LYCEE_ONLY, allowedFilieres: ['bac_pro_assp', 'bac_pro_melec', 'ciel', 'sthr', 'stav', 'st2s', 'stl'], specialtyFilieres: ['bac_pro_assp', 'bac_pro_melec', 'ciel', 'sthr', 'stav'] },
     };
 
     // Niveaux scolaires par défaut (6ème → Terminale + BTS 1/2)
@@ -241,15 +245,15 @@ const AdminStore = (() => {
 
     // Pool par défaut des Quêtes Quotidiennes (pilotable depuis le panneau admin)
     const DEFAULT_QUEST_POOL = [
-        { type: 'xp',       icon: '⚡', title: 'Gagne 30 XP',                       target: 30, xp: 20, coins: 10, color: '#ffb547', enabled: true },
-        { type: 'xp',       icon: '🔥', title: 'Gagne 60 XP',                       target: 60, xp: 35, coins: 15, color: '#ff6b6b', enabled: true },
-        { type: 'xp',       icon: '🌟', title: 'Gagne 90 XP dans la journée',       target: 90, xp: 45, coins: 25, color: '#f59e0b', enabled: true },
-        { type: 'levels',   icon: '🏝️', title: 'Réussis 2 niveaux',                 target: 2,  xp: 20, coins: 10, color: '#4cc9f0', enabled: true },
-        { type: 'levels',   icon: '🗺️', title: 'Réussis 4 niveaux',                 target: 4,  xp: 35, coins: 20, color: '#3ddc97', enabled: true },
-        { type: 'levels',   icon: '🧭', title: 'Explore et réussis 6 niveaux',      target: 6,  xp: 50, coins: 30, color: '#38bdf8', enabled: true },
-        { type: 'perfect',  icon: '⭐', title: 'Décroche 3 étoiles sur un niveau',  target: 1,  xp: 25, coins: 15, color: '#ffd166', enabled: true },
-        { type: 'perfect',  icon: '🏅', title: 'Décroche 3 étoiles sur 2 niveaux',  target: 2,  xp: 40, coins: 25, color: '#eab308', enabled: true },
-        { type: 'firstTry', icon: '🎯', title: 'Réponds juste du 1er coup 3 fois',  target: 3,  xp: 30, coins: 15, color: '#b388ff', enabled: true },
+        { type: 'xp', icon: '⚡', title: 'Gagne 30 XP', target: 30, xp: 20, coins: 10, color: '#ffb547', enabled: true },
+        { type: 'xp', icon: '🔥', title: 'Gagne 60 XP', target: 60, xp: 35, coins: 15, color: '#ff6b6b', enabled: true },
+        { type: 'xp', icon: '🌟', title: 'Gagne 90 XP dans la journée', target: 90, xp: 45, coins: 25, color: '#f59e0b', enabled: true },
+        { type: 'levels', icon: '🏝️', title: 'Réussis 2 niveaux', target: 2, xp: 20, coins: 10, color: '#4cc9f0', enabled: true },
+        { type: 'levels', icon: '🗺️', title: 'Réussis 4 niveaux', target: 4, xp: 35, coins: 20, color: '#3ddc97', enabled: true },
+        { type: 'levels', icon: '🧭', title: 'Explore et réussis 6 niveaux', target: 6, xp: 50, coins: 30, color: '#38bdf8', enabled: true },
+        { type: 'perfect', icon: '⭐', title: 'Décroche 3 étoiles sur un niveau', target: 1, xp: 25, coins: 15, color: '#ffd166', enabled: true },
+        { type: 'perfect', icon: '🏅', title: 'Décroche 3 étoiles sur 2 niveaux', target: 2, xp: 40, coins: 25, color: '#eab308', enabled: true },
+        { type: 'firstTry', icon: '🎯', title: 'Réponds juste du 1er coup 3 fois', target: 3, xp: 30, coins: 15, color: '#b388ff', enabled: true },
     ];
 
     // Configuration par défaut des récompenses
@@ -312,11 +316,11 @@ const AdminStore = (() => {
 
     // Lot de personas IA pédagogiques locales par défaut (pilotable depuis le panneau admin)
     const DEFAULT_LOCAL_AI_PERSONAS = [
-        { id: 'ai-athena',  name: 'IA Athéna',   role: 'Analytique & Académique',    icon: '🧠', color: '#4cc9f0', variantOffset: 0, hintPrefix: 'Analyse méthodique (Athéna) : ', enabled: true },
-        { id: 'ai-socrate', name: 'IA Socrate',  role: 'Maïeutique & Guidée',        icon: '🏛️', color: '#ffd166', variantOffset: 1, hintPrefix: 'Piste de réflexion (Socrate) : ', enabled: true },
-        { id: 'ai-chronos', name: 'IA Chronos',  role: 'Défi & Réflexes',            icon: '⚡', color: '#ff9f43', variantOffset: 2, hintPrefix: 'Astuce rapide (Chronos) : ', enabled: true },
-        { id: 'ai-davinci', name: 'IA Da Vinci', role: 'Créative & Contextuelle',    icon: '🎨', color: '#b388ff', variantOffset: 3, hintPrefix: 'Intuition visuelle (Da Vinci) : ', enabled: true },
-        { id: 'ai-turing',  name: 'IA Turing',   role: 'Algorithmique & Adaptative', icon: '💻', color: '#3ddc97', variantOffset: 4, hintPrefix: 'Décomposition logique (Turing) : ', enabled: true },
+        { id: 'ai-athena', name: 'IA Athéna', role: 'Analytique & Académique', icon: '🧠', color: '#4cc9f0', variantOffset: 0, hintPrefix: 'Analyse méthodique (Athéna) : ', enabled: true },
+        { id: 'ai-socrate', name: 'IA Socrate', role: 'Maïeutique & Guidée', icon: '🏛️', color: '#ffd166', variantOffset: 1, hintPrefix: 'Piste de réflexion (Socrate) : ', enabled: true },
+        { id: 'ai-chronos', name: 'IA Chronos', role: 'Défi & Réflexes', icon: '⚡', color: '#ff9f43', variantOffset: 2, hintPrefix: 'Astuce rapide (Chronos) : ', enabled: true },
+        { id: 'ai-davinci', name: 'IA Da Vinci', role: 'Créative & Contextuelle', icon: '🎨', color: '#b388ff', variantOffset: 3, hintPrefix: 'Intuition visuelle (Da Vinci) : ', enabled: true },
+        { id: 'ai-turing', name: 'IA Turing', role: 'Algorithmique & Adaptative', icon: '💻', color: '#3ddc97', variantOffset: 4, hintPrefix: 'Décomposition logique (Turing) : ', enabled: true },
     ];
 
     // Configuration par défaut de l'intégration IA (Multi-IA + Make.com + Adaptatif + Personas locales)
@@ -335,7 +339,7 @@ const AdminStore = (() => {
         localPersonas: null,           // null → DEFAULT_LOCAL_AI_PERSONAS ; tableau personnalisé si édité en admin
     };
 
-    // Catalogue des 78 succès / badges par défaut d'EDUQUEST (46 existants + 32 nouveaux, filtrables par filière & cycle)
+    // Catalogue des 79 succès / badges par défaut d'EDUQUEST (filtrables par filière & cycle)
     const DEFAULT_BADGES = [
         // --- SUCCÈS UNIVERSELS (TOUTES FILIÈRES & TOUS CYCLES) ---
         { id: 'premier_quiz', icon: '🎯', name: 'Premier pas', desc: 'Réussis ta toute première question.', category: 'progression', band: 'all', allowedFilieres: ['all'], condition: 'totalCompleted >= 1' },
@@ -388,7 +392,8 @@ const AdminStore = (() => {
         // --- SUCCÈS COLLÈGE / TRANSVERSE SCIENTIFIQUE & LANGUES ---
         { id: 'technophile', icon: '💻', name: 'Technophile', desc: 'Atteins le niveau 5 en Technologie (Collège).', category: 'matieres', band: 'college', allowedFilieres: ['all'], condition: 'technoLevel >= 5' },
         { id: 'sciences_fan', icon: '🔬', name: 'Scientifique', desc: 'Atteins le niveau 5 en SVT, Physique ou Chimie.', category: 'matieres', band: 'all', allowedFilieres: ['generale', 'nsi_spe', 'sti2d', 'ciel', 'st2s', 'stl', 'stav', 'sciences_spe', 'bac_pro_melec', 'bac_pro_assp'], condition: 'scienceLevel >= 5' },
-        { id: 'hispanophone', icon: '🇪🇸', name: 'Hispanophone', desc: 'Atteins le niveau 5 en Espagnol (LV2).', category: 'matieres', band: 'all', allowedFilieres: ['generale', 'stmg', 'st2s', 'stl', 'std2a', 'sthr', 'stav', 's2tmd', 'hlp_llce', 'sciences_spe', 'bts_mco', 'bac_pro_assp'], condition: 'espagnolLevel >= 5' },
+        { id: 'hispanophone', icon: '🇪🇸', name: 'Hispanophone', desc: 'Atteins le niveau 5 en Espagnol (LV2).', category: 'matieres', band: 'all', allowedFilieres: ['all'], condition: 'espagnolLevel >= 5' },
+        { id: 'germanophone', icon: '🇩🇪', name: 'Germanophone', desc: 'Atteins le niveau 5 en Allemand.', category: 'matieres', band: 'all', allowedFilieres: ['all'], condition: 'allemandLevel >= 5' },
         { id: 'artiste_melomane', icon: '🎨', name: 'Esprit Créatif', desc: 'Atteins le niveau 5 en Arts & Musique.', category: 'matieres', band: 'all', allowedFilieres: ['generale', 'std2a', 's2tmd', 'hlp_llce'], condition: 'artsLevel >= 5' },
 
         // --- SUCCÈS LYCÉE GÉNÉRAL, HUMANITÉS & SCIENCES ---
@@ -854,22 +859,91 @@ const AdminStore = (() => {
         return (Array.isArray(stored) && stored.length > 0) ? stored : DEFAULT_FILIERES;
     }
 
+    function _defaultAllowedNiveauxForFiliereId(filiereId) {
+        const clean = String(filiereId || '').trim().toLowerCase();
+        const def = DEFAULT_FILIERES.find(d => d.id === clean);
+        if (def && Array.isArray(def.allowedNiveaux) && def.allowedNiveaux.length > 0) {
+            return def.allowedNiveaux.slice();
+        }
+        return LYCEE_BTS.slice();
+    }
+
+    function _normalizeFiliereAllowedNiveaux(rawNiv, filiereId) {
+        if (Array.isArray(rawNiv) && rawNiv.length > 0) {
+            const validIds = new Set(_rawLevels().map(l => l.id));
+            const filtered = [...new Set(rawNiv.map(n => String(n || '').trim()).filter(n => n && (validIds.size === 0 || validIds.has(n))))];
+            if (filtered.length > 0) return filtered;
+        }
+        return _defaultAllowedNiveauxForFiliereId(filiereId);
+    }
+
     /** Retourne la liste complète des filières (config admin ou valeurs par défaut). */
     function getFilieres() {
-        return _rawFilieres().map(f => ({
-            id: String(f.id || '').trim().toLowerCase(),
-            label: String(f.label || f.id || '').trim(),
-            shortLabel: String(f.shortLabel || f.label || f.id || '').trim(),
-            icon: String(f.icon || '🧭').trim() || '🧭',
-            enabled: f.enabled !== false,
-            desc: String(f.desc || '').trim(),
-        }));
+        return _rawFilieres().map(f => {
+            const id = String(f.id || '').trim().toLowerCase();
+            return {
+                id,
+                label: String(f.label || f.id || '').trim(),
+                shortLabel: String(f.shortLabel || f.label || f.id || '').trim(),
+                icon: String(f.icon || '🧭').trim() || '🧭',
+                enabled: f.enabled !== false,
+                allowedNiveaux: _normalizeFiliereAllowedNiveaux(f.allowedNiveaux, id),
+                desc: String(f.desc || '').trim(),
+            };
+        });
     }
 
     /** Retourne uniquement les filières actives (pour les sélecteurs du jeu). */
     function getActiveFilieres() {
         const active = getFilieres().filter(f => f.enabled !== false);
         return active.length > 0 ? active : getFilieres().slice(0, 1);
+    }
+
+    /** Indique si une filière est autorisée pour un niveau d'étude donné (ex: BTS uniquement en bts1/bts2). */
+    function isFiliereAllowedForNiveau(filiereOrId, niveauId) {
+        if (!isFiliereApplicable(niveauId)) return false;
+        const norm = (typeof QuestionBank !== 'undefined' && typeof QuestionBank.normalizeNiveau === 'function')
+            ? QuestionBank.normalizeNiveau(niveauId)
+            : String(niveauId || '2nde').toLowerCase().trim();
+        const fil = (filiereOrId && typeof filiereOrId === 'object')
+            ? filiereOrId
+            : getFilieres().find(f => f.id === String(filiereOrId || '').toLowerCase().trim());
+        if (!fil) return false;
+        const allowed = Array.isArray(fil.allowedNiveaux) && fil.allowedNiveaux.length > 0
+            ? fil.allowedNiveaux
+            : _defaultAllowedNiveauxForFiliereId(fil.id);
+        return allowed.includes(norm);
+    }
+
+    /** Retourne les filières actives autorisées pour un niveau d'étude donné (Lycée 2nde, 1ère/Tle, ou BTS 1/2). */
+    function getFilieresForNiveau(niveauId, { includeDisabled = false } = {}) {
+        if (!isFiliereApplicable(niveauId)) return [];
+        const base = includeDisabled ? getFilieres() : getActiveFilieres();
+        const matching = base.filter(f => isFiliereAllowedForNiveau(f, niveauId));
+        return matching.length > 0 ? matching : base;
+    }
+
+    /** Résout une filière cohérente pour un niveau donné (bascule intelligemment lors d'un changement Lycée ↔ BTS ou 2nde ↔ 1ère). */
+    function resolveFiliereForNiveau(filiereId, niveauId) {
+        const clean = String(filiereId || '').toLowerCase().trim();
+        if (!isFiliereApplicable(niveauId)) return clean || 'generale';
+        const allowed = getFilieresForNiveau(niveauId);
+        if (clean && allowed.some(f => f.id === clean)) return clean;
+        const norm = (typeof QuestionBank !== 'undefined' && typeof QuestionBank.normalizeNiveau === 'function')
+            ? QuestionBank.normalizeNiveau(niveauId)
+            : String(niveauId || '2nde').toLowerCase().trim();
+        // Passerelles pédagogiques naturelles lors du changement de cycle
+        const bridges = {
+            bts1: { nsi_spe: 'bts_sio', stmg: 'bts_mco', generale: 'bts_sio', sti2d: 'ciel', bac_pro_melec: 'ciel' },
+            bts2: { nsi_spe: 'bts_sio', stmg: 'bts_mco', generale: 'bts_sio', sti2d: 'ciel', bac_pro_melec: 'ciel' },
+            '2nde': { nsi_spe: 'generale', hlp_llce: 'generale', sciences_spe: 'generale', stmg: 'generale', sti2d: 'generale', st2s: 'generale', stl: 'generale', std2a: 'generale', stav: 'generale', bts_sio: 'generale', bts_mco: 'generale', bts_cg: 'generale' },
+            '1ere': { bts_sio: 'nsi_spe', bts_mco: 'stmg', bts_cg: 'stmg' },
+            terminale: { bts_sio: 'nsi_spe', bts_mco: 'stmg', bts_cg: 'stmg' },
+        };
+        const target = bridges[norm] && bridges[norm][clean];
+        if (target && allowed.some(f => f.id === target)) return target;
+        if (allowed.some(f => f.id === 'generale')) return 'generale';
+        return allowed.length > 0 ? allowed[0].id : (clean || 'generale');
     }
 
     /** true si l'administrateur a personnalisé les filières. */
@@ -899,6 +973,7 @@ const AdminStore = (() => {
                 shortLabel: String(f.shortLabel || label).trim() || label,
                 icon: String(f.icon || '🧭').trim() || '🧭',
                 enabled: f.enabled !== false,
+                allowedNiveaux: _normalizeFiliereAllowedNiveaux(f.allowedNiveaux, id),
                 desc: String(f.desc || '').trim(),
             });
         }
@@ -1011,9 +1086,11 @@ const AdminStore = (() => {
         }
         if (!levelOk) return false;
 
-        // Au lycée / BTS : filtrage selon la filière choisie (par défaut 'generale')
+        // Au lycée / BTS : filtrage selon la filière choisie (par défaut filière résolue pour le niveau)
         if (isFiliereApplicable(norm)) {
-            const effectiveFiliere = String(filiereId || 'generale').toLowerCase().trim() || 'generale';
+            const effectiveFiliere = filiereId
+                ? (String(filiereId).toLowerCase().trim() || resolveFiliereForNiveau('generale', norm))
+                : resolveFiliereForNiveau('generale', norm);
             const allowedFil = defaultAllowedFilieresForSubject(subject);
             if (allowedFil.length > 0 && !allowedFil.includes('all')) {
                 return allowedFil.includes(effectiveFiliere);
@@ -2034,6 +2111,7 @@ const AdminStore = (() => {
                         shortLabel: String(f.shortLabel || lbl).trim() || lbl,
                         icon: String(f.icon || '🧭').trim() || '🧭',
                         enabled: f.enabled !== false,
+                        allowedNiveaux: _normalizeFiliereAllowedNiveaux(f.allowedNiveaux, fid),
                         desc: String(f.desc || '').trim(),
                     });
                 }
@@ -2189,6 +2267,9 @@ const AdminStore = (() => {
         // Filières / voies d'études
         getFilieres,
         getActiveFilieres,
+        getFilieresForNiveau,
+        isFiliereAllowedForNiveau,
+        resolveFiliereForNiveau,
         filieresModified,
         saveFilieres,
         resetFilieres,

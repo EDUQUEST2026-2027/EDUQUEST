@@ -26,7 +26,7 @@ npm test
 4. `tests/cookies.test.js` : Conformité du bandeau RGPD/CNIL, durées d'expiration (12 mois) et granularité du consentement.
 5. `tests/daily-quests.test.js` : Déterminisme du PRNG Mulberry32, tirage Fisher-Yates et renouvellement à minuit.
 6. `tests/db.test.js` : Isolation des comptes locaux, gestion des consommables, combos, bouclier d'étoile et persistance anti-triche des tentatives.
-7. `tests/filieres-and-improvements.test.js` : Isolation `DB.getFiliere`/`setFiliere`, filtrage officiel des **18 filières** et BTS 1/2, intégrité des **36 matières**, anti-répétition sur 16 niveaux consécutifs, validation XML/pré-cache 100 % SVG (**logo + 36 îles + 27 avatars**, zéro fichier matriciel), pilotage admin intégral (98 articles boutique, 16 thèmes visuels, 78 succès filtrés par filière, quêtes, feature flags, export/import) et non-régression (`FACT_BANKS`, `AdminStore.hasSubjectCustomizations`, `QuizEngine`, `boost-combo`).
+7. `tests/filieres-and-improvements.test.js` : Isolation `DB.getFiliere`/`setFiliere`, cohérence stricte **niveau ↔ 18 filières** (2nde / 1ère-Tle / BTS 1-2), intégrité des **43 matières** (dont **Allemand**), suppression plein écran & reset joueur, anti-répétition sur 16 niveaux consécutifs, validation XML/pré-cache 100 % SVG (**logo + 43 îles + 27 avatars**, zéro fichier matriciel), pilotage admin intégral (98 articles boutique, 16 thèmes visuels, 79 succès filtrés par filière dont `germanophone`, quêtes, feature flags, export/import) et non-régression (`FACT_BANKS`, `AdminStore.hasSubjectCustomizations`, `QuizEngine`, `boost-combo`).
 8. `tests/game-rules-and-session.test.js` : Règles pures, étoiles, boosters (`boost-shield`, `boost-xp`, `boost-coins`, `boost-combo`), combos, multiplicateurs globaux et pipeline de soumission de quiz.
 9. `tests/question-bank.test.js` : Déterminisme du générateur procédural, non-répétition et respect strict des programmes Collège / Lycée / BTS.
 10. `tests/quiz-engine.test.js` : Rendu et notation des 6 formats de questions avec algorithme Levenshtein.
@@ -53,7 +53,7 @@ Ouvrez simplement [test.html](../test.html) dans n'importe quel navigateur (y co
 
 Les questions sont structurées dans `js/question-bank.js` (`FACT_BANKS` + générateurs procéduraux) et peuvent également être créées et modifiées dynamiquement depuis le panneau d'administration (`admin.html`).
 
-Chaque matière officielle (42 au total, couvrant le Collège, le Lycée et le BTS sur 18 filières) dispose :
+Chaque matière officielle (43 au total, dont Allemand, couvrant le Collège, le Lycée et le BTS sur 18 filières) dispose :
 1. De leçons socles écrites à la main dans `RAW_DASH_SUBJECTS` (`js/app.js`) pour les premiers niveaux.
 2. D'un générateur procédural déterministe (`QuestionBank.generateOne`) capable d'étendre la matière jusqu'au niveau 100 de façon reproductible.
 3. De variantes aléatoires tirées en *lazy getter* selon le niveau d'étude choisi.

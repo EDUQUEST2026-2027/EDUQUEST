@@ -31,8 +31,8 @@ test('QuestionBank - Déterminisme du PRNG et Bandes Scolaires', async (t) => {
     });
 
     await t.test('Génération de 100 niveaux sans crash pour diverses matières', () => {
-        const subjects = ['maths', 'francais', 'histoire', 'anglais', 'svt'];
-        const grades = ['6eme', '3eme', 'terminale'];
+        const subjects = ['maths', 'francais', 'histoire', 'anglais', 'allemand', 'svt'];
+        const grades = ['6eme', '3eme', 'terminale', 'bts1'];
 
         for (const sub of subjects) {
             for (const gr of grades) {
@@ -40,7 +40,7 @@ test('QuestionBank - Déterminisme du PRNG et Bandes Scolaires', async (t) => {
                     const lesson = QuestionBank.generateOne(sub, i, gr, 0);
                     assert.ok(lesson, `La leçon ${sub} niveau ${i} pour ${gr} doit être définie`);
                     assert.ok(typeof lesson.q === 'string' && lesson.q.length > 0, 'La question ne doit pas être vide');
-                    
+
                     if (lesson.opts) {
                         assert.ok(Array.isArray(lesson.opts), 'opts doit être un tableau');
                         assert.ok(lesson.opts.length >= 2, 'Il doit y avoir au moins 2 choix');
